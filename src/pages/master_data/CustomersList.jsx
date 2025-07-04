@@ -1,14 +1,24 @@
-import { createEffect, createSignal } from "solid-js";
+import { createEffect, createMemo, createSignal } from "solid-js";
 import { useNavigate } from "@solidjs/router";
 import MainLayout from "../../layouts/MainLayout";
 import { getAllCustomers, getUser, softDeleteCustomer } from "../../utils/auth";
 import Swal from "sweetalert2";
 
 export default function CustomerList() {
+  const [customers, setCustomers] = createSignal([]);
   const navigate = useNavigate();
   const tokUser = getUser();
+  const [currentPage, setCurrentPage] = createSignal(1);
+  const pageSize = 10;
 
-  const [customers, setCustomers] = createSignal([]);
+  const totalPages = createMemo(() => {
+    return Math.max(1, Math.ceil(customers().length / pageSize));
+  });
+
+  const paginatedData = () => {
+    const startIndex = (currentPage() - 1) * pageSize;
+    return customers().slice(startIndex, startIndex + pageSize);
+  };
 
   const handleDelete = async (id) => {
     const result = await Swal.fire({
@@ -103,7 +113,7 @@ export default function CustomerList() {
             </tr>
           </thead>
           <tbody>
-            {customers().map((cust) => (
+            {paginatedData().map((cust) => (
               <tr class="border-b" key={cust.id}>
                 <td class="py-2 px-4">{cust.id}</td>
                 <td class="py-2 px-4">{cust.kode}</td>
@@ -139,6 +149,25 @@ export default function CustomerList() {
             ))}
           </tbody>
         </table>
+        <div class="w-full mt-8 flex justify-between space-x-2">
+          <button
+            class="px-3 py-1 bg-gray-200 rounded min-w-[80px]"
+            onClick={() => setCurrentPage(currentPage() - 1)}
+            disabled={currentPage() === 1}
+          >
+            Prev
+          </button>
+          <span>
+            Page {currentPage()} of {totalPages()}
+          </span>
+          <button
+            class="px-3 py-1 bg-gray-200 rounded min-w-[80px]"
+            onClick={() => setCurrentPage(currentPage() + 1)}
+            disabled={currentPage() === totalPages()}
+          >
+            Next
+          </button>
+        </div>
       </div>
     </MainLayout>
   );

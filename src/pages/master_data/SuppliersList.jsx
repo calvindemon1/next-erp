@@ -11,12 +11,10 @@ export default function SuppliersList() {
   const [currentPage, setCurrentPage] = createSignal(1);
   const pageSize = 10;
 
-  // ✅ FIX #1: tambahin return di createMemo, biar ga undefined
   const totalPages = createMemo(() => {
     return Math.max(1, Math.ceil(suppliers().length / pageSize));
   });
 
-  // ✅ FIX #2: bikin paginatedData reactive
   const paginatedData = () => {
     const startIndex = (currentPage() - 1) * pageSize;
     return suppliers().slice(startIndex, startIndex + pageSize);
@@ -153,8 +151,6 @@ export default function SuppliersList() {
           </tbody>
         </table>
 
-        {/* ✅ FIX #6: tambahin mt-8 biar pagination ga mepet table */}
-        {/* ✅ FIX #7: tambahin min-w supaya tombol ga loncat-loncat */}
         <div class="w-full mt-8 flex justify-between space-x-2">
           <button
             class="px-3 py-1 bg-gray-200 rounded min-w-[80px]"

@@ -3,51 +3,48 @@ import { useNavigate, useSearchParams } from "@solidjs/router";
 import MainLayout from "../../layouts/MainLayout";
 import Swal from "sweetalert2";
 import {
-  createSalesContract,
+  createSalesOrder,
   getAllCurrenciess,
   getAllCustomers,
-  getCustomer,
-  getSalesContracts,
+  getAllSalesContracts,
+  getSalesOrders,
   getUser,
-  updateDataSalesContract,
+  updateDataSalesOrder,
 } from "../../utils/auth";
-import SearchableCustomerSelect from "../../components/CustomerDropdownSearch";
+import SearchableSalesContractSelect from "../../components/SalesContractDropdownSearch";
 import { produce } from "solid-js/store";
 import { Trash2 } from "lucide-solid";
 // import { createSC, updateSC, getSC } from "../../utils/auth";
 // --> ganti sesuai endpoint lu
 
-export default function SalesContractForm() {
+export default function SalesOrderForm() {
   const [params] = useSearchParams();
   const isEdit = !!params.id;
   const navigate = useNavigate();
   const user = getUser();
-  const [currencyList, setCurrencyList] = createSignal([]);
-  const [customersList, setCustomersList] = createSignal([]);
+  const [salesContracts, setSalesContracts] = createSignal([]);
+  const [jenisSoList, setJenisSoList] = createSignal([
+    { jenis_so_id: null, name: "" },
+    { jenis_so_id: 1, name: "Domestik" },
+    { jenis_so_id: 2, name: "Ekspor" },
+  ]);
 
   const [form, setForm] = createSignal({
-    no_pesan: "",
-    po_cust: "",
+    no_so: "",
+    sales_contract_id: "",
     tanggal: "",
-    customer_id: "",
-    currency_id: "",
-    kurs: "",
-    termin: "",
-    ppn_percent: "",
+    delivery_date: "",
+    komisi: "",
     catatan: "",
-    satuan_unit: "",
     items: [],
   });
 
   onMount(async () => {
-    const getCurrencies = await getAllCurrenciess(user?.token);
-    setCurrencyList(getCurrencies.data);
-
-    const getCustomers = await getAllCustomers(user?.token);
-    setCustomersList(getCustomers.customers);
+    const getSalesContracts = await getAllSalesContracts(user?.token);
+    setSalesContracts(getSalesContracts.contracts);
 
     if (isEdit) {
-      const res = await getSalesContracts(params.id, user?.token);
+      const res = await getSalesOrders(params.id, user?.token);
       const salesContracts = res.response; // karena dari console lu, response-nya di dalam `response`
 
       // Safety check
@@ -56,33 +53,26 @@ export default function SalesContractForm() {
       // Normalize items
       const normalizedItems = (salesContracts.items || []).map((item, idx) => ({
         id: idx + 1,
-        kain_id: item.kain_id ?? null,
-        warna_id: item.warna_id ?? null,
+
+        sales_contract_item_id: item.sales_contract_id ?? null,
         keterangan: item.keterangan ?? "",
         grade: item.grade ?? "",
         lebar: item.lebar ? parseFloat(item.lebar) : null,
         gramasi: item.gramasi ? parseFloat(item.gramasi) : null,
-        meter_total: item.meter_total ? parseFloat(item.meter_total) : null,
-        yard_total: item.yard_total ? parseFloat(item.yard_total) : null,
-        kilogram_total: item.kilogram_total
-          ? parseFloat(item.kilogram_total)
-          : null,
-        harga: item.harga ? parseInt(item.harga) : null,
-        status: item.status ?? "",
+        meter: item.meter ? parseFloat(item.meter) : null,
+        yard: item.yard ? parseFloat(item.yard) : null,
+        kilogram: item.kilogram ? parseFloat(item.kilogram) : null,
+        harga: item.harga ? parseFloat(item.harga) : null,
       }));
 
       // Set form
       setForm({
-        no_pesan: salesContracts.no_pesan ?? "",
-        po_cust: salesContracts.po_cust ?? "",
+        no_so: salesContracts.no_so ?? "",
+        sales_contract_id: salesContracts.sales_contract_id ?? "",
         tanggal: salesContracts.tanggal?.split("T")[0] ?? "",
-        customer_id: salesContracts.customer_id ?? "",
-        currency_id: salesContracts.currency_id ?? "",
-        kurs: parseFloat(salesContracts.kurs) ?? "",
-        termin: parseInt(salesContracts.termin) ?? "",
-        ppn_percent: parseFloat(salesContracts.ppn_percent) ?? "",
-        catatan: salesContracts.catatan ?? "",
-        satuan_unit: parseInt(salesContracts.satuan_unit) ?? "",
+        delivery_date: salesContracts.delivery_date?.split("T")[0] ?? "",
+        komisi: parseFloat(salesContracts.komisi) ?? "",
+        catatan: salesContracts.termin ?? "",
         items: normalizedItems.length > 0 ? normalizedItems : [],
       });
 
@@ -120,17 +110,15 @@ export default function SalesContractForm() {
         ...prev.items,
         {
           id: 0, // temporary
-          kain_id: null,
-          warna_id: null,
+          sales_contract_item_id: null,
           keterangan: "",
           grade: "",
           lebar: null,
           gramasi: null,
-          meter_total: null,
-          yard_total: null,
-          kilogram_total: null,
+          meter: null,
+          yard: null,
+          kilogram: null,
           harga: null,
-          status: "",
         },
       ];
 
@@ -154,13 +142,12 @@ export default function SalesContractForm() {
 
   const handleItemChange = (index, field, value) => {
     const numericFields = [
-      "kain_id",
-      "warna_id",
+      "sales_contract_id",
       "lebar",
       "gramasi",
-      "meter_total",
-      "yard_total",
-      "kilogram_total",
+      "meter",
+      "yard",
+      "kilogram",
       "harga",
     ];
 
@@ -187,35 +174,31 @@ export default function SalesContractForm() {
 
       const payload = {
         ...form(),
-        no_pesan: form().no_pesan,
-        po_cust: form().po_cust,
+        no_so: form().no_so,
+        sales_contract_id: parseInt(form().sales_contract_id),
+        jenis_so_id: parseInt(form().jenis_so_id),
         tanggal: form().tanggal,
-        customer_id: parseInt(form().customer_id),
-        currency_id: parseInt(form().currency_id),
-        kurs: toNum(form().kurs),
-        termin: toNum(form().termin),
-        ppn_percent: toNum(form().ppn_percent),
-        satuan_unit: toNum(form().satuan_unit),
+        delivery_date: form().delivery_date,
+        komisi: toNum(form().komisi),
+        catatan: form().catatan,
         items: form().items.map((item) => ({
           id: item.id,
-          kain_id: toNum(item.kain_id),
-          warna_id: toNum(item.warna_id),
+          sales_contract_item_id: toNum(item.sales_contract_item_id),
           keterangan: item.keterangan || "",
           grade: item.grade || "",
           lebar: toNum(item.lebar),
           gramasi: toNum(item.gramasi),
-          meter_total: toNum(item.meter_total),
-          yard_total: toNum(item.yard_total),
-          kilogram_total: toNum(item.kilogram_total),
+          meter: toNum(item.meter),
+          yard: toNum(item.yard),
+          kilogram: toNum(item.kilogram),
           harga: toNum(item.harga),
-          status: item.status || "",
         })),
       };
 
       if (isEdit) {
-        await updateDataSalesContract(user?.token, params.id, payload);
+        await updateDataSalesOrder(user?.token, params.id, payload);
       } else {
-        await createSalesContract(user?.token, payload);
+        await createSalesOrder(user?.token, payload);
       }
 
       Swal.fire({
@@ -225,7 +208,7 @@ export default function SalesContractForm() {
           ? "Berhasil mengupdate Sales Contract"
           : "Berhasil membuat Sales Contract baru",
         confirmButtonColor: "#6496df",
-      }).then(() => navigate("/salescontract"));
+      }).then(() => navigate("/salesorder"));
     } catch (error) {
       console.error(error);
       Swal.fire({
@@ -242,28 +225,45 @@ export default function SalesContractForm() {
   return (
     <MainLayout>
       <h1 class="text-2xl font-bold mb-4">
-        {isEdit ? "Edit" : "Tambah"} Sales Contract
+        {isEdit ? "Edit" : "Tambah"} Sales Order
       </h1>
 
       <form class="flex flex-col space-y-4 " onSubmit={handleSubmit}>
         <div class="grid grid-cols-3 gap-4">
           <div>
-            <label class="block mb-1 font-medium">No Pesan</label>
+            <label class="block mb-1 font-medium">No Sales Order</label>
             <input
               class="w-full border p-2 rounded"
-              value={form().no_pesan}
-              onInput={(e) => setForm({ ...form(), no_pesan: e.target.value })}
+              value={form().no_so}
+              onInput={(e) => setForm({ ...form(), no_so: e.target.value })}
               required
             />
           </div>
           <div>
-            <label class="block mb-1 font-medium">PO Customer</label>
-            <input
-              class="w-full border p-2 rounded"
-              value={form().po_cust}
-              onInput={(e) => setForm({ ...form(), po_cust: e.target.value })}
-              required
+            <label class="block mb-1 font-medium">Sales Contract</label>
+            <SearchableSalesContractSelect
+              salesContracts={salesContracts}
+              form={form}
+              setForm={setForm}
             />
+          </div>
+          <div>
+            <label class="block mb-1 font-medium">Jenis Sales Order</label>
+            <select
+              class="w-full border p-2 rounded"
+              value={form().jenis_so_id ?? ""}
+              onChange={(e) =>
+                setForm({ ...form(), jenis_so_id: e.target.value })
+              }
+              required
+            >
+              <option value="" disabled hidden={!!form().jenis_so_id}>
+                Pilih Jenis Sales Order
+              </option>
+              {jenisSoList().map((curr) => (
+                <option value={curr.jenis_so_id}>{curr.name}</option>
+              ))}
+            </select>
           </div>
           <div>
             <label class="block mb-1 font-medium">Tanggal</label>
@@ -275,36 +275,20 @@ export default function SalesContractForm() {
               required
             />
           </div>
-        </div>
-        <div class="grid grid-cols-3 gap-4">
           <div>
-            <label class="block mb-1 font-medium">Customer ID</label>
-            <SearchableCustomerSelect
-              customersList={customersList}
-              form={form}
-              setForm={setForm}
+            <label class="block mb-1 font-medium">Tanggal Pengiriman</label>
+            <input
+              type="date"
+              class="w-full border p-2 rounded"
+              value={form().delivery_date}
+              onInput={(e) =>
+                setForm({ ...form(), delivery_date: e.target.value })
+              }
+              required
             />
           </div>
           <div>
-            <label class="block mb-1 font-medium">Currency ID</label>
-            <select
-              class="w-full border p-2 rounded"
-              value={form().currency_id}
-              onChange={(e) =>
-                setForm({ ...form(), currency_id: e.target.value })
-              }
-              required
-            >
-              <option value="" disabled hidden={!!form().currency_id}>
-                Pilih Currency
-              </option>
-              {currencyList().map((curr) => (
-                <option value={curr.id}>{curr.name}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label class="block mb-1 font-medium">Kurs</label>
+            <label class="block mb-1 font-medium">Komisi</label>
             <div class="flex">
               <span class="inline-flex items-center px-3 border border-r-0 border-black bg-gray-50 rounded-l">
                 IDR
@@ -312,58 +296,16 @@ export default function SalesContractForm() {
               <input
                 type="text"
                 class="w-full border p-2 rounded rounded-l-none"
-                value={formatIDR(form().kurs)}
+                value={formatIDR(form().komisi)}
                 onInput={(e) =>
                   setForm({
                     ...form(),
-                    kurs: parseIDR(e.target.value),
+                    komisi: parseIDR(e.target.value),
                   })
                 }
                 required
               />
             </div>
-          </div>
-        </div>
-        <div class="grid grid-cols-3 gap-4">
-          <div>
-            <label class="block mb-1 font-medium">Termin</label>
-            <div class="flex">
-              <input
-                type="number"
-                class="w-full border p-2 rounded rounded-r-none"
-                value={form().termin}
-                onInput={(e) => setForm({ ...form(), termin: e.target.value })}
-                required
-              />
-              <span class="inline-flex items-center px-3 border border-l-0 border-black bg-gray-50 rounded-r">
-                /Hari
-              </span>
-            </div>
-          </div>
-          <div>
-            <label class="block mb-1 font-medium">PPN (%)</label>
-            <input
-              type="number"
-              step="0.01"
-              class="w-full border p-2 rounded"
-              value={form().ppn_percent}
-              onInput={(e) =>
-                setForm({ ...form(), ppn_percent: e.target.value })
-              }
-              required
-            />
-          </div>
-          <div>
-            <label class="block mb-1 font-medium">Satuan Unit</label>
-            <input
-              type="number"
-              class="w-full border p-2 rounded"
-              value={form().satuan_unit}
-              onInput={(e) =>
-                setForm({ ...form(), satuan_unit: e.target.value })
-              }
-              required
-            />
           </div>
         </div>
         <div>
@@ -397,8 +339,11 @@ export default function SalesContractForm() {
 
                 <div class="grid grid-cols-2 gap-2">
                   {[
-                    { label: "Kain ID", field: "kain_id", type: "number" },
-                    { label: "Warna ID", field: "warna_id", type: "number" },
+                    {
+                      label: "Sales Contract Item ID",
+                      field: "sales_contract_item_id",
+                      type: "number",
+                    },
                     { label: "Keterangan", field: "keterangan", type: "text" },
                     { label: "Grade", field: "grade", type: "text" },
                     {
@@ -414,25 +359,24 @@ export default function SalesContractForm() {
                       step: "0.01",
                     },
                     {
-                      label: "Meter Total",
-                      field: "meter_total",
+                      label: "Meter",
+                      field: "meter",
                       type: "number",
                       step: "0.01",
                     },
                     {
-                      label: "Yard Total",
-                      field: "yard_total",
+                      label: "Yard",
+                      field: "yard",
                       type: "number",
                       step: "0.01",
                     },
                     {
-                      label: "Kilogram Total",
-                      field: "kilogram_total",
+                      label: "Kilogram",
+                      field: "kilogram",
                       type: "number",
                       step: "0.01",
                     },
                     { label: "Harga", field: "harga", type: "number" },
-                    { label: "Status", field: "status", type: "text" },
                   ].map(({ label, field, type, step }) => (
                     <div>
                       <label

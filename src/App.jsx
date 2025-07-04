@@ -25,6 +25,8 @@ import CustomerTypesList from "./pages/master_data/CustomerTypesList";
 import CustomerTypeForm from "./pages/master_data/CustomerTypeForm";
 import CurrenciesList from "./pages/master_data/CurrenciesList";
 import CurrencyForm from "./pages/master_data/CurrencyForm";
+import SalesOrderList from "./pages/transactions/SalesOrderList";
+import SalesOrderForm from "./pages/transactions/SalesOrderForm";
 
 function App() {
   return (
@@ -44,6 +46,9 @@ function App() {
       {/* TRANSACTIONS */}
       <Route path="/salescontract" component={SalesContractList} />
       <Route path="/salescontract/form" component={SalesContractForm} />
+      
+      <Route path="/salesorder" component={SalesOrderList} />
+      <Route path="/salesorder/form" component={SalesOrderForm} />
       {/* TRANSACTIONS */}
 
       {/* MASTER DATA */}

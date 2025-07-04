@@ -1284,7 +1284,7 @@ export async function createSalesContract(token, payload) {
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.message || "Gagal membuat Sales Contract");
+      throw new Error(data.message || "Gagal membuat sales contract");
     }
 
     return data;
@@ -1311,7 +1311,7 @@ export async function getAllSalesContracts(token) {
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.message || "Gagal mengambil data jenis so");
+      throw new Error(data.message || "Gagal mengambil data sales contract");
     }
 
     return data;
@@ -1338,7 +1338,7 @@ export async function getSalesContracts(id, token) {
 
     if (!response.ok) {
       throw new Error(
-        data.message || `Gagal mengambil jenis so dengan id: ${id}`
+        data.message || `Gagal mengambil sales contract dengan id: ${id}`
       );
     }
 
@@ -1366,7 +1366,7 @@ export async function updateDataSalesContract(token, id, payload) {
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.message || "Gagal mengubah data jenis so");
+      throw new Error(data.message || "Gagal mengubah data sales contract");
     }
 
     return data;
@@ -1393,7 +1393,7 @@ export async function softDeleteSalesContract(id, token) {
 
     if (!response.ok) {
       throw new Error(
-        data.message || `Gagal menghapus data jenis so dengan id: ${id}`
+        data.message || `Gagal menghapus data sales contract dengan id: ${id}`
       );
     }
 
@@ -1404,6 +1404,150 @@ export async function softDeleteSalesContract(id, token) {
 }
 
 // #endregion SALES CONTRACT FUNCTION
+
+// #region SALES ORDER FUNCTION
+
+export async function createSalesOrder(token, payload) {
+  try {
+    const response = await fetch(
+      `https://nexttechenterprise.site/api/create-sales-order`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          "ngrok-skip-browser-warning": "any-value",
+        },
+        body: JSON.stringify(payload),
+      }
+    );
+
+    console.log(payload);
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || "Gagal membuat sales order");
+    }
+
+    return data;
+  } catch (error) {
+    console.error(error);
+    throw error;
+  }
+}
+
+export async function getAllSalesOrders(token) {
+  try {
+    const response = await fetch(
+      `https://nexttechenterprise.site/api/sales-orders`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          "ngrok-skip-browser-warning": "any-value",
+        },
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || "Gagal mengambil data sales order");
+    }
+
+    return data;
+  } catch (error) {
+    throw error;
+  }
+}
+
+export async function getSalesOrders(id, token) {
+  try {
+    const response = await fetch(
+      `https://nexttechenterprise.site/api/sales-orders/${id}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          "ngrok-skip-browser-warning": "any-type",
+        },
+      }
+    );
+
+    const data = response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data.message || `Gagal mengambil jenis sales order dengan id: ${id}`
+      );
+    }
+
+    return data;
+  } catch (error) {
+    throw error;
+  }
+}
+
+export async function updateDataSalesOrder(token, id, payload) {
+  try {
+    const response = await fetch(
+      `https://nexttechenterprise.site/api/update-sales-order/${id}`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          "ngrok-skip-browser-warning": "any-value",
+        },
+        body: JSON.stringify(payload),
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || "Gagal mengubah dat sales order");
+    }
+
+    return data;
+  } catch (error) {
+    throw error;
+  }
+}
+
+export async function softDeleteSalesOrder(id, token) {
+  try {
+    const response = await fetch(
+      `https://nexttechenterprise.site/api/delete-sales-order/${id}`,
+      {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          "ngrok-skip-browser-warning": "any-type",
+        },
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data.message ||
+          `Gagal menghapus data jenis sales order dengan id: ${id}`
+      );
+    }
+
+    return data;
+  } catch (error) {
+    throw error;
+  }
+}
+
+// #endregion SALES ORDER FUNCTION
 
 export function logout() {
   localStorage.removeItem("user");

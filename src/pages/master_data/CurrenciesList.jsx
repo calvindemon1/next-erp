@@ -1,4 +1,4 @@
-import { createEffect, createSignal } from "solid-js";
+import { createEffect, createMemo, createSignal } from "solid-js";
 import { useNavigate } from "@solidjs/router";
 import MainLayout from "../../layouts/MainLayout";
 import {
@@ -13,12 +13,14 @@ export default function CurrenciesList() {
   const tokUser = getUser();
   const [currencies, setCurrencies] = createSignal([]);
   const [currentPage, setCurrentPage] = createSignal(1);
-  const pageSize = 15;
-  const totalPages = Math.ceil(currencies().length / pageSize);
+  const pageSize = 10;
+
+  const totalPages = createMemo(() => {
+    return Math.max(1, Math.ceil(currencies().length / pageSize));
+  });
 
   const paginatedData = () => {
     const startIndex = (currentPage() - 1) * pageSize;
-
     return currencies().slice(startIndex, startIndex + pageSize);
   };
 
@@ -119,21 +121,21 @@ export default function CurrenciesList() {
             ))}
           </tbody>
         </table>
-        <div class="w-full mt-4 flex justify-between space-x-2">
+        <div class="w-full mt-8 flex justify-between space-x-2">
           <button
-            class="px-3 py-1 bg-gray-200 rounded"
+            class="px-3 py-1 bg-gray-200 rounded min-w-[80px]"
             onClick={() => setCurrentPage(currentPage() - 1)}
             disabled={currentPage() === 1}
           >
             Prev
           </button>
           <span>
-            Page {currentPage()} of {totalPages}
+            Page {currentPage()} of {totalPages()}
           </span>
           <button
-            class="px-3 py-1 bg-gray-200 rounded"
+            class="px-3 py-1 bg-gray-200 rounded min-w-[80px]"
             onClick={() => setCurrentPage(currentPage() + 1)}
-            disabled={currentPage() === totalPages}
+            disabled={currentPage() === totalPages()}
           >
             Next
           </button>
