@@ -9,7 +9,7 @@ import {
 } from "../../utils/auth";
 import Swal from "sweetalert2";
 
-export default function SalesContractList() {
+export default function PackingOrderList() {
   const [salesContracts, setSalesContracts] = createSignal([]);
   const navigate = useNavigate();
   const tokUser = getUser();

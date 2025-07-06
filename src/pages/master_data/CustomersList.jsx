@@ -112,9 +112,9 @@ export default function CustomerList() {
             </tr>
           </thead>
           <tbody>
-            {paginatedData().map((cust) => (
+            {paginatedData().map((cust, index) => (
               <tr class="border-b" key={cust.id}>
-                <td class="py-2 px-4">{cust.id}</td>
+                <td class="py-2 px-4">{index + 1}</td>
                 <td class="py-2 px-4">{cust.alias}</td>
                 <td class="py-2 px-4">{cust.nama}</td>
                 <td class="py-2 px-4">{cust.customer_type_id}</td>

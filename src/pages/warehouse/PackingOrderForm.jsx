@@ -18,7 +18,7 @@ import { Trash2 } from "lucide-solid";
 // import { createSC, updateSC, getSC } from "../../utils/auth";
 // --> ganti sesuai endpoint lu
 
-export default function SalesContractForm() {
+export default function PackingOrderForm() {
   const [params] = useSearchParams();
   const isEdit = !!params.id;
   const navigate = useNavigate();

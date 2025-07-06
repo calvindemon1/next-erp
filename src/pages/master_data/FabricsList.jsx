@@ -94,9 +94,9 @@ export default function FabricsList() {
             </tr>
           </thead>
           <tbody>
-            {paginatedData().map((fabric) => (
+            {paginatedData().map((fabric, index) => (
               <tr class="border-b" key={fabric.id}>
-                <td class="py-2 px-4">{fabric.id}</td>
+                <td class="py-2 px-4">{index + 1}</td>
                 <td class="py-2 px-4">{fabric.corak}</td>
                 <td class="py-2 px-4">{fabric.konstruksi}</td>
                 <td class="py-2 px-4 space-x-2">

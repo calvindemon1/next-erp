@@ -108,9 +108,9 @@ export default function UsersList() {
           </tr>
         </thead>
         <tbody>
-          {paginatedData().map((user) => (
+          {paginatedData().map((user, index) => (
             <tr class="border-b" key={user.id}>
-              <td class="py-2 px-4">{user.id}</td>
+              <td class="py-2 px-4">{index + 1}</td>
               <td class="py-2 px-4 capitalize">{user.name}</td>
               <td class="py-2 px-4 capitalize">{user.username}</td>
               <td class="py-2 px-4 capitalize">{user.role_name}</td>

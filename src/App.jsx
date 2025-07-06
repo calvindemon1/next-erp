@@ -27,6 +27,8 @@ import CurrenciesList from "./pages/master_data/CurrenciesList";
 import CurrencyForm from "./pages/master_data/CurrencyForm";
 import SalesOrderList from "./pages/transactions/SalesOrderList";
 import SalesOrderForm from "./pages/transactions/SalesOrderForm";
+import PackingOrderList from "./pages/warehouse/PackingOrderList";
+import PackingOrderForm from "./pages/warehouse/PackingOrderForm";
 
 function App() {
   return (
@@ -50,6 +52,11 @@ function App() {
       <Route path="/salesorder" component={SalesOrderList} />
       <Route path="/salesorder/form" component={SalesOrderForm} />
       {/* TRANSACTIONS */}
+
+      {/* WAREHOUSE */}
+      <Route path="/packingorder" component={PackingOrderList} />
+      <Route path="/packingorder/form" component={PackingOrderForm} />
+      {/* WAREHOUSE */}
 
       {/* MASTER DATA */}
       <Route path="/suppliers" component={SuppliersList} />

@@ -9,6 +9,7 @@ export default function MainLayout(props) {
   const location = useLocation();
   const [isOpen, setIsOpen] = createSignal(false);
   const [isTransactionOpen, setTransactionIsOpen] = createSignal(false);
+  const [isWarehouseIsOpen, setWarehouseIsOpen] = createSignal(false);
 
   createEffect(() => {
     const interval = setInterval(async () => {
@@ -63,6 +64,10 @@ export default function MainLayout(props) {
         return "transaction";
       }
 
+      if (["/packingorder"].some((p) => pathname.startsWith(p))) {
+        return "warehouse";
+      }
+
       return "unknown";
     }
 
@@ -72,6 +77,9 @@ export default function MainLayout(props) {
         break;
       case "transaction":
         setTransactionIsOpen(true);
+        break;
+      case "master":
+        setWarehouseIsOpen(true);
         break;
       default:
       // logic unknown
@@ -193,6 +201,39 @@ export default function MainLayout(props) {
                     }`}
                   >
                     Sales Order
+                  </A>
+                </li>
+              </ul>
+            </li>
+            <li>
+              <button
+                class="w-full text-left p-4 font-semibold text-gray-400 uppercase hover:bg-gray-700 flex justify-between items-center"
+                onClick={() => setWarehouseIsOpen(!isWarehouseIsOpen())}
+              >
+                Gudang
+                <span class="text-xs">{isWarehouseIsOpen() ? "▲" : "▼"}</span>
+              </button>
+            </li>
+
+            {/* Submenu with smooth transition */}
+            <li
+              class={`transition-all duration-300 ease-in-out overflow-hidden ${
+                isWarehouseIsOpen()
+                  ? "max-h-fit opacity-100"
+                  : "max-h-0 opacity-0"
+              }`}
+            >
+              <ul>
+                <li>
+                  <A
+                    href="/packingorder"
+                    class={`block pl-8 pr-4 py-2 hover:bg-gray-700 ${
+                      location.pathname === "/packingorder"
+                        ? "bg-gray-700 text-white"
+                        : ""
+                    }`}
+                  >
+                    Packing Order
                   </A>
                 </li>
               </ul>

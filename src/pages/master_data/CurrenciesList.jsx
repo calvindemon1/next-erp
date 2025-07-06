@@ -99,9 +99,9 @@ export default function CurrenciesList() {
             </tr>
           </thead>
           <tbody>
-            {paginatedData().map((curr) => (
+            {paginatedData().map((curr, index) => (
               <tr class="border-b" key={curr.id}>
-                <td class="py-2 px-4">{curr.id}</td>
+                <td class="py-2 px-4">{index + 1}</td>
                 <td class="py-2 px-4">{curr.name}</td>
                 <td class="py-2 px-4 space-x-2">
                   <button

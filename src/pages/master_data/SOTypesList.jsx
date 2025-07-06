@@ -95,9 +95,9 @@ export default function SOTypesList() {
             </tr>
           </thead>
           <tbody>
-            {paginatedData().map((soType) => (
+            {paginatedData().map((soType, index) => (
               <tr class="border-b" key={soType.id}>
-                <td class="py-2 px-4">{soType.id}</td>
+                <td class="py-2 px-4">{index + 1}</td>
                 <td class="py-2 px-4">{soType.jenis}</td>
                 <td class="py-2 px-4 space-x-2">
                   <button

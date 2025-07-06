@@ -100,9 +100,9 @@ export default function CustomerTypesList() {
             </tr>
           </thead>
           <tbody>
-            {paginatedData().map((custType) => (
+            {paginatedData().map((custType, index) => (
               <tr class="border-b" key={custType.id}>
-                <td class="py-2 px-4">{custType.id}</td>
+                <td class="py-2 px-4">{index + 1}</td>
                 <td class="py-2 px-4">{custType.jenis}</td>
                 <td class="py-2 px-4 space-x-2">
                   <button
