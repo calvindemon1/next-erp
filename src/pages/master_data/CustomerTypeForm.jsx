@@ -24,7 +24,7 @@ export default function CustomerTypeForm() {
       const customerType = await getCustomerType(params.id, user?.token);
       setForm({
         id: params.id,
-        jenis: customerType.jenis,
+        jenis: customerType.data.jenis,
       });
     }
   });

@@ -1,14 +1,19 @@
 import { createSignal, onMount } from "solid-js";
 import { useNavigate, useSearchParams } from "@solidjs/router";
 import MainLayout from "../../layouts/MainLayout";
-import { createColor, getColor, getUser, updateDataColor } from "../../utils/auth";
+import {
+  createColor,
+  getColor,
+  getUser,
+  updateDataColor,
+} from "../../utils/auth";
 import Swal from "sweetalert2";
 
 export default function ColorForm() {
   const [form, setForm] = createSignal({
     id: "",
     kode: "",
-    jenis: "",
+    deskripsi: "",
   });
   const [params] = useSearchParams();
   const isEdit = !!params.id;
@@ -21,7 +26,7 @@ export default function ColorForm() {
       setForm({
         id: params.id,
         kode: colorData.kode,
-        jenis: colorData.jenis,
+        deskripsi: colorData.deskripsi,
       });
     }
   });
@@ -35,10 +40,10 @@ export default function ColorForm() {
           user?.token,
           params.id,
           form().kode,
-          form().jenis
+          form().deskripsi
         );
       } else {
-        await createColor(user?.token, form().kode, form().jenis);
+        await createColor(user?.token, form().kode, form().deskripsi);
       }
 
       Swal.fire({
@@ -80,13 +85,12 @@ export default function ColorForm() {
           />
         </div>
         <div>
-          <label class="block mb-1 font-medium">Jenis</label>
+          <label class="block mb-1 font-medium">deskripsi</label>
           <input
             type="text"
             class="w-full border p-2 rounded"
-            value={form().jenis}
-            onInput={(e) => setForm({ ...form(), jenis: e.target.value })}
-            required
+            value={form().deskripsi}
+            onInput={(e) => setForm({ ...form(), deskripsi: e.target.value })}
           />
         </div>
         <button class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">

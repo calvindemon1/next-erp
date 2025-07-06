@@ -100,10 +100,9 @@ export default function CustomerList() {
           <thead>
             <tr class="bg-gray-200 text-left text-sm uppercase text-gray-700">
               <th class="py-2 px-4">ID</th>
-              <th class="py-2 px-2">Kode Customer</th>
               <th class="py-2 px-2">Alias</th>
               <th class="py-2 px-2">Nama</th>
-              <th class="py-2 px-2">Tipe Customer</th>
+              <th class="py-2 px-2">Tipe</th>
               <th class="py-2 px-4">No Telp</th>
               <th class="py-2 px-4">No HP</th>
               <th class="py-2 px-4">Alamat</th>
@@ -116,7 +115,6 @@ export default function CustomerList() {
             {paginatedData().map((cust) => (
               <tr class="border-b" key={cust.id}>
                 <td class="py-2 px-4">{cust.id}</td>
-                <td class="py-2 px-4">{cust.kode}</td>
                 <td class="py-2 px-4">{cust.alias}</td>
                 <td class="py-2 px-4">{cust.nama}</td>
                 <td class="py-2 px-4">{cust.customer_type_id}</td>

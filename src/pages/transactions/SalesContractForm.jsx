@@ -1,12 +1,13 @@
-import { createSignal, For, onMount } from "solid-js";
+import { createEffect, createSignal, For, onMount } from "solid-js";
 import { useNavigate, useSearchParams } from "@solidjs/router";
 import MainLayout from "../../layouts/MainLayout";
 import Swal from "sweetalert2";
 import {
   createSalesContract,
+  getAllColors,
   getAllCurrenciess,
   getAllCustomers,
-  getCustomer,
+  getAllFabrics,
   getSalesContracts,
   getUser,
   updateDataSalesContract,
@@ -24,6 +25,30 @@ export default function SalesContractForm() {
   const user = getUser();
   const [currencyList, setCurrencyList] = createSignal([]);
   const [customersList, setCustomersList] = createSignal([]);
+  const selectedCurrency = () =>
+    currencyList().find((c) => c.id == form().currency_id);
+  const [selectedContractDetail, setSelectedContractDetail] = createSignal([]);
+  const [fabricOptions, setFabricOptions] = createSignal([]);
+  const [colorOptions, setColorOptions] = createSignal([]);
+
+  createEffect(async () => {
+    const fabrics = await getAllFabrics(user?.token);
+    const colors = await getAllColors(user?.token);
+
+    setFabricOptions(
+      fabrics?.kain.map((f) => ({
+        value: f.id,
+        label: f.kode + " | " + f.jenis,
+      })) || ["Pilih"]
+    );
+
+    setColorOptions(
+      colors?.warna.map((c) => ({
+        value: c.id,
+        label: c.kode + " | " + c.jenis,
+      })) || ["Pilih"]
+    );
+  });
 
   const [form, setForm] = createSignal({
     no_pesan: "",
@@ -108,35 +133,28 @@ export default function SalesContractForm() {
     return onlyNumbers ? parseInt(onlyNumbers) : "";
   };
 
-  const reindexItems = (items) =>
-    items.map((item, i) => ({
-      ...item,
-      id: i + 1,
-    }));
+  let itemIdCounter = form().items?.length || 0;
 
   const addItem = () => {
     setForm((prev) => {
-      const newItems = [
-        ...prev.items,
-        {
-          id: 0, // temporary
-          kain_id: null,
-          warna_id: null,
-          keterangan: "",
-          grade: "",
-          lebar: null,
-          gramasi: null,
-          meter_total: null,
-          yard_total: null,
-          kilogram_total: null,
-          harga: null,
-          status: "",
-        },
-      ];
+      const newItem = {
+        id: ++itemIdCounter, // unique id increment
+        kain_id: null,
+        warna_id: null,
+        keterangan: "",
+        grade: "",
+        lebar: null,
+        gramasi: null,
+        meter_total: null,
+        yard_total: null,
+        kilogram_total: null,
+        harga: null,
+        status: "",
+      };
 
       return {
         ...prev,
-        items: reindexItems(newItems),
+        items: [...prev.items, newItem],
       };
     });
   };
@@ -147,9 +165,28 @@ export default function SalesContractForm() {
       newItems.splice(index, 1);
       return {
         ...prev,
-        items: reindexItems(newItems),
+        items: newItems,
       };
     });
+  };
+
+  const getDropdownOptions = (field) => {
+    if (field === "kain_id") {
+      return fabricOptions();
+    } else if (field === "warna_id") {
+      return colorOptions();
+    } else if (field === "grade") {
+      const uniqueGrades = [
+        ...new Set(selectedContractDetail()?.items?.map((itm) => itm.grade)),
+      ].filter(Boolean);
+
+      return uniqueGrades.map((grade) => ({
+        value: grade,
+        label: grade,
+      }));
+    } else {
+      return [];
+    }
   };
 
   const handleItemChange = (index, field, value) => {
@@ -248,7 +285,7 @@ export default function SalesContractForm() {
       <form class="flex flex-col space-y-4 " onSubmit={handleSubmit}>
         <div class="grid grid-cols-3 gap-4">
           <div>
-            <label class="block mb-1 font-medium">No Pesan</label>
+            <label class="block mb-1 font-medium">No Sales Contract</label>
             <input
               class="w-full border p-2 rounded"
               value={form().no_pesan}
@@ -262,37 +299,32 @@ export default function SalesContractForm() {
               class="w-full border p-2 rounded"
               value={form().po_cust}
               onInput={(e) => setForm({ ...form(), po_cust: e.target.value })}
-              required
             />
           </div>
           <div>
-            <label class="block mb-1 font-medium">Tanggal</label>
-            <input
-              type="date"
-              class="w-full border p-2 rounded"
-              value={form().tanggal}
-              onInput={(e) => setForm({ ...form(), tanggal: e.target.value })}
-              required
-            />
-          </div>
-        </div>
-        <div class="grid grid-cols-3 gap-4">
-          <div>
-            <label class="block mb-1 font-medium">Customer ID</label>
+            <label class="block mb-1 font-medium">Customer</label>
             <SearchableCustomerSelect
               customersList={customersList}
               form={form}
               setForm={setForm}
             />
           </div>
+        </div>
+        <div class="grid grid-cols-3 gap-4">
           <div>
-            <label class="block mb-1 font-medium">Currency ID</label>
+            <label class="block mb-1 font-medium">Currency</label>
             <select
               class="w-full border p-2 rounded"
               value={form().currency_id}
-              onChange={(e) =>
-                setForm({ ...form(), currency_id: e.target.value })
-              }
+              onChange={(e) => {
+                const currencyId = e.target.value;
+                const curr = currencyList().find((c) => c.id == currencyId);
+                setForm({
+                  ...form(),
+                  currency_id: currencyId,
+                  kurs: curr?.name === "IDR" ? 0 : form().kurs,
+                });
+              }}
               required
             >
               <option value="" disabled hidden={!!form().currency_id}>
@@ -303,28 +335,30 @@ export default function SalesContractForm() {
               ))}
             </select>
           </div>
-          <div>
-            <label class="block mb-1 font-medium">Kurs</label>
-            <div class="flex">
-              <span class="inline-flex items-center px-3 border border-r-0 border-black bg-gray-50 rounded-l">
-                IDR
-              </span>
-              <input
-                type="text"
-                class="w-full border p-2 rounded rounded-l-none"
-                value={formatIDR(form().kurs)}
-                onInput={(e) =>
-                  setForm({
-                    ...form(),
-                    kurs: parseIDR(e.target.value),
-                  })
-                }
-                required
-              />
+
+          {/* Kurs muncul kalau currency ≠ IDR */}
+          {selectedCurrency()?.name !== "IDR" && (
+            <div>
+              <label class="block mb-1 font-medium">Kurs</label>
+              <div class="flex">
+                <span class="inline-flex items-center px-3 border border-r-0 border-black bg-gray-50 rounded-l">
+                  IDR
+                </span>
+                <input
+                  type="text"
+                  class="w-full border p-2 rounded rounded-l-none"
+                  value={formatIDR(form().kurs)}
+                  onInput={(e) =>
+                    setForm({
+                      ...form(),
+                      kurs: parseIDR(e.target.value),
+                    })
+                  }
+                  required
+                />
+              </div>
             </div>
-          </div>
-        </div>
-        <div class="grid grid-cols-3 gap-4">
+          )}
           <div>
             <label class="block mb-1 font-medium">Termin</label>
             <div class="flex">
@@ -340,6 +374,8 @@ export default function SalesContractForm() {
               </span>
             </div>
           </div>
+        </div>
+        <div class="grid grid-cols-3 gap-4">
           <div>
             <label class="block mb-1 font-medium">PPN (%)</label>
             <input
@@ -355,15 +391,24 @@ export default function SalesContractForm() {
           </div>
           <div>
             <label class="block mb-1 font-medium">Satuan Unit</label>
-            <input
-              type="number"
+            <select
               class="w-full border p-2 rounded"
               value={form().satuan_unit}
-              onInput={(e) =>
+              onChange={(e) =>
                 setForm({ ...form(), satuan_unit: e.target.value })
               }
               required
-            />
+            >
+              <option value="" disabled hidden={!!form().satuan_unit}>
+                Pilih Tipe Customer
+              </option>
+              <option value="1">Yard</option>
+              <option value="2">Meter</option>
+              <option value="3">Pcs</option>
+              {/* {customerTypes().map((type) => (
+                <option value={type.id}>{type.jenis}</option>
+              ))} */}
+            </select>
           </div>
         </div>
         <div>
@@ -378,74 +423,94 @@ export default function SalesContractForm() {
 
         {/* ITEMS */}
         <h2 class="text-lg font-bold mt-6 mb-2">Items</h2>
-        <For each={form().items}>
-          {(item, index) => {
-            const i = index(); // pastikan index dipanggil sebagai function
 
-            return (
-              <div class="border p-4 rounded mb-4 bg-gray-200" key={item.id}>
-                <div class="flex justify-between mb-2">
-                  <span class="font-semibold">Item {i + 1}</span>
-                  <button
-                    type="button"
-                    class="text-red-600 hover:text-red-800 text-sm"
-                    onClick={() => removeItem(i)}
-                  >
-                    <Trash2 size={22} />
-                  </button>
-                </div>
-
-                <div class="grid grid-cols-2 gap-2">
-                  {[
-                    { label: "Kain ID", field: "kain_id", type: "number" },
-                    { label: "Warna ID", field: "warna_id", type: "number" },
-                    { label: "Keterangan", field: "keterangan", type: "text" },
-                    { label: "Grade", field: "grade", type: "text" },
-                    {
-                      label: "Lebar",
-                      field: "lebar",
-                      type: "number",
-                      step: "0.01",
-                    },
-                    {
-                      label: "Gramasi",
-                      field: "gramasi",
-                      type: "number",
-                      step: "0.01",
-                    },
-                    {
-                      label: "Meter Total",
-                      field: "meter_total",
-                      type: "number",
-                      step: "0.01",
-                    },
-                    {
-                      label: "Yard Total",
-                      field: "yard_total",
-                      type: "number",
-                      step: "0.01",
-                    },
-                    {
-                      label: "Kilogram Total",
-                      field: "kilogram_total",
-                      type: "number",
-                      step: "0.01",
-                    },
-                    { label: "Harga", field: "harga", type: "number" },
-                    { label: "Status", field: "status", type: "text" },
-                  ].map(({ label, field, type, step }) => (
-                    <div>
-                      <label
-                        class="block mb-1 text-sm text-gray-700"
-                        for={`item-${item.id}-${field}`}
+        <table class="min-w-full border border-gray-300">
+          <thead class="bg-gray-100">
+            <tr>
+              {[
+                { label: "Kain", field: "kain_id" },
+                { label: "Warna", field: "warna_id" },
+                { label: "Grade", field: "grade" },
+                { label: "Lebar", field: "lebar" },
+                { label: "Gramasi", field: "gramasi" },
+                { label: "Meter Total", field: "meter_total" },
+                { label: "Yard Total", field: "yard_total" },
+                { label: "Kilogram Total", field: "kilogram_total" },
+                { label: "Harga", field: "harga" },
+              ].map(({ label }) => (
+                <th class="border px-2 py-1 text-sm text-gray-700 text-left">
+                  {label}
+                </th>
+              ))}
+              <th class="border px-2 py-1"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {form().items.map((item, i) => (
+              <tr key={item.id}>
+                {[
+                  { label: "Kain", field: "kain_id", type: "number" },
+                  { label: "Warna", field: "warna_id", type: "number" },
+                  { label: "Grade", field: "grade", type: "text" },
+                  {
+                    label: "Lebar",
+                    field: "lebar",
+                    type: "number",
+                    step: "0.01",
+                  },
+                  {
+                    label: "Gramasi",
+                    field: "gramasi",
+                    type: "number",
+                    step: "0.01",
+                  },
+                  {
+                    label: "Meter Total",
+                    field: "meter_total",
+                    type: "number",
+                    step: "0.01",
+                  },
+                  {
+                    label: "Yard Total",
+                    field: "yard_total",
+                    type: "number",
+                    step: "0.01",
+                  },
+                  {
+                    label: "Kilogram Total",
+                    field: "kilogram_total",
+                    type: "number",
+                    step: "0.01",
+                  },
+                  { label: "Harga", field: "harga", type: "number" },
+                ].map(({ label, field, type, step }) => (
+                  <td class="border px-2 py-1">
+                    {["kain_id", "warna_id", "grade"].includes(field) ? (
+                      <select
+                        class="border p-1 rounded w-full text-sm"
+                        value={item[field] ?? ""}
+                        onChange={(e) =>
+                          handleItemChange(
+                            i,
+                            field,
+                            field === "grade"
+                              ? e.target.value
+                              : Number(e.target.value)
+                          )
+                        }
+                        required
                       >
-                        {label}
-                      </label>
+                        <option value="">Pilih Item</option>
+                        {getDropdownOptions(field).map((opt) => (
+                          <option value={opt.value}>{opt.label}</option>
+                        ))}
+                      </select>
+                    ) : (
                       <input
-                        placeholder={label}
-                        type="text"
+                        type={type}
                         step={step}
-                        class="border p-2 rounded w-full"
+                        placeholder={label}
+                        class="border p-1 rounded w-full text-sm"
                         value={
                           field === "harga"
                             ? formatIDR(item[field])
@@ -460,28 +525,33 @@ export default function SalesContractForm() {
                               : e.target.value
                           )
                         }
-                        name={`item-${item.id}-${field}`}
-                        id={`item-${item.id}-${field}`}
-                        required={
-                          ["keterangan", "status", "grade"].includes(field) ||
-                          type === "number"
-                        }
                       />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            );
-          }}
-        </For>
+                    )}
+                  </td>
+                ))}
+                <td class="border px-2 py-1">
+                  <button
+                    type="button"
+                    class="text-red-600 hover:text-red-800 text-xs"
+                    onClick={() => removeItem(i)}
+                  >
+                    Hapus
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
 
-        <button
-          type="button"
-          class="bg-green-600 text-white px-3 py-2 rounded hover:bg-green-700"
-          onClick={addItem}
-        >
-          + Tambah Item
-        </button>
+        <div class="flex justify-end mt-4">
+          <button
+            type="button"
+            class="bg-green-600 text-white px-3 py-2 rounded hover:bg-green-700"
+            onClick={addItem}
+          >
+            + Tambah Item
+          </button>
+        </div>
 
         <div class="mt-6">
           <button

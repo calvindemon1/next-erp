@@ -3,17 +3,20 @@ import { useNavigate, useSearchParams } from "@solidjs/router";
 import MainLayout from "../../layouts/MainLayout";
 import {
   createCustomer,
+  getAllCustomerTypes,
   getCustomer,
+  getCustomerType,
   getUser,
   updateDataCustomer,
 } from "../../utils/auth";
 import Swal from "sweetalert2";
 
 export default function SuppliersListForm() {
+  const [customerTypes, setCustomerTypes] = createSignal([]);
   const [form, setForm] = createSignal({
     id: "",
     kode: "",
-    alias: "",
+    npwp: "",
     nama: "",
     customer_type_id: "",
     no_telp: "",
@@ -28,19 +31,22 @@ export default function SuppliersListForm() {
   const user = getUser();
 
   onMount(async () => {
+    const customerTypesData = await getAllCustomerTypes(user?.token);
+    setCustomerTypes(customerTypesData.data);
+
     if (isEdit) {
       const customerData = await getCustomer(params.id, user?.token);
       setForm({
         id: params.id,
-        kode: customerData.kode,
-        alias: customerData.alias,
-        nama: customerData.nama,
-        customer_type_id: customerData.customer_type_id,
-        no_telp: customerData.no_telp,
-        no_hp: customerData.no_hp,
-        alamat: customerData.alamat,
-        termin: customerData.termin,
-        limit_kredit: customerData.limit_kredit,
+        kode: customerData.customers.kode,
+        npwp: customerData.customers.npwp,
+        nama: customerData.customers.nama,
+        customer_type_id: customerData.customers.customer_type_id,
+        no_telp: customerData.customers.no_telp,
+        no_hp: customerData.customers.no_hp,
+        alamat: customerData.customers.alamat,
+        termin: customerData.customers.termin,
+        limit_kredit: customerData.customers.limit_kredit,
       });
     }
   });
@@ -54,7 +60,7 @@ export default function SuppliersListForm() {
           user?.token,
           params.id,
           form().kode,
-          form().alias,
+          form().npwp,
           form().nama,
           form().customer_type_id,
           form().no_telp,
@@ -67,7 +73,7 @@ export default function SuppliersListForm() {
         await createCustomer(
           user?.token,
           form().kode,
-          form().alias,
+          form().npwp,
           form().nama,
           form().customer_type_id,
           form().no_telp,
@@ -117,12 +123,12 @@ export default function SuppliersListForm() {
           />
         </div>
         <div>
-          <label class="block mb-1 font-medium">Alias</label>
+          <label class="block mb-1 font-medium">NPWP</label>
           <input
             type="text"
             class="w-full border p-2 rounded"
-            value={form().alias}
-            onInput={(e) => setForm({ ...form(), alias: e.target.value })}
+            value={form().npwp}
+            onInput={(e) => setForm({ ...form(), npwp: e.target.value })}
             required
           />
         </div>
@@ -144,11 +150,14 @@ export default function SuppliersListForm() {
             onChange={(e) =>
               setForm({ ...form(), customer_type_id: e.target.value })
             }
+            required
           >
-            <option value="1">1</option>
-            <option value="2">2</option>
-            <option value="3">3</option>
-            <option value="4">4</option>
+            <option value="" disabled hidden={!!form().customer_type_id}>
+              Pilih Tipe Customer
+            </option>
+            {customerTypes().map((type) => (
+              <option value={type.id}>{type.jenis}</option>
+            ))}
           </select>
         </div>
         <div>
@@ -194,12 +203,24 @@ export default function SuppliersListForm() {
         <div>
           <label class="block mb-1 font-medium">Limit Kredit</label>
           <input
-            type="number "
+            type="text"
             class="w-full border p-2 rounded"
-            value={form().limit_kredit}
-            onInput={(e) =>
-              setForm({ ...form(), limit_kredit: e.target.value })
+            value={
+              form().limit_kredit !== null && form().limit_kredit !== undefined
+                ? new Intl.NumberFormat("id-ID", {
+                    style: "currency",
+                    currency: "IDR",
+                    minimumFractionDigits: 0,
+                  }).format(form().limit_kredit)
+                : ""
             }
+            onInput={(e) => {
+              const raw = e.target.value.replace(/[^\d]/g, ""); // ambil angka aja
+              setForm({
+                ...form(),
+                limit_kredit: raw ? parseInt(raw) : null,
+              });
+            }}
             required
           />
         </div>

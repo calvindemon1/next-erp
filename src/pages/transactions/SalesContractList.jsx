@@ -71,6 +71,8 @@ export default function SalesContractList() {
   const handleGetAllSalesContracts = async (tok) => {
     const getDataSalesContracts = await getAllSalesContracts(tok);
 
+    console.log(getDataSalesContracts);
+
     if (getDataSalesContracts.status === 200) {
       const sortedData = getDataSalesContracts.contracts.sort(
         (a, b) => a.id - b.id
@@ -81,15 +83,6 @@ export default function SalesContractList() {
 
   function formatTanggalIndo(tanggalString) {
     const tanggal = new Date(tanggalString);
-    const hariIndo = [
-      "Minggu",
-      "Senin",
-      "Selasa",
-      "Rabu",
-      "Kamis",
-      "Jumat",
-      "Sabtu",
-    ];
     const bulanIndo = [
       "Januari",
       "Februari",
@@ -105,15 +98,11 @@ export default function SalesContractList() {
       "Desember",
     ];
 
-    const hari = hariIndo[tanggal.getDay()];
     const tanggalNum = tanggal.getDate();
     const bulan = bulanIndo[tanggal.getMonth()];
     const tahun = tanggal.getFullYear();
 
-    const jam = tanggal.getHours().toString().padStart(2, "0");
-    const menit = tanggal.getMinutes().toString().padStart(2, "0");
-
-    return `${hari}, ${tanggalNum} ${bulan} ${tahun} pk ${jam}:${menit}`;
+    return `${tanggalNum} ${bulan} ${tahun}`;
   }
 
   createEffect(() => {
@@ -141,23 +130,17 @@ export default function SalesContractList() {
               <th class="py-2 px-4">ID</th>
               <th class="py-2 px-2">No Pesanan</th>
               <th class="py-2 px-2">Tanggal</th>
-              <th class="py-2 px-2">PO Customer</th>
               <th class="py-2 px-2">Nama Customer</th>
-              <th class="py-2 px-4">Dibuat Oleh</th>
-              <th class="py-2 px-4">Status Keseluruhan</th>
               <th class="py-2 px-4">Aksi</th>
             </tr>
           </thead>
           <tbody>
-            {paginatedData().map((sc) => (
+            {paginatedData().map((sc, index) => (
               <tr class="border-b" key={sc.id}>
-                <td class="py-2 px-4">{sc.id}</td>
+                <td class="py-2 px-4">{index + 1}</td>
                 <td class="py-2 px-4">{sc.no_pesan}</td>
-                <td class="py-2 px-4">{formatTanggalIndo(sc.tanggal)}</td>
-                <td class="py-2 px-4">{sc.po_cust}</td>
+                <td class="py-2 px-4">{formatTanggalIndo(sc.created_at)}</td>
                 <td class="py-2 px-4">{sc.customer_name}</td>
-                <td class="py-2 px-4">{sc.created_by_name}</td>
-                <td class="py-2 px-4">{sc.overall_status}</td>
                 <td class="py-2 px-4 space-x-2">
                   <button
                     class="text-blue-600 hover:underline"

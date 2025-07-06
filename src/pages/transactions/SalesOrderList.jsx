@@ -143,9 +143,9 @@ export default function SalesOrderList() {
             </tr>
           </thead>
           <tbody>
-            {salesOrders().map((so) => (
+            {paginatedData().map((so, index) => (
               <tr class="border-b" key={so.id}>
-                <td class="py-2 px-4">{so.id}</td>
+                <td class="py-2 px-4">{index + 1}</td>
                 <td class="py-2 px-4">{so.no_so}</td>
                 <td class="py-2 px-4">{formatTanggalIndo(so.tanggal)}</td>
                 <td class="py-2 px-4">{formatTanggalIndo(so.delivery_date)}</td>
