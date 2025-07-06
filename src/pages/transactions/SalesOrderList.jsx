@@ -1,4 +1,4 @@
-import { createEffect, createSignal } from "solid-js";
+import { createEffect, createMemo, createSignal } from "solid-js";
 import { useNavigate } from "@solidjs/router";
 import MainLayout from "../../layouts/MainLayout";
 import {
@@ -9,10 +9,20 @@ import {
 import Swal from "sweetalert2";
 
 export default function SalesOrderList() {
+  const [salesOrders, setSalesOrders] = createSignal([]);
   const navigate = useNavigate();
   const tokUser = getUser();
+  const [currentPage, setCurrentPage] = createSignal(1);
+  const pageSize = 10;
 
-  const [salesOrders, setSalesOrders] = createSignal([]);
+  const totalPages = createMemo(() => {
+    return Math.max(1, Math.ceil(salesOrders().length / pageSize));
+  });
+
+  const paginatedData = () => {
+    const startIndex = (currentPage() - 1) * pageSize;
+    return salesOrders().slice(startIndex, startIndex + pageSize);
+  };
 
   const handleDelete = async (id) => {
     const result = await Swal.fire({
@@ -167,6 +177,25 @@ export default function SalesOrderList() {
             ))}
           </tbody>
         </table>
+        <div class="w-full mt-8 flex justify-between space-x-2">
+          <button
+            class="px-3 py-1 bg-gray-200 rounded min-w-[80px]"
+            onClick={() => setCurrentPage(currentPage() - 1)}
+            disabled={currentPage() === 1}
+          >
+            Prev
+          </button>
+          <span>
+            Page {currentPage()} of {totalPages()}
+          </span>
+          <button
+            class="px-3 py-1 bg-gray-200 rounded min-w-[80px]"
+            onClick={() => setCurrentPage(currentPage() + 1)}
+            disabled={currentPage() === totalPages()}
+          >
+            Next
+          </button>
+        </div>
       </div>
     </MainLayout>
   );

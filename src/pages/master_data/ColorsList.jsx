@@ -89,8 +89,8 @@ export default function ColorsList() {
           <thead>
             <tr class="bg-gray-200 text-left text-sm uppercase text-gray-700">
               <th class="py-2 px-4">ID</th>
-              <th class="py-2 px-2">Kode Warna</th>
-              <th class="py-2 px-2">Jenis</th>
+              <th class="py-2 px-2">Kode</th>
+              <th class="py-2 px-2">Deskripsi</th>
               <th class="py-2 px-2">Aksi</th>
             </tr>
           </thead>

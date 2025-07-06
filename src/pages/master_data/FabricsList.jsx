@@ -88,8 +88,8 @@ export default function FabricsList() {
           <thead>
             <tr class="bg-gray-200 text-left text-sm uppercase text-gray-700">
               <th class="py-2 px-4">ID</th>
-              <th class="py-2 px-2">Kode Kain</th>
-              <th class="py-2 px-2">Jenis</th>
+              <th class="py-2 px-2">Corak Kain</th>
+              <th class="py-2 px-2">Konstruksi</th>
               <th class="py-2 px-2">Aksi</th>
             </tr>
           </thead>

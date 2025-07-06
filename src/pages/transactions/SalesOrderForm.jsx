@@ -1,12 +1,12 @@
-import { createSignal, For, onMount } from "solid-js";
+import { createEffect, createSignal, For, onMount } from "solid-js";
 import { useNavigate, useSearchParams } from "@solidjs/router";
 import MainLayout from "../../layouts/MainLayout";
 import Swal from "sweetalert2";
 import {
   createSalesOrder,
-  getAllCurrenciess,
-  getAllCustomers,
   getAllSalesContracts,
+  getAllSOTypes,
+  getSalesContracts,
   getSalesOrders,
   getUser,
   updateDataSalesOrder,
@@ -23,11 +23,8 @@ export default function SalesOrderForm() {
   const navigate = useNavigate();
   const user = getUser();
   const [salesContracts, setSalesContracts] = createSignal([]);
-  const [jenisSoList, setJenisSoList] = createSignal([
-    { jenis_so_id: null, name: "" },
-    { jenis_so_id: 1, name: "Domestik" },
-    { jenis_so_id: 2, name: "Ekspor" },
-  ]);
+  const [jenisSoList, setJenisSoList] = createSignal([]);
+  const [selectedContractDetail, setSelectedContractDetail] = createSignal([]);
 
   const [form, setForm] = createSignal({
     no_so: "",
@@ -42,6 +39,9 @@ export default function SalesOrderForm() {
   onMount(async () => {
     const getSalesContracts = await getAllSalesContracts(user?.token);
     setSalesContracts(getSalesContracts.contracts);
+
+    const getJenisSO = await getAllSOTypes(user?.token);
+    setJenisSoList(getJenisSO.data);
 
     if (isEdit) {
       const res = await getSalesOrders(params.id, user?.token);
@@ -82,6 +82,17 @@ export default function SalesOrderForm() {
       // });
     }
   });
+
+  createEffect(() => {
+    if (form().sales_contract_id) {
+      fetchSalesContractDetail(form().sales_contract_id);
+    }
+  });
+
+  const fetchSalesContractDetail = async (id) => {
+    const res = await getSalesContracts(id, user.token);
+    setSelectedContractDetail(res.response);
+  };
 
   const formatIDR = (val) => {
     if (val === null || val === "") return "";
@@ -257,11 +268,11 @@ export default function SalesOrderForm() {
               }
               required
             >
-              <option value="" disabled hidden={!!form().jenis_so_id}>
+              <option value="" disabled hidden={!!form().id}>
                 Pilih Jenis Sales Order
               </option>
               {jenisSoList().map((curr) => (
-                <option value={curr.jenis_so_id}>{curr.name}</option>
+                <option value={curr.id}>{curr.jenis}</option>
               ))}
             </select>
           </div>
@@ -385,32 +396,51 @@ export default function SalesOrderForm() {
                       >
                         {label}
                       </label>
-                      <input
-                        placeholder={label}
-                        type="text"
-                        step={step}
-                        class="border p-2 rounded w-full"
-                        value={
-                          field === "harga"
-                            ? formatIDR(item[field])
-                            : item[field] ?? ""
-                        }
-                        onInput={(e) =>
-                          handleItemChange(
-                            i,
-                            field,
+                      {field === "sales_contract_item_id" ? (
+                        <select
+                          class="border p-2 rounded w-full"
+                          value={item[field]}
+                          onChange={(e) =>
+                            handleItemChange(i, field, Number(e.target.value))
+                          }
+                          required
+                        >
+                          <option value="">Pilih Item</option>
+                          {selectedContractDetail()?.items?.map((itm) => (
+                            <option value={itm.id}>
+                              {itm.keterangan} | Grade: {itm.grade} | Lebar:{" "}
+                              {itm.lebar}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <input
+                          placeholder={label}
+                          type="text"
+                          step={step}
+                          class="border p-2 rounded w-full"
+                          value={
                             field === "harga"
-                              ? parseIDR(e.target.value)
-                              : e.target.value
-                          )
-                        }
-                        name={`item-${item.id}-${field}`}
-                        id={`item-${item.id}-${field}`}
-                        required={
-                          ["keterangan", "status", "grade"].includes(field) ||
-                          type === "number"
-                        }
-                      />
+                              ? formatIDR(item[field])
+                              : item[field] ?? ""
+                          }
+                          onInput={(e) =>
+                            handleItemChange(
+                              i,
+                              field,
+                              field === "harga"
+                                ? parseIDR(e.target.value)
+                                : e.target.value
+                            )
+                          }
+                          name={`item-${item.id}-${field}`}
+                          id={`item-${item.id}-${field}`}
+                          required={
+                            ["keterangan", "status", "grade"].includes(field) ||
+                            type === "number"
+                          }
+                        />
+                      )}
                     </div>
                   ))}
                 </div>

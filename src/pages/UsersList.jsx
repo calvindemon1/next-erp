@@ -1,14 +1,24 @@
-import { createEffect, createSignal, onMount } from "solid-js";
+import { createEffect, createMemo, createSignal, onMount } from "solid-js";
 import { useNavigate } from "@solidjs/router";
 import MainLayout from "../layouts/MainLayout";
 import { getAllUsers, getUser, softDeleteUser } from "../utils/auth";
 import Swal from "sweetalert2";
 
 export default function UsersList() {
+  const [users, setUsers] = createSignal([]);
   const navigate = useNavigate();
   const user = getUser();
+  const [currentPage, setCurrentPage] = createSignal(1);
+  const pageSize = 10;
 
-  const [users, setUsers] = createSignal([]);
+  const totalPages = createMemo(() => {
+    return Math.max(1, Math.ceil(users().length / pageSize));
+  });
+
+  const paginatedData = () => {
+    const startIndex = (currentPage() - 1) * pageSize;
+    return users().slice(startIndex, startIndex + pageSize);
+  };
 
   const handleDelete = async (id) => {
     const result = await Swal.fire({
@@ -53,7 +63,11 @@ export default function UsersList() {
     try {
       const users = await getAllUsers(user?.token);
 
-      setUsers(users);
+      if (users.status === 200) {
+        const sortedData = users.users.sort((a, b) => a.id - b.id);
+
+        setUsers(sortedData);
+      }
     } catch (error) {
       Swal.fire({
         title: "Gagal",
@@ -94,7 +108,7 @@ export default function UsersList() {
           </tr>
         </thead>
         <tbody>
-          {users().map((user) => (
+          {paginatedData().map((user) => (
             <tr class="border-b" key={user.id}>
               <td class="py-2 px-4">{user.id}</td>
               <td class="py-2 px-4 capitalize">{user.name}</td>
@@ -125,6 +139,25 @@ export default function UsersList() {
           ))}
         </tbody>
       </table>
+      <div class="w-full mt-8 flex justify-between space-x-2">
+        <button
+          class="px-3 py-1 bg-gray-200 rounded min-w-[80px]"
+          onClick={() => setCurrentPage(currentPage() - 1)}
+          disabled={currentPage() === 1}
+        >
+          Prev
+        </button>
+        <span>
+          Page {currentPage()} of {totalPages()}
+        </span>
+        <button
+          class="px-3 py-1 bg-gray-200 rounded min-w-[80px]"
+          onClick={() => setCurrentPage(currentPage() + 1)}
+          disabled={currentPage() === totalPages()}
+        >
+          Next
+        </button>
+      </div>
     </MainLayout>
   );
 }
