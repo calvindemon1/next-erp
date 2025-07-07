@@ -1320,6 +1320,34 @@ export async function getAllSalesContracts(token) {
   }
 }
 
+export async function getLatestSalesContractNumber(token) {
+  try {
+    const response = await fetch(
+      `https://nexttechenterprise.site/api/last-sales-contract`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          "ngrok-skip-browser-warning": "any-value",
+        },
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data.message || "Gagal mengambil data nomor sales contract terakhir"
+      );
+    }
+
+    return data;
+  } catch (error) {
+    throw error;
+  }
+}
+
 export async function getSalesContracts(id, token) {
   try {
     const response = await fetch(
@@ -1709,7 +1737,7 @@ export async function createSatuanUnit(token, satuan) {
           Authorization: `Bearer ${token}`,
           "ngrok-skip-browser-warning": "any-value",
         },
-        body: JSON.stringify({satuan: satuan}),
+        body: JSON.stringify({ satuan: satuan }),
       }
     );
 
@@ -1791,7 +1819,7 @@ export async function updateDataSatuanUnit(token, id, satuan) {
           Authorization: `Bearer ${token}`,
           "ngrok-skip-browser-warning": "any-value",
         },
-        body: JSON.stringify({satuan: satuan}),
+        body: JSON.stringify({ satuan: satuan }),
       }
     );
 
@@ -1851,7 +1879,7 @@ export async function createGrade(token, grade) {
           Authorization: `Bearer ${token}`,
           "ngrok-skip-browser-warning": "any-value",
         },
-        body: JSON.stringify({grade: grade}),
+        body: JSON.stringify({ grade: grade }),
       }
     );
 
@@ -1930,7 +1958,7 @@ export async function updateDataGrade(token, id, grade) {
           Authorization: `Bearer ${token}`,
           "ngrok-skip-browser-warning": "any-value",
         },
-        body: JSON.stringify({grade: grade}),
+        body: JSON.stringify({ grade: grade }),
       }
     );
 
