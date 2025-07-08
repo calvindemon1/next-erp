@@ -6,6 +6,7 @@ import {
   createSalesOrder,
   getAllSalesContracts,
   getAllSOTypes,
+  getLatestSalesContractNumber,
   getSalesContracts,
   getSalesOrders,
   getUser,
@@ -25,6 +26,7 @@ export default function SalesOrderForm() {
   const [salesContracts, setSalesContracts] = createSignal([]);
   const [jenisSoList, setJenisSoList] = createSignal([]);
   const [selectedContractDetail, setSelectedContractDetail] = createSignal([]);
+  const [salesOrderNumber, setSalesOrderNumber] = createSignal(0);
 
   const [form, setForm] = createSignal({
     no_so: "",
@@ -42,6 +44,11 @@ export default function SalesOrderForm() {
 
     const getJenisSO = await getAllSOTypes(user?.token);
     setJenisSoList(getJenisSO.data);
+
+    const getLatestDataSalesContract = await getLatestSalesContractNumber(
+      user?.token
+    );
+    setSalesOrderNumber(getLatestDataSalesContract.last_sequence);
 
     if (isEdit) {
       const res = await getSalesOrders(params.id, user?.token);
@@ -84,14 +91,63 @@ export default function SalesOrderForm() {
   });
 
   createEffect(() => {
-    if (form().sales_contract_id) {
-      fetchSalesContractDetail(form().sales_contract_id);
+    const detail = selectedContractDetail();
+    if (detail?.jenis_cust_sc && detail?.nomor_sc) {
+      handleSalesContractChange(detail.jenis_cust_sc, detail.nomor_sc);
     }
   });
 
   const fetchSalesContractDetail = async (id) => {
-    const res = await getSalesContracts(id, user.token);
-    setSelectedContractDetail(res.response);
+    if (!id) {
+      console.warn("⚠️ fetchSalesContractDetail called with empty id");
+      return;
+    }
+
+    try {
+      const res = await getSalesContracts(id, user.token);
+
+      const { huruf, nomor } = parseNoPesan(res.response?.no_pesan);
+
+      setSelectedContractDetail({
+        data: res.response,
+        jenis_cust_sc: huruf,
+        nomor_sc: nomor,
+      });
+
+      console.log("✅ fetched sales contract detail:", res.response);
+    } catch (err) {
+      console.error("❌ Error fetchSalesContractDetail:", err);
+    }
+  };
+
+  const handleSalesContractChange = async (jenisCust, nomorSc) => {
+    const now = new Date();
+    const bulan = String(now.getMonth() + 1).padStart(2, "0");
+    const tahun = String(now.getFullYear());
+
+    const lastNumber = salesOrderNumber();
+    const nextNumber = (lastNumber + 1).toString().padStart(5, "0");
+
+    // Bentuk nomor sales contract
+    const noSalesOrder = `SO/${jenisCust}/${bulan}${tahun.slice(
+      2
+    )}/${nomorSc}/${nextNumber}`;
+
+    setForm({
+      ...form(),
+      no_so: noSalesOrder,
+    });
+  };
+
+  const parseNoPesan = (no_pesan) => {
+    if (!no_pesan) return { huruf: "-", nomor: "" };
+
+    const parts = no_pesan.split("/"); // ["SC", "D", "0625-00099"]
+
+    const huruf = parts[1] || "-";
+    const nomor = parts[2]?.split("-")[1] || "";
+
+    return { huruf, nomor };
   };
 
   const formatIDR = (val) => {
@@ -233,6 +289,11 @@ export default function SalesOrderForm() {
     }
   };
 
+  const todayDate = () => {
+    const today = new Date();
+    return today.toISOString().split("T")[0];
+  };
+
   return (
     <MainLayout>
       <h1 class="text-2xl font-bold mb-4">
@@ -247,7 +308,7 @@ export default function SalesOrderForm() {
               class="w-full border p-2 rounded"
               value={form().no_so}
               onInput={(e) => setForm({ ...form(), no_so: e.target.value })}
-              required
+              readonly
             />
           </div>
           <div>
@@ -256,9 +317,13 @@ export default function SalesOrderForm() {
               salesContracts={salesContracts}
               form={form}
               setForm={setForm}
+              onChange={(id) => {
+                setForm({ ...form(), sales_contract_id: id });
+                fetchSalesContractDetail(id);
+              }}
             />
           </div>
-          <div>
+          {/* <div>
             <label class="block mb-1 font-medium">Jenis Sales Order</label>
             <select
               class="w-full border p-2 rounded"
@@ -275,18 +340,18 @@ export default function SalesOrderForm() {
                 <option value={curr.id}>{curr.jenis}</option>
               ))}
             </select>
-          </div>
+          </div> */}
           <div>
             <label class="block mb-1 font-medium">Tanggal</label>
             <input
               type="date"
               class="w-full border p-2 rounded"
-              value={form().tanggal}
+              value={todayDate()}
               onInput={(e) => setForm({ ...form(), tanggal: e.target.value })}
-              required
+              readonly
             />
           </div>
-          <div>
+          {/* <div>
             <label class="block mb-1 font-medium">Tanggal Pengiriman</label>
             <input
               type="date"
@@ -297,7 +362,7 @@ export default function SalesOrderForm() {
               }
               required
             />
-          </div>
+          </div> */}
           <div>
             <label class="block mb-1 font-medium">Komisi</label>
             <div class="flex">
@@ -406,7 +471,7 @@ export default function SalesOrderForm() {
                           required
                         >
                           <option value="">Pilih Item</option>
-                          {selectedContractDetail()?.items?.map((itm) => (
+                          {selectedContractDetail()?.data.items?.map((itm) => (
                             <option value={itm.id}>
                               {itm.keterangan} | Grade: {itm.grade} | Lebar:{" "}
                               {itm.lebar}

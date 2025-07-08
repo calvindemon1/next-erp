@@ -91,6 +91,7 @@ export default function SalesContractForm() {
     const getLatestDataSalesContract = await getLatestSalesContractNumber(
       user?.token
     );
+    setSalesContractNumber(getLatestDataSalesContract.last_sequence);
 
     const getDataCustomerTypes = await getAllCustomerTypes(user?.token);
     setCustomerType(getDataCustomerTypes.data);
@@ -181,7 +182,7 @@ export default function SalesContractForm() {
     const bulan = String(now.getMonth() + 1).padStart(2, "0");
     const tahun = String(now.getFullYear());
 
-    const lastNumber = salesContractNumber() || 0;
+    const lastNumber = salesContractNumber();
     const nextNumber = (lastNumber + 1).toString().padStart(5, "0");
 
     // Bentuk nomor sales contract
@@ -342,8 +343,8 @@ export default function SalesContractForm() {
       if (isEdit) {
         await updateDataSalesContract(user?.token, params.id, payload);
       } else {
-        // await createSalesContract(user?.token, payload);
-        console.log(payload);
+        await createSalesContract(user?.token, payload);
+        // console.log(payload);
       }
 
       Swal.fire({
