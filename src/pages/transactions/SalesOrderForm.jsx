@@ -5,6 +5,7 @@ import Swal from "sweetalert2";
 import {
   createSalesOrder,
   getAllSalesContracts,
+  getAllSatuanUnits,
   getAllSOTypes,
   getLatestSalesContractNumber,
   getSalesContracts,
@@ -14,7 +15,7 @@ import {
 } from "../../utils/auth";
 import SearchableSalesContractSelect from "../../components/SalesContractDropdownSearch";
 import { produce } from "solid-js/store";
-import { Trash2 } from "lucide-solid";
+import { Trash, Trash2 } from "lucide-solid";
 // import { createSC, updateSC, getSC } from "../../utils/auth";
 // --> ganti sesuai endpoint lu
 
@@ -27,11 +28,21 @@ export default function SalesOrderForm() {
   const [jenisSoList, setJenisSoList] = createSignal([]);
   const [selectedContractDetail, setSelectedContractDetail] = createSignal([]);
   const [salesOrderNumber, setSalesOrderNumber] = createSignal(0);
+  const [fabricOptions, setFabricOptions] = createSignal([]);
+  const [colorOptions, setColorOptions] = createSignal([]);
+  const [gradeOptions, setGradeOptions] = createSignal([]);
+  const [unitsType, setUnitsType] = createSignal([]);
 
   const [form, setForm] = createSignal({
     no_so: "",
     sales_contract_id: "",
     tanggal: "",
+    cust_name: "",
+    currency_name: "",
+    kurs: "",
+    termin: "",
+    ppn: "",
+    satuan_unit: "",
     delivery_date: "",
     komisi: "",
     catatan: "",
@@ -50,52 +61,82 @@ export default function SalesOrderForm() {
     );
     setSalesOrderNumber(getLatestDataSalesContract.last_sequence);
 
+    const getDataUnitTypes = await getAllSatuanUnits(user?.token);
+    setUnitsType(getDataUnitTypes);
+
     if (isEdit) {
       const res = await getSalesOrders(params.id, user?.token);
-      const salesContracts = res.response; // karena dari console lu, response-nya di dalam `response`
+      const salesOrders = res.response; // karena dari console lu, response-nya di dalam `response`
 
       // Safety check
-      if (!salesContracts) return;
+      if (!salesOrders) return;
 
       // Normalize items
-      const normalizedItems = (salesContracts.items || []).map((item, idx) => ({
+      const normalizedItems = (salesOrders.items || []).map((item, idx) => ({
         id: idx + 1,
-
-        sales_contract_item_id: item.sales_contract_id ?? null,
+        kain_id: item.kain_id ?? null,
+        warna_id: item.warna_id ?? null,
         keterangan: item.keterangan ?? "",
         grade: item.grade ?? "",
         lebar: item.lebar ? parseFloat(item.lebar) : null,
         gramasi: item.gramasi ? parseFloat(item.gramasi) : null,
-        meter: item.meter ? parseFloat(item.meter) : null,
-        yard: item.yard ? parseFloat(item.yard) : null,
-        kilogram: item.kilogram ? parseFloat(item.kilogram) : null,
-        harga: item.harga ? parseFloat(item.harga) : null,
+        meter_total: item.meter_total ? parseFloat(item.meter_total) : null,
+        yard_total: item.yard_total ? parseFloat(item.yard_total) : null,
+        kilogram_total: item.kilogram_total
+          ? parseFloat(item.kilogram_total)
+          : null,
+        harga: item.harga ? parseInt(item.harga) : null,
+        status: item.status ?? "",
       }));
 
       // Set form
       setForm({
-        no_so: salesContracts.no_so ?? "",
-        sales_contract_id: salesContracts.sales_contract_id ?? "",
-        tanggal: salesContracts.tanggal?.split("T")[0] ?? "",
-        delivery_date: salesContracts.delivery_date?.split("T")[0] ?? "",
-        komisi: parseFloat(salesContracts.komisi) ?? "",
-        catatan: salesContracts.termin ?? "",
+        no_so: salesOrders.no_so ?? "",
+        sales_contract_id: salesOrders.sales_contract_id ?? "",
+        tanggal: salesOrders.tanggal?.split("T")[0] ?? "",
+        cust_name: salesOrders.cust_name ?? "",
+        currency_name: salesOrders.currency_name ?? "",
+        kurs: salesOrders.kurs ?? "",
+        termin: salesOrders.termin ?? "",
+        ppn: salesOrders.ppn ?? "",
+        satuan_unit: salesOrders.satuan_unit ?? "",
+        delivery_date: salesOrders.delivery_date?.split("T")[0] ?? "",
+        komisi: parseFloat(salesOrders.komisi) ?? "",
+        catatan: salesOrders.termin ?? "",
         items: normalizedItems.length > 0 ? normalizedItems : [],
       });
 
       // console.log("🚀 FORM DATA:", {
-      //   ...salesContracts,
+      //   ...salesOrders,
       //   items: normalizedItems,
       // });
     }
   });
 
-  createEffect(() => {
-    const detail = selectedContractDetail();
-    if (detail?.jenis_cust_sc && detail?.nomor_sc) {
-      handleSalesContractChange(detail.jenis_cust_sc, detail.nomor_sc);
-    }
-  });
+  const METER_TO_YARD = 1.09361;
+
+  const meterToYard = (m) => {
+    if (m == null || m === "") return 0;
+    return parseFloat((m * METER_TO_YARD).toFixed(4));
+  };
+
+  const yardToMeter = (y) => {
+    if (y == null || y === "") return 0;
+    return parseFloat((y / METER_TO_YARD).toFixed(4));
+  };
+
+  const selectedUnitId = () => parseInt(form().satuan_unit);
+
+  const isMeter = () => selectedUnitId() === 1;
+  const isYard = () => selectedUnitId() === 2;
+  const isKilogram = () => selectedUnitId() === 3;
+
+  const isFieldEditable = (field) => {
+    if (field === "meter_total") return isMeter();
+    if (field === "yard_total") return isYard();
+    if (field === "kilogram_total") return isKilogram();
+    return true;
+  };
 
   const fetchSalesContractDetail = async (id) => {
     if (!id) {
@@ -106,6 +147,10 @@ export default function SalesOrderForm() {
     try {
       const res = await getSalesContracts(id, user.token);
 
+      console.log(res.response);
+
+      const custDetail = res.response || "";
+
       const { huruf, nomor } = parseNoPesan(res.response?.no_pesan);
 
       setSelectedContractDetail({
@@ -113,14 +158,33 @@ export default function SalesOrderForm() {
         jenis_cust_sc: huruf,
         nomor_sc: nomor,
       });
-
-      console.log("✅ fetched sales contract detail:", res.response);
+      handleSalesContractChange(
+        huruf,
+        nomor,
+        custDetail.customer_name,
+        custDetail.currency_name,
+        custDetail.kurs,
+        Number(custDetail.termin),
+        Number(custDetail.ppn_percent),
+        custDetail.satuan_unit_id,
+        custDetail.catatan
+      );
     } catch (err) {
       console.error("❌ Error fetchSalesContractDetail:", err);
     }
   };
 
-  const handleSalesContractChange = async (jenisCust, nomorSc) => {
+  const handleSalesContractChange = async (
+    jenisCust,
+    nomorSc,
+    custName,
+    currencyName,
+    kurs,
+    termin,
+    ppn,
+    satuanUnitId,
+    catatan
+  ) => {
     const now = new Date();
     const bulan = String(now.getMonth() + 1).padStart(2, "0");
     const tahun = String(now.getFullYear());
@@ -136,6 +200,13 @@ export default function SalesOrderForm() {
     setForm({
       ...form(),
       no_so: noSalesOrder,
+      cust_name: custName,
+      currency_name: currencyName,
+      kurs: kurs,
+      termin: termin,
+      ppn: ppn,
+      satuan_unit: satuanUnitId,
+      catatan: catatan,
     });
   };
 
@@ -165,33 +236,28 @@ export default function SalesOrderForm() {
     return onlyNumbers ? parseInt(onlyNumbers) : "";
   };
 
-  const reindexItems = (items) =>
-    items.map((item, i) => ({
-      ...item,
-      id: i + 1,
-    }));
+  let itemIdCounter = form().items?.length || 0;
 
   const addItem = () => {
     setForm((prev) => {
-      const newItems = [
-        ...prev.items,
-        {
-          id: 0, // temporary
-          sales_contract_item_id: null,
-          keterangan: "",
-          grade: "",
-          lebar: null,
-          gramasi: null,
-          meter: null,
-          yard: null,
-          kilogram: null,
-          harga: null,
-        },
-      ];
+      const newItem = {
+        id: ++itemIdCounter,
+        kain_id: null,
+        warna_id: null,
+        keterangan: "",
+        grade: "",
+        lebar: null,
+        gramasi: null,
+        meter_total: isMeter() ? 0 : 0,
+        yard_total: isYard() ? 0 : 0,
+        kilogram_total: isKilogram() ? 0 : 0,
+        harga: null,
+        status: "",
+      };
 
       return {
         ...prev,
-        items: reindexItems(newItems),
+        items: [...prev.items, newItem],
       };
     });
   };
@@ -202,30 +268,61 @@ export default function SalesOrderForm() {
       newItems.splice(index, 1);
       return {
         ...prev,
-        items: reindexItems(newItems),
+        items: newItems,
       };
     });
   };
 
+  const getDropdownOptions = (field) => {
+    if (field === "kain_id") {
+      return fabricOptions();
+    } else if (field === "warna_id") {
+      return colorOptions();
+    } else if (field === "grade") {
+      return gradeOptions();
+      // const uniqueGrades = [
+      //   ...new Set(selectedContractDetail()?.items?.map((itm) => itm.grade)),
+      // ].filter(Boolean);
+
+      // return uniqueGrades.map((grade) => ({
+      //   value: grade,
+      //   label: grade,
+      // }));
+    } else {
+      return [];
+    }
+  };
+
   const handleItemChange = (index, field, value) => {
     const numericFields = [
-      "sales_contract_id",
+      "kain_id",
+      "warna_id",
       "lebar",
       "gramasi",
-      "meter",
-      "yard",
-      "kilogram",
+      "meter_total",
+      "yard_total",
+      "kilogram_total",
       "harga",
     ];
 
     let processedValue = value;
     if (numericFields.includes(field)) {
-      processedValue = value === "" ? null : parseFloat(value);
+      processedValue = value === "" ? 0 : parseFloat(value);
     }
 
     setForm(
       produce((f) => {
         f.items[index][field] = processedValue;
+
+        if (field === "meter_total" && isMeter()) {
+          f.items[index].yard_total =
+            processedValue != null ? meterToYard(processedValue) : 0;
+        } else if (field === "yard_total" && isYard()) {
+          f.items[index].meter_total =
+            processedValue != null ? yardToMeter(processedValue) : 0;
+        }
+
+        f.items = [...f.items]; // <<< ini bikin auto refresh
       })
     );
   };
@@ -245,20 +342,28 @@ export default function SalesOrderForm() {
         sales_contract_id: parseInt(form().sales_contract_id),
         jenis_so_id: parseInt(form().jenis_so_id),
         tanggal: form().tanggal,
+        cust_name: form().cust_name,
+        currency_name: form().currency_name,
+        kurs: form().kurs,
+        termin: form().termin,
+        ppn: form().ppn,
+        satuan_unit: form().satuan_unit,
         delivery_date: form().delivery_date,
         komisi: toNum(form().komisi),
         catatan: form().catatan,
         items: form().items.map((item) => ({
           id: item.id,
-          sales_contract_item_id: toNum(item.sales_contract_item_id),
+          kain_id: toNum(item.kain_id),
+          warna_id: toNum(item.warna_id),
           keterangan: item.keterangan || "",
           grade: item.grade || "",
           lebar: toNum(item.lebar),
           gramasi: toNum(item.gramasi),
-          meter: toNum(item.meter),
-          yard: toNum(item.yard),
-          kilogram: toNum(item.kilogram),
+          meter_total: toNum(item.meter_total),
+          yard_total: toNum(item.yard_total),
+          kilogram_total: toNum(item.kilogram_total),
           harga: toNum(item.harga),
+          status: item.status || "",
         })),
       };
 
@@ -301,11 +406,11 @@ export default function SalesOrderForm() {
       </h1>
 
       <form class="flex flex-col space-y-4 " onSubmit={handleSubmit}>
-        <div class="grid grid-cols-3 gap-4">
+        <div class="grid grid-cols-4 gap-4">
           <div>
             <label class="block mb-1 font-medium">No Sales Order</label>
             <input
-              class="w-full border p-2 rounded"
+              class="w-full border p-2 rounded bg-gray-300"
               value={form().no_so}
               onInput={(e) => setForm({ ...form(), no_so: e.target.value })}
               readonly
@@ -323,7 +428,7 @@ export default function SalesOrderForm() {
               }}
             />
           </div>
-          {/* <div>
+          <div>
             <label class="block mb-1 font-medium">Jenis Sales Order</label>
             <select
               class="w-full border p-2 rounded"
@@ -340,18 +445,57 @@ export default function SalesOrderForm() {
                 <option value={curr.id}>{curr.jenis}</option>
               ))}
             </select>
-          </div> */}
+          </div>
+          <div>
+            <label class="block mb-1 font-medium">Customer</label>
+            <input
+              type="text"
+              class="w-full border p-2 rounded bg-gray-300"
+              value={form().cust_name}
+              onInput={(e) => setForm({ ...form(), cust_name: e.target.value })}
+              readonly
+            />
+          </div>
+          <div>
+            <label class="block mb-1 font-medium">Mata Uang</label>
+            <div className="flex">
+              <input
+                type="text"
+                class="w-full border p-2 rounded bg-gray-300"
+                value={form().currency_name}
+                onInput={(e) =>
+                  setForm({ ...form(), currency_name: e.target.value })
+                }
+                readonly
+              />
+            </div>
+          </div>
+          <div>
+            <label class="block mb-1 font-medium">Kurs</label>
+            <div className="flex">
+              <span class="inline-flex items-center px-3 border border-r-0 border-black bg-gray-50 rounded-l">
+                IDR
+              </span>
+              <input
+                type="text"
+                class="w-full border p-2 rounded bg-gray-300"
+                value={form().kurs}
+                onInput={(e) => setForm({ ...form(), kurs: e.target.value })}
+                readonly
+              />
+            </div>
+          </div>
           <div>
             <label class="block mb-1 font-medium">Tanggal</label>
             <input
               type="date"
-              class="w-full border p-2 rounded"
+              class="w-full border p-2 rounded bg-gray-300"
               value={todayDate()}
               onInput={(e) => setForm({ ...form(), tanggal: e.target.value })}
               readonly
             />
           </div>
-          {/* <div>
+          <div>
             <label class="block mb-1 font-medium">Tanggal Pengiriman</label>
             <input
               type="date"
@@ -360,167 +504,246 @@ export default function SalesOrderForm() {
               onInput={(e) =>
                 setForm({ ...form(), delivery_date: e.target.value })
               }
-              required
             />
-          </div> */}
+          </div>
           <div>
-            <label class="block mb-1 font-medium">Komisi</label>
+            <label class="block mb-1 font-medium">Termin</label>
             <div class="flex">
-              <span class="inline-flex items-center px-3 border border-r-0 border-black bg-gray-50 rounded-l">
-                IDR
-              </span>
               <input
                 type="text"
-                class="w-full border p-2 rounded rounded-l-none"
-                value={formatIDR(form().komisi)}
+                class="w-full border p-2 rounded rounded-r-none bg-gray-300"
+                value={form().termin}
                 onInput={(e) =>
                   setForm({
                     ...form(),
-                    komisi: parseIDR(e.target.value),
+                    termin: parseIDR(e.target.value),
                   })
                 }
                 required
               />
+              <span class="inline-flex items-center px-3 border border-l-0 border-black bg-gray-50 rounded-r">
+                /Hari
+              </span>
             </div>
+          </div>
+          <div>
+            <label class="block mb-1 font-medium">PPN</label>
+            <div class="flex">
+              <input
+                type="text"
+                class="w-full border p-2 rounded rounded-r-none bg-gray-300"
+                value={form().ppn}
+                onInput={(e) =>
+                  setForm({
+                    ...form(),
+                    ppn: parseIDR(e.target.value),
+                  })
+                }
+                required
+              />
+              <span class="inline-flex items-center px-3 border border-l-0 border-black bg-gray-50 rounded-r">
+                %
+              </span>
+            </div>
+          </div>
+          <div>
+            <label class="block mb-1 font-medium">Satuan Unit</label>
+            <select
+              class="w-full border p-2 rounded"
+              value={form().satuan_unit}
+              onChange={(e) => {
+                const satuan_unit = parseInt(e.target.value);
+
+                setForm(
+                  produce((f) => {
+                    f.satuan_unit = satuan_unit;
+
+                    f.items.forEach((itm) => {
+                      if (satuan_unit === 1) {
+                        // Meter
+                        itm.meter_total = 0;
+                        itm.yard_total = meterToYard(0);
+                        itm.kilogram_total = 0;
+                      } else if (satuan_unit === 2) {
+                        // Yard
+                        itm.yard_total = 0;
+                        itm.meter_total = yardToMeter(0);
+                        itm.kilogram_total = 0;
+                      } else if (satuan_unit === 3) {
+                        // Kilogram
+                        itm.kilogram_total = 0;
+                        itm.meter_total = 0;
+                        itm.yard_total = 0;
+                      }
+                    });
+                  })
+                );
+              }}
+              required
+            >
+              <option value="" disabled hidden={!!form().satuan_unit}>
+                Pilih Satuan Unit
+              </option>
+              {unitsType().map((type) => (
+                <option value={type.id}>{type.satuan}</option>
+              ))}
+            </select>
           </div>
         </div>
         <div>
           <label class="block mb-1 font-medium">Catatan</label>
           <textarea
-            class="w-full border p-2 rounded"
+            class="w-full border p-2 rounded bg-gray-300"
             value={form().catatan}
             onInput={(e) => setForm({ ...form(), catatan: e.target.value })}
-            required
+            readonly
           ></textarea>
         </div>
 
         {/* ITEMS */}
         <h2 class="text-lg font-bold mt-6 mb-2">Items</h2>
-        <For each={form().items}>
-          {(item, index) => {
-            const i = index(); // pastikan index dipanggil sebagai function
 
-            return (
-              <div class="border p-4 rounded mb-4 bg-gray-200" key={item.id}>
-                <div class="flex justify-between mb-2">
-                  <span class="font-semibold">Item {i + 1}</span>
-                  <button
-                    type="button"
-                    class="text-red-600 hover:text-red-800 text-sm"
-                    onClick={() => removeItem(i)}
-                  >
-                    <Trash2 size={22} />
-                  </button>
-                </div>
-
-                <div class="grid grid-cols-2 gap-2">
-                  {[
-                    {
-                      label: "Sales Contract Item ID",
-                      field: "sales_contract_item_id",
-                      type: "number",
-                    },
-                    { label: "Keterangan", field: "keterangan", type: "text" },
-                    { label: "Grade", field: "grade", type: "text" },
-                    {
-                      label: "Lebar",
-                      field: "lebar",
-                      type: "number",
-                      step: "0.01",
-                    },
-                    {
-                      label: "Gramasi",
-                      field: "gramasi",
-                      type: "number",
-                      step: "0.01",
-                    },
-                    {
-                      label: "Meter",
-                      field: "meter",
-                      type: "number",
-                      step: "0.01",
-                    },
-                    {
-                      label: "Yard",
-                      field: "yard",
-                      type: "number",
-                      step: "0.01",
-                    },
-                    {
-                      label: "Kilogram",
-                      field: "kilogram",
-                      type: "number",
-                      step: "0.01",
-                    },
-                    { label: "Harga", field: "harga", type: "number" },
-                  ].map(({ label, field, type, step }) => (
-                    <div>
-                      <label
-                        class="block mb-1 text-sm text-gray-700"
-                        for={`item-${item.id}-${field}`}
+        <table class="min-w-full border border-gray-300">
+          <thead class="bg-gray-100">
+            <tr>
+              {[
+                { label: "Kain", field: "kain_id" },
+                { label: "Warna", field: "warna_id" },
+                { label: "Grade", field: "grade" },
+                { label: "Lebar", field: "lebar" },
+                { label: "Gramasi", field: "gramasi" },
+                { label: "Meter", field: "meter_total" },
+                { label: "Yard", field: "yard_total" },
+                { label: "Kilogram", field: "kilogram_total" },
+                { label: "Harga", field: "harga" },
+              ].map(({ label }) => (
+                <th class="border px-2 py-1 text-sm text-gray-700 text-left">
+                  {label}
+                </th>
+              ))}
+              <th class="border px-2 py-1"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {form().items.map((item, i) => (
+              <tr key={item.id}>
+                {[
+                  { label: "Kain", field: "kain_id", type: "number" },
+                  { label: "Warna", field: "warna_id", type: "number" },
+                  { label: "Grade", field: "grade", type: "text" },
+                  {
+                    label: "Lebar",
+                    field: "lebar",
+                    type: "number",
+                    step: "0.01",
+                  },
+                  {
+                    label: "Gramasi",
+                    field: "gramasi",
+                    type: "number",
+                    step: "0.01",
+                  },
+                  {
+                    label: "Meter",
+                    field: "meter_total",
+                    type: "number",
+                    step: "0.01",
+                  },
+                  {
+                    label: "Yard",
+                    field: "yard_total",
+                    type: "number",
+                    step: "0.01",
+                  },
+                  {
+                    label: "Kilogram",
+                    field: "kilogram_total",
+                    type: "number",
+                    step: "0.01",
+                  },
+                  { label: "Harga", field: "harga", type: "number" },
+                ].map(({ label, field, type, step }) => (
+                  <td class="border px-2 py-1">
+                    {["kain_id", "warna_id", "grade"].includes(field) ? (
+                      <select
+                        class="border p-1 rounded w-full text-sm"
+                        value={item[field] ?? ""}
+                        onChange={(e) =>
+                          handleItemChange(
+                            i,
+                            field,
+                            field === "grade"
+                              ? e.target.value
+                              : Number(e.target.value)
+                          )
+                        }
+                        required
                       >
-                        {label}
-                      </label>
-                      {field === "sales_contract_item_id" ? (
-                        <select
-                          class="border p-2 rounded w-full"
-                          value={item[field]}
-                          onChange={(e) =>
-                            handleItemChange(i, field, Number(e.target.value))
-                          }
-                          required
-                        >
-                          <option value="">Pilih Item</option>
-                          {selectedContractDetail()?.data.items?.map((itm) => (
-                            <option value={itm.id}>
-                              {itm.keterangan} | Grade: {itm.grade} | Lebar:{" "}
-                              {itm.lebar}
-                            </option>
-                          ))}
-                        </select>
-                      ) : (
-                        <input
-                          placeholder={label}
-                          type="text"
-                          step={step}
-                          class="border p-2 rounded w-full"
-                          value={
-                            field === "harga"
-                              ? formatIDR(item[field])
-                              : item[field] ?? ""
-                          }
-                          onInput={(e) =>
+                        <option value="">Pilih Item</option>
+                        {getDropdownOptions(field).map((opt) => (
+                          <option value={opt.value}>{opt.label}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        type={type}
+                        step={step}
+                        placeholder={label}
+                        class={`border p-1 rounded w-full text-sm ${
+                          !isFieldEditable(field)
+                            ? "bg-gray-200 text-gray-500"
+                            : ""
+                        }`}
+                        value={
+                          [
+                            "meter_total",
+                            "yard_total",
+                            "kilogram_total",
+                          ].includes(field)
+                            ? item[field] ?? 0
+                            : field === "harga"
+                            ? formatIDR(item[field])
+                            : item[field] ?? ""
+                        }
+                        readOnly={!isFieldEditable(field)}
+                        onInput={(e) => {
+                          if (isFieldEditable(field)) {
                             handleItemChange(
                               i,
                               field,
                               field === "harga"
                                 ? parseIDR(e.target.value)
                                 : e.target.value
-                            )
+                            );
                           }
-                          name={`item-${item.id}-${field}`}
-                          id={`item-${item.id}-${field}`}
-                          required={
-                            ["keterangan", "status", "grade"].includes(field) ||
-                            type === "number"
-                          }
-                        />
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            );
-          }}
-        </For>
+                        }}
+                      />
+                    )}
+                  </td>
+                ))}
+                <td class="border px-2 py-1">
+                  <button
+                    type="button"
+                    class="text-red-600 hover:text-red-800 text-xs"
+                    onClick={() => removeItem(i)}
+                  >
+                    <Trash size={25} />
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
 
-        <button
-          type="button"
-          class="bg-green-600 text-white px-3 py-2 rounded hover:bg-green-700"
-          onClick={addItem}
-        >
-          + Tambah Item
-        </button>
+        <div class="flex justify-end mt-4">
+          <button
+            type="button"
+            class="bg-green-600 text-white px-3 py-2 rounded hover:bg-green-700"
+            onClick={addItem}
+          >
+            + Tambah Item
+          </button>
+        </div>
 
         <div class="mt-6">
           <button

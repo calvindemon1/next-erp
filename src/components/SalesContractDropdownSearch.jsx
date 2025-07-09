@@ -5,6 +5,7 @@ export default function SalesContractDropdownSearch({
   salesContracts, // Ini adalah signal, bukan array langsung
   form,
   setForm,
+  onChange,
 }) {
   const [isOpen, setIsOpen] = createSignal(false);
   const [search, setSearch] = createSignal("");
@@ -38,7 +39,9 @@ export default function SalesContractDropdownSearch({
   const selectCustomer = (cust) => {
     setForm({ ...form(), sales_contract_id: cust.id });
     setIsOpen(false);
-    setSearch(""); // reset search input after selection
+    setSearch("");
+
+    if (onChange) onChange(cust.id);
   };
 
   return (
