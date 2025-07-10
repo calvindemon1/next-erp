@@ -2,6 +2,7 @@ import { createEffect, createSignal, onCleanup } from "solid-js";
 import { getTokenStatus, getUser, logout } from "../utils/auth";
 import { A, useLocation, useNavigate } from "@solidjs/router";
 import { ChevronLeft, ChevronRight, LogOut } from "lucide-solid";
+import logoNavel from "../assets/img/navelLogo.png";
 
 export default function MainLayout(props) {
   const user = getUser();
@@ -188,7 +189,10 @@ export default function MainLayout(props) {
             )}
           </button>
           {sidebarOpen() && (
-            <span class="ml-2 text-lg font-bold">NAVEL ERP</span>
+            <div class="flex items-center mx-auto">
+              <img src={logoNavel} alt="" class="invert-1000 h-8 w-auto" />
+              {/* <span class="ml-2 text-lg font-bold">NAVEL ERP</span> */}
+            </div>
           )}
         </div>
 

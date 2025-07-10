@@ -2,6 +2,7 @@ import { createSignal } from "solid-js";
 import { useNavigate } from "@solidjs/router";
 import { login } from "../utils/auth";
 import Swal from "sweetalert2";
+import logoNavel from "../assets/img/navelLogo.png";
 
 export default function LoginPage() {
   const [username, setUsername] = createSignal("");
@@ -35,9 +36,10 @@ export default function LoginPage() {
   };
 
   return (
-    <div class="flex justify-center items-center h-screen bg-gray-100">
+    <div class="flex justify-center items-center h-screen bg-gray-100 font-mono">
       <div class="bg-white p-8 rounded shadow-md w-full max-w-md">
-        <h1 class="text-2xl font-bold mb-6 text-center">Login ERP</h1>
+        <img class="h-52 mx-auto" src={logoNavel} alt="" />
+        <h1 class="text-2xl font-bold mb-6 text-center uppercase">Login</h1>
         {error() && <p class="text-red-500 mb-4">{error()}</p>}
         <form onsubmit={handleLogin}>
           <input

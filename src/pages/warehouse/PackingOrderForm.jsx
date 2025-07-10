@@ -15,6 +15,7 @@ import {
 } from "../../utils/auth";
 import SearchableCustomerSelect from "../../components/CustomerDropdownSearch";
 import { Trash2 } from "lucide-solid";
+import PackingOrderPrint from "../print_function/PackingOrderPrint";
 
 export default function PackingOrderForm() {
   const [params] = useSearchParams();
@@ -27,6 +28,8 @@ export default function PackingOrderForm() {
   const [customersList, setCustomersList] = createSignal([]);
   const [salesOrderList, setSalesOrderList] = createSignal([]);
   const [openStates, setOpenStates] = createSignal([]);
+  const [printData, setPrintData] = createSignal(null);
+  const [showPreview, setShowPreview] = createSignal(false);
 
   const [form, setForm] = createSignal({
     type: "",
@@ -244,11 +247,60 @@ export default function PackingOrderForm() {
     }
   };
 
+  const handlePrint = () => {
+    const content = document.getElementById("print-section").innerHTML;
+    const printWindow = window.open("", "", "width=800,height=600");
+    printWindow.document.write(`
+    <html>
+      <head>
+        <title>Packing Order</title>
+        <style>
+          body { font-family: sans-serif; font-size: 12px; padding: 20px; }
+          table { border-collapse: collapse; width: 100%; }
+          th, td { border: 1px solid #ccc; padding: 5px; text-align: left; }
+          h1 { margin-bottom: 10px; }
+        </style>
+      </head>
+      <body>
+        ${content}
+      </body>
+    </html>
+  `);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+    printWindow.close();
+  };
+
   return (
     <MainLayout>
       <h1 class="text-2xl font-bold mb-4">
         {isEdit ? "Edit" : "Tambah"} Packing Order
       </h1>
+
+      <Show when={isEdit}>
+        <button
+          type="button"
+          onClick={() => setShowPreview(!showPreview())}
+          class="mt-6 bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600"
+        >
+          {showPreview() ? "Tutup Preview" : "Lihat Preview"}
+        </button>
+      </Show>
+      <Show when={isEdit && showPreview()}>
+        <div class="mt-6 border p-4 bg-white shadow">
+          <h2 class="text-lg font-semibold mb-2">Preview Cetak</h2>
+          <div id="print-section">
+            <PackingOrderPrint data={form()} />
+          </div>
+          <button
+            onClick={handlePrint}
+            class="mt-4 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+          >
+            Print
+          </button>
+        </div>
+      </Show>
 
       <form class="space-y-4" onSubmit={handleSubmit}>
         <div class="grid grid-cols-4 gap-4">
