@@ -70,6 +70,8 @@ export default function SalesOrderList() {
     if (getDataSalesOrder.status === 200) {
       const sortedData = getDataSalesOrder.orders.sort((a, b) => a.id - b.id);
       setSalesOrders(sortedData);
+
+      console.log(salesOrders());
     }
   };
 
@@ -133,7 +135,7 @@ export default function SalesOrderList() {
               <th class="py-2 px-2">Tanggal Pembuatan SO</th>
               <th class="py-2 px-2">No Sales Contract</th>
               <th class="py-2 px-4">Nama Customer</th>
-              <th class="py-2 px-4">Total Nilai</th>
+              <th class="py-2 px-4">Total Kiriman (M)</th>
               <th class="py-2 px-4">Aksi</th>
             </tr>
           </thead>
@@ -147,13 +149,7 @@ export default function SalesOrderList() {
                 <td class="py-2 px-4">{formatTanggalIndo(so.created_at)}</td>
                 <td class="py-2 px-4">{so.no_pesan}</td>
                 <td class="py-2 px-4">{so.customer_name}</td>
-                <td class="py-2 px-4">
-                  {new Intl.NumberFormat("id-ID", {
-                    style: "currency",
-                    currency: "IDR",
-                    minimumFractionDigits: 0,
-                  }).format(so.total_value || 0)}
-                </td>
+                <td class="py-2 px-4">{so.total_meter}</td>
                 <td class="py-2 px-4 space-x-2">
                   <button
                     class="text-blue-600 hover:underline"

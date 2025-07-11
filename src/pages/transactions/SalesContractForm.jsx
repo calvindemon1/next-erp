@@ -104,6 +104,19 @@ export default function SalesContractForm() {
       const res = await getSalesContracts(params.id, user?.token);
       const salesContracts = res.response; // karena dari console lu, response-nya di dalam `response`
 
+      let sequenceNumber = 0;
+
+      if (salesContracts.no_pesan) {
+        // contoh: SC/D/0725-00044
+        const parts = salesContracts.no_pesan.split("/");
+        const lastPart = parts[parts.length - 1]; // "0725-00044"
+        const dashParts = lastPart.split("-");
+        if (dashParts.length === 2) {
+          const seqStr = dashParts[1]; // "00044"
+          sequenceNumber = parseInt(seqStr, 10);
+        }
+      }
+
       // Safety check
       if (!salesContracts) return;
 
@@ -122,25 +135,26 @@ export default function SalesContractForm() {
         harga: item.harga ? parseInt(item.harga) : null,
       }));
 
-      // console.log(salesContracts);
-
       // Set form
       setForm({
-        type: parseInt(salesContracts.type) ?? "",
+        type:
+          parseInt(salesContracts.transaction_type == "domestik" ? 1 : 2) ?? "",
         no_pesan: salesContracts.no_pesan ?? "",
         po_cust: salesContracts.po_cust ?? "",
         validity_contract: salesContracts.validity_contract ?? "",
         customer_id: salesContracts.customer_id ?? "",
-        type: salesContracts.type ?? "",
         currency_id: salesContracts.currency_id ?? "",
         kurs: parseFloat(salesContracts.kurs) ?? "",
         termin: parseInt(salesContracts.termin) ?? "",
         ppn_percent: parseFloat(salesContracts.ppn_percent) ?? "",
         catatan: salesContracts.catatan ?? "",
         satuan_unit_id: parseInt(salesContracts.satuan_unit_id) ?? "",
+        sequence_number: sequenceNumber ?? 0,
         items: normalizedItems.length > 0 ? normalizedItems : [],
       });
-
+      // validity_contract: salesContracts.validity_contract
+      //   ? new Date(salesContracts.validity_contract).toISOString().split("T")[0]
+      //   : "",
       // console.log("🚀 FORM DATA:", {
       //   ...salesContracts,
       //   items: normalizedItems,

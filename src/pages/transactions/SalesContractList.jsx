@@ -2,6 +2,7 @@ import { createEffect, createMemo, createSignal } from "solid-js";
 import { useNavigate } from "@solidjs/router";
 import MainLayout from "../../layouts/MainLayout";
 import {
+  getAllFabrics,
   getAllSalesContracts,
   getUser,
   softDeleteCustomer,
@@ -15,6 +16,7 @@ export default function SalesContractList() {
   const navigate = useNavigate();
   const tokUser = getUser();
   const [currentPage, setCurrentPage] = createSignal(1);
+  const [allFabrics, setAllFabrics] = createSignal([]);
   const pageSize = 20;
 
   const totalPages = createMemo(() => {
@@ -72,7 +74,7 @@ export default function SalesContractList() {
   const handleGetAllSalesContracts = async (tok) => {
     const getDataSalesContracts = await getAllSalesContracts(tok);
 
-    console.log(getDataSalesContracts)
+    console.log(getDataSalesContracts);
 
     if (getDataSalesContracts.status === 200) {
       const sortedData = getDataSalesContracts.contracts.sort(
@@ -106,9 +108,28 @@ export default function SalesContractList() {
     return `${tanggalNum} ${bulan} ${tahun}`;
   }
 
+  const handleGetAllFabrics = async (tok) => {
+    const res = await getAllFabrics(tok);
+    if (res.status === 200) {
+      setAllFabrics(res.kain);
+    }
+  };
+
+  const getCorakName = (sc) => {
+    // pastikan sales contract ada items
+    if (!sc.items || sc.items.length === 0) return "-";
+
+    const corakId = parseInt(sc.items[0].corak_kain);
+
+    const kain = allFabrics().find((f) => parseInt(f.id) === corakId);
+
+    return kain?.corak || "-";
+  };
+
   createEffect(() => {
     if (tokUser?.token) {
       handleGetAllSalesContracts(tokUser?.token);
+      handleGetAllFabrics(tokUser?.token);
     }
   });
 
@@ -146,9 +167,13 @@ export default function SalesContractList() {
                 <td class="py-2 px-4">{sc.no_pesan}</td>
                 <td class="py-2 px-4">{formatTanggalIndo(sc.created_at)}</td>
                 <td class="py-2 px-4">{sc.customer_name}</td>
-                <td class="py-2 px-4">PE-304</td>
+                <td class="py-2 px-4">{getCorakName(sc)}</td>
                 <td class="py-2 px-4 text-red-500">
-                  20.000 <span class="text-black">/ 50.000</span>
+                  {parseFloat(sc.summary.total_meter_kontrak || 0) -
+                    parseFloat(sc.summary.total_meter_terkirim || 0)}{" "}
+                  <span class="text-black">
+                    / {parseFloat(sc.summary.total_meter_kontrak || 0)}
+                  </span>
                 </td>
                 <td class="py-2 px-4 space-x-2">
                   <button

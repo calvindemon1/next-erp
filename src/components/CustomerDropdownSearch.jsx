@@ -23,12 +23,13 @@ export default function CustomerDropdownSearch({
 
   const filteredCustomers = createMemo(() => {
     const q = search().toLowerCase();
+
+    console.log(customersList());
     // Panggil customersList() di sini
     return customersList().filter((c) => {
       const kode = c.kode?.toLowerCase() || "";
-      const alias = c.alias?.toLowerCase() || "";
       const nama = c.nama?.toLowerCase() || "";
-      return kode.includes(q) || alias.includes(q) || nama.includes(q);
+      return kode.includes(q) || nama.includes(q);
     });
   });
 
@@ -51,9 +52,7 @@ export default function CustomerDropdownSearch({
         onClick={() => setIsOpen(!isOpen())}
       >
         {selectedCustomer()
-          ? `${selectedCustomer().kode} - ${selectedCustomer().alias} - ${
-              selectedCustomer().nama
-            }`
+          ? `${selectedCustomer().kode} - ${selectedCustomer().nama}`
           : "Pilih Customer"}
       </button>
 
@@ -74,7 +73,7 @@ export default function CustomerDropdownSearch({
                 class="p-2 hover:bg-blue-100 cursor-pointer"
                 onClick={() => selectCustomer(cust)}
               >
-                {cust.kode} - {cust.kode} - {cust.nama}
+                {cust.kode} - {cust.nama}
               </div>
             ))
           ) : (
