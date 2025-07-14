@@ -1607,9 +1607,9 @@ export async function softDeleteSalesOrder(id, token) {
 
 // #endregion SALES ORDER FUNCTION
 
-// #region PACKING ORDER FUNCTION
+// #region PACKING LIST FUNCTION
 
-export async function createPackingOrder(token, payload) {
+export async function createPackingList(token, payload) {
   try {
     const response = await fetch(
       `https://nexttechenterprise.site/api/create-packing-list`,
@@ -1629,7 +1629,7 @@ export async function createPackingOrder(token, payload) {
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.message || "Gagal membuat packing list order");
+      throw new Error(data.message || "Gagal membuat packing list");
     }
 
     return data;
@@ -1639,7 +1639,7 @@ export async function createPackingOrder(token, payload) {
   }
 }
 
-export async function getAllPackingOrders(token) {
+export async function getAllPackingLists(token) {
   try {
     const response = await fetch(
       `https://nexttechenterprise.site/api/packing-lists`,
@@ -1656,9 +1656,7 @@ export async function getAllPackingOrders(token) {
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(
-        data.message || "Gagal mengambil data packing list order"
-      );
+      throw new Error(data.message || "Gagal mengambil data packing list");
     }
 
     return data;
@@ -1667,7 +1665,7 @@ export async function getAllPackingOrders(token) {
   }
 }
 
-export async function getPackingOrders(id, token) {
+export async function getPackingLists(id, token) {
   try {
     const response = await fetch(
       `https://nexttechenterprise.site/api/packing-lists/${id}`,
@@ -1685,8 +1683,7 @@ export async function getPackingOrders(id, token) {
 
     if (!response.ok) {
       throw new Error(
-        data.message ||
-          `Gagal mengambil jenis packing list order dengan id: ${id}`
+        data.message || `Gagal mengambil jenis packing list dengan id: ${id}`
       );
     }
 
@@ -1696,7 +1693,7 @@ export async function getPackingOrders(id, token) {
   }
 }
 
-export async function updateDataPackingOrder(token, id, payload) {
+export async function updateDataPackingList(token, id, payload) {
   try {
     const response = await fetch(
       `https://nexttechenterprise.site/api/update-packing-list/${id}`,
@@ -1714,7 +1711,7 @@ export async function updateDataPackingOrder(token, id, payload) {
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.message || "Gagal mengubah data packing list order");
+      throw new Error(data.message || "Gagal mengubah data packing list");
     }
 
     return data;
@@ -1723,7 +1720,7 @@ export async function updateDataPackingOrder(token, id, payload) {
   }
 }
 
-export async function softDeletePackingOrder(id, token) {
+export async function softDeletePackingList(id, token) {
   try {
     const response = await fetch(
       `https://nexttechenterprise.site/api/delete-packing-list/${id}`,
@@ -1742,7 +1739,7 @@ export async function softDeletePackingOrder(id, token) {
     if (!response.ok) {
       throw new Error(
         data.message ||
-          `Gagal menghapus data jenis packing list order dengan id: ${id}`
+          `Gagal menghapus data jenis packing list dengan id: ${id}`
       );
     }
 
@@ -1752,7 +1749,7 @@ export async function softDeletePackingOrder(id, token) {
   }
 }
 
-export async function getLastPackingOrder(token) {
+export async function getLastPackingList(token) {
   try {
     const response = await fetch(
       `https://nexttechenterprise.site/api/last-packing-list`,
@@ -1770,7 +1767,7 @@ export async function getLastPackingOrder(token) {
 
     if (!response.ok) {
       throw new Error(
-        data.message || "Gagal mengambil data terakhir packing list order"
+        data.message || "Gagal mengambil data terakhir packing list"
       );
     }
 
@@ -1780,7 +1777,7 @@ export async function getLastPackingOrder(token) {
   }
 }
 
-// #endregion PACKING ORDER FUNCTION
+// #endregion PACKING LIST FUNCTION
 
 // #region DELIVERY NOTE FUNCTION
 

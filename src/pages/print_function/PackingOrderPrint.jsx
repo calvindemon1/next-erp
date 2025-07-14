@@ -58,9 +58,6 @@ export default function PackingOrderPrint(props) {
             <strong>Tipe:</strong> {data.type}
           </p>
           <p>
-            <strong>No. Sequence:</strong> {data.sequence_number}
-          </p>
-          <p>
             <strong>Sales Order:</strong> {data.sales_order_id}
           </p>
           <p>

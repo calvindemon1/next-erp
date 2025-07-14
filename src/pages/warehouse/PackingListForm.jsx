@@ -15,7 +15,7 @@ import {
   getSalesOrders,
 } from "../../utils/auth";
 import SearchableCustomerSelect from "../../components/CustomerDropdownSearch";
-import { RefreshCcw, Trash2 } from "lucide-solid";
+import { RefreshCcw, Trash2, XCircle } from "lucide-solid";
 import PackingOrderPrint from "../print_function/PackingOrderPrint";
 import SearchableSalesOrderSelect from "../../components/SalesOrderSearch";
 
@@ -35,6 +35,7 @@ export default function PackingOrderForm() {
   const [lastNumberSequence, setLastNumberSequence] = createSignal(false);
   const [nextSequenceNumber, setNextSequenceNumber] = createSignal(null);
   const [generatedNoPL, setGeneratedNoPL] = createSignal("");
+  const [groupRollCounts, setGroupRollCounts] = createSignal([]);
 
   const [form, setForm] = createSignal({
     type: "",
@@ -195,7 +196,8 @@ export default function PackingOrderForm() {
         },
       ],
     }));
-    setOpenStates((prev) => [...prev, false]); // default closed
+    setOpenStates((prev) => [...prev, false]);
+    setGroupRollCounts((prev) => [...prev, 0]);
   };
 
   const removeItemGroup = (groupIndex) => {
@@ -209,21 +211,47 @@ export default function PackingOrderForm() {
       copy.splice(groupIndex, 1);
       return copy;
     });
+    setGroupRollCounts((prev) => {
+      const copy = [...prev];
+      copy.splice(groupIndex, 1);
+      return copy;
+    });
   };
 
   const addRoll = (groupIndex) => {
     setForm((prev) => {
       const copy = [...prev.itemGroups];
       const group = copy[groupIndex];
+      const lastRoll = group.rolls[group.rolls.length - 1];
+      const newRoll = {
+        meter_total: lastRoll?.meter_total || "",
+        yard_total: lastRoll?.yard_total || "",
+      };
+
       copy[groupIndex] = {
         ...group,
-        rolls: [
-          ...group.rolls,
-          {
-            meter_total: "",
-            yard_total: "",
-          },
-        ],
+        rolls: [...group.rolls, newRoll],
+      };
+      return { ...prev, itemGroups: copy };
+    });
+  };
+
+  const addMultipleRolls = (groupIndex, count) => {
+    setForm((prev) => {
+      const copy = [...prev.itemGroups];
+      const group = copy[groupIndex];
+      const lastRoll = group.rolls[group.rolls.length - 1];
+      const meter = lastRoll?.meter_total || "";
+      const yard = lastRoll?.yard_total || "";
+
+      const newRolls = Array.from({ length: count }, () => ({
+        meter_total: meter,
+        yard_total: yard,
+      }));
+
+      copy[groupIndex] = {
+        ...group,
+        rolls: [...group.rolls, ...newRolls],
       };
       return { ...prev, itemGroups: copy };
     });
@@ -468,7 +496,7 @@ export default function PackingOrderForm() {
                       }}
                       class="text-red-600 hover:text-red-800 text-sm"
                     >
-                      Hapus Group
+                      <XCircle class="w-10 h-10" />
                     </button>
                   </div>
                 </div>
@@ -608,7 +636,7 @@ export default function PackingOrderForm() {
                                   class="text-red-600 hover:text-red-800"
                                   onClick={() => removeRoll(i(), j())}
                                 >
-                                  Hapus
+                                  <Trash2 class="w-5 h-5" />
                                 </button>
                               </td>
                             </tr>
@@ -619,19 +647,38 @@ export default function PackingOrderForm() {
                   </table>
 
                   <div className="flex gap-2">
-                    {/* <button
-                      type="button"
-                      class="bg-blue-600 text-white px-3 py-2 rounded hover:bg-green-700"
-                      onClick={() => setForm({ ...form() })}
-                    >
-                      <RefreshCcw size={20} />
-                    </button> */}
                     <button
                       type="button"
                       onClick={() => addRoll(i())}
                       class="bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700"
                     >
                       + Tambah Roll
+                    </button>
+                  </div>
+                  <div class="flex gap-2 items-center mt-2">
+                    <input
+                      type="number"
+                      min="1"
+                      class="border p-1 rounded w-24"
+                      placeholder="Jumlah"
+                      onInput={(e) => {
+                        const val = parseInt(e.target.value);
+                        setGroupRollCounts((prev) => {
+                          const updated = [...prev];
+                          updated[i()] = isNaN(val) ? 0 : val;
+                          return updated;
+                        });
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const count = groupRollCounts()[i()] || 1;
+                        addMultipleRolls(i(), count);
+                      }}
+                      class="bg-purple-600 text-white px-2 py-1 rounded hover:bg-purple-700"
+                    >
+                      + Tambah Banyak
                     </button>
                   </div>
                 </Show>

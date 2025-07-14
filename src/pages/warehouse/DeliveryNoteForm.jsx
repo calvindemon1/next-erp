@@ -40,6 +40,7 @@ export default function DeliveryNoteForm() {
     const pls = await getAllPackingOrders(user?.token);
     setPackingLists(pls || []);
 
+    console.log(!!params.id);
     const lastSeq = await getLastDeliveryNote(user?.token);
     setLastNumberSequence(lastSeq?.last_sequence || 0);
 
@@ -51,19 +52,27 @@ export default function DeliveryNoteForm() {
       const plDetail = await getPackingOrders(dn.packing_list_id, user?.token);
       setSelectedPackingListItems(plDetail?.response?.sales_order_items || []);
 
+      const flatItems = [];
+      (dn.items || []).forEach((it) => {
+        (it.rolls || []).forEach((r) => {
+          flatItems.push({
+            packing_list_roll_id: r.packing_list_roll_id,
+            meter: r.meter_total,
+            yard: r.yard_total,
+            sales_order_item_id: it.sales_order_item_id,
+            konstruksi_kain: r.konstruksi_kain || "", // kalau ada
+            checked: true,
+          });
+        });
+      });
+
       setForm({
         no_sj: dn.no_sj,
         sequence_number: dn.sequence_number,
         packing_list_id: dn.packing_list_id,
         type: dn.type,
         catatan: dn.catatan,
-        items: dn.items.map((it) => ({
-          packing_order_item_id: it.packing_order_item_id,
-          rolls: it.rolls.map((r) => ({
-            meter_total: r.meter_total,
-            yard_total: r.yard_total,
-          })),
-        })),
+        items: flatItems,
       });
     }
   });
@@ -333,6 +342,7 @@ export default function DeliveryNoteForm() {
           ></textarea>
         </div>
 
+        <h2 class="text-lg font-bold mt-6 mb-2">PL/D/0725-00001</h2>
         <h2 class="text-lg font-bold mt-6 mb-2">Item Groups</h2>
 
         {/* <button
@@ -342,11 +352,8 @@ export default function DeliveryNoteForm() {
         >
           + Tambah Item Group
         </button> */}
-
-        <For each={form().items}>
-          {(group, i) => (
-            <div class="border p-4 rounded mb-6">
-              {/* <div class="flex justify-between mb-2">
+        <div class="border p-4 rounded mb-6">
+          {/* <div class="flex justify-between mb-2">
                 <h3 class="font-semibold">Item Group #{i() + 1}</h3>
                 <button
                   type="button"
@@ -357,7 +364,7 @@ export default function DeliveryNoteForm() {
                 </button>
               </div> */}
 
-              {/* <div class="mb-3">
+          {/* <div class="mb-3">
                 <label class="block text-sm mb-1">Packing Order Item ID</label>
                 <select
                   class="w-full border p-2 rounded"
@@ -382,48 +389,44 @@ export default function DeliveryNoteForm() {
                 </select>
               </div> */}
 
-              <table class="w-full border border-gray-300 text-sm mb-3">
-                <thead class="bg-gray-100">
+          <table class="w-full border border-gray-300 text-sm mb-3">
+            <thead class="bg-gray-100">
+              <tr>
+                <th class="border px-2 py-1">#</th>
+                <th class="border px-2 py-1">Konstruksi Kain</th>
+                <th class="border px-2 py-1">Meter</th>
+                <th class="border px-2 py-1">Yard</th>
+                <th class="border px-2 py-1">Pilih</th>
+              </tr>
+            </thead>
+            <tbody>
+              <For each={form().items}>
+                {(roll, i) => (
                   <tr>
-                    <th class="border px-2 py-1">#</th>
-                    <th class="border px-2 py-1">Konstruksi Kain</th>
-                    <th class="border px-2 py-1">Meter</th>
-                    <th class="border px-2 py-1">Yard</th>
-                    <th class="border px-2 py-1">Pilih</th>
+                    <td class="border px-2 py-1 text-center">{i() + 1}</td>
+                    <td class="border px-2 py-1">{roll.konstruksi_kain}</td>
+                    <td class="border px-2 py-1 text-right">{roll.meter}</td>
+                    <td class="border px-2 py-1 text-right">{roll.yard}</td>
+                    <td class="border px-2 py-1 text-center">
+                      <input
+                        type="checkbox"
+                        checked={roll.checked}
+                        onChange={(e) => {
+                          const checked = e.target.checked;
+                          setForm((prev) => {
+                            const items = [...prev.items];
+                            items[i()].checked = checked;
+                            return { ...prev, items };
+                          });
+                        }}
+                      />
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  <For each={form().items}>
-                    {(roll, i) => (
-                      <tr>
-                        <td class="border px-2 py-1 text-center">{i() + 1}</td>
-                        <td class="border px-2 py-1">{roll.konstruksi_kain}</td>
-                        <td class="border px-2 py-1 text-right">
-                          {roll.meter}
-                        </td>
-                        <td class="border px-2 py-1 text-right">{roll.yard}</td>
-                        <td class="border px-2 py-1 text-center">
-                          <input
-                            type="checkbox"
-                            checked={roll.checked}
-                            onChange={(e) => {
-                              const checked = e.target.checked;
-                              setForm((prev) => {
-                                const items = [...prev.items];
-                                items[i()].checked = checked;
-                                return { ...prev, items };
-                              });
-                            }}
-                          />
-                        </td>
-                      </tr>
-                    )}
-                  </For>
-                </tbody>
-              </table>
-            </div>
-          )}
-        </For>
+                )}
+              </For>
+            </tbody>
+          </table>
+        </div>
 
         <div class="mt-6">
           <button

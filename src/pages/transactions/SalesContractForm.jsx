@@ -439,7 +439,7 @@ export default function SalesContractForm() {
             />
           </div>
           <div>
-            <label class="block mb-1 font-medium">Tipe Customer</label>
+            <label class="block mb-1 font-medium">Tipe Transaksi</label>
             <select
               class="w-full border p-2 rounded"
               value={form().type}

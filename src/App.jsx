@@ -27,17 +27,17 @@ import CurrenciesList from "./pages/master_data/CurrenciesList";
 import CurrencyForm from "./pages/master_data/CurrencyForm";
 import SalesOrderList from "./pages/transactions/SalesOrderList";
 import SalesOrderForm from "./pages/transactions/SalesOrderForm";
-import PackingOrderList from "./pages/warehouse/PackingOrderList";
-import PackingOrderForm from "./pages/warehouse/PackingOrderForm";
 import GradeList from "./pages/master_data/GradeList";
 import GradeForm from "./pages/master_data/GradeForm";
 import UnitsList from "./pages/master_data/UnitsList";
 import UnitsForm from "./pages/master_data/UnitsForm";
-import DeliveryNoteList from "./pages/warehouse/DeliveryNoteList";
-import DeliveryNoteForm from "./pages/warehouse/DeliveryNoteForm";
 import PurchaseOrderList from "./pages/purchasing/PurchaseOrderList";
 import PurchaseOrderForm from "./pages/purchasing/PurchaseOrderForm";
-
+// WAREHOUSE
+import DeliveryNoteList from "./pages/warehouse/DeliveryNoteList";
+import DeliveryNoteForm from "./pages/warehouse/DeliveryNoteForm";
+import PackingListList from "./pages/warehouse/PackingListList";
+import PackingListForm from "./pages/warehouse/PackingListForm";
 function App() {
   return (
     <Router>
@@ -62,8 +62,8 @@ function App() {
       {/* TRANSACTIONS */}
 
       {/* WAREHOUSE */}
-      <Route path="/packingorder" component={PackingOrderList} />
-      <Route path="/packingorder/form" component={PackingOrderForm} />
+      <Route path="/packingorder" component={PackingListList} />
+      <Route path="/packingorder/form" component={PackingListForm} />
 
       <Route path="/deliverynote" component={DeliveryNoteList} />
       <Route path="/deliverynote/form" component={DeliveryNoteForm} />
@@ -94,7 +94,7 @@ function App() {
       <Route path="/customer-type/form" component={CustomerTypeForm} />
 
       <Route path="/currencies" component={CurrenciesList} />
-      <Route path="/currencies" component={CurrenciesList} />
+      <Route path="/currencies/form" component={CurrencyForm} />
 
       <Route path="/grade" component={GradeList} />
       <Route path="/grade/form" component={GradeForm} />

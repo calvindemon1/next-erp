@@ -479,7 +479,8 @@ export default function SalesOrderForm() {
   return (
     <MainLayout>
       <h1 class="text-2xl font-bold mb-4">
-        {isEdit ? "Edit" : "Tambah"} Sales Order
+        {isEdit ? "Edit" : "Tambah"} Sales Order & Packing Order (PPN -
+        SC/D/P/0725-00001) - (Non PPN - SC/D/0725-00001)
       </h1>
 
       <form class="flex flex-col space-y-4 " onSubmit={handleSubmit}>
