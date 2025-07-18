@@ -115,9 +115,9 @@ export default function PurchaseOrderList() {
         <h1 class="text-2xl font-bold">Daftar Purchase Order</h1>
         <button
           class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-          onClick={() => navigate("/purchaseorder/form")}
+          onClick={() => navigate("/beligreige-purchaseorder/form")}
         >
-          + Tambah Packing Order
+          + Tambah Purchase Order
         </button>
       </div>
 

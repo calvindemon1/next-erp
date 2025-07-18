@@ -280,11 +280,11 @@ export default function DeliveryNoteForm() {
       </Show>
 
       <form onSubmit={handleSubmit} class="space-y-4">
-        <div class="grid grid-cols-3 gap-4">
+        <div class="grid gap-4">
           <div>
             <label class="block text-sm mb-1">No Surat Jalan</label>
             <input
-              class="bg-gray-200 w-full border p-2 rounded"
+              class="bg-gray-200 w-1/3 border p-2 rounded"
               value={form().no_sj}
               readonly
             />
