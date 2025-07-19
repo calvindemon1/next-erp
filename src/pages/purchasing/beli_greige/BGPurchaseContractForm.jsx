@@ -17,7 +17,7 @@ import { Trash2 } from "lucide-solid";
 import SupplierDropdownSearch from "../../../components/SupplierDropdownSearch";
 import FabricDropdownSearch from "../../../components/FabricDropdownSearch";
 
-export default function PurchaseContractForm() {
+export default function BGPurchaseContractForm() {
   const navigate = useNavigate();
   const user = getUser();
 

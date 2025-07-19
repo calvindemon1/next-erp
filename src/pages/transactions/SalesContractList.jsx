@@ -130,7 +130,7 @@ export default function SalesContractList() {
       handleGetAllFabrics(tokUser?.token);
     }
 
-        console.log(tokUser?.token);
+        // console.log(tokUser?.token);
   });
 
   return (

@@ -1,173 +1,177 @@
-import { createSignal, createEffect, For, onMount } from "solid-js";
-import { useNavigate } from "@solidjs/router";
+import { createSignal, createEffect, For, onMount, Show } from "solid-js";
+import { useNavigate, useSearchParams } from "@solidjs/router";
 import MainLayout from "../../../layouts/MainLayout";
 import Swal from "sweetalert2";
 import {
-  getAllSOTypes,
-  getLastSequence,
-  getAllSuppliers,
-  getAllSatuanUnits,
-  getAllFabrics,
-  // createPurchaseOrder,
+  getAllPackingLists,
+  getPackingLists,
+  createDeliveryNote,
+  updateDataDeliveryNote,
+  getLastDeliveryNote,
   getUser,
-  getAllSalesContracts,
+  getDeliveryNotes,
 } from "../../../utils/auth";
-import SearchableSalesContractSelect from "../../../components/SalesContractDropdownSearch";
-import { Trash2 } from "lucide-solid";
+import SuratJalanPrint from "../../print_function/SuratJalanPrint";
 
-export default function PurchaseOrderForm() {
+export default function OCDeliveryNoteForm() {
+  const [params] = useSearchParams();
+  const isEdit = !!params.id;
   const navigate = useNavigate();
   const user = getUser();
 
-  const [jenisPOOptions, setJenisPOOptions] = createSignal([]);
-  const [supplierOptions, setSupplierOptions] = createSignal([]);
-  const [satuanUnitOptions, setSatuanUnitOptions] = createSignal([]);
-  const [fabricOptions, setFabricOptions] = createSignal([]);
-  const [salesContracts, setSalesContracts] = createSignal([]);
+  const [packingLists, setPackingLists] = createSignal([]);
+  const [lastNumberSequence, setLastNumberSequence] = createSignal(null);
+  const [showPreview, setShowPreview] = createSignal(false);
 
   const [form, setForm] = createSignal({
-    jenis_po_id: "",
+    no_sj: "",
     sequence_number: "",
-    tanggal: new Date().toISOString().substring(0, 10),
-    sales_contract_id: "",
-    supplier_id: "",
-    satuan_unit_id: "",
-    termin: "",
-    ppn: "",
     catatan: "",
-    items: [],
+    itemGroups: [],
   });
 
   onMount(async () => {
-    const getSalesContracts = await getAllSalesContracts(user?.token);
-    const jenisPO = await getAllSOTypes(user?.token);
-    const suppliers = await getAllSuppliers(user?.token);
-    const satuanUnits = await getAllSatuanUnits(user?.token);
-    const fabrics = await getAllFabrics(user?.token);
+    const pls = await getAllPackingLists(user?.token);
+    setPackingLists(pls || []);
 
-    setJenisPOOptions(jenisPO.data || []);
-    setSupplierOptions(suppliers.data || []);
-    setSatuanUnitOptions(satuanUnits.data || []);
-    setSalesContracts(getSalesContracts.contracts);
-    setFabricOptions(
-      fabrics?.kain?.map((f) => ({
-        value: f.id,
-        label: `${f.kode} | ${f.jenis}`,
-      })) || []
-    );
+    const lastSeq = await getLastDeliveryNote(user?.token);
+    setLastNumberSequence(lastSeq?.last_sequence || 0);
 
-    const lastSeq = await getLastSequence(user?.token, "sc", "domestik");
-    setForm((prev) => ({
-      ...prev,
-      sequence_number: lastSeq?.sequence || "",
-    }));
+    if (isEdit) {
+      const res = await getDeliveryNotes(params.id, user?.token);
+      const dn = res?.response;
+      if (!dn) return;
+
+      const itemGroups = [];
+
+      // Group items by packing_list_id
+      const plGroups = {};
+      (dn.items || []).forEach((it) => {
+        (it.rolls || []).forEach((r) => {
+          const plId = dn.packing_list_id;
+          if (!plGroups[plId]) plGroups[plId] = [];
+          plGroups[plId].push({
+            packing_list_roll_id: r.packing_list_roll_id,
+            meter: r.meter_total,
+            yard: r.yard_total,
+            sales_order_item_id: it.sales_order_item_id,
+            konstruksi_kain: r.konstruksi_kain || "",
+            checked: true,
+          });
+        });
+      });
+
+      for (const [plId, items] of Object.entries(plGroups)) {
+        const plDetail = await getPackingLists(plId, user?.token);
+        const pl = plDetail?.response;
+
+        const typeLetter = pl?.no_pl?.split("/")?.[1] || "";
+        let typeValue = "";
+        if (typeLetter === "D") typeValue = "Domestik";
+        else if (typeLetter === "E") typeValue = "Ekspor";
+
+        itemGroups.push({
+          packing_list_id: plId,
+          no_pl: pl?.no_pl,
+          type: typeValue,
+          items,
+        });
+      }
+
+      setForm({
+        no_sj: dn.no_sj,
+        sequence_number: dn.sequence_number,
+        catatan: dn.catatan,
+        itemGroups,
+      });
+    }
   });
 
-  const formatIDR = (val) => {
-    if (val === null || val === "") return "";
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-      maximumFractionDigits: 0,
-    }).format(val);
+  const generateSJNumber = (type, sequence) => {
+    const typeLetter = type === "Domestik" ? "D" : "E";
+    const now = new Date();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const year = String(now.getFullYear()).slice(-2);
+    const mmyy = `${month}${year}`;
+    const nextNumber = String(sequence).padStart(5, "0");
+    return `SJ/${typeLetter}/${mmyy}-${nextNumber}`;
   };
 
-  const addItem = () => {
+  const addPackingListGroup = () => {
     setForm((prev) => ({
       ...prev,
-      items: [
-        ...prev.items,
+      itemGroups: [
+        ...prev.itemGroups,
         {
-          fabric_id: "",
-          lebar_greige: "",
-          lebar_finish: "",
-          meter: "",
-          yard: "",
-          harga: "",
-          subtotal: "",
+          packing_list_id: "",
+          no_pl: "",
+          type: "",
+          items: [],
         },
       ],
     }));
   };
 
-  const removeItem = (index) => {
+  const removePackingListGroup = (groupIndex) => {
     setForm((prev) => {
-      const newItems = [...prev.items];
-      newItems.splice(index, 1);
-      return { ...prev, items: newItems };
+      const groups = [...prev.itemGroups];
+      groups.splice(groupIndex, 1);
+      return { ...prev, itemGroups: groups };
     });
   };
 
-  const handleItemChange = (index, field, value, options = {}) => {
+  const handlePackingListChange = async (groupIndex, plId) => {
+    if (!plId) return;
+
+    const plDetail = await getPackingLists(plId, user?.token);
+    const pl = plDetail?.response;
+
+    const typeLetter = pl?.no_pl?.split("/")?.[1] || "";
+    let typeValue = "";
+    if (typeLetter === "D") typeValue = "Domestik";
+    else if (typeLetter === "E") typeValue = "Ekspor";
+
+    const nextSeq = (lastNumberSequence() || 0) + 1;
+    const noSJ = generateSJNumber(typeValue, nextSeq);
+
+    const allRolls = [];
+    (pl?.itemGroups || []).forEach((item) => {
+      (item.rolls || []).forEach((roll) => {
+        allRolls.push({
+          packing_list_roll_id: roll.id,
+          meter: roll.meter_total,
+          yard: roll.yard_total,
+          sales_order_item_id: item.sales_order_item_id,
+          konstruksi_kain: item.konstruksi_kain,
+          checked: false,
+        });
+      });
+    });
+
     setForm((prev) => {
-      const items = [...prev.items];
-      items[index] = { ...items[index] };
-
-      // always store raw string
-      items[index][field] = value;
-
-      const satuanId = prev.satuan_unit_id;
-      const satuan = satuanUnitOptions()
-        .find((u) => u.id == satuanId)
-        ?.satuan?.toLowerCase();
-
-      let meter = parseFloat(items[index].meter || "") || 0;
-      let yard = parseFloat(items[index].yard || "") || 0;
-
-      // handle harga
-      if (field === "harga") {
-        const rawHarga = value.replace(/[^\d]/g, "");
-        const hargaNumber = parseFloat(rawHarga || "0") || 0;
-
-        items[index].harga = rawHarga;
-
-        if (options.triggerFormat) {
-          items[index].hargaFormatted = formatIDR(hargaNumber);
-        } else {
-          items[index].hargaFormatted = rawHarga;
-        }
-
-        // hitung subtotal
-        let qty = 0;
-        if (satuan === "meter") qty = meter;
-        else if (satuan === "yard") qty = yard;
-
-        const subtotal = qty && hargaNumber ? qty * hargaNumber : 0;
-        items[index].subtotal = subtotal.toFixed(2);
-        items[index].subtotalFormatted =
-          subtotal > 0 ? formatIDR(subtotal) : "";
-
-        return {
-          ...prev,
-          items,
-        };
-      }
-
-      // handle konversi meter/yard
-      if (options.triggerConversion) {
-        if (field === "meter") {
-          meter = parseFloat(value) || 0;
-          yard = meter * 1.093613;
-          items[index].yard = yard > 0 ? yard.toFixed(4) : "";
-        } else if (field === "yard") {
-          yard = parseFloat(value) || 0;
-          meter = yard * 0.9144;
-          items[index].meter = meter > 0 ? meter.toFixed(4) : "";
-        }
-      }
-
-      const harga = parseFloat(items[index].harga || "") || 0;
-      let qty = 0;
-      if (satuan === "meter") qty = meter;
-      else if (satuan === "yard") qty = yard;
-
-      const subtotal = qty && harga ? qty * harga : 0;
-      items[index].subtotal = subtotal.toFixed(2);
-      items[index].subtotalFormatted = subtotal > 0 ? formatIDR(subtotal) : "";
-
+      const groups = [...prev.itemGroups];
+      groups[groupIndex] = {
+        packing_list_id: plId,
+        no_pl: pl?.no_pl,
+        type: typeValue,
+        items: allRolls,
+      };
       return {
         ...prev,
-        items,
+        no_sj: noSJ,
+        sequence_number: nextSeq,
+        itemGroups: groups,
+      };
+    });
+  };
+
+  const handleRollCheckedChange = (groupIndex, rollIndex, checked) => {
+    setForm((prev) => {
+      const groups = [...prev.itemGroups];
+      groups[groupIndex].items[rollIndex].checked = checked;
+      return {
+        ...prev,
+        itemGroups: groups,
       };
     });
   };
@@ -175,290 +179,215 @@ export default function PurchaseOrderForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    const allSelectedItems = [];
+    for (const group of form().itemGroups) {
+      for (const item of group.items) {
+        if (item.checked) {
+          allSelectedItems.push({
+            packing_list_roll_id: Number(item.packing_list_roll_id),
+            meter: parseFloat(item.meter),
+            yard: parseFloat(item.yard),
+          });
+        }
+      }
+    }
+
     const payload = {
-      ...form(),
-      sequence_number: Number(form().sequence_number),
-      termin: Number(form().termin),
-      ppn: Number(form().ppn),
-      items: form().items.map((i) => ({
-        fabric_id: Number(i.fabric_id),
-        lebar_greige: parseFloat(i.lebar_greige),
-        lebar_finish: parseFloat(i.lebar_finish),
-        meter: parseFloat(i.meter),
-        yard: parseFloat(i.yard),
-        harga: parseFloat(i.harga),
-        subtotal: parseFloat(i.subtotal),
-      })),
+      no_sj: form().no_sj,
+      sequence_number: form().sequence_number,
+      type: form().itemGroups[0]?.type || "",
+      catatan: form().catatan,
+      items: allSelectedItems,
     };
 
     try {
-      // await createPurchaseOrder(user?.token, payload);
+      if (isEdit) {
+        await updateDataDeliveryNote(user?.token, params.id, payload);
+      } else {
+        console.log(payload);
+        await createDeliveryNote(user?.token, payload);
+      }
       Swal.fire({
         icon: "success",
-        title: "Purchase Order berhasil disimpan!",
-      }).then(() => {
-        navigate("/purchaseorders");
-      });
-    } catch (err) {
-      console.error(err);
+        title: isEdit ? "Berhasil Update" : "Berhasil Simpan",
+      }).then(() => navigate("/deliverynote"));
+    } catch (error) {
+      console.error(error);
       Swal.fire({
         icon: "error",
-        title: "Gagal menyimpan Purchase Order",
-        text: err?.message || "Terjadi kesalahan.",
+        title: "Gagal",
+        text: error?.message || "Terjadi kesalahan.",
       });
     }
   };
 
   return (
     <MainLayout>
-      <h1 class="text-2xl font-bold mb-4">Tambah Purchase Order</h1>
-      <form class="space-y-4" onSubmit={handleSubmit}>
-        <div class="grid grid-cols-4 gap-4">
-          <div>
-            <label class="block mb-1 font-medium">Jenis PO</label>
-            <select
-              class="w-full border p-2 rounded"
-              value={form().jenis_po_id}
-              onChange={(e) =>
-                setForm({ ...form(), jenis_po_id: e.target.value })
-              }
-              required
-            >
-              <option value="">Pilih Jenis PO</option>
-              <For each={jenisPOOptions()}>
-                {(po) => <option value={po.id}>{po.jenis}</option>}
-              </For>
-            </select>
-          </div>
+      <h1 class="text-2xl font-bold mb-4">
+        {isEdit ? "Edit" : "Tambah"} Surat Jalan
+      </h1>
 
+      <Show when={isEdit}>
+        <button
+          onClick={() => setShowPreview(!showPreview())}
+          class="mb-4 bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600"
+        >
+          {showPreview() ? "Tutup Preview" : "Lihat Preview"}
+        </button>
+      </Show>
+
+      <Show when={isEdit && showPreview()}>
+        <div class="border p-4 bg-white shadow mb-4">
+          <h2 class="text-lg font-semibold mb-2">Preview Cetak</h2>
+          <div id="print-section">
+            <SuratJalanPrint
+              data={{
+                ...form(),
+                items: form().itemGroups.flatMap((g) =>
+                  g.items.filter((r) => r.checked)
+                ),
+              }}
+            />
+          </div>
+          <button
+            onClick={() => {
+              const content =
+                document.getElementById("print-section").innerHTML;
+              const printWindow = window.open("", "", "width=800,height=600");
+              printWindow.document.write(`
+                <html>
+                  <head>
+                    <title>Surat Jalan</title>
+                    <style>
+                      body { font-family: sans-serif; font-size: 12px; padding: 20px; }
+                      table { border-collapse: collapse; width: 100%; }
+                      th, td { border: 1px solid #ccc; padding: 5px; text-align: left; }
+                    </style>
+                  </head>
+                  <body>${content}</body>
+                </html>
+              `);
+              printWindow.document.close();
+              printWindow.focus();
+              printWindow.print();
+              printWindow.close();
+            }}
+            class="mt-2 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+          >
+            Print
+          </button>
+        </div>
+      </Show>
+
+      <form onSubmit={handleSubmit} class="space-y-4">
+        <div class="grid gap-4">
           <div>
-            <label class="block mb-1 font-medium">No PO</label>
+            <label class="block text-sm mb-1">No Surat Jalan</label>
             <input
-              class="w-full border p-2 rounded"
-              value={form().sequence_number}
-              readOnly
+              class="bg-gray-200 w-1/3 border p-2 rounded"
+              value={form().no_sj}
+              readonly
             />
           </div>
-
           <div>
-            <label class="block mb-1 font-medium">Tanggal</label>
-            <input
-              type="date"
+            <label class="block text-sm mb-1">Catatan</label>
+            <textarea
               class="w-full border p-2 rounded"
-              value={form().tanggal}
-              readOnly
-            />
-          </div>
-
-          <div class="">
-            <label class="block mb-1 font-medium">No Sales Contract</label>
-            <SearchableSalesContractSelect
-              salesContracts={salesContracts}
-              form={form}
-              setForm={setForm}
-              onChange={(id) => setForm({ ...form(), sales_contract_id: id })}
-            />
-          </div>
-
-          <div>
-            <label class="block mb-1 font-medium">Supplier</label>
-            <select
-              class="w-full border p-2 rounded"
-              value={form().supplier_id}
-              onChange={(e) =>
-                setForm({ ...form(), supplier_id: e.target.value })
-              }
-              required
-            >
-              <option value="">Pilih Supplier</option>
-              <For each={supplierOptions()}>
-                {(s) => <option value={s.id}>{s.nama}</option>}
-              </For>
-            </select>
-          </div>
-
-          <div>
-            <label class="block mb-1 font-medium">Satuan Unit</label>
-            <select
-              class="w-full border p-2 rounded"
-              value={form().satuan_unit_id}
-              onChange={(e) =>
-                setForm({ ...form(), satuan_unit_id: e.target.value })
-              }
-              required
-            >
-              <option value="">Pilih Satuan</option>
-              <For each={satuanUnitOptions()}>
-                {(u) => <option value={u.id}>{u.satuan}</option>}
-              </For>
-            </select>
-          </div>
-
-          <div>
-            <label class="block mb-1 font-medium">Termin</label>
-            <input
-              type="number"
-              class="w-full border p-2 rounded"
-              value={form().termin}
-              onInput={(e) => setForm({ ...form(), termin: e.target.value })}
-            />
-          </div>
-
-          <div>
-            <label class="block mb-1 font-medium">PPN (%)</label>
-            <input
-              type="number"
-              class="w-full border p-2 rounded"
-              value={form().ppn}
-              onInput={(e) => setForm({ ...form(), ppn: e.target.value })}
-            />
+              value={form().catatan}
+              onInput={(e) => setForm({ ...form(), catatan: e.target.value })}
+            ></textarea>
           </div>
         </div>
-
-        <div>
-          <label class="block mb-1 font-medium">Catatan</label>
-          <textarea
-            class="w-full border p-2 rounded"
-            value={form().catatan}
-            onInput={(e) => setForm({ ...form(), catatan: e.target.value })}
-          ></textarea>
-        </div>
-
-        <h2 class="text-lg font-bold mt-6 mb-2">Items</h2>
 
         <button
           type="button"
+          onClick={() => addPackingListGroup()}
           class="bg-green-600 text-white px-3 py-2 rounded hover:bg-green-700 mb-4"
-          onClick={addItem}
         >
-          + Tambah Item
+          + Tambah Packing List
         </button>
 
-        <table class="w-full text-sm border border-gray-300 mb-4">
-          <thead class="bg-gray-100">
-            <tr>
-              <th class="border p-2">#</th>
-              <th class="border p-2">Jenis Kain</th>
-              <th class="border p-2">Lebar Greige</th>
-              <th class="border p-2">Lebar Finish</th>
-              <th class="border p-2">Meter</th>
-              <th class="border p-2">Yard</th>
-              <th class="border p-2">Harga</th>
-              <th class="border p-2">Subtotal</th>
-              <th class="border p-2">Aksi</th>
-            </tr>
-          </thead>
-          <tbody>
-            <For each={form().items}>
-              {(item, i) => (
-                <tr>
-                  <td class="border p-2 text-center">{i() + 1}</td>
-                  <td class="border p-2">
-                    <select
-                      class="border p-1 rounded w-full"
-                      value={item.fabric_id}
-                      // onChange={(e) =>
-                      //   handleItemChange(i(), "fabric_id", e.target.value)
-                      // }
-                    >
-                      <option value="">Pilih Kain</option>
-                      <For each={fabricOptions()}>
-                        {(f) => <option value={f.value}>{f.label}</option>}
-                      </For>
-                    </select>
-                  </td>
-                  <td class="border p-2">
-                    <input
-                      type="number"
-                      class="border p-1 rounded w-full"
-                      value={item.lebar_greige}
-                      // onInput={(e) =>
-                      //   handleItemChange(i(), "lebar_greige", e.target.value)
-                      // }
-                    />
-                  </td>
-                  <td class="border p-2">
-                    <input
-                      type="number"
-                      class="border p-1 rounded w-full"
-                      value={item.lebar_finish}
-                      // onInput={(e) =>
-                      //   handleItemChange(i(), "lebar_finish", e.target.value)
-                      // }
-                    />
-                  </td>
-                  <td class="border p-2">
-                    <input
-                      type="text"
-                      inputmode="decimal"
-                      class="border p-1 rounded w-full"
-                      value={item.meter}
-                      // onInput={(e) =>
-                      //   handleItemChange(i(), "meter", e.target.value)
-                      // }
-                      onBlur={(e) =>
-                        handleItemChange(i(), "meter", e.target.value, {
-                          triggerConversion: true,
-                        })
-                      }
-                    />
-                  </td>
-                  <td class="border p-2">
-                    <input
-                      type="text"
-                      inputmode="decimal"
-                      class="border p-1 rounded w-full"
-                      value={item.yard}
-                      // onInput={(e) =>
-                      //   handleItemChange(i(), "yard", e.target.value)
-                      // }
-                      onBlur={(e) =>
-                        handleItemChange(i(), "yard", e.target.value, {
-                          triggerConversion: true,
-                        })
-                      }
-                    />
-                  </td>
-                  <td class="border p-2">
-                    <input
-                      type="text"
-                      inputmode="decimal"
-                      class="border p-1 rounded w-full"
-                      value={formatIDR(item.harga)}
-                      // onInput={(e) =>
-                      //   handleItemChange(i(), "harga", e.target.value)
-                      // }
-                      onBlur={(e) =>
-                        handleItemChange(i(), "harga", e.target.value, {
-                          triggerConversion: true,
-                        })
-                      }
-                    />
-                  </td>
-                  <td class="border p-2">
-                    <input
-                      type="text"
-                      class="border p-1 rounded w-full"
-                      value={item.subtotalFormatted ?? ""}
-                      disabled
-                    />
-                  </td>
-                  <td class="border p-2 text-center">
-                    <button
-                      type="button"
-                      class="text-red-600 hover:text-red-800 text-xs"
-                      onClick={() => removeItem(i())}
-                    >
-                      <Trash2 size={20} />
-                    </button>
-                  </td>
-                </tr>
-              )}
-            </For>
-          </tbody>
-        </table>
+        <For each={form().itemGroups}>
+          {(group, groupIndex) => (
+            <div class="border p-4 mb-4 rounded">
+              <div class="mb-2 flex justify-between items-center">
+                <h3 class="font-semibold text-lg">
+                  {group.no_pl || `Packing List #${groupIndex() + 1}`}
+                </h3>
+                <button
+                  type="button"
+                  class="text-red-600 hover:text-red-800 text-sm"
+                  onClick={() => removePackingListGroup(groupIndex())}
+                >
+                  Hapus
+                </button>
+              </div>
 
-        <div>
+              <select
+                class="w-full border p-2 rounded mb-4"
+                value={group.packing_list_id}
+                onInput={(e) =>
+                  handlePackingListChange(groupIndex(), e.target.value)
+                }
+                disabled={isEdit}
+              >
+                <option value="">Pilih Packing List</option>
+                <For each={packingLists()}>
+                  {(pl) => <option value={pl.id}>{pl.no_pl}</option>}
+                </For>
+              </select>
+
+              <Show when={group.items.length}>
+                <table class="w-full border border-gray-300 text-sm mb-3">
+                  <thead class="bg-gray-100">
+                    <tr>
+                      <th class="border px-2 py-1">#</th>
+                      <th class="border px-2 py-1">Konstruksi Kain</th>
+                      <th class="border px-2 py-1">Meter</th>
+                      <th class="border px-2 py-1">Yard</th>
+                      <th class="border px-2 py-1">Pilih</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <For each={group.items}>
+                      {(roll, rollIndex) => (
+                        <tr>
+                          <td class="border px-2 py-1 text-center">
+                            {rollIndex() + 1}
+                          </td>
+                          <td class="border px-2 py-1">
+                            {roll.konstruksi_kain}
+                          </td>
+                          <td class="border px-2 py-1 text-right">
+                            {roll.meter}
+                          </td>
+                          <td class="border px-2 py-1 text-right">
+                            {roll.yard}
+                          </td>
+                          <td class="border px-2 py-1 text-center">
+                            <input
+                              type="checkbox"
+                              checked={roll.checked}
+                              onChange={(e) =>
+                                handleRollCheckedChange(
+                                  groupIndex(),
+                                  rollIndex(),
+                                  e.target.checked
+                                )
+                              }
+                            />
+                          </td>
+                        </tr>
+                      )}
+                    </For>
+                  </tbody>
+                </table>
+              </Show>
+            </div>
+          )}
+        </For>
+
+        <div class="mt-6">
           <button
             type="submit"
             class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"

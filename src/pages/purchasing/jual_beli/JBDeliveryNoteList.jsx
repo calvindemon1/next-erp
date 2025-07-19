@@ -9,7 +9,7 @@ import {
 import Swal from "sweetalert2";
 import { Edit, Trash } from "lucide-solid";
 
-export default function PurchaseOrderList() {
+export default function JBDeliveryNoteList() {
   const [packingOrders, setPackingOrders] = createSignal([]);
   const navigate = useNavigate();
   const tokUser = getUser();
@@ -115,9 +115,9 @@ export default function PurchaseOrderList() {
         <h1 class="text-2xl font-bold">Daftar Surat Jalan</h1>
         <button
           class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-          onClick={() => navigate("/purchaseorder/form")}
+          onClick={() => navigate("/jualbeli-deliverynote/form")}
         >
-          + Tambah Packing Order
+          + Tambah Surat Jalan
         </button>
       </div>
 

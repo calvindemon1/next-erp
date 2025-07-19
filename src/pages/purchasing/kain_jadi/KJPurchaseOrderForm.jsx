@@ -1,4 +1,4 @@
-import { createSignal, createEffect, For, onMount } from "solid-js";
+import { createSignal, onMount, For } from "solid-js";
 import { useNavigate } from "@solidjs/router";
 import MainLayout from "../../../layouts/MainLayout";
 import Swal from "sweetalert2";
@@ -8,14 +8,16 @@ import {
   getAllSuppliers,
   getAllSatuanUnits,
   getAllFabrics,
-  // createPurchaseOrder,
   getUser,
   getAllSalesContracts,
+  // createPurchaseOrder,
 } from "../../../utils/auth";
-import SearchableSalesContractSelect from "../../../components/SalesContractDropdownSearch";
+import SupplierDropdownSearch from "../../../components/SupplierDropdownSearch";
+import FabricDropdownSearch from "../../../components/FabricDropdownSearch";
+import PurchasingContractDropdownSearch from "../../../components/PurchasingContractDropdownSearch";
 import { Trash2 } from "lucide-solid";
 
-export default function PurchaseOrderForm() {
+export default function KJPurchaseOrderForm() {
   const navigate = useNavigate();
   const user = getUser();
 
@@ -39,28 +41,22 @@ export default function PurchaseOrderForm() {
   });
 
   onMount(async () => {
-    const getSalesContracts = await getAllSalesContracts(user?.token);
-    const jenisPO = await getAllSOTypes(user?.token);
-    const suppliers = await getAllSuppliers(user?.token);
-    const satuanUnits = await getAllSatuanUnits(user?.token);
-    const fabrics = await getAllFabrics(user?.token);
+    const [scs, poTypes, suppliers, units, fabrics] = await Promise.all([
+      getAllSalesContracts(user?.token),
+      getAllSOTypes(user?.token),
+      getAllSuppliers(user?.token),
+      getAllSatuanUnits(user?.token),
+      getAllFabrics(user?.token),
+    ]);
 
-    setJenisPOOptions(jenisPO.data || []);
-    setSupplierOptions(suppliers.data || []);
-    setSatuanUnitOptions(satuanUnits.data || []);
-    setSalesContracts(getSalesContracts.contracts);
-    setFabricOptions(
-      fabrics?.kain?.map((f) => ({
-        value: f.id,
-        label: `${f.kode} | ${f.jenis}`,
-      })) || []
-    );
+    setSalesContracts(scs.contracts);
+    setJenisPOOptions(poTypes.data);
+    setSupplierOptions(suppliers.suppliers);
+    setSatuanUnitOptions(units.data);
+    setFabricOptions(fabrics.kain);
 
     const lastSeq = await getLastSequence(user?.token, "sc", "domestik");
-    setForm((prev) => ({
-      ...prev,
-      sequence_number: lastSeq?.sequence || "",
-    }));
+    setForm((prev) => ({ ...prev, sequence_number: lastSeq?.sequence || "" }));
   });
 
   const formatIDR = (val) => {
@@ -72,19 +68,76 @@ export default function PurchaseOrderForm() {
     }).format(val);
   };
 
+  const handlePurchaseContractChange = async (contractId) => {
+    const selectedContract = salesContracts().find((sc) => sc.id == contractId);
+    if (!selectedContract) return;
+
+    const {
+      supplier_id,
+      satuan_unit_id,
+      termin,
+      ppn,
+      items = [],
+    } = selectedContract;
+
+    const mappedItems = items.map((item) => {
+      const meter = parseFloat(item.meter ?? 0);
+      const yard = parseFloat(item.yard ?? 0);
+      const harga = parseFloat(item.harga ?? 0);
+
+      const satuan = satuanUnitOptions()
+        .find((u) => u.id == satuan_unit_id)
+        ?.satuan?.toLowerCase();
+      const qty = satuan === "meter" ? meter : yard;
+      const subtotal = isNaN(qty * harga) ? 0 : qty * harga;
+
+      return {
+        ...item,
+        meter,
+        yard,
+        harga,
+        hargaFormatted: formatIDR(harga),
+        subtotal: subtotal.toFixed(2),
+        subtotalFormatted: formatIDR(subtotal),
+        readOnly: true,
+      };
+    });
+
+    setForm((prev) => ({
+      ...prev,
+      sales_contract_id: contractId,
+      supplier_id,
+      satuan_unit_id,
+      termin,
+      ppn,
+      items: mappedItems,
+    }));
+  };
+
+  const generateNomorKontrak = () => {
+    const now = new Date();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const year = String(now.getFullYear()).slice(2);
+    const mmyy = `${month}${year}`;
+    const type = parseFloat(form().ppn) > 0 ? "P" : "N";
+    const nomor = `BG/${type}/${mmyy}/00001`;
+
+    setForm((prev) => ({ ...prev, sequence_number: nomor }));
+  };
+
   const addItem = () => {
     setForm((prev) => ({
       ...prev,
       items: [
         ...prev.items,
         {
-          fabric_id: "",
-          lebar_greige: "",
-          lebar_finish: "",
-          meter: "",
-          yard: "",
-          harga: "",
-          subtotal: "",
+          kain_id: "",
+          lebar_greige: 0,
+          lebar_finish: 0,
+          meter: 0,
+          yard: 0,
+          harga: 0,
+          subtotal: 0,
         },
       ],
     }));
@@ -92,96 +145,55 @@ export default function PurchaseOrderForm() {
 
   const removeItem = (index) => {
     setForm((prev) => {
-      const newItems = [...prev.items];
-      newItems.splice(index, 1);
-      return { ...prev, items: newItems };
+      const items = [...prev.items];
+      items.splice(index, 1);
+      return { ...prev, items };
     });
   };
 
   const handleItemChange = (index, field, value, options = {}) => {
     setForm((prev) => {
       const items = [...prev.items];
-      items[index] = { ...items[index] };
-
-      // always store raw string
-      items[index][field] = value;
-
-      const satuanId = prev.satuan_unit_id;
       const satuan = satuanUnitOptions()
-        .find((u) => u.id == satuanId)
+        .find((u) => u.id == prev.satuan_unit_id)
         ?.satuan?.toLowerCase();
+      items[index] = { ...items[index], [field]: value };
 
-      let meter = parseFloat(items[index].meter || "") || 0;
-      let yard = parseFloat(items[index].yard || "") || 0;
+      let meter = parseFloat(items[index].meter || 0);
+      let yard = parseFloat(items[index].yard || 0);
 
-      // handle harga
       if (field === "harga") {
-        const rawHarga = value.replace(/[^\d]/g, "");
-        const hargaNumber = parseFloat(rawHarga || "0") || 0;
-
-        items[index].harga = rawHarga;
-
-        if (options.triggerFormat) {
-          items[index].hargaFormatted = formatIDR(hargaNumber);
-        } else {
-          items[index].hargaFormatted = rawHarga;
-        }
-
-        // hitung subtotal
-        let qty = 0;
-        if (satuan === "meter") qty = meter;
-        else if (satuan === "yard") qty = yard;
-
-        const subtotal = qty && hargaNumber ? qty * hargaNumber : 0;
-        items[index].subtotal = subtotal.toFixed(2);
-        items[index].subtotalFormatted =
-          subtotal > 0 ? formatIDR(subtotal) : "";
-
-        return {
-          ...prev,
-          items,
-        };
+        const harga = parseFloat(value.replace(/[^\d]/g, "") || 0);
+        items[index].harga = harga;
+        items[index].hargaFormatted = formatIDR(harga);
       }
 
-      // handle konversi meter/yard
       if (options.triggerConversion) {
-        if (field === "meter") {
-          meter = parseFloat(value) || 0;
-          yard = meter * 1.093613;
-          items[index].yard = yard > 0 ? yard.toFixed(4) : "";
-        } else if (field === "yard") {
-          yard = parseFloat(value) || 0;
-          meter = yard * 0.9144;
-          items[index].meter = meter > 0 ? meter.toFixed(4) : "";
-        }
+        if (field === "meter") yard = meter * 1.093613;
+        if (field === "yard") meter = yard * 0.9144;
+        items[index].meter = meter.toFixed(4);
+        items[index].yard = yard.toFixed(4);
       }
 
-      const harga = parseFloat(items[index].harga || "") || 0;
-      let qty = 0;
-      if (satuan === "meter") qty = meter;
-      else if (satuan === "yard") qty = yard;
-
-      const subtotal = qty && harga ? qty * harga : 0;
+      const harga = parseFloat(items[index].harga || 0);
+      const qty = satuan === "meter" ? meter : yard;
+      const subtotal = isNaN(qty * harga) ? 0 : qty * harga;
       items[index].subtotal = subtotal.toFixed(2);
-      items[index].subtotalFormatted = subtotal > 0 ? formatIDR(subtotal) : "";
+      items[index].subtotalFormatted = formatIDR(subtotal);
 
-      return {
-        ...prev,
-        items,
-      };
+      return { ...prev, items };
     });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     const payload = {
       ...form(),
       sequence_number: Number(form().sequence_number),
       termin: Number(form().termin),
       ppn: Number(form().ppn),
       items: form().items.map((i) => ({
-        fabric_id: Number(i.fabric_id),
+        kain_id: Number(i.kain_id),
         lebar_greige: parseFloat(i.lebar_greige),
         lebar_finish: parseFloat(i.lebar_finish),
         meter: parseFloat(i.meter),
@@ -200,56 +212,56 @@ export default function PurchaseOrderForm() {
         navigate("/purchaseorders");
       });
     } catch (err) {
-      console.error(err);
       Swal.fire({
         icon: "error",
         title: "Gagal menyimpan Purchase Order",
-        text: err?.message || "Terjadi kesalahan.",
+        text: err.message,
       });
     }
   };
 
   return (
     <MainLayout>
-      <h1 class="text-2xl font-bold mb-4">Tambah Purchase Order</h1>
+      <h1 class="text-2xl font-bold mb-4">Tambah Order Celup KJ</h1>
       <form class="space-y-4" onSubmit={handleSubmit}>
-        <div class="grid grid-cols-4 gap-4">
+        <div class="grid grid-cols-3 gap-4">
           <div>
-            <label class="block mb-1 font-medium">Jenis PO</label>
-            <select
-              class="w-full border p-2 rounded"
-              value={form().jenis_po_id}
-              onChange={(e) =>
-                setForm({ ...form(), jenis_po_id: e.target.value })
-              }
-              required
-            >
-              <option value="">Pilih Jenis PO</option>
-              <For each={jenisPOOptions()}>
-                {(po) => <option value={po.id}>{po.jenis}</option>}
-              </For>
-            </select>
+            <label class="block mb-1 font-medium">No Kontrak</label>
+            <div class="flex gap-2">
+              <input
+                class="w-full border bg-gray-200 p-2 rounded"
+                value={form().sequence_number}
+                readOnly
+              />
+              <button
+                type="button"
+                class="bg-gray-300 text-sm px-2 rounded hover:bg-gray-400"
+                onClick={generateNomorKontrak}
+              >
+                Generate
+              </button>
+            </div>
           </div>
-
           <div>
-            <label class="block mb-1 font-medium">No PO</label>
-            <input
-              class="w-full border p-2 rounded"
-              value={form().sequence_number}
-              readOnly
+            <label class="block mb-1 font-medium">No Purchase Contract</label>
+            <PurchasingContractDropdownSearch
+              purchaseContracts={salesContracts}
+              form={form}
+              setForm={setForm}
+              onChange={handlePurchaseContractChange}
             />
           </div>
-
           <div>
             <label class="block mb-1 font-medium">Tanggal</label>
             <input
               type="date"
-              class="w-full border p-2 rounded"
+              class="w-full border bg-gray-200 p-2 rounded"
               value={form().tanggal}
               readOnly
             />
           </div>
-
+        </div>
+        {/* 
           <div class="">
             <label class="block mb-1 font-medium">No Sales Contract</label>
             <SearchableSalesContractSelect
@@ -258,34 +270,32 @@ export default function PurchaseOrderForm() {
               setForm={setForm}
               onChange={(id) => setForm({ ...form(), sales_contract_id: id })}
             />
-          </div>
-
+          </div> */}
+        <div class="grid grid-cols-4 gap-4">
           <div>
             <label class="block mb-1 font-medium">Supplier</label>
-            <select
-              class="w-full border p-2 rounded"
-              value={form().supplier_id}
-              onChange={(e) =>
-                setForm({ ...form(), supplier_id: e.target.value })
-              }
-              required
-            >
-              <option value="">Pilih Supplier</option>
-              <For each={supplierOptions()}>
-                {(s) => <option value={s.id}>{s.nama}</option>}
-              </For>
-            </select>
+            <SupplierDropdownSearch
+              suppliers={supplierOptions}
+              form={form}
+              setForm={setForm}
+              onChange={(id) => setForm({ ...form(), supplier_id: id })}
+            />
           </div>
 
           <div>
             <label class="block mb-1 font-medium">Satuan Unit</label>
-            <select
-              class="w-full border p-2 rounded"
+
+            {/* Hidden input to carry the value */}
+            <input
+              type="hidden"
+              name="satuan_unit_id"
               value={form().satuan_unit_id}
-              onChange={(e) =>
-                setForm({ ...form(), satuan_unit_id: e.target.value })
-              }
-              required
+            />
+
+            <select
+              class="w-full border p-2 rounded bg-gray-200 cursor-not-allowed"
+              value={form().satuan_unit_id}
+              disabled
             >
               <option value="">Pilih Satuan</option>
               <For each={satuanUnitOptions()}>
@@ -298,9 +308,10 @@ export default function PurchaseOrderForm() {
             <label class="block mb-1 font-medium">Termin</label>
             <input
               type="number"
-              class="w-full border p-2 rounded"
+              class="w-full border bg-gray-200 p-2 rounded"
               value={form().termin}
               onInput={(e) => setForm({ ...form(), termin: e.target.value })}
+              readOnly
             />
           </div>
 
@@ -308,9 +319,10 @@ export default function PurchaseOrderForm() {
             <label class="block mb-1 font-medium">PPN (%)</label>
             <input
               type="number"
-              class="w-full border p-2 rounded"
+              class="w-full border bg-gray-200 p-2 rounded"
               value={form().ppn}
               onInput={(e) => setForm({ ...form(), ppn: e.target.value })}
+              readOnly
             />
           </div>
         </div>
@@ -353,28 +365,20 @@ export default function PurchaseOrderForm() {
               {(item, i) => (
                 <tr>
                   <td class="border p-2 text-center">{i() + 1}</td>
-                  <td class="border p-2">
-                    <select
-                      class="border p-1 rounded w-full"
-                      value={item.fabric_id}
-                      // onChange={(e) =>
-                      //   handleItemChange(i(), "fabric_id", e.target.value)
-                      // }
-                    >
-                      <option value="">Pilih Kain</option>
-                      <For each={fabricOptions()}>
-                        {(f) => <option value={f.value}>{f.label}</option>}
-                      </For>
-                    </select>
+                  <td class="border w-72 p-2">
+                    <FabricDropdownSearch
+                      fabrics={fabricOptions}
+                      item={item}
+                      onChange={(val) => handleItemChange(i(), "kain_id", val)}
+                      disabled={item.readOnly}
+                    />
                   </td>
                   <td class="border p-2">
                     <input
                       type="number"
                       class="border p-1 rounded w-full"
                       value={item.lebar_greige}
-                      // onInput={(e) =>
-                      //   handleItemChange(i(), "lebar_greige", e.target.value)
-                      // }
+                      readonly
                     />
                   </td>
                   <td class="border p-2">
@@ -382,9 +386,7 @@ export default function PurchaseOrderForm() {
                       type="number"
                       class="border p-1 rounded w-full"
                       value={item.lebar_finish}
-                      // onInput={(e) =>
-                      //   handleItemChange(i(), "lebar_finish", e.target.value)
-                      // }
+                      readonly
                     />
                   </td>
                   <td class="border p-2">
@@ -393,9 +395,6 @@ export default function PurchaseOrderForm() {
                       inputmode="decimal"
                       class="border p-1 rounded w-full"
                       value={item.meter}
-                      // onInput={(e) =>
-                      //   handleItemChange(i(), "meter", e.target.value)
-                      // }
                       onBlur={(e) =>
                         handleItemChange(i(), "meter", e.target.value, {
                           triggerConversion: true,
@@ -421,18 +420,13 @@ export default function PurchaseOrderForm() {
                   </td>
                   <td class="border p-2">
                     <input
-                      type="text"
-                      inputmode="decimal"
-                      class="border p-1 rounded w-full"
-                      value={formatIDR(item.harga)}
-                      // onInput={(e) =>
-                      //   handleItemChange(i(), "harga", e.target.value)
-                      // }
-                      onBlur={(e) =>
-                        handleItemChange(i(), "harga", e.target.value, {
-                          triggerConversion: true,
-                        })
+                      type="number"
+                      class="border p-2"
+                      value={item.harga}
+                      onInput={(e) =>
+                        handleItemChange(i(), "harga", e.target.value)
                       }
+                      readOnly={item.harga !== undefined}
                     />
                   </td>
                   <td class="border p-2">
@@ -440,17 +434,19 @@ export default function PurchaseOrderForm() {
                       type="text"
                       class="border p-1 rounded w-full"
                       value={item.subtotalFormatted ?? ""}
-                      disabled
+                      readonly
                     />
                   </td>
                   <td class="border p-2 text-center">
-                    <button
-                      type="button"
-                      class="text-red-600 hover:text-red-800 text-xs"
-                      onClick={() => removeItem(i())}
-                    >
-                      <Trash2 size={20} />
-                    </button>
+                    {!item.readOnly && (
+                      <button
+                        type="button"
+                        class="text-red-600 hover:text-red-800 text-xs"
+                        onClick={() => removeItem(i())}
+                      >
+                        <Trash2 size={20} />
+                      </button>
+                    )}
                   </td>
                 </tr>
               )}

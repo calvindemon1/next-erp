@@ -14,8 +14,10 @@ import {
 } from "../../../utils/auth";
 import SearchableSalesContractSelect from "../../../components/SalesContractDropdownSearch";
 import { Trash2 } from "lucide-solid";
+import SupplierDropdownSearch from "../../../components/SupplierDropdownSearch";
+import FabricDropdownSearch from "../../../components/FabricDropdownSearch";
 
-export default function PurchaseOrderForm() {
+export default function KJPurchaseContractForm() {
   const navigate = useNavigate();
   const user = getUser();
 
@@ -45,18 +47,16 @@ export default function PurchaseOrderForm() {
     const satuanUnits = await getAllSatuanUnits(user?.token);
     const fabrics = await getAllFabrics(user?.token);
 
+    console.log(fabrics);
+
     setJenisPOOptions(jenisPO.data || []);
-    setSupplierOptions(suppliers.data || []);
+    setSupplierOptions(suppliers.suppliers || []);
     setSatuanUnitOptions(satuanUnits.data || []);
     setSalesContracts(getSalesContracts.contracts);
-    setFabricOptions(
-      fabrics?.kain?.map((f) => ({
-        value: f.id,
-        label: `${f.kode} | ${f.jenis}`,
-      })) || []
-    );
+    setFabricOptions(fabrics.kain || []);
 
     const lastSeq = await getLastSequence(user?.token, "sc", "domestik");
+    // console.log(lastSeq);
     setForm((prev) => ({
       ...prev,
       sequence_number: lastSeq?.sequence || "",
@@ -71,6 +71,40 @@ export default function PurchaseOrderForm() {
       maximumFractionDigits: 0,
     }).format(val);
   };
+
+  const generateNomorKontrak = () => {
+    const now = new Date();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const year = String(now.getFullYear()).slice(2);
+    const mmyy = `${month}${year}`;
+    const ppnValue = parseFloat(form().ppn) || 0;
+    const type = ppnValue > 0 ? "P" : "N";
+    const nomorUrut = "00001"; // bisa diganti nanti kalau udah pakai last sequence
+    const nomor = `BG/${type}/${mmyy}/${nomorUrut}`;
+
+    setForm((prev) => ({
+      ...prev,
+      sequence_number: nomor,
+    }));
+  };
+
+  // TODO: Ganti generate nomor kontrak manual jadi ambil dari backend
+  // Contoh ambil dari backend:
+  //
+  // const jenis_po = form().jenis_po_id;
+  // const lastSeq = await getLastSequence(user?.token, "po", jenis_po);
+  // const nextNum = String((lastSeq?.sequence || 0) + 1).padStart(5, "0");
+  // const now = new Date();
+  // const month = String(now.getMonth() + 1).padStart(2, "0");
+  // const year = String(now.getFullYear()).slice(2);
+  // const ppnValue = parseFloat(form().ppn) || 0;
+  // const type = ppnValue > 0 ? "P" : "N";
+  // const mmyy = `${month}${year}`;
+  // const nomor = `BG/${type}/${mmyy}/${nextNum}`;
+  // setForm((prev) => ({
+  //   ...prev,
+  //   sequence_number: nomor,
+  // }));
 
   const addItem = () => {
     setForm((prev) => ({
@@ -211,11 +245,28 @@ export default function PurchaseOrderForm() {
 
   return (
     <MainLayout>
-      <h1 class="text-2xl font-bold mb-4">Tambah Purchase Order</h1>
+      <h1 class="text-2xl font-bold mb-4">Tambah Purchase Order KJ</h1>
       <form class="space-y-4" onSubmit={handleSubmit}>
-        <div class="grid grid-cols-4 gap-4">
+        <div class="grid grid-cols-3 gap-4">
           <div>
-            <label class="block mb-1 font-medium">Jenis PO</label>
+            <label class="block mb-1 font-medium">No Kontrak</label>
+            <div class="flex gap-2">
+              <input
+                class="w-full border bg-gray-200 p-2 rounded"
+                value={form().sequence_number}
+                readOnly
+              />
+              <button
+                type="button"
+                class="bg-gray-300 text-sm px-2 rounded hover:bg-gray-400"
+                onClick={generateNomorKontrak}
+              >
+                Generate
+              </button>
+            </div>
+          </div>
+          <div>
+            <label class="block mb-1 font-medium">Jenis Kontrak</label>
             <select
               class="w-full border p-2 rounded"
               value={form().jenis_po_id}
@@ -230,26 +281,17 @@ export default function PurchaseOrderForm() {
               </For>
             </select>
           </div>
-
-          <div>
-            <label class="block mb-1 font-medium">No PO</label>
-            <input
-              class="w-full border p-2 rounded"
-              value={form().sequence_number}
-              readOnly
-            />
-          </div>
-
           <div>
             <label class="block mb-1 font-medium">Tanggal</label>
             <input
               type="date"
-              class="w-full border p-2 rounded"
+              class="w-full border bg-gray-200 p-2 rounded"
               value={form().tanggal}
               readOnly
             />
           </div>
-
+        </div>
+        {/* 
           <div class="">
             <label class="block mb-1 font-medium">No Sales Contract</label>
             <SearchableSalesContractSelect
@@ -258,23 +300,16 @@ export default function PurchaseOrderForm() {
               setForm={setForm}
               onChange={(id) => setForm({ ...form(), sales_contract_id: id })}
             />
-          </div>
-
+          </div> */}
+        <div class="grid grid-cols-4 gap-4">
           <div>
             <label class="block mb-1 font-medium">Supplier</label>
-            <select
-              class="w-full border p-2 rounded"
-              value={form().supplier_id}
-              onChange={(e) =>
-                setForm({ ...form(), supplier_id: e.target.value })
-              }
-              required
-            >
-              <option value="">Pilih Supplier</option>
-              <For each={supplierOptions()}>
-                {(s) => <option value={s.id}>{s.nama}</option>}
-              </For>
-            </select>
+            <SupplierDropdownSearch
+              suppliers={supplierOptions}
+              form={form}
+              setForm={setForm}
+              onChange={(id) => setForm({ ...form(), supplier_id: id })}
+            />
           </div>
 
           <div>
@@ -353,19 +388,14 @@ export default function PurchaseOrderForm() {
               {(item, i) => (
                 <tr>
                   <td class="border p-2 text-center">{i() + 1}</td>
-                  <td class="border p-2">
-                    <select
-                      class="border p-1 rounded w-full"
-                      value={item.fabric_id}
-                      // onChange={(e) =>
-                      //   handleItemChange(i(), "fabric_id", e.target.value)
-                      // }
-                    >
-                      <option value="">Pilih Kain</option>
-                      <For each={fabricOptions()}>
-                        {(f) => <option value={f.value}>{f.label}</option>}
-                      </For>
-                    </select>
+                  <td class="border w-72 p-2">
+                    <FabricDropdownSearch
+                      fabrics={fabricOptions}
+                      item={item}
+                      onChange={(val) =>
+                        handleItemChange(i(), "fabric_id", val)
+                      }
+                    />
                   </td>
                   <td class="border p-2">
                     <input

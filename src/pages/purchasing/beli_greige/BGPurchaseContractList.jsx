@@ -9,7 +9,7 @@ import {
 import Swal from "sweetalert2";
 import { Edit, Trash } from "lucide-solid";
 
-export default function PurchaseContractList() {
+export default function BGPurchaseContractList() {
   const [packingOrders, setPackingOrders] = createSignal([]);
   const navigate = useNavigate();
   const tokUser = getUser();

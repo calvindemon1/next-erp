@@ -18,6 +18,7 @@ import {
   updateDataSalesOrder,
 } from "../../utils/auth";
 import SearchableSalesContractSelect from "../../components/SalesContractDropdownSearch";
+import ColorDropdownSearch from "../../components/ColorDropdownSearch";
 import { produce } from "solid-js/store";
 import { RefreshCcw, Trash, Trash2 } from "lucide-solid";
 // import { createSC, updateSC, getSC } from "../../utils/auth";
@@ -738,7 +739,28 @@ export default function SalesOrderForm() {
                   { label: "Harga", field: "harga", type: "text" },
                 ].map(({ label, field, type, step }) => (
                   <td class="border px-2 py-1">
-                    {["kain_id", "warna_id", "grade_id"].includes(field) ? (
+                    {field === "warna_id" ? (
+                      <div>
+                        <ColorDropdownSearch
+                          colors={colorOptions}
+                          form={() => item}
+                          setForm={(val) =>
+                            handleItemChange(i, "warna_id", val)
+                          }
+                          onChange={(val) =>
+                            handleItemChange(i, "warna_id", val)
+                          }
+                        />
+
+                        {!isItemFieldEditable(field) && (
+                          <input
+                            type="hidden"
+                            name={`items[${i}][${field}]`}
+                            value={item[field] ?? ""}
+                          />
+                        )}
+                      </div>
+                    ) : field === "kain_id" || field === "grade_id" ? (
                       <div>
                         <select
                           class={`border p-1 rounded w-full text-sm ${

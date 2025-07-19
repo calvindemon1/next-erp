@@ -9,7 +9,7 @@ import {
 import Swal from "sweetalert2";
 import { Edit, Trash } from "lucide-solid";
 
-export default function PurchaseOrderList() {
+export default function OCPurchaseContractList() {
   const [packingOrders, setPackingOrders] = createSignal([]);
   const navigate = useNavigate();
   const tokUser = getUser();
@@ -112,12 +112,12 @@ export default function PurchaseOrderList() {
   return (
     <MainLayout>
       <div class="flex justify-between items-center mb-4">
-        <h1 class="text-2xl font-bold">Daftar Purchase Contract</h1>
+        <h1 class="text-2xl font-bold">Daftar Kontrak Proses</h1>
         <button
           class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-          onClick={() => navigate("/purchaseorder/form")}
+          onClick={() => navigate("/ordercelup-purchasecontract/form")}
         >
-          + Tambah Packing Order
+          + Tambah Kontrak Proses
         </button>
       </div>
 
