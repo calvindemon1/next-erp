@@ -6,6 +6,7 @@ export default function SupplierDropdownSearch({
   form,
   setForm,
   onChange,
+  disabled = false,
 }) {
   const [isOpen, setIsOpen] = createSignal(false);
   const [search, setSearch] = createSignal("");
@@ -16,6 +17,7 @@ export default function SupplierDropdownSearch({
     if (!dropdownRef) return;
     const cleanup = onClickOutside(dropdownRef, () => setIsOpen(false));
     onCleanup(cleanup);
+    console.log(form());
   });
 
   const filteredSuppliers = createMemo(() => {
@@ -42,13 +44,16 @@ export default function SupplierDropdownSearch({
     <div class="relative" ref={dropdownRef}>
       <button
         type="button"
-        class="w-full border p-2 rounded text-left bg-transparent"
-        onClick={() => setIsOpen(!isOpen())}
+        class={`w-full border p-2 rounded text-left ${
+          disabled ? "bg-gray-200" : "bg-white"
+        } cursor-default`}
+        disabled={disabled}
+        onClick={() => !disabled && setIsOpen(!isOpen())}
       >
         {selectedSupplier() ? selectedSupplier().nama : "Pilih Supplier"}
       </button>
 
-      {isOpen() && (
+      {isOpen() && !disabled && (
         <div class="absolute z-10 w-full bg-white border mt-1 rounded shadow max-h-64 overflow-y-auto">
           <input
             type="text"

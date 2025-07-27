@@ -242,6 +242,15 @@ export default function BGPurchaseOrderForm() {
               </button>
             </div>
           </div>
+          <div hidden>
+            <label class="block mb-1 font-medium">Jenis Order</label>
+            <input
+              type="date"
+              class="w-full border bg-gray-200 p-2 rounded"
+              value="BG"
+              readOnly
+            />
+          </div>
           <div>
             <label class="block mb-1 font-medium">No Purchase Contract</label>
             <PurchasingContractDropdownSearch
@@ -249,6 +258,7 @@ export default function BGPurchaseOrderForm() {
               form={form}
               setForm={setForm}
               onChange={handlePurchaseContractChange}
+              disabled={true}
             />
           </div>
           <div>

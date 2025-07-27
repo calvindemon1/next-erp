@@ -152,10 +152,13 @@ export default function MainLayout(props) {
       case "warehouse":
         setWarehouseIsOpen(true);
         if (
-          warehouseRoutes.transaction.some((p) => location.pathname.startsWith(p))
+          warehouseRoutes.transaction.some((p) =>
+            location.pathname.startsWith(p)
+          )
         ) {
           setWarehouseTransactionIsOpen(true);
         }
+
         if (
           warehouseRoutes.greige.some((p) => location.pathname.startsWith(p))
         ) {
@@ -521,21 +524,6 @@ export default function MainLayout(props) {
                             Purchase Order
                           </A>
                         </li>
-                        <li>
-                          <A
-                            href="/beligreige-deliverynote"
-                            class={`block pl-12 pr-4 py-2 hover:bg-gray-700 ${
-                              location.pathname ===
-                                "/beligreige-deliverynote" ||
-                              location.pathname ===
-                                "/beligreige-deliverynote/form"
-                                ? "bg-gray-700 text-white"
-                                : ""
-                            }`}
-                          >
-                            Surat Jalan
-                          </A>
-                        </li>
                       </ul>
                     </li>
                   </ul>
@@ -588,21 +576,6 @@ export default function MainLayout(props) {
                             }`}
                           >
                             Order Celup
-                          </A>
-                        </li>
-                        <li>
-                          <A
-                            href="/ordercelup-deliverynote"
-                            class={`block pl-12 pr-4 py-2 hover:bg-gray-700 ${
-                              location.pathname ===
-                                "/ordercelup-deliverynote" ||
-                              location.pathname ===
-                                "/ordercelup-deliverynote/form"
-                                ? "bg-gray-700 text-white"
-                                : ""
-                            }`}
-                          >
-                            Surat Jalan
                           </A>
                         </li>
                       </ul>
@@ -660,20 +633,6 @@ export default function MainLayout(props) {
                             Order Celup KJ
                           </A>
                         </li>
-                        <li>
-                          <A
-                            href="/kainjadi-deliverynote"
-                            class={`block pl-12 pr-4 py-2 hover:bg-gray-700 ${
-                              location.pathname === "/kainjadi-deliverynote" ||
-                              location.pathname ===
-                                "/kainjadi-deliverynote/form"
-                                ? "bg-gray-700 text-white"
-                                : ""
-                            }`}
-                          >
-                            Surat Jalan KJ
-                          </A>
-                        </li>
                       </ul>
                     </li>
                   </ul>
@@ -714,20 +673,6 @@ export default function MainLayout(props) {
                             Purchase Order
                           </A>
                         </li>
-                        <li>
-                          <A
-                            href="/jualbeli-deliverynote"
-                            class={`block pl-12 pr-4 py-2 hover:bg-gray-700 ${
-                              location.pathname === "/jualbeli-deliverynote" ||
-                              location.pathname ===
-                                "/jualbeli-deliverynote/form"
-                                ? "bg-gray-700 text-white"
-                                : ""
-                            }`}
-                          >
-                            Surat Jalan KJ
-                          </A>
-                        </li>
                       </ul>
                     </li>
                   </ul>
@@ -744,7 +689,6 @@ export default function MainLayout(props) {
                     </span>
                   </button>
                 </li>
-
                 {/* SUB MENU PENJUALAN */}
                 <li
                   class={`transition-all duration-300 ease-in-out overflow-hidden ${
@@ -782,6 +726,7 @@ export default function MainLayout(props) {
                     </li>
                   </ul>
                 </li>
+
                 {/* GUDANG */}
                 <li>
                   <button
@@ -794,44 +739,7 @@ export default function MainLayout(props) {
                     </span>
                   </button>
                 </li>
-
                 {/* SUB MENU GUDANG */}
-                {/* <li
-                  class={`transition-all duration-300 ease-in-out overflow-hidden ${
-                    isWarehouseIsOpen()
-                      ? "max-h-fit opacity-100"
-                      : "max-h-0 opacity-0"
-                  }`}
-                >
-                  <ul>
-                    <li>
-                      <A
-                        href="/packingorder"
-                        class={`block pl-8 pr-4 py-2 hover:bg-gray-700 ${
-                          location.pathname === "/packingorder" ||
-                          location.pathname === "/packingorder/form"
-                            ? "bg-gray-700 text-white"
-                            : ""
-                        }`}
-                      >
-                        Packing Order
-                      </A>
-                    </li>
-                    <li>
-                      <A
-                        href="/deliverynote"
-                        class={`block pl-8 pr-4 py-2 hover:bg-gray-700 ${
-                          location.pathname === "/deliverynote" ||
-                          location.pathname === "/deliverynote/form"
-                            ? "bg-gray-700 text-white"
-                            : ""
-                        }`}
-                      >
-                        Surat Jalan
-                      </A>
-                    </li>
-                  </ul>
-                </li> */}
                 <li
                   class={`transition-all duration-300 ease-in-out overflow-hidden ${
                     isWarehouseIsOpen()
@@ -919,23 +827,7 @@ export default function MainLayout(props) {
                           : "max-h-0 opacity-0"
                       }`}
                     >
-                      <ul>
-                        <li>
-                          <A
-                            href="/beligreige-deliverynote"
-                            class={`block pl-12 pr-4 py-2 hover:bg-gray-700 ${
-                              location.pathname ===
-                                "/beligreige-deliverynote" ||
-                              location.pathname ===
-                                "/beligreige-deliverynote/form"
-                                ? "bg-gray-700 text-white"
-                                : ""
-                            }`}
-                          >
-                            Surat Jalan
-                          </A>
-                        </li>
-                      </ul>
+                      <ul></ul>
                     </li>
                   </ul>
                   <ul>

@@ -114,7 +114,6 @@ export default function BGPurchaseContractForm() {
         {
           fabric_id: "",
           lebar_greige: "",
-          lebar_finish: "",
           meter: "",
           yard: "",
           harga: "",
@@ -265,21 +264,14 @@ export default function BGPurchaseContractForm() {
               </button>
             </div>
           </div>
-          <div>
+          <div hidden>
             <label class="block mb-1 font-medium">Jenis Kontrak</label>
-            <select
-              class="w-full border p-2 rounded"
-              value={form().jenis_po_id}
-              onChange={(e) =>
-                setForm({ ...form(), jenis_po_id: e.target.value })
-              }
-              required
-            >
-              <option value="">Pilih Jenis PO</option>
-              <For each={jenisPOOptions()}>
-                {(po) => <option value={po.id}>{po.jenis}</option>}
-              </For>
-            </select>
+            <input
+              type="date"
+              class="w-full border bg-gray-200 p-2 rounded"
+              value="BG"
+              readOnly
+            />
           </div>
           <div>
             <label class="block mb-1 font-medium">Tanggal</label>
@@ -288,6 +280,15 @@ export default function BGPurchaseContractForm() {
               class="w-full border bg-gray-200 p-2 rounded"
               value={form().tanggal}
               readOnly
+            />
+          </div>
+          <div>
+            <label class="block mb-1 font-medium">Supplier</label>
+            <SupplierDropdownSearch
+              suppliers={supplierOptions}
+              form={form}
+              setForm={setForm}
+              onChange={(id) => setForm({ ...form(), supplier_id: id })}
             />
           </div>
         </div>
@@ -301,17 +302,7 @@ export default function BGPurchaseContractForm() {
               onChange={(id) => setForm({ ...form(), sales_contract_id: id })}
             />
           </div> */}
-        <div class="grid grid-cols-4 gap-4">
-          <div>
-            <label class="block mb-1 font-medium">Supplier</label>
-            <SupplierDropdownSearch
-              suppliers={supplierOptions}
-              form={form}
-              setForm={setForm}
-              onChange={(id) => setForm({ ...form(), supplier_id: id })}
-            />
-          </div>
-
+        <div class="grid grid-cols-3 gap-4">
           <div>
             <label class="block mb-1 font-medium">Satuan Unit</label>
             <select
@@ -375,7 +366,6 @@ export default function BGPurchaseContractForm() {
               <th class="border p-2">#</th>
               <th class="border p-2">Jenis Kain</th>
               <th class="border p-2">Lebar Greige</th>
-              <th class="border p-2">Lebar Finish</th>
               <th class="border p-2">Meter</th>
               <th class="border p-2">Yard</th>
               <th class="border p-2">Harga</th>
@@ -404,16 +394,6 @@ export default function BGPurchaseContractForm() {
                       value={item.lebar_greige}
                       // onInput={(e) =>
                       //   handleItemChange(i(), "lebar_greige", e.target.value)
-                      // }
-                    />
-                  </td>
-                  <td class="border p-2">
-                    <input
-                      type="number"
-                      class="border p-1 rounded w-full"
-                      value={item.lebar_finish}
-                      // onInput={(e) =>
-                      //   handleItemChange(i(), "lebar_finish", e.target.value)
                       // }
                     />
                   </td>
