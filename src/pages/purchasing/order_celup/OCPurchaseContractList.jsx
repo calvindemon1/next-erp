@@ -2,27 +2,29 @@ import { createEffect, createMemo, createSignal } from "solid-js";
 import { useNavigate } from "@solidjs/router";
 import MainLayout from "../../../layouts/MainLayout";
 import {
+  getAllBeliGreiges,
   getAllPackingLists,
   getUser,
+  softDeleteBeliGreige,
   softDeletePackingList,
 } from "../../../utils/auth";
 import Swal from "sweetalert2";
 import { Edit, Trash } from "lucide-solid";
 
 export default function OCPurchaseContractList() {
-  const [packingOrders, setPackingOrders] = createSignal([]);
+  const [beliGreiges, setBeliGreiges] = createSignal([]);
   const navigate = useNavigate();
   const tokUser = getUser();
   const [currentPage, setCurrentPage] = createSignal(1);
   const pageSize = 20;
 
   const totalPages = createMemo(() => {
-    return Math.max(1, Math.ceil(packingOrders().length / pageSize));
+    return Math.max(1, Math.ceil(beliGreiges().length / pageSize));
   });
 
   const paginatedData = () => {
     const startIndex = (currentPage() - 1) * pageSize;
-    return packingOrders().slice(startIndex, startIndex + pageSize);
+    return beliGreiges().slice(startIndex, startIndex + pageSize);
   };
 
   const handleDelete = async (id) => {
@@ -39,7 +41,7 @@ export default function OCPurchaseContractList() {
 
     if (result.isConfirmed) {
       try {
-        const deleteCustomer = await softDeletePackingList(id, tokUser?.token);
+        const deleteCustomer = await softDeleteBeliGreige(id, tokUser?.token);
 
         await Swal.fire({
           title: "Terhapus!",
@@ -49,7 +51,7 @@ export default function OCPurchaseContractList() {
         });
 
         // Optional: update UI setelah hapus
-        setPackingOrders(packingOrders().filter((s) => s.id !== id));
+        setBeliGreiges(beliGreiges().filter((s) => s.id !== id));
       } catch (error) {
         console.error(error);
         Swal.fire({
@@ -65,17 +67,14 @@ export default function OCPurchaseContractList() {
     }
   };
 
-  const handleGetAllpackingOrders = async (tok) => {
-    const getDatapackingOrders = await getAllPackingLists(tok);
+  const handleGetAllBeliGreiges = async (tok) => {
+    const getDataBeliGreiges = await getAllBeliGreiges(tok);
 
-    const sortedData = getDatapackingOrders.sort((a, b) => a.id - b.id);
-    setPackingOrders(sortedData);
-
-    if (getDatapackingOrders.status === 200) {
-      const sortedData = getDatapackingOrders.contracts.sort(
+    if (getDataBeliGreiges.status === 200) {
+      const sortedData = getDataBeliGreiges.contracts.sort(
         (a, b) => a.id - b.id
       );
-      setPackingOrders(sortedData);
+      setBeliGreiges(sortedData);
     }
   };
 
@@ -105,7 +104,7 @@ export default function OCPurchaseContractList() {
 
   createEffect(() => {
     if (tokUser?.token) {
-      handleGetAllpackingOrders(tokUser?.token);
+      handleGetAllBeliGreiges(tokUser?.token);
     }
   });
 
@@ -115,7 +114,7 @@ export default function OCPurchaseContractList() {
         <h1 class="text-2xl font-bold">Daftar Kontrak Proses</h1>
         <button
           class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-          onClick={() => navigate("/ordercelup-purchasecontract/form")}
+          onClick={() => navigate("/beligreige-purchasecontract/form")}
         >
           + Tambah Kontrak Proses
         </button>
@@ -127,10 +126,9 @@ export default function OCPurchaseContractList() {
             <tr class="bg-gray-200 text-left text-sm uppercase text-gray-700">
               <th class="py-2 px-4">ID</th>
               <th class="py-2 px-2">No Pembelian</th>
-              <th class="py-2 px-2">No SC</th>
               <th class="py-2 px-2">Supplier</th>
-              <th class="py-2 px-2">Tanggal Dibuat</th>
-              <th class="py-2 px-2">Catatan</th>
+              <th class="py-2 px-2">Total</th>
+              <th class="py-2 px-2">Satuan Unit</th>
               <th class="py-2 px-4">Aksi</th>
             </tr>
           </thead>
@@ -140,15 +138,17 @@ export default function OCPurchaseContractList() {
                 <td class="py-2 px-4">
                   {(currentPage() - 1) * pageSize + (index + 1)}
                 </td>
-                <td class="py-2 px-4">{sc.no_so}</td>
-                <td class="py-2 px-4">{sc.no_pl}</td>
-                <td class="py-2 px-4">{sc.col}</td>
-                <td class="py-2 px-4">{formatTanggalIndo(sc.created_at)}</td>
-                <td class="py-2 px-4">{sc.catatan}</td>
+                <td class="py-2 px-4">{sc.no_pc}</td>
+                <td class="py-2 px-4">{sc.supplier_name}</td>
+                <td class="py-2 px-4"></td>
+                <td class="py-2 px-4">{sc.satuan_unit_name}</td>
+                {/* <td class="py-2 px-4">{formatTanggalIndo(sc.created_at)}</td> */}
                 <td class="py-2 px-4 space-x-2">
                   <button
                     class="text-blue-600 hover:underline"
-                    onClick={() => navigate(`/purchaseorder/form?id=${sc.id}`)}
+                    onClick={() =>
+                      navigate(`/beligreige-purchasecontract/form?id=${sc.id}`)
+                    }
                   >
                     <Edit size={25} />
                   </button>
