@@ -69,7 +69,7 @@ export default function OCPurchaseOrderList() {
 
   const handleGetAllPurchaseOrders = async (tok) => {
     const getDataPurchaseOrders = await getAllBeliGreigeOrders(tok);
-    console.log(getDataPurchaseOrders);
+    
     if (getDataPurchaseOrders.status === 200) {
       const sortedData = getDataPurchaseOrders.orders.sort(
         (a, b) => a.id - b.id

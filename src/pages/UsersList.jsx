@@ -3,6 +3,7 @@ import { useNavigate } from "@solidjs/router";
 import MainLayout from "../layouts/MainLayout";
 import { getAllUsers, getUser, softDeleteUser } from "../utils/auth";
 import Swal from "sweetalert2";
+import { Edit, Trash } from "lucide-solid";
 
 export default function UsersList() {
   const [users, setUsers] = createSignal([]);
@@ -126,13 +127,13 @@ export default function UsersList() {
                   class="text-blue-600 hover:underline"
                   onClick={() => navigate(`/users/form?id=${user.id}`)}
                 >
-                  Edit
+                  <Edit size={25} />
                 </button>
                 <button
                   class="text-red-600 hover:underline"
                   onClick={() => handleDelete(user.id)}
                 >
-                  Hapus
+                  <Trash size={25}/>
                 </button>
               </td>
             </tr>
