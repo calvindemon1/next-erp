@@ -1,5 +1,42 @@
+import logoNavel from "../../assets/img/navelLogo.png";
+
 export default function PackingOrderPrint(props) {
   const data = props.data;
+
+  function formatRupiahNumber(value) {
+    if (typeof value !== "number") {
+      value = parseFloat(value);
+    }
+    if (isNaN(value)) return "-";
+    return new Intl.NumberFormat("id-ID", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(value);
+  }
+
+  const itemsPerPage = 14;
+  const itemPages = paginateItems(data.items ?? [], itemsPerPage);
+
+  function paginateItems(items, itemsPerPage) {
+    const pages = [];
+    for (let i = 0; i < items.length; i += itemsPerPage) {
+      pages.push(items.slice(i, i + itemsPerPage));
+    }
+    return pages;
+  }
+
+  const totalMeter = data.items?.reduce(
+    (sum, i) => sum + Number(i.meter_total || 0),
+    0
+  );
+  const totalYard = data.items?.reduce(
+    (sum, i) => sum + Number(i.yard_total || 0),
+    0
+  );
+  const subTotal = data.items?.reduce(
+    (sum, i) => sum + (i.harga ?? 0) * (i.meter_total ?? 0),
+    0
+  );
 
   return (
     <>
@@ -17,145 +54,291 @@ export default function PackingOrderPrint(props) {
           print-color-adjust: exact !important;
           font-family: sans-serif;
         }
+        @media print {
+          .page {
+            page-break-after: always;
+          }
+        }
       `}</style>
 
       <div
+        className="flex flex-col items-center gap-2"
         style={{
           position: "relative",
           width: "210mm",
           height: "297mm",
           overflow: "hidden",
-          padding: "20mm",
+          padding: "5mm",
         }}
       >
-        <h1
-          style={{ fontSize: "24px", fontWeight: "bold", marginBottom: "20px" }}
-        >
-          Sales Contract
-        </h1>
+        <img className="w-40" src={logoNavel} alt="" />
+        <h1 className="text-2xl uppercase font-bold mb-5">Sales Contract</h1>
 
-        <table
-          style={{ width: "100%", fontSize: "12px", marginBottom: "20px" }}
-        >
-          <tbody>
-            <tr>
-              <td style={{ fontWeight: "bold", width: "150px" }}>Type</td>
-              <td>{data.type}</td>
-            </tr>
-            <tr>
-              <td style={{ fontWeight: "bold" }}>No. Sales Contract</td>
-              <td>{data.no_pesan}</td>
-            </tr>
-            <tr>
-              <td style={{ fontWeight: "bold" }}>PO Customer</td>
-              <td>{data.po_cust}</td>
-            </tr>
-            <tr>
-              <td style={{ fontWeight: "bold" }}>Validity Contract</td>
-              <td>{data.validity_contract}</td>
-            </tr>
-            <tr>
-              <td style={{ fontWeight: "bold" }}>Customer ID</td>
-              <td>{data.customer_id}</td>
-            </tr>
-            <tr>
-              <td style={{ fontWeight: "bold" }}>Currency ID</td>
-              <td>{data.currency_id}</td>
-            </tr>
-            <tr>
-              <td style={{ fontWeight: "bold" }}>Kurs</td>
-              <td>{data.kurs}</td>
-            </tr>
-            <tr>
-              <td style={{ fontWeight: "bold" }}>Termin (Hari)</td>
-              <td>{data.termin}</td>
-            </tr>
-            <tr>
-              <td style={{ fontWeight: "bold" }}>PPN (%)</td>
-              <td>{data.ppn_percent}</td>
-            </tr>
-            <tr>
-              <td style={{ fontWeight: "bold" }}>Catatan</td>
-              <td>{data.catatan}</td>
-            </tr>
-            <tr>
-              <td style={{ fontWeight: "bold" }}>Satuan Unit ID</td>
-              <td>{data.satuan_unit_id}</td>
-            </tr>
-          </tbody>
-        </table>
+        <div className="w-full flex gap-2 text-sm">
+          {/* LEFT TABLE */}
+          <table className="w-[55%] border-2 border-black text-[13px] table-fixed">
+            <tbody>
+              <tr>
+                <td
+                  className="px-2 pt-1 max-w-[300px] break-words whitespace-pre-wrap"
+                  colSpan={2}
+                >
+                  Kepada Yth:
+                </td>
+              </tr>
+              <tr>
+                <td
+                  className="px-2 max-w-[300px] break-words whitespace-pre-wrap"
+                  colSpan={2}
+                >
+                  PT AJI WIJAYATEX GROUP
+                </td>
+              </tr>
+              <tr>
+                <td
+                  className="px-2 max-w-[300px] break-words whitespace-pre-wrap"
+                  colSpan={2}
+                >
+                  KERTOHARJO BLOK O NO.0 RT 001 RW 005 KURIPAN
+                </td>
+              </tr>
+              <tr>
+                <td
+                  className="px-2 max-w-[300px] break-words whitespace-pre-wrap"
+                  colSpan={2}
+                >
+                  KERTOHARJO PEKALONGAN SEL
+                </td>
+              </tr>
+              <tr>
+                <td className="px-2 py-1 whitespace-nowrap">Telp:</td>
+                <td className="px-2 py-1 whitespace-nowrap">Fax:</td>
+              </tr>
+            </tbody>
+          </table>
 
-        <h2
-          style={{ fontSize: "16px", fontWeight: "bold", marginBottom: "10px" }}
-        >
-          Items
-        </h2>
+          {/* MIDDLE TABLE */}
+          <div className="flex flex-col gap-2 w-[20%]">
+            <table className="border-2 border-black table-fixed w-full">
+              <tbody>
+                <tr className="border-b border-black">
+                  <td className="px-2 py-1 w-[30%] whitespace-nowrap">Jenis</td>
+                  <td className="w-[5%] text-center">:</td>
+                  <td className="px-2 py-1 w-[65%]">{data.currency_id}</td>
+                </tr>
+                <tr>
+                  <td className="px-2 py-1 whitespace-nowrap">Kurs</td>
+                  <td className="text-center">:</td>
+                  <td className="px-2 py-1">{formatRupiahNumber(data.kurs)}</td>
+                </tr>
+              </tbody>
+            </table>
 
-        <table
-          style={{
-            width: "100%",
-            borderCollapse: "collapse",
-            fontSize: "12px",
-          }}
-        >
-          <thead style={{ backgroundColor: "#eee" }}>
+            <table className="h-full border-2 border-black table-fixed w-full">
+              <tbody>
+                <tr>
+                  <td className="px-2 pb-8 text-center align-top break-words max-w-[180px]">
+                    PO Customer
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          {/* RIGHT TABLE */}
+          <table className="w-[35%] border-2 border-black table-fixed text-sm">
+            <tbody>
+              {[
+                { label: "No. SC", value: data.no_sc },
+                { label: "Tanggal", value: data.tanggal },
+                { label: "Validity", value: data.validity },
+                { label: "Payment", value: data.payment },
+              ].map((row, idx) => (
+                <tr key={idx} className="border-b border-black">
+                  <td className="font-bold px-2 w-[30%] whitespace-nowrap">
+                    {row.label}
+                  </td>
+                  <td className="w-[5%] text-center">:</td>
+                  <td className="px-2 break-words w-[65%]">{row.value}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* ITEM TABLE */}
+        <table className="w-full table-fixed border border-black text-[12px] border-collapse mt-3">
+          <thead className="bg-gray-200">
             <tr>
-              <th style={{ border: "1px solid #000", padding: "4px" }}>
-                Kain ID
+              <th className="border border-black p-1 w-[30px]" rowSpan={2}>
+                No
               </th>
-              <th style={{ border: "1px solid #000", padding: "4px" }}>
-                Grade ID
+              <th className="border border-black p-1 w-[70px]" rowSpan={2}>
+                Kode
               </th>
-              <th style={{ border: "1px solid #000", padding: "4px" }}>
+              <th className="border border-black p-1 w-[150px]" rowSpan={2}>
+                Jenis Kain
+              </th>
+              <th className="border border-black p-1 w-[60px]" rowSpan={2}>
                 Lebar
               </th>
-              <th style={{ border: "1px solid #000", padding: "4px" }}>
+              <th className="border border-black p-1 w-[60px]" rowSpan={2}>
                 Gramasi
               </th>
-              <th style={{ border: "1px solid #000", padding: "4px" }}>
-                Meter Total
+              <th
+                className="border border-black p-1 w-[140px] text-center"
+                colSpan={2}
+              >
+                Quantity
               </th>
-              <th style={{ border: "1px solid #000", padding: "4px" }}>
-                Yard Total
-              </th>
-              <th style={{ border: "1px solid #000", padding: "4px" }}>
-                Kilogram Total
-              </th>
-              <th style={{ border: "1px solid #000", padding: "4px" }}>
+              <th className="border border-black p-1 w-[100px]" rowSpan={2}>
                 Harga
               </th>
+              <th className="border border-black p-1 w-[130px]" rowSpan={2}>
+                Jumlah
+              </th>
+            </tr>
+            <tr>
+              <th className="border border-black p-1 w-[160px]">Meter</th>
+              <th className="border border-black p-1 w-[160px]">Yard</th>
             </tr>
           </thead>
           <tbody>
-            {data.items?.map((item, i) => (
+            {(data.items || []).map((item, i) => (
               <tr key={i}>
-                <td style={{ border: "1px solid #000", padding: "4px" }}>
-                  {item.kain_id}
+                <td className="border border-black p-1 text-center">{i + 1}</td>
+                <td className="border border-black p-1 text-center">
+                  {item.kode}
                 </td>
-                <td style={{ border: "1px solid #000", padding: "4px" }}>
-                  {item.grade_id}
-                </td>
-                <td style={{ border: "1px solid #000", padding: "4px" }}>
+                <td className="border border-black p-1">{item.nama_kain}</td>
+                <td className="border border-black p-1 text-center">
                   {item.lebar}
                 </td>
-                <td style={{ border: "1px solid #000", padding: "4px" }}>
+                <td className="border border-black p-1 text-center">
                   {item.gramasi}
                 </td>
-                <td style={{ border: "1px solid #000", padding: "4px" }}>
+                <td className="border border-black p-1 text-right">
                   {item.meter_total}
                 </td>
-                <td style={{ border: "1px solid #000", padding: "4px" }}>
+                <td className="border border-black p-1 text-right">
                   {item.yard_total}
                 </td>
-                <td style={{ border: "1px solid #000", padding: "4px" }}>
-                  {item.kilogram_total ?? "-"}
-                </td>
-                <td style={{ border: "1px solid #000", padding: "4px" }}>
+                <td className="border border-black p-1 text-right">
                   {item.harga?.toLocaleString("id-ID")}
+                </td>
+                <td className="border border-black p-1 text-right">
+                  {item.harga && item.meter_total
+                    ? (item.harga * item.meter_total).toLocaleString("id-ID")
+                    : "-"}
                 </td>
               </tr>
             ))}
+
+            {/* Tambahin row kosong */}
+            {Array.from({ length: 14 - data.items.length }).map((_, i) => (
+              <tr key={`empty-${i}`}>
+                <td className="border border-black p-1 text-center h-5">
+                  {data.items.length + i + 1}
+                </td>
+                <td className="border border-black p-1 text-center"></td>
+                <td className="border border-black p-1"></td>
+                <td className="border border-black p-1 text-center"></td>
+                <td className="border border-black p-1 text-center"></td>
+                <td className="border border-black p-1 text-right"></td>
+                <td className="border border-black p-1 text-right"></td>
+                <td className="border border-black p-1 text-right"></td>
+                <td className="border border-black p-1 text-right"></td>
+              </tr>
+            ))}
           </tbody>
+          <tfoot>
+            <tr>
+              <td colSpan={5} className="border border-black px-2 py-1" />
+              <td className="border border-black px-2 py-1 text-right font-bold">
+                {formatRupiahNumber(totalMeter)}
+              </td>
+              <td className="border border-black px-2 py-1 text-right font-bold">
+                {formatRupiahNumber(totalYard)}
+              </td>
+              <td className="border border-black px-2 py-1 text-right font-bold">
+                Sub Total
+              </td>
+              <td className="border border-black px-2 py-1 text-right">
+                {formatRupiahNumber(subTotal)}
+              </td>
+            </tr>
+            <tr>
+              <td colSpan={7} className="border border-black px-2 py-1" />
+              <td className="border border-black px-2 py-1 text-right font-bold">
+                DPP
+              </td>
+              <td className="border border-black px-2 py-1 text-right">
+                {formatRupiahNumber(data.dpp)}
+              </td>
+            </tr>
+            <tr>
+              <td colSpan={7} className="border border-black px-2 py-1" />
+              <td className="border border-black px-2 py-1 text-right font-bold">
+                Nilai Lain
+              </td>
+              <td className="border border-black px-2 py-1 text-right">
+                {formatRupiahNumber(data.nilai_lain)}
+              </td>
+            </tr>
+            <tr>
+              <td colSpan={7} className="border border-black px-2 py-1" />
+              <td className="border border-black px-2 py-1 text-right font-bold">
+                PPN
+              </td>
+              <td className="border border-black px-2 py-1 text-right">
+                {formatRupiahNumber(data.ppn)}
+              </td>
+            </tr>
+            <tr>
+              <td colSpan={7} className="border border-black px-2 py-1" />
+              <td className="border border-black px-2 py-1 text-right font-bold">
+                Jumlah Total
+              </td>
+              <td className="border border-black px-2 py-1 text-right">
+                {formatRupiahNumber(data.total)}
+              </td>
+            </tr>
+            <tr>
+              <td colSpan={9} className="border border-black p-2 align-top">
+                <div className="font-bold mb-1">NOTE:</div>
+                <div className="whitespace-pre-wrap break-words">
+                  {data.notes ?? "-"}
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td colSpan={9} className="border border-black">
+                <div className="w-full flex justify-between text-[12px] pt-5 px-2">
+                  <div className="text-center w-1/3 pb-3">
+                    Customer
+                    <br />
+                    <br />
+                    <br />
+                    <br />( ...................... )
+                  </div>
+                  <div className="text-center w-1/3">
+                    Mengetahui
+                    <br />
+                    <br />
+                    <br />
+                    <br />( ...................... )
+                  </div>
+                  <div className="text-center w-1/3">
+                    Dibuat Oleh
+                    <br />
+                    <br />
+                    <br />
+                    <br />( ...................... )
+                  </div>
+                </div>
+              </td>
+            </tr>
+          </tfoot>
         </table>
       </div>
     </>

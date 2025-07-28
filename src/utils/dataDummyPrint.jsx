@@ -16,8 +16,8 @@ const dummyDataSalesContract = {
     {
       kain_id: "K001",
       grade_id: "A",
-      lebar: "150 cm",
-      gramasi: "180 gsm",
+      lebar: "150",
+      gramasi: "180",
       meter_total: 500,
       yard_total: 546.8,
       kilogram_total: 90,
@@ -26,8 +26,8 @@ const dummyDataSalesContract = {
     {
       kain_id: "K002",
       grade_id: "B",
-      lebar: "160 cm",
-      gramasi: "200 gsm",
+      lebar: "160",
+      gramasi: "200",
       meter_total: 300,
       yard_total: 328.1,
       kilogram_total: 65,
@@ -36,8 +36,8 @@ const dummyDataSalesContract = {
     {
       kain_id: "K003",
       grade_id: "A",
-      lebar: "155 cm",
-      gramasi: "190 gsm",
+      lebar: "155",
+      gramasi: "190",
       meter_total: 200,
       yard_total: 218.7,
       kilogram_total: null,
