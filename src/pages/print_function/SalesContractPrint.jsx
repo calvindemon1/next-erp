@@ -1,7 +1,7 @@
 import { createMemo, createSignal } from "solid-js";
 import logoNavel from "../../assets/img/navelLogo.png";
 
-export default function PackingOrderPrint(props) {
+export default function SalesContractPrint(props) {
   const data = props.data;
 
   function formatRupiahNumber(value) {
@@ -193,7 +193,7 @@ export default function PackingOrderPrint(props) {
                 { label: "No. SC", value: data.no_sc },
                 { label: "Tanggal", value: data.tanggal },
                 { label: "Validity", value: data.validity_contract },
-                { label: "Payment", value: data.termin + " hari" },
+                { label: "Payment", value: data.termin + " Hari" },
               ].map((row, idx) => (
                 <tr key={idx} className="border-b border-black">
                   <td className="font-bold px-2 w-[30%] whitespace-nowrap">
@@ -354,7 +354,7 @@ export default function PackingOrderPrint(props) {
             </tr>
             <tr>
               <td colSpan={9} className="border border-black">
-                <div className="w-full flex justify-between text-[12px] pt-5 px-2">
+                <div className="w-full flex justify-between text-[12px] py-5 px-2">
                   <div className="text-center w-1/3 pb-3">
                     Customer
                     <br />

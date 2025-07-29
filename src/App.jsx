@@ -64,7 +64,11 @@ import DeliveryNoteForm from "./pages/warehouse/DeliveryNoteForm";
 import PackingListList from "./pages/warehouse/PackingListList";
 import PackingListForm from "./pages/warehouse/PackingListForm";
 // PRINT
-import SalesContractPrint from "./utils/dataDummyPrint";
+import SalesContractPrint from "./utils/SalesContractDummyPrint";
+import SalesOrderPrint from "./utils/SalesOrderDummyPrint";
+import PackingOrderPrint from "./utils/PackingOrderDummyPrint";
+import SuratJalanPrint from "./utils/SuratJalanDummyPrint";
+
 function App() {
   return (
     <Router>
@@ -210,6 +214,10 @@ function App() {
       {/* PRINT */}
 
       <Route path="/print/salescontract" component={SalesContractPrint} />
+      <Route path="/print/salesorder" component={SalesOrderPrint} />
+      <Route path="/print/packingorder" component={PackingOrderPrint} />
+      <Route path="/print/packingorder" component={PackingOrderPrint} />
+      <Route path="/print/suratjalan" component={SuratJalanPrint} />
 
       {/* PRINT */}
 

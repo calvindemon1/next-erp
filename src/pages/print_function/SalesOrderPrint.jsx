@@ -1,7 +1,7 @@
 import { createMemo, createSignal } from "solid-js";
 import logoNavel from "../../assets/img/navelLogo.png";
 
-export default function PackingOrderPrint(props) {
+export default function SalesOrderPrint(props) {
   const data = props.data;
 
   function formatRupiahNumber(value) {
@@ -108,7 +108,7 @@ export default function PackingOrderPrint(props) {
         }}
       >
         <img className="w-40" src={logoNavel} alt="" />
-        <h1 className="text-2xl uppercase font-bold mb-5">Surat Jalan</h1>
+        <h1 className="text-2xl uppercase font-bold mb-5">Sales Order</h1>
 
         <div className="w-full flex gap-2 text-sm">
           {/* LEFT TABLE */}
@@ -151,12 +151,26 @@ export default function PackingOrderPrint(props) {
               <tbody>
                 <tr>
                   <td className="px-2 pt-1 text-center align-top break-words max-w-[180px]">
-                    No Sales Order
+                    No Sales Contract
                   </td>
                 </tr>
                 <tr>
                   <td className="px-2 pb-1 text-center break-words max-w-[180px]">
-                    {data.no_so}
+                    {data.no_sc}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <table className="h-full border-2 border-black table-fixed w-full">
+              <tbody>
+                <tr>
+                  <td className="px-2 pt-1 text-center align-top break-words max-w-[180px]">
+                    PO Customer
+                  </td>
+                </tr>
+                <tr>
+                  <td className="px-2 pb-1 text-center break-words max-w-[180px]">
+                    {data.po_cust}
                   </td>
                 </tr>
               </tbody>
@@ -167,10 +181,10 @@ export default function PackingOrderPrint(props) {
           <table className="w-[35%] border-2 border-black table-fixed text-sm">
             <tbody>
               {[
-                { label: "No. SJ", value: data.no_sc },
+                { label: "No. SO", value: data.no_sc },
                 { label: "Tanggal", value: data.tanggal },
-                { label: "Sopir", value: data.sopir },
-                { label: "No. Mobil", value: data.no_mobil },
+                { label: "Tgl Kirim", value: data.tgl_kirim },
+                { label: "Payment", value: data.termin + " Hari" },
               ].map((row, idx) => (
                 <tr key={idx} className="border-b border-black">
                   <td className="font-bold px-2 w-[30%] whitespace-nowrap">
@@ -192,22 +206,22 @@ export default function PackingOrderPrint(props) {
                 No
               </th>
               <th className="border border-black p-1 w-[150px]" rowSpan={2}>
-                Jenis Kain
+                Deskripsi Kain
               </th>
               <th className="border border-black p-1 w-[150px]" rowSpan={2}>
-                Lot
-              </th>
-              <th className="border border-black p-1 w-[150px]" rowSpan={2}>
-                Warna/Desain Kain
+                Warna Kain
               </th>
               <th className="border border-black p-1 w-[60px]" rowSpan={2}>
-                Grade
+                Jumlah Meter
               </th>
               <th className="border border-black p-1 w-[60px]" rowSpan={2}>
-                Lebar
+                Jumlah Yard
               </th>
-              <th className="border border-black p-1 w-[60px]" rowSpan={2}>
-                Quantity (Rol/Yard)
+              <th className="border border-black p-1 w-[100px]" rowSpan={2}>
+                Harga
+              </th>
+              <th className="border border-black p-1 w-[130px]" rowSpan={2}>
+                Total
               </th>
             </tr>
           </thead>
@@ -217,19 +231,21 @@ export default function PackingOrderPrint(props) {
                 <td className="border border-black p-1 text-center">{i + 1}</td>
                 <td className="border border-black p-1">{item.jenis_kain}</td>
                 <td className="border border-black p-1 text-center">
-                  #{item.lot}
+                  {item.lebar}
                 </td>
                 <td className="border border-black p-1 text-right">
-                  {item.warna_kain}
+                  {item.meter_total}
                 </td>
                 <td className="border border-black p-1 text-right">
-                  {item.grade}
+                  {item.yard_total}
                 </td>
                 <td className="border border-black p-1 text-right">
-                  {item.lebar}"
+                  {item.harga?.toLocaleString("id-ID")}
                 </td>
                 <td className="border border-black p-1 text-right">
-                  {item.roll}/{item.yard_total}
+                  {item.harga && item.meter_total
+                    ? (item.harga * item.meter_total).toLocaleString("id-ID")
+                    : "-"}
                 </td>
               </tr>
             ))}
@@ -244,39 +260,73 @@ export default function PackingOrderPrint(props) {
                 <td className="border border-black p-1"></td>
                 <td className="border border-black p-1 text-center"></td>
                 <td className="border border-black p-1 text-center"></td>
-                <td className="border border-black p-1 text-center"></td>
-                <td className="border border-black p-1 text-center"></td>
+                <td className="border border-black p-1 text-right"></td>
+                <td className="border border-black p-1 text-right"></td>
               </tr>
             ))}
           </tbody>
           <tfoot>
             <tr>
-              <td className="border border-black p-2 align-top" colSpan={7}>
+              <td colSpan={3} className="border border-black px-2 py-1" />
+              <td className="border border-black px-2 py-1 text-right font-bold">
+                {formatRupiahNumber(totalMeter)}
+              </td>
+              <td className="border border-black px-2 py-1 text-right font-bold">
+                {formatRupiahNumber(totalYard)}
+              </td>
+              <td className="border border-black px-2 py-1 text-right font-bold">
+                Sub Total
+              </td>
+              <td className="border border-black px-2 py-1 text-right">
+                {formatRupiahNumber(subTotal())}
+              </td>
+            </tr>
+            <tr>
+              <td
+                className="border border-black p-2 align-top"
+                rowSpan={3}
+                colSpan={5}
+              >
                 <div className="font-bold mb-1">NOTE:</div>
                 <div className="whitespace-pre-wrap break-words italic">
                   {data.catatan ?? "-"}
                 </div>
               </td>
+              <td className="border border-black px-2 py-1 text-right font-bold">
+                DPP
+              </td>
+              <td className="border border-black px-2 py-1 text-right">
+                {formatRupiahNumber(dataAkhir.dpp)}
+              </td>
+            </tr>
+            <tr>
+              <td className="border border-black px-2 py-1 text-right font-bold">
+                PPN
+              </td>
+              <td className="border border-black px-2 py-1 text-right">
+                {formatRupiahNumber(dataAkhir.ppn)}
+              </td>
+            </tr>
+            <tr>
+              <td className="border border-black px-2 py-1 text-right font-bold">
+                Jumlah Total
+              </td>
+              <td className="border border-black px-2 py-1 text-right">
+                {formatRupiahNumber(dataAkhir.total)}
+              </td>
             </tr>
             <tr>
               <td colSpan={7} className="border border-black">
-                <div className="w-full flex justify-between text-[12px] py-5 px-2">
+                <div className="w-full flex justify-end text-[12px] py-5 px-2">
                   <div className="text-center w-1/3">
-                    Yang Menerima
+                    Customer
                     <br />
                     <br />
                     <br />
                     <br />( ...................... )
                   </div>
                   <div className="text-center w-1/3">
-                    Menyetujui
-                    <br />
-                    <br />
-                    <br />
-                    <br />( ...................... )
-                  </div>
-                  <div className="text-center w-1/3">
-                    Yang Membuat
+                    Marketing
                     <br />
                     <br />
                     <br />
