@@ -15,7 +15,7 @@ import {
   getBeliGreiges,
 } from "../../../utils/auth";
 import SearchableSalesContractSelect from "../../../components/SalesContractDropdownSearch";
-import { Trash2 } from "lucide-solid";
+import { Printer, Trash2 } from "lucide-solid";
 import SupplierDropdownSearch from "../../../components/SupplierDropdownSearch";
 import FabricDropdownSearch from "../../../components/FabricDropdownSearch";
 
@@ -308,9 +308,23 @@ export default function BGPurchaseContractForm() {
     }
   };
 
+  function handlePrint() {
+    const encodedData = encodeURIComponent(JSON.stringify(form()));
+    window.open(`/print/beligreige/contract?data=${encodedData}`, "_blank");
+  }
+
   return (
     <MainLayout>
       <h1 class="text-2xl font-bold mb-4">Tambah Purchase Contract</h1>
+      <button
+        type="button"
+        class="flex gap-2 bg-blue-600 text-white px-3 py-2 rounded hover:bg-green-700"
+        onClick={handlePrint}
+        hidden={!isEdit}
+      >
+        <Printer size={20} />
+        Print
+      </button>
       <form class="space-y-4" onSubmit={handleSubmit}>
         <div class="grid grid-cols-3 gap-4">
           <div>

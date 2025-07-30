@@ -6,6 +6,7 @@ export default function PurchaseContractDropdownSearch({
   form,
   setForm,
   onChange,
+  disabled = false,
 }) {
   const [isOpen, setIsOpen] = createSignal(false);
   const [search, setSearch] = createSignal("");

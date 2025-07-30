@@ -85,7 +85,6 @@ import OCOrderPrint from "./utils/buy/order_celup/OCOrderDummyPrint";
 import OCSuratJalanPrint from "./utils/buy/order_celup/OCSuratJalanDummyPrint";
 // JUAL BELI
 import JBContractPrint from "./utils/buy/jual_beli/JBContractDummyPrint";
-import JBOrderPrint from "./utils/buy/jual_beli/JBOrderDummyPrint";
 import JBSuratJalanPrint from "./utils/buy/jual_beli/JBSuratJalanDummyPrint";
 
 function App() {
@@ -265,7 +264,6 @@ function App() {
       {/* ORDER CELUP */}
       {/* JUAL BELI */}
       <Route path="/print/jualbeli/contract" component={JBContractPrint} />
-      <Route path="/print/jualbeli/order" component={JBOrderPrint} />
       <Route path="/print/jualbeli/suratjalan" component={JBSuratJalanPrint} />
       {/* JUAL BELI */}
       {/* BUY */}
