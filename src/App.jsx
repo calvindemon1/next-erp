@@ -75,6 +75,18 @@ import SuratJalanPrint from "./utils/sell/SuratJalanDummyPrint";
 import BGContractPrint from "./utils/buy/beli_greige/BGContractDummyPrint";
 import BGOrderPrint from "./utils/buy/beli_greige/BGOrderDummyPrint";
 import BGSuratJalanPrint from "./utils/buy/beli_greige/BGSuratJalanDummyPrint";
+// KAIN JADI
+import KJContractPrint from "./utils/buy/kain_jadi/KJContractDummyPrint";
+import KJOrderPrint from "./utils/buy/kain_jadi/KJOrderDummyPrint";
+import KJSuratJalanPrint from "./utils/buy/kain_jadi/KJSuratJalanDummyPrint";
+// ORDER CELUP
+import OCContractPrint from "./utils/buy/order_celup/OCContractDummyPrint";
+import OCOrderPrint from "./utils/buy/order_celup/OCOrderDummyPrint";
+import OCSuratJalanPrint from "./utils/buy/order_celup/OCSuratJalanDummyPrint";
+// JUAL BELI
+import JBContractPrint from "./utils/buy/jual_beli/JBContractDummyPrint";
+import JBOrderPrint from "./utils/buy/jual_beli/JBOrderDummyPrint";
+import JBSuratJalanPrint from "./utils/buy/jual_beli/JBSuratJalanDummyPrint";
 
 function App() {
   return (
@@ -238,6 +250,24 @@ function App() {
         component={BGSuratJalanPrint}
       />
       {/* BELI GREIGE */}
+      {/* KAIN JADI */}
+      <Route path="/print/kainjadi/contract" component={KJContractPrint} />
+      <Route path="/print/kainjadi/order" component={KJOrderPrint} />
+      <Route path="/print/kainjadi/suratjalan" component={KJSuratJalanPrint} />
+      {/* KAIN JADI */}
+      {/* ORDER CELUP */}
+      <Route path="/print/ordercelup/contract" component={OCContractPrint} />
+      <Route path="/print/ordercelup/order" component={OCOrderPrint} />
+      <Route
+        path="/print/ordercelup/suratjalan"
+        component={OCSuratJalanPrint}
+      />
+      {/* ORDER CELUP */}
+      {/* JUAL BELI */}
+      <Route path="/print/jualbeli/contract" component={JBContractPrint} />
+      <Route path="/print/jualbeli/order" component={JBOrderPrint} />
+      <Route path="/print/jualbeli/suratjalan" component={JBSuratJalanPrint} />
+      {/* JUAL BELI */}
       {/* BUY */}
       {/* PRINT */}
 

@@ -1,15 +1,14 @@
-import BGOrderPrint from "../../../pages/print_function/buy/beli_greige/BGOrderPrint";
+import OCContractPrint from "../../../pages/print_function/buy/beli_greige/OCContractPrint";
 
-const BGOrder = {
+const dummyDataOCContract = {
   type: "Export",
-  customer: "PANCA BINTANG CEMERLANG, PT.",
+  customer: "PT AJI WIJAYATEX GROUP",
   alamat:
-    "",
+    "KERTOHARJO BLOK O NO.0 RT 001 RW 005 KURIPAN KERTOHARJO PEKALONGAN SEL",
   no_sc: "SC/D/0725-00123",
-  no_so: "SO/D/0725-00123",
   po_cust: "PO-7890",
   tanggal: "25-10-2025",
-  tgl_kirim: "31-12-2025",
+  kirim: "31-12-2025",
   ppn_percent: 11,
   currency_id: "USD",
   kurs: 14500,
@@ -21,7 +20,8 @@ const BGOrder = {
       jenis_kain: "PExPE20 62",
       lebar: "150",
       gramasi: "180",
-      meter_total: 500,
+      meter_total: 50000,
+      satuan: "Yard",
       yard_total: 546.8,
       kilogram_total: 90,
       harga: 25000,
@@ -31,7 +31,8 @@ const BGOrder = {
       jenis_kain: "PExPE20 62",
       lebar: "160",
       gramasi: "200",
-      meter_total: 300,
+      meter_total: 30000,
+      satuan: "Yard",
       yard_total: 328.1,
       kilogram_total: 65,
       harga: 22000,
@@ -41,7 +42,8 @@ const BGOrder = {
       jenis_kain: "PExPE20 62",
       lebar: "155",
       gramasi: "190",
-      meter_total: 200,
+      meter_total: 20000,
+      satuan: "Yard",
       yard_total: 218.7,
       kilogram_total: null,
       harga: 23000,
@@ -49,6 +51,6 @@ const BGOrder = {
   ],
 };
 
-export default function BGOrderDataDummyPrint() {
-  return <BGOrderPrint data={BGOrder} />;
+export default function OCContractDataDummyPrint() {
+  return <OCContractPrint data={dummyDataOCContract} />;
 }
