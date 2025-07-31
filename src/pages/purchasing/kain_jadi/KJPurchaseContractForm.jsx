@@ -321,7 +321,7 @@ export default function KJPurchaseContractForm() {
       <h1 class="text-2xl font-bold mb-4">Tambah Kontrak Kain Jadi</h1>
       <button
         type="button"
-        class="flex gap-2 bg-blue-600 text-white px-3 py-2 rounded hover:bg-green-700"
+        class="flex gap-2 bg-blue-600 text-white px-3 py-2 mb-4 rounded hover:bg-green-700"
         onClick={handlePrint}
         hidden={!isEdit}
       >

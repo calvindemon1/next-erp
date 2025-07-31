@@ -2,17 +2,15 @@ import { createEffect, createMemo, createSignal } from "solid-js";
 import { useNavigate } from "@solidjs/router";
 import MainLayout from "../../../layouts/MainLayout";
 import {
-  getAllBeliGreiges,
-  getAllPackingLists,
+  getAllOrderCelups,
   getUser,
-  softDeleteBeliGreige,
-  softDeletePackingList,
+  softDeleteOrderCelup,
 } from "../../../utils/auth";
 import Swal from "sweetalert2";
 import { Edit, Trash } from "lucide-solid";
 
 export default function OCPurchaseContractList() {
-  const [beliGreiges, setBeliGreiges] = createSignal([]);
+  const [beliGreiges, setOrderCelups] = createSignal([]);
   const navigate = useNavigate();
   const tokUser = getUser();
   const [currentPage, setCurrentPage] = createSignal(1);
@@ -41,7 +39,7 @@ export default function OCPurchaseContractList() {
 
     if (result.isConfirmed) {
       try {
-        const deleteCustomer = await softDeleteBeliGreige(id, tokUser?.token);
+        const deleteCustomer = await softDeleteOrderCelup(id, tokUser?.token);
 
         await Swal.fire({
           title: "Terhapus!",
@@ -51,7 +49,7 @@ export default function OCPurchaseContractList() {
         });
 
         // Optional: update UI setelah hapus
-        setBeliGreiges(beliGreiges().filter((s) => s.id !== id));
+        setOrderCelups(beliGreiges().filter((s) => s.id !== id));
       } catch (error) {
         console.error(error);
         Swal.fire({
@@ -67,14 +65,14 @@ export default function OCPurchaseContractList() {
     }
   };
 
-  const handleGetAllBeliGreiges = async (tok) => {
-    const getDataBeliGreiges = await getAllBeliGreiges(tok);
+  const handleGetAllOrderCelups = async (tok) => {
+    const getDataOrderCelups = await getAllOrderCelups(tok);
 
-    if (getDataBeliGreiges.status === 200) {
-      const sortedData = getDataBeliGreiges.contracts.sort(
+    if (getDataOrderCelups.status === 200) {
+      const sortedData = getDataOrderCelups.contracts.sort(
         (a, b) => a.id - b.id
       );
-      setBeliGreiges(sortedData);
+      setOrderCelups(sortedData);
     }
   };
 
@@ -104,7 +102,7 @@ export default function OCPurchaseContractList() {
 
   createEffect(() => {
     if (tokUser?.token) {
-      handleGetAllBeliGreiges(tokUser?.token);
+      handleGetAllOrderCelups(tokUser?.token);
     }
   });
 
@@ -114,7 +112,7 @@ export default function OCPurchaseContractList() {
         <h1 class="text-2xl font-bold">Daftar Kontrak Proses</h1>
         <button
           class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-          onClick={() => navigate("/beligreige-purchasecontract/form")}
+          onClick={() => navigate("/ordercelup-purchasecontract/form")}
         >
           + Tambah Kontrak Proses
         </button>
