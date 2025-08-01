@@ -3556,7 +3556,7 @@ export async function softDeleteKJDeliveryNote(id, token) {
 export async function createJualBeli(token, payload) {
   try {
     const response = await fetch(
-      `https://nexttechenterprise.site/api/create-purchase-finish-contract`,
+      `https://nexttechenterprise.site/api/create-jual-beli`,
       {
         method: "POST",
         headers: {
@@ -3571,7 +3571,7 @@ export async function createJualBeli(token, payload) {
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.message || "Gagal membuat kain finish contract");
+      throw new Error(data.message || "Gagal membuat jual beli");
     }
 
     return data;
@@ -3584,7 +3584,7 @@ export async function createJualBeli(token, payload) {
 export async function getAllJualBelis(token) {
   try {
     const response = await fetch(
-      `https://nexttechenterprise.site/api/purchase-finish-contracts`,
+      `https://nexttechenterprise.site/api/jual-beli`,
       {
         method: "GET",
         headers: {
@@ -3599,7 +3599,7 @@ export async function getAllJualBelis(token) {
 
     if (!response.ok) {
       throw new Error(
-        data.message || "Gagal mengambil data kain finish contract"
+        data.message || "Gagal mengambil data jual beli"
       );
     }
 
@@ -3612,7 +3612,7 @@ export async function getAllJualBelis(token) {
 export async function getJualBelis(id, token) {
   try {
     const response = await fetch(
-      `https://nexttechenterprise.site/api/purchase-finish-contracts/${id}`,
+      `https://nexttechenterprise.site/api/jual-beli/${id}`,
       {
         method: "GET",
         headers: {
@@ -3628,7 +3628,7 @@ export async function getJualBelis(id, token) {
     if (!response.ok) {
       throw new Error(
         data.message ||
-          `Gagal mengambil jenis kain finish contract dengan id: ${id}`
+          `Gagal mengambil jenis jual beli dengan id: ${id}`
       );
     }
 
@@ -3641,7 +3641,7 @@ export async function getJualBelis(id, token) {
 export async function updateDataJualBeli(token, id, payload) {
   try {
     const response = await fetch(
-      `https://nexttechenterprise.site/api/update-purchase-finish-contract/${id}`,
+      `https://nexttechenterprise.site/api/update-jual-beli/${id}`,
       {
         method: "PUT",
         headers: {
@@ -3659,7 +3659,7 @@ export async function updateDataJualBeli(token, id, payload) {
 
     if (!response.ok) {
       throw new Error(
-        data.message || "Gagal mengubah dat kain finish contract"
+        data.message || "Gagal mengubah dat jual beli"
       );
     }
 
@@ -3672,7 +3672,7 @@ export async function updateDataJualBeli(token, id, payload) {
 export async function softDeleteJualBeli(id, token) {
   try {
     const response = await fetch(
-      `https://nexttechenterprise.site/api/delete-purchase-finish-contract/${id}`,
+      `https://nexttechenterprise.site/api/delete-jual-beli/${id}`,
       {
         method: "DELETE",
         headers: {
@@ -3688,7 +3688,7 @@ export async function softDeleteJualBeli(id, token) {
     if (!response.ok) {
       throw new Error(
         data.message ||
-          `Gagal menghapus data jenis kain finish contract dengan id: ${id}`
+          `Gagal menghapus data jenis jual beli dengan id: ${id}`
       );
     }
 

@@ -12,17 +12,20 @@ import {
   createJualBeli,
   getJualBelis,
   getAllColors,
+  getAllCustomers,
 } from "../../../utils/auth";
 import { Printer, Trash2 } from "lucide-solid";
 import SupplierDropdownSearch from "../../../components/SupplierDropdownSearch";
 import FabricDropdownSearch from "../../../components/FabricDropdownSearch";
 import ColorDropdownSearch from "../../../components/ColorDropdownSearch";
+import CustomerDropdownSearch from "../../../components/CustomerDropdownSearch";
 
 export default function JBPurchaseContractForm() {
   const navigate = useNavigate();
   const user = getUser();
 
   const [supplierOptions, setSupplierOptions] = createSignal([]);
+  const [customerOptions, setCustomerOptions] = createSignal([]);
   const [satuanUnitOptions, setSatuanUnitOptions] = createSignal([]);
   const [fabricOptions, setFabricOptions] = createSignal([]);
   const [colorOptions, setColorOptions] = createSignal([]);
@@ -32,7 +35,9 @@ export default function JBPurchaseContractForm() {
   const [form, setForm] = createSignal({
     sequence_number: "",
     tanggal: new Date().toISOString().substring(0, 10),
+    jenis_jb_id: "",
     supplier_id: "",
+    customer_id: "",
     satuan_unit_id: "",
     termin: "",
     ppn: 0,
@@ -64,19 +69,21 @@ export default function JBPurchaseContractForm() {
   });
 
   onMount(async () => {
-    const [suppliers, satuanUnits, fabrics] = await Promise.all([
+    const [suppliers, satuanUnits, fabrics, customers] = await Promise.all([
       getAllSuppliers(user?.token),
       getAllSatuanUnits(user?.token),
       getAllFabrics(user?.token),
+      getAllCustomers(user?.token),
     ]);
 
     setSupplierOptions(suppliers.suppliers || []);
     setSatuanUnitOptions(satuanUnits.data || []);
     setFabricOptions(fabrics.kain || []);
+    setCustomerOptions(customers.customers || []);
 
     if (isEdit) {
       const res = await getJualBelis(params.id, user?.token);
-      const data = res.contract;
+      const data = res.mainRow;
       const dataItems = data.items;
 
       if (!data) return;
@@ -103,14 +110,16 @@ export default function JBPurchaseContractForm() {
 
       console.log(data);
 
-      const str = data.no_pc;
+      const str = data.no_jb;
       const bagianAkhir = str.split("-")[1]; // hasilnya: "0001"
       const sequenceNumber = parseInt(bagianAkhir, 10); // hasilnya: 1
 
       setForm((prev) => ({
         ...prev,
-        sequence_number: data.no_pc ?? "",
+        sequence_number: data.no_jb ?? "",
+        jenis_jb_id: data.jenis_jb_id ?? "",
         supplier_id: data.supplier_id ?? "",
+        customer_id: data.customer_id ?? "",
         satuan_unit_id: data.satuan_unit_id ?? "",
         tanggal: new Date(data.created_at).toISOString().split("T")[0] ?? "",
         termin: data.termin ?? "",
@@ -287,7 +296,9 @@ export default function JBPurchaseContractForm() {
     try {
       if (isEdit) {
         const payload = {
-          no_pc: form().sequence_number,
+          no_jb: form().sequence_number,
+          jenis_jb_id: Number(form().jenis_jb_id),
+          customer_id: Number(form().customer_id),
           supplier_id: Number(form().supplier_id),
           satuan_unit_id: Number(form().satuan_unit_id),
           termin: Number(form().termin),
@@ -309,6 +320,8 @@ export default function JBPurchaseContractForm() {
       } else {
         const payload = {
           sequence_number: Number(form().no_seq),
+          jenis_jb_id: Number(form().jenis_jb_id),
+          customer_id: Number(form().customer_id),
           supplier_id: Number(form().supplier_id),
           satuan_unit_id: Number(form().satuan_unit_id),
           termin: Number(form().termin),
@@ -326,7 +339,7 @@ export default function JBPurchaseContractForm() {
           })),
         };
 
-        console.log(payload)
+        console.log(payload);
 
         await createJualBeli(user?.token, payload);
       }
@@ -383,7 +396,7 @@ export default function JBPurchaseContractForm() {
 
   return (
     <MainLayout>
-      <h1 class="text-2xl font-bold mb-4">Tambah Kontrak Proses</h1>
+      <h1 class="text-2xl font-bold mb-4">Tambah Kontrak Jual Beli</h1>
       <button
         type="button"
         class="flex gap-2 bg-blue-600 text-white px-3 py-2 mb-4 rounded hover:bg-green-700"
@@ -394,7 +407,7 @@ export default function JBPurchaseContractForm() {
         Print
       </button>
       <form class="space-y-4" onSubmit={handleSubmit}>
-        <div class="grid grid-cols-3 gap-4">
+        <div class="grid grid-cols-4 gap-4">
           <div>
             <label class="block mb-1 font-medium">No Kontrak</label>
             <div class="flex gap-2">
@@ -440,6 +453,22 @@ export default function JBPurchaseContractForm() {
               onChange={(id) => setForm({ ...form(), supplier_id: id })}
             />
           </div>
+          <div>
+            <label class="block mb-1 font-medium">Jenis Jual Beli</label>
+            <select
+              class="w-full border p-2 rounded"
+              value={form().jenis_jb_id}
+              onChange={(e) =>
+                setForm({ ...form(), jenis_jb_id: e.target.value })
+              }
+              required
+            >
+              <option value="">Pilih Jenis Jual Beli</option>
+              <option value="1">Greige</option>
+              <option value="2">Celup</option>
+              <option value="3">Finish</option>
+            </select>
+          </div>
         </div>
         {/* 
           <div class="">
@@ -451,7 +480,16 @@ export default function JBPurchaseContractForm() {
               onChange={(id) => setForm({ ...form(), sales_contract_id: id })}
             />
           </div> */}
-        <div class="grid grid-cols-3 gap-4">
+        <div class="grid grid-cols-4 gap-4">
+          <div>
+            <label class="block mb-1 font-medium">Customer</label>
+            <CustomerDropdownSearch
+              customersList={customerOptions}
+              form={form}
+              setForm={setForm}
+              onChange={(id) => setForm({ ...form(), customer_id: id })}
+            />
+          </div>
           <div>
             <label class="block mb-1 font-medium">Satuan Unit</label>
             <select

@@ -65,13 +65,14 @@ export default function JBPurchaseContractList() {
   };
 
   const handleGetAllBeliGreiges = async (tok) => {
-    const getDataBeliGreiges = await getAllJualBelis(tok);
+    const getDataJualBelis = await getAllJualBelis(tok);
 
-    if (getDataBeliGreiges.status === 200) {
-      const sortedData = getDataBeliGreiges.contracts.sort(
+    if (getDataJualBelis.status=== 200) {
+      const sortedData = getDataJualBelis.mainRows.sort(
         (a, b) => a.id - b.id
       );
       setBeliGreiges(sortedData);
+      console.log(sortedData);
     }
   };
 
@@ -135,7 +136,7 @@ export default function JBPurchaseContractList() {
                 <td class="py-2 px-4">
                   {(currentPage() - 1) * pageSize + (index + 1)}
                 </td>
-                <td class="py-2 px-4">{sc.no_pc}</td>
+                <td class="py-2 px-4">{sc.no_jb}</td>
                 <td class="py-2 px-4">{sc.supplier_name}</td>
                 <td class="py-2 px-4"></td>
                 <td class="py-2 px-4">{sc.satuan_unit_name}</td>
