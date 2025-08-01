@@ -8,9 +8,9 @@ import {
   getAllSatuanUnits,
   getAllFabrics,
   getUser,
-  updateDataKainJadi,
-  createKainJadi,
-  getKainJadis,
+  updateDataJualBeli,
+  createJualBeli,
+  getJualBelis,
   getAllColors,
 } from "../../../utils/auth";
 import { Printer, Trash2 } from "lucide-solid";
@@ -18,7 +18,7 @@ import SupplierDropdownSearch from "../../../components/SupplierDropdownSearch";
 import FabricDropdownSearch from "../../../components/FabricDropdownSearch";
 import ColorDropdownSearch from "../../../components/ColorDropdownSearch";
 
-export default function KJPurchaseContractForm() {
+export default function JBPurchaseContractForm() {
   const navigate = useNavigate();
   const user = getUser();
 
@@ -75,7 +75,7 @@ export default function KJPurchaseContractForm() {
     setFabricOptions(fabrics.kain || []);
 
     if (isEdit) {
-      const res = await getKainJadis(params.id, user?.token);
+      const res = await getJualBelis(params.id, user?.token);
       const data = res.contract;
       const dataItems = data.items;
 
@@ -130,7 +130,7 @@ export default function KJPurchaseContractForm() {
     } else {
       const lastSeq = await getLastSequence(
         user?.token,
-        "kj_c",
+        "jb",
         "domestik",
         form().ppn
       );
@@ -154,7 +154,7 @@ export default function KJPurchaseContractForm() {
   const generateNomorKontrak = async () => {
     const lastSeq = await getLastSequence(
       user?.token,
-      "kj_c",
+      "jb",
       "domestik",
       form().ppn
     );
@@ -168,7 +168,7 @@ export default function KJPurchaseContractForm() {
     const ppnValue = parseFloat(form().ppn) || 0;
     const type = ppnValue > 0 ? "P" : "N";
     const mmyy = `${month}${year}`;
-    const nomor = `PC/KJ/${type}/${mmyy}/${nextNum}`;
+    const nomor = `PC/JB/${type}/${mmyy}/${nextNum}`;
     setForm((prev) => ({
       ...prev,
       sequence_number: nomor,
@@ -305,7 +305,7 @@ export default function KJPurchaseContractForm() {
           })),
         };
 
-        await updateDataKainJadi(user?.token, params.id, payload);
+        await updateDataJualBeli(user?.token, params.id, payload);
       } else {
         const payload = {
           sequence_number: Number(form().no_seq),
@@ -326,14 +326,16 @@ export default function KJPurchaseContractForm() {
           })),
         };
 
-        await createKainJadi(user?.token, payload);
+        console.log(payload)
+
+        await createJualBeli(user?.token, payload);
       }
 
       Swal.fire({
         icon: "success",
         title: "Purchase Order berhasil disimpan!",
       }).then(() => {
-        navigate("/kainjadi-purchasecontract");
+        navigate("/jualbeli-purchasecontract");
       });
     } catch (err) {
       console.error(err);

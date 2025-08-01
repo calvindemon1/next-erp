@@ -30,8 +30,8 @@ import KainJadiPurchaseOrderForm from "./pages/purchasing/kain_jadi/KJPurchaseOr
 import KainJadiDeliveryNoteList from "./pages/purchasing/kain_jadi/KJDeliveryNoteList";
 import KainJadiDeliveryNoteForm from "./pages/purchasing/kain_jadi/KJDeliveryNoteForm";
 // // JUAL BELI
-import JualBeliPurchaseOrderList from "./pages/purchasing/jual_beli/JBPurchaseOrderList";
-import JualBeliPurchaseOrderForm from "./pages/purchasing/jual_beli/JBPurchaseOrderForm";
+import JualBeliPurchaseContractList from "./pages/purchasing/jual_beli/JBPurchaseContractList";
+import JualBeliPurchaseContractForm from "./pages/purchasing/jual_beli/JBPurchaseContractForm";
 import JualBeliDeliveryNoteList from "./pages/purchasing/jual_beli/JBDeliveryNoteList";
 import JualBeliDeliveryNoteForm from "./pages/purchasing/jual_beli/JBDeliveryNoteForm";
 // TRANSACTIONS
@@ -209,12 +209,12 @@ function App() {
 
       {/* JUAL BELI */}
       <Route
-        path="/jualbeli-purchaseorder"
-        component={JualBeliPurchaseOrderList}
+        path="/jualbeli-purchasecontract"
+        component={JualBeliPurchaseContractList}
       />
       <Route
-        path="/jualbeli-purchaseorder/form"
-        component={JualBeliPurchaseOrderForm}
+        path="/jualbeli-purchasecontract/form"
+        component={JualBeliPurchaseContractForm}
       />
 
       <Route

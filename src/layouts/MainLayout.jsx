@@ -45,7 +45,7 @@ export default function MainLayout(props) {
       "/kainjadi-purchaseorder",
       "/kainjadi-purchaseorder/form",
     ],
-    jualbeli: ["/jualbeli-purchaseorder", "/jualbeli-purchaseorder/form"],
+    jualbeli: ["/jualbeli-purchasecontract", "/jualbeli-purchasecontract/form"],
   };
 
   const warehouseRoutes = {
@@ -661,11 +661,11 @@ export default function MainLayout(props) {
                       <ul>
                         <li>
                           <A
-                            href="/jualbeli-purchaseorder"
+                            href="/jualbeli-purchasecontract"
                             class={`block pl-12 pr-4 py-2 hover:bg-gray-700 ${
-                              location.pathname === "/jualbeli-purchaseorder" ||
+                              location.pathname === "/jualbeli-purchasecontract" ||
                               location.pathname ===
-                                "/jualbeli-purchaseorder/form"
+                                "/jualbeli-purchasecontract/form"
                                 ? "bg-gray-700 text-white"
                                 : ""
                             }`}
