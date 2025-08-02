@@ -50,8 +50,8 @@ export default function MainLayout(props) {
 
   const warehouseRoutes = {
     transaction: [
-      "/packingorder",
-      "/packingorder/form",
+      "/packinglist",
+      "/packinglist/form",
       "/deliverynote",
       "/deliverynote/form",
     ],
@@ -111,8 +111,8 @@ export default function MainLayout(props) {
 
       // if (
       //   [
-      //     "/packingorder",
-      //     "/packingorder/form",
+      //     "/packinglist",
+      //     "/packinglist/form",
       //     "/deliverynote",
       //     "/deliverynote/form",
       //   ].some((p) => pathname.startsWith(p))
@@ -776,15 +776,15 @@ export default function MainLayout(props) {
                       <ul>
                         <li>
                           <A
-                            href="/packingorder"
+                            href="/packinglist"
                             class={`block pl-8 pr-4 py-2 hover:bg-gray-700 ${
-                              location.pathname === "/packingorder" ||
-                              location.pathname === "/packingorder/form"
+                              location.pathname === "/packinglist" ||
+                              location.pathname === "/packinglist/form"
                                 ? "bg-gray-700 text-white"
                                 : ""
                             }`}
                           >
-                            Packing Order
+                            Packing List
                           </A>
                         </li>
                         <li>

@@ -67,7 +67,7 @@ import PackingListForm from "./pages/warehouse/PackingListForm";
 // SELL
 import SalesContractPrint from "./utils/sell/SalesContractDummyPrint";
 import SalesOrderPrint from "./utils/sell/SalesOrderDummyPrint";
-import PackingOrderPrint from "./utils/sell/PackingOrderDummyPrint";
+import PackingListPrint from "./utils/sell/PackingListDummyPrint";
 import SuratJalanPrint from "./utils/sell/SuratJalanDummyPrint";
 // PRINT
 // BUY
@@ -111,8 +111,8 @@ function App() {
       {/* TRANSACTIONS */}
 
       {/* WAREHOUSE */}
-      <Route path="/packingorder" component={PackingListList} />
-      <Route path="/packingorder/form" component={PackingListForm} />
+      <Route path="/packinglist" component={PackingListList} />
+      <Route path="/packinglist/form" component={PackingListForm} />
 
       <Route path="/deliverynote" component={DeliveryNoteList} />
       <Route path="/deliverynote/form" component={DeliveryNoteForm} />
@@ -234,9 +234,7 @@ function App() {
       {/* SELL */}
       <Route path="/print/salescontract" component={SalesContractPrint} />
       <Route path="/print/salesorder" component={SalesOrderPrint} />
-      <Route path="/print/packingorder" component={PackingOrderPrint} />
-      <Route path="/print/packingorder" component={PackingOrderPrint} />
-      <Route path="/print/packingorder" component={SuratJalanPrint} />
+      <Route path="/print/packinglist" component={PackingListPrint} />
       <Route path="/print/suratjalan" component={SuratJalanPrint} />
       {/* SELL */}
 

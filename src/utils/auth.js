@@ -1749,34 +1749,6 @@ export async function softDeletePackingList(id, token) {
   }
 }
 
-export async function getLastPackingList(token) {
-  try {
-    const response = await fetch(
-      `https://nexttechenterprise.site/api/last-packing-list`,
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-          "ngrok-skip-browser-warning": "any-value",
-        },
-      }
-    );
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(
-        data.message || "Gagal mengambil data terakhir packing list"
-      );
-    }
-
-    return data;
-  } catch (error) {
-    throw error;
-  }
-}
-
 // #endregion PACKING LIST FUNCTION
 
 // #region DELIVERY NOTE FUNCTION
@@ -3598,9 +3570,7 @@ export async function getAllJualBelis(token) {
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(
-        data.message || "Gagal mengambil data jual beli"
-      );
+      throw new Error(data.message || "Gagal mengambil data jual beli");
     }
 
     return data;
@@ -3627,8 +3597,7 @@ export async function getJualBelis(id, token) {
 
     if (!response.ok) {
       throw new Error(
-        data.message ||
-          `Gagal mengambil jenis jual beli dengan id: ${id}`
+        data.message || `Gagal mengambil jenis jual beli dengan id: ${id}`
       );
     }
 
@@ -3658,9 +3627,7 @@ export async function updateDataJualBeli(token, id, payload) {
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(
-        data.message || "Gagal mengubah dat jual beli"
-      );
+      throw new Error(data.message || "Gagal mengubah dat jual beli");
     }
 
     return data;
@@ -3687,8 +3654,7 @@ export async function softDeleteJualBeli(id, token) {
 
     if (!response.ok) {
       throw new Error(
-        data.message ||
-          `Gagal menghapus data jenis jual beli dengan id: ${id}`
+        data.message || `Gagal menghapus data jenis jual beli dengan id: ${id}`
       );
     }
 

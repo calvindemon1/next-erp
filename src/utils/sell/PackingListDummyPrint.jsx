@@ -1,6 +1,6 @@
-// import PackingOrderPrint from "../../pages/print_function/sell/PackingOrderPrint";
+// import PackingListPrint from "../../pages/print_function/sell/PackingListPrint";
 
-// const dummyDataPackingOrder = {
+// const dummyDataPackingList = {
 //   type: "Export",
 //   customer: "PANCA BINTANG CEMERLANG, PT.",
 //   alamat:
@@ -50,14 +50,14 @@
 // };
 
 // export default function PackingOrderDataDummyPrint() {
-//   return <PackingOrderPrint data={dummyDataPackingOrder} />;
+//   return <PackingListPrint data={dummyDataPackingOrder} />;
 // }
 
 import { onMount } from "solid-js";
-import PackingOrderPrint from "../../pages/print_function/sell/PackingOrderPrint";
+import PackingListPrint from "../../pages/print_function/sell/PackingListPrint";
 import { useSearchParams } from "@solidjs/router";
 
-export default function PackingOrderDataDummyPrint() {
+export default function PackingListDataDummyPrint() {
   const [searchParams] = useSearchParams();
 
   const data = JSON.parse(decodeURIComponent(searchParams.data));
@@ -85,7 +85,7 @@ export default function PackingOrderDataDummyPrint() {
 
   return (
     <div class="p-6 print:p-0">
-      <PackingOrderPrint data={data} />
+      <PackingListPrint data={data} />
     </div>
   );
 }

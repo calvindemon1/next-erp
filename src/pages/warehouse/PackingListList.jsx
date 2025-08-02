@@ -10,25 +10,25 @@ import Swal from "sweetalert2";
 import { Edit, Trash } from "lucide-solid";
 
 export default function PackingListList() {
-  const [packingOrders, setPackingOrders] = createSignal([]);
+  const [packingLists, setPackingLists] = createSignal([]);
   const navigate = useNavigate();
   const tokUser = getUser();
   const [currentPage, setCurrentPage] = createSignal(1);
   const pageSize = 20;
 
   const totalPages = createMemo(() => {
-    return Math.max(1, Math.ceil(packingOrders().length / pageSize));
+    return Math.max(1, Math.ceil(packingLists().length / pageSize));
   });
 
   const paginatedData = () => {
     const startIndex = (currentPage() - 1) * pageSize;
-    return packingOrders().slice(startIndex, startIndex + pageSize);
+    return packingLists().slice(startIndex, startIndex + pageSize);
   };
 
   const handleDelete = async (id) => {
     const result = await Swal.fire({
-      title: "Hapus packing order?",
-      text: `Apakah kamu yakin ingin menghapus packing order dengan ID ${id}?`,
+      title: "Hapus packing list?",
+      text: `Apakah kamu yakin ingin menghapus packing list dengan ID ${id}?`,
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#d33",
@@ -43,20 +43,20 @@ export default function PackingListList() {
 
         await Swal.fire({
           title: "Terhapus!",
-          text: `Data packing order dengan ID ${id} berhasil dihapus.`,
+          text: `Data packing list dengan ID ${id} berhasil dihapus.`,
           icon: "success",
           confirmButtonColor: "#6496df",
         });
 
         // Optional: update UI setelah hapus
-        setPackingOrders(packingOrders().filter((s) => s.id !== id));
+        setPackingLists(packingLists().filter((s) => s.id !== id));
       } catch (error) {
         console.error(error);
         Swal.fire({
           title: "Gagal",
           text:
             error.message ||
-            `Gagal menghapus data packing order dengan ID ${id}`,
+            `Gagal menghapus data packing list dengan ID ${id}`,
           icon: "error",
           confirmButtonColor: "#6496df",
           confirmButtonText: "OK",
@@ -65,17 +65,17 @@ export default function PackingListList() {
     }
   };
 
-  const handleGetAllpackingOrders = async (tok) => {
-    const getDatapackingOrders = await getAllPackingLists(tok);
+  const handleGetAllPackingLists = async (tok) => {
+    const getDatapackingLists = await getAllPackingLists(tok);
 
-    const sortedData = getDatapackingOrders.sort((a, b) => a.id - b.id);
-    setPackingOrders(sortedData);
+    const sortedData = getDatapackingLists.sort((a, b) => a.id - b.id);
+    setPackingLists(sortedData);
 
-    if (getDatapackingOrders.status === 200) {
-      const sortedData = getDatapackingOrders.contracts.sort(
+    if (getDatapackingLists.status === 200) {
+      const sortedData = getDatapackingLists.contracts.sort(
         (a, b) => a.id - b.id
       );
-      setPackingOrders(sortedData);
+      setPackingLists(sortedData);
     }
   };
 
@@ -105,19 +105,19 @@ export default function PackingListList() {
 
   createEffect(() => {
     if (tokUser?.token) {
-      handleGetAllpackingOrders(tokUser?.token);
+      handleGetAllPackingLists(tokUser?.token);
     }
   });
 
   return (
     <MainLayout>
       <div class="flex justify-between items-center mb-4">
-        <h1 class="text-2xl font-bold">Daftar Packing Order</h1>
+        <h1 class="text-2xl font-bold">Daftar Packing list</h1>
         <button
           class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-          onClick={() => navigate("/packingorder/form")}
+          onClick={() => navigate("/packinglist/form")}
         >
-          + Tambah Packing Order
+          + Tambah Packing list
         </button>
       </div>
 
@@ -148,7 +148,7 @@ export default function PackingListList() {
                 <td class="py-2 px-4 space-x-2">
                   <button
                     class="text-blue-600 hover:underline"
-                    onClick={() => navigate(`/packingorder/form?id=${sc.id}`)}
+                    onClick={() => navigate(`/packinglist/form?id=${sc.id}`)}
                   >
                     <Edit size={25} />
                   </button>

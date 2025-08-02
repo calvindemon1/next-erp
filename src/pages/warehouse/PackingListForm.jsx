@@ -11,12 +11,12 @@ import {
   updateDataPackingList,
   getUser,
   getAllSalesOrders,
-  getLastPackingList,
+  getLastSequence,
   getSalesOrders,
 } from "../../utils/auth";
 import SearchableCustomerSelect from "../../components/CustomerDropdownSearch";
-import { RefreshCcw, Trash2, XCircle } from "lucide-solid";
-import PackingOrderPrint from "../print_function/sell/PackingOrderPrint";
+import { Trash2, XCircle } from "lucide-solid";
+import PackingListPrint from "../print_function/sell/PackingListPrint";
 import SearchableSalesOrderSelect from "../../components/SalesOrderSearch";
 
 export default function PackingListForm() {
@@ -49,68 +49,83 @@ export default function PackingListForm() {
   });
 
   // Load dropdowns on mount
-  createEffect(async () => {
-    const fabrics = await getAllFabrics(user?.token);
-    const colors = await getAllColors(user?.token);
-    const customers = await getAllCustomers(user?.token);
-    const salesOrders = await getAllSalesOrders(user?.token);
-    const getPackingOrderNumber = await getLastPackingList(user?.token);
-    const currentForm = form();
+  // createEffect(async () => {
+  //   const fabrics = await getAllFabrics(user?.token);
+  //   const colors = await getAllColors(user?.token);
+  //   const customers = await getAllCustomers(user?.token);
+  //   const salesOrders = await getAllSalesOrders(user?.token);
+  //   const getPackingListNumber = await await getLastSequence(
+  //     user?.token,
+  //     "oc_c",
+  //     "domestik",
+  //     form().ppn
+  //   );
 
-    setLastNumberSequence(getPackingOrderNumber);
+  //   const currentForm = form();
 
-    if (currentForm) {
-      localStorage.setItem("packing_order_draft", JSON.stringify(currentForm));
-    }
+  //   setLastNumberSequence(getPackingListNumber);
 
-    setFabricOptions(
-      fabrics?.kain?.map((f) => ({
-        value: f.id,
-        label: f.kode + " | " + f.jenis,
-      })) || []
-    );
+  //   if (currentForm) {
+  //     // localStorage.setItem("packing_list_draft", JSON.stringify(currentForm));
+  //   }
 
-    setColorOptions(
-      colors?.warna?.map((c) => ({
-        value: c.id,
-        label: c.kode + " | " + c.jenis,
-      })) || []
-    );
+  //   setFabricOptions(
+  //     fabrics?.kain?.map((f) => ({
+  //       value: f.id,
+  //       label: f.kode + " | " + f.jenis,
+  //     })) || []
+  //   );
 
-    setCustomersList(customers?.customers || []);
-    setSalesOrderList(salesOrders?.orders || []);
+  //   setColorOptions(
+  //     colors?.warna?.map((c) => ({
+  //       value: c.id,
+  //       label: c.kode + " | " + c.jenis,
+  //     })) || []
+  //   );
 
-    localStorage.setItem("packing_order_draft", JSON.stringify(form()));
-  });
+  //   setCustomersList(customers?.customers || []);
+  //   setSalesOrderList(salesOrders?.orders || []);
+
+  //   // localStorage.setItem("packing_list_draft", JSON.stringify(form()));
+  // });
 
   onMount(async () => {
-    const draft = localStorage.getItem("packing_order_draft");
-    if (draft && !isEdit) {
-      setForm(JSON.parse(draft));
+    // const draft = localStorage.getItem("packing_list_draft");
+    // if (draft && !isEdit) {
+    //   setForm(JSON.parse(draft));
+    // }
+
+    const salesOrders = await getAllSalesOrders(user?.token);
+
+    const currentForm = form();
+
+    if (currentForm) {
+      // localStorage.setItem("packing_list_draft", JSON.stringify(currentForm));
     }
+
+    setSalesOrderList(salesOrders?.orders || []);
 
     if (isEdit) {
       const res = await getPackingLists(params.id, user?.token);
-      const packingOrder = res?.response;
-      if (!packingOrder) return;
+      const packingList = res?.response;
+      if (!packingList) return;
 
-      const items = packingOrder.sales_order_items || [];
+      const items = packingList.sales_order_items || [];
 
       setForm((prev) => ({
         ...prev,
         sales_order_items: items,
-        sales_order_id: packingOrder.sales_order_id,
-        no_pl: packingOrder.no_pl,
-        sequence_number: packingOrder.sequence_number,
+        sales_order_id: packingList.sales_order_id,
+        no_pl: packingList.no_pl,
+        sequence_number: packingList.sequence_number,
         type:
-          packingOrder.type === "domestik"
+          packingList.type === "domestik"
             ? 1
-            : packingOrder.type === "ekspor"
+            : packingList.type === "ekspor"
             ? 2
             : "",
-        col: packingOrder.col,
-        catatan: packingOrder.catatan,
-        itemGroups: (packingOrder.itemGroups || []).map((group) => ({
+        catatan: packingList.catatan,
+        itemGroups: (packingList.itemGroups || []).map((group) => ({
           sales_order_item_id: group.sales_order_item_id,
           rolls: group.rolls.map((r) => ({
             meter_total: r.meter_total,
@@ -122,18 +137,25 @@ export default function PackingListForm() {
   });
 
   const handleSalesOrderChange = async (selectedSO) => {
-    if (!selectedSO?.no_so || !lastNumberSequence()?.last_sequence) return;
+    if (!selectedSO?.no_so) return;
 
     const soTypeLetter = selectedSO.no_so.split("/")[1];
     let typeValue = "";
     if (soTypeLetter === "E") {
-      typeValue = 2;
+      typeValue = "E";
     } else if (soTypeLetter === "D") {
-      typeValue = 1;
+      typeValue = "D";
     }
 
-    const nextSequence = (lastNumberSequence()?.last_sequence || 0) + 1;
-    const generatedNoPL = generatePackingListNumber(typeValue, nextSequence);
+    const soPpn = selectedSO.no_so.split("/")[2];
+    let ppnValue = 0;
+    if (soPpn === "P") {
+      ppnValue = 1;
+    } else if (soPpn === "N") {
+      ppnValue = 0;
+    }
+
+    const generatedNoPL = await generatePackingListNumber(typeValue, ppnValue);
 
     // ⬇️ Ambil detail sales order by ID
     const res = await getSalesOrders(selectedSO.id, user?.token);
@@ -147,24 +169,26 @@ export default function PackingListForm() {
       sales_order_id: selectedSO.id,
       type: typeValue,
       no_pl: generatedNoPL,
-      sequence_number: nextSequence,
       sales_order_items: selectedOrder,
     });
   };
 
-  const generatePackingListNumber = (type, sequence) => {
+  const generatePackingListNumber = async (type, ppn) => {
     if (!type) return "";
 
-    const typeLetter = type == 1 ? "D" : type == 2 ? "E" : "";
+    const salesType = type === "D" ? "domestik" : type === "E" ? "ekspor" : "";
+    const ppnType = ppn === 1 ? "P" : ppn === 0 ? "N" : "";
+
+    const lastSeq = await getLastSequence(user?.token, "pl", salesType, ppn);
 
     const now = new Date();
     const month = String(now.getMonth() + 1).padStart(2, "0");
     const year = String(now.getFullYear()).slice(-2);
 
     const mmyy = `${month}${year}`;
-    const nextNumber = String(sequence).padStart(5, "0");
+    const nextNum = String((lastSeq?.last_sequence || 0) + 1).padStart(5, "0");
 
-    return `PL/${typeLetter}/${mmyy}-${nextNumber}`;
+    return `PL/${type}/${ppnType}/${mmyy}-${nextNum}`;
   };
 
   const meterToYard = (m) => {
@@ -302,7 +326,6 @@ export default function PackingListForm() {
           ? null
           : Number(form().sequence_number),
       sales_order_id: Number(form().sales_order_id),
-      col: Number(form().col),
       catatan: form().catatan,
       itemGroups: form().itemGroups.map((g) => ({
         sales_order_item_id: Number(g.sales_order_item_id),
@@ -324,8 +347,8 @@ export default function PackingListForm() {
         icon: "success",
         title: isEdit ? "Berhasil Update" : "Berhasil Simpan",
       }).then(() => {
-        navigate("/packingorder");
-        localStorage.removeItem("packing_order_draft");
+        navigate("/packinglist");
+        // localStorage.removeItem("packing_list_draft");
       });
     } catch (error) {
       console.error(error);
@@ -354,7 +377,7 @@ export default function PackingListForm() {
     printWindow.document.write(`
     <html>
       <head>
-        <title>Packing Order</title>
+        <title>Packing List</title>
         <style>
           body { font-family: sans-serif; font-size: 12px; padding: 20px; }
           table { border-collapse: collapse; width: 100%; }
@@ -376,43 +399,28 @@ export default function PackingListForm() {
   return (
     <MainLayout>
       <h1 class="text-2xl font-bold mb-4">
-        {isEdit ? "Edit" : "Tambah"} Packing Order
+        {isEdit ? "Edit" : "Tambah"} Packing List
       </h1>
-
-      <Show when={isEdit}>
-        <button
-          type="button"
-          onClick={() => setShowPreview(!showPreview())}
-          class="mt-6 bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600"
-        >
-          {showPreview() ? "Tutup Preview" : "Lihat Preview"}
-        </button>
-      </Show>
-      <Show when={isEdit && showPreview()}>
-        <div class="mt-6 border p-4 bg-white shadow">
-          <h2 class="text-lg font-semibold mb-2">Preview Cetak</h2>
-          <div id="print-section">
-            <PackingOrderPrint data={form()} />
-          </div>
-          <button
-            onClick={handlePrint}
-            class="mt-4 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-          >
-            Print
-          </button>
-        </div>
-      </Show>
 
       <form class="space-y-4" onSubmit={handleSubmit}>
         <div class="grid grid-cols-3 gap-4">
           <div>
             <label class="block text-sm mb-1">No Packing List</label>
-            <input
-              class="bg-gray-200 w-full border p-2 rounded"
-              value={form().no_pl || ""}
-              onInput={(e) => setForm({ ...form(), no_pl: e.target.value })}
-              readOnly
-            />
+            <div class="flex gap-2">
+              <input
+                class="w-full border bg-gray-200 p-2 rounded"
+                value={form().no_pl}
+                readOnly
+              />
+              {/* <button
+                type="button"
+                class="bg-gray-300 text-sm px-2 rounded hover:bg-gray-400"
+                onClick={generateNomorPL}
+                hidden={isEdit}
+              >
+                Generate
+              </button> */}
+            </div>
           </div>
           <div>
             <label class="block text-sm mb-1">Sales Order</label>

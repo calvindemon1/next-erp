@@ -1,7 +1,7 @@
 import { createMemo, createSignal } from "solid-js";
 import logoNavel from "../../../assets/img/navelLogo.png";
 
-export default function PackingOrderPrint(props) {
+export default function PackingListPrint(props) {
   const data = props.data;
 
   function formatRupiahNumber(value) {
