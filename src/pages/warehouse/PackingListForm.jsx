@@ -1,4 +1,4 @@
-import { createEffect, createSignal, For, onMount } from "solid-js";
+import { createEffect, createSignal, For, onMount, Show } from "solid-js";
 import { useNavigate, useSearchParams } from "@solidjs/router";
 import MainLayout from "../../layouts/MainLayout";
 import Swal from "sweetalert2";
@@ -14,27 +14,18 @@ import {
   getLastSequence,
   getSalesOrders,
 } from "../../utils/auth";
-import SearchableCustomerSelect from "../../components/CustomerDropdownSearch";
-import { Trash2, XCircle } from "lucide-solid";
-import PackingListPrint from "../print_function/sell/PackingListPrint";
 import SearchableSalesOrderSelect from "../../components/SalesOrderSearch";
+import { Trash2, XCircle } from "lucide-solid";
 
+// (2) Component Start
 export default function PackingListForm() {
   const [params] = useSearchParams();
   const isEdit = !!params.id;
   const navigate = useNavigate();
   const user = getUser();
 
-  const [fabricOptions, setFabricOptions] = createSignal([]);
-  const [colorOptions, setColorOptions] = createSignal([]);
-  const [customersList, setCustomersList] = createSignal([]);
   const [salesOrderList, setSalesOrderList] = createSignal([]);
   const [openStates, setOpenStates] = createSignal([]);
-  const [printData, setPrintData] = createSignal(null);
-  const [showPreview, setShowPreview] = createSignal(false);
-  const [lastNumberSequence, setLastNumberSequence] = createSignal(false);
-  const [nextSequenceNumber, setNextSequenceNumber] = createSignal(null);
-  const [generatedNoPL, setGeneratedNoPL] = createSignal("");
   const [groupRollCounts, setGroupRollCounts] = createSignal([]);
 
   const [form, setForm] = createSignal({
@@ -48,61 +39,9 @@ export default function PackingListForm() {
     sales_order_items: [],
   });
 
-  // Load dropdowns on mount
-  // createEffect(async () => {
-  //   const fabrics = await getAllFabrics(user?.token);
-  //   const colors = await getAllColors(user?.token);
-  //   const customers = await getAllCustomers(user?.token);
-  //   const salesOrders = await getAllSalesOrders(user?.token);
-  //   const getPackingListNumber = await await getLastSequence(
-  //     user?.token,
-  //     "oc_c",
-  //     "domestik",
-  //     form().ppn
-  //   );
-
-  //   const currentForm = form();
-
-  //   setLastNumberSequence(getPackingListNumber);
-
-  //   if (currentForm) {
-  //     // localStorage.setItem("packing_list_draft", JSON.stringify(currentForm));
-  //   }
-
-  //   setFabricOptions(
-  //     fabrics?.kain?.map((f) => ({
-  //       value: f.id,
-  //       label: f.kode + " | " + f.jenis,
-  //     })) || []
-  //   );
-
-  //   setColorOptions(
-  //     colors?.warna?.map((c) => ({
-  //       value: c.id,
-  //       label: c.kode + " | " + c.jenis,
-  //     })) || []
-  //   );
-
-  //   setCustomersList(customers?.customers || []);
-  //   setSalesOrderList(salesOrders?.orders || []);
-
-  //   // localStorage.setItem("packing_list_draft", JSON.stringify(form()));
-  // });
-
+  // (3) onMount untuk edit atau new
   onMount(async () => {
-    // const draft = localStorage.getItem("packing_list_draft");
-    // if (draft && !isEdit) {
-    //   setForm(JSON.parse(draft));
-    // }
-
     const salesOrders = await getAllSalesOrders(user?.token);
-
-    const currentForm = form();
-
-    if (currentForm) {
-      // localStorage.setItem("packing_list_draft", JSON.stringify(currentForm));
-    }
-
     setSalesOrderList(salesOrders?.orders || []);
 
     if (isEdit) {
@@ -128,41 +67,29 @@ export default function PackingListForm() {
         itemGroups: (packingList.itemGroups || []).map((group) => ({
           sales_order_item_id: group.sales_order_item_id,
           rolls: group.rolls.map((r) => ({
-            meter_total: r.meter_total,
-            yard_total: r.yard_total,
+            col: r.col || "",
+            item: r.item || "",
+            meter: r.meter || "",
+            yard: r.yard || "",
           })),
         })),
       }));
     }
   });
 
+  // (4) Saat Sales Order berubah
   const handleSalesOrderChange = async (selectedSO) => {
     if (!selectedSO?.no_so) return;
 
     const soTypeLetter = selectedSO.no_so.split("/")[1];
-    let typeValue = "";
-    if (soTypeLetter === "E") {
-      typeValue = "E";
-    } else if (soTypeLetter === "D") {
-      typeValue = "D";
-    }
-
+    const typeValue =
+      soTypeLetter === "E" ? "E" : soTypeLetter === "D" ? "D" : "";
     const soPpn = selectedSO.no_so.split("/")[2];
-    let ppnValue = 0;
-    if (soPpn === "P") {
-      ppnValue = 1;
-    } else if (soPpn === "N") {
-      ppnValue = 0;
-    }
+    const ppnValue = soPpn === "P" ? 1 : 0;
 
     const generatedNoPL = await generatePackingListNumber(typeValue, ppnValue);
-
-    // ⬇️ Ambil detail sales order by ID
     const res = await getSalesOrders(selectedSO.id, user?.token);
     const selectedOrder = res?.response;
-    const salesOrderItems = selectedOrder?.items || [];
-
-    console.log(selectedOrder);
 
     setForm({
       ...form(),
@@ -174,39 +101,17 @@ export default function PackingListForm() {
   };
 
   const generatePackingListNumber = async (type, ppn) => {
-    if (!type) return "";
-
     const salesType = type === "D" ? "domestik" : type === "E" ? "ekspor" : "";
-    const ppnType = ppn === 1 ? "P" : ppn === 0 ? "N" : "";
-
+    const ppnType = ppn === 1 ? "P" : "N";
     const lastSeq = await getLastSequence(user?.token, "pl", salesType, ppn);
 
     const now = new Date();
-    const month = String(now.getMonth() + 1).padStart(2, "0");
-    const year = String(now.getFullYear()).slice(-2);
-
-    const mmyy = `${month}${year}`;
+    const mmyy = `${String(now.getMonth() + 1).padStart(2, "0")}${String(
+      now.getFullYear()
+    ).slice(-2)}`;
     const nextNum = String((lastSeq?.last_sequence || 0) + 1).padStart(5, "0");
 
     return `PL/${type}/${ppnType}/${mmyy}-${nextNum}`;
-  };
-
-  const meterToYard = (m) => {
-    if (!m || isNaN(m)) return "";
-    return (parseFloat(m) * 1.093613).toFixed(2);
-  };
-
-  const yardToMeter = (y) => {
-    if (!y || isNaN(y)) return "";
-    return (parseFloat(y) * 0.9144).toFixed(2);
-  };
-
-  const toggleGroupOpen = (index) => {
-    setOpenStates((prev) => {
-      const copy = [...prev];
-      copy[index] = !copy[index];
-      return copy;
-    });
   };
 
   const addItemGroup = () => {
@@ -216,7 +121,7 @@ export default function PackingListForm() {
         ...prev.itemGroups,
         {
           sales_order_item_id: "",
-          rolls: [{ meter_total: "", yard_total: "" }],
+          rolls: [{ col: "", item: "", meter: "", yard: "" }],
         },
       ],
     }));
@@ -224,21 +129,21 @@ export default function PackingListForm() {
     setGroupRollCounts((prev) => [...prev, 0]);
   };
 
-  const removeItemGroup = (groupIndex) => {
+  const removeItemGroup = (index) => {
     setForm((prev) => {
-      const copy = [...prev.itemGroups];
-      copy.splice(groupIndex, 1);
-      return { ...prev, itemGroups: copy };
+      const updated = [...prev.itemGroups];
+      updated.splice(index, 1);
+      return { ...prev, itemGroups: updated };
     });
     setOpenStates((prev) => {
-      const copy = [...prev];
-      copy.splice(groupIndex, 1);
-      return copy;
+      const updated = [...prev];
+      updated.splice(index, 1);
+      return updated;
     });
     setGroupRollCounts((prev) => {
-      const copy = [...prev];
-      copy.splice(groupIndex, 1);
-      return copy;
+      const updated = [...prev];
+      updated.splice(index, 1);
+      return updated;
     });
   };
 
@@ -246,10 +151,11 @@ export default function PackingListForm() {
     setForm((prev) => {
       const copy = [...prev.itemGroups];
       const group = copy[groupIndex];
-      const lastRoll = group.rolls[group.rolls.length - 1];
       const newRoll = {
-        meter_total: lastRoll?.meter_total || "",
-        yard_total: lastRoll?.yard_total || "",
+        col: "",
+        item: "",
+        meter: "",
+        yard: "",
       };
 
       copy[groupIndex] = {
@@ -264,13 +170,12 @@ export default function PackingListForm() {
     setForm((prev) => {
       const copy = [...prev.itemGroups];
       const group = copy[groupIndex];
-      const lastRoll = group.rolls[group.rolls.length - 1];
-      const meter = lastRoll?.meter_total || "";
-      const yard = lastRoll?.yard_total || "";
-
+      const last = group.rolls[group.rolls.length - 1] || {};
       const newRolls = Array.from({ length: count }, () => ({
-        meter_total: meter,
-        yard_total: yard,
+        col: last.col || "",
+        item: last.item || "",
+        meter: last.meter || "",
+        yard: last.yard || "",
       }));
 
       copy[groupIndex] = {
@@ -285,10 +190,7 @@ export default function PackingListForm() {
     setForm((prev) => {
       const copy = [...prev.itemGroups];
       const group = copy[groupIndex];
-      copy[groupIndex] = {
-        ...group,
-        rolls: group.rolls.filter((_, idx) => idx !== rollIndex),
-      };
+      group.rolls.splice(rollIndex, 1);
       return { ...prev, itemGroups: copy };
     });
   };
@@ -305,13 +207,13 @@ export default function PackingListForm() {
     setForm((prev) => {
       const copy = [...prev.itemGroups];
       const group = copy[groupIndex];
-      const newRolls = group.rolls.map((roll, idx) =>
-        idx === rollIndex ? { ...roll, [field]: value } : roll
-      );
-      copy[groupIndex] = {
-        ...group,
-        rolls: newRolls,
-      };
+      group.rolls[rollIndex][field] = value;
+
+      if (field === "meter") {
+        const yard = (parseFloat(value || 0) * 1.093613).toFixed(2);
+        group.rolls[rollIndex]["yard"] = yard;
+      }
+
       return { ...prev, itemGroups: copy };
     });
   };
@@ -320,18 +222,17 @@ export default function PackingListForm() {
     e.preventDefault();
 
     const payload = {
-      type: form().type == 1 ? "domestik" : form().type == 2 ? "ekspor" : "",
-      sequence_number:
-        form().sequence_number === "" || form().sequence_number == null
-          ? null
-          : Number(form().sequence_number),
+      type: form().type === 1 ? "domestik" : "ekspor",
+      sequence_number: form().sequence_number || null,
       sales_order_id: Number(form().sales_order_id),
       catatan: form().catatan,
       itemGroups: form().itemGroups.map((g) => ({
         sales_order_item_id: Number(g.sales_order_item_id),
         rolls: g.rolls.map((r) => ({
-          meter_total: parseFloat(r.meter_total),
-          yard_total: parseFloat(r.yard_total),
+          col: r.col,
+          item: r.item,
+          meter: Number(r.meter),
+          yard: parseFloat(r.yard) || Number(r.meter) * 1.093613,
         })),
       })),
     };
@@ -348,53 +249,21 @@ export default function PackingListForm() {
         title: isEdit ? "Berhasil Update" : "Berhasil Simpan",
       }).then(() => {
         navigate("/packinglist");
-        // localStorage.removeItem("packing_list_draft");
       });
     } catch (error) {
-      console.error(error);
       Swal.fire({
         icon: "error",
         title: "Gagal",
-        text: error?.message || "Terjadi kesalahan.",
+        text: error?.message || "Terjadi kesalahan saat menyimpan.",
       });
     }
   };
 
-  const handleItemChange = (index, field, value) => {
-    let processedValue = value === "" ? 0 : parseFloat(value);
-
-    setForm(
-      produce((f) => {
-        f.items[index][field] = processedValue;
-        f.items = [...f.items]; // trigger reactivity
-      })
-    );
-  };
-
-  const handlePrint = () => {
-    const content = document.getElementById("print-section").innerHTML;
-    const printWindow = window.open("", "", "width=800,height=600");
-    printWindow.document.write(`
-    <html>
-      <head>
-        <title>Packing List</title>
-        <style>
-          body { font-family: sans-serif; font-size: 12px; padding: 20px; }
-          table { border-collapse: collapse; width: 100%; }
-          th, td { border: 1px solid #ccc; padding: 5px; text-align: left; }
-          h1 { margin-bottom: 10px; }
-        </style>
-      </head>
-      <body>
-        ${content}
-      </body>
-    </html>
-  `);
-    printWindow.document.close();
-    printWindow.focus();
-    printWindow.print();
-    printWindow.close();
-  };
+  const chunkArray = (arr, size) =>
+    arr.reduce((acc, _, i) => {
+      if (i % size === 0) acc.push(arr.slice(i, i + size));
+      return acc;
+    }, []);
 
   return (
     <MainLayout>
@@ -538,135 +407,173 @@ export default function PackingListForm() {
                     </select>
                   </div>
 
-                  <table class="w-full border border-gray-300 text-sm mb-3">
+                  <table class="w-full border text-sm mt-2">
                     <thead class="bg-gray-100">
                       <tr>
-                        <th class="border px-2 py-1">#</th>
-                        <th class="border px-2 py-1">Meter Total</th>
-                        <th class="border px-2 py-1">Yard Total</th>
-                        <th class="border px-2 py-1">Aksi</th>
+                        <th class="border px-2 py-1 w-10">No</th>
+                        <th class="border px-2 py-1">Col</th>
+                        <th class="border px-2 py-1">Item</th>
+                        <For each={[1, 2, 3, 4, 5]}>
+                          {(n) => <th class="border px-2 py-1">{n}</th>}
+                        </For>
+                        <th class="border px-2 py-1">TTL/PCS</th>
+                        <th class="border px-2 py-1">TTL/MTR</th>
+                        <th class="border px-2 py-1">TTL/YARD</th>
                       </tr>
                     </thead>
                     <tbody>
-                      <For each={group.rolls}>
-                        {(roll, j) => {
-                          const [localMeter, setLocalMeter] = createSignal(
-                            roll.meter_total || ""
-                          );
-                          const [localYard, setLocalYard] = createSignal(
-                            roll.yard_total || ""
-                          );
+                      <tr>
+                        <td class="border text-center align-top">{i() + 1}</td>
+                        <td class="border align-top">
+                          <input
+                            class="w-full border-none p-1"
+                            value={group.rolls[0]?.col || ""}
+                            onInput={(e) =>
+                              handleRollChange(i(), 0, "col", e.target.value)
+                            }
+                          />
+                        </td>
+                        <td class="border align-top">
+                          <input
+                            class="w-full border-none p-1"
+                            value={group.rolls[0]?.item || ""}
+                            onInput={(e) =>
+                              handleRollChange(i(), 0, "item", e.target.value)
+                            }
+                          />
+                        </td>
 
-                          return (
-                            <tr>
-                              <td class="border px-2 py-1 text-center">
-                                {j() + 1}
-                              </td>
-                              <td class="border px-2 py-1">
-                                <input
-                                  type="number"
-                                  step="0.01"
-                                  class="w-full border p-1 rounded"
-                                  value={localMeter()}
-                                  onInput={(e) => {
-                                    setLocalMeter(e.target.value);
-                                  }}
-                                  onBlur={(e) => {
-                                    const val = e.target.value;
-                                    handleRollChange(
-                                      i(),
-                                      j(),
-                                      "meter_total",
-                                      val
-                                    );
-                                    if (val !== "") {
-                                      const converted = meterToYard(val);
-                                      setLocalYard(converted);
+                        <td class="border p-1 align-top" colspan={5}>
+                          <div class="grid grid-cols-5 gap-1">
+                            <For each={group.rolls}>
+                              {(roll, j) => (
+                                <div class="relative">
+                                  <input
+                                    type="number"
+                                    class="border p-1 text-right text-xs pr-5 w-16"
+                                    value={roll.meter}
+                                    onInput={(e) =>
                                       handleRollChange(
                                         i(),
                                         j(),
-                                        "yard_total",
-                                        converted
-                                      );
-                                    } else {
-                                      setLocalYard("");
-                                      handleRollChange(
-                                        i(),
-                                        j(),
-                                        "yard_total",
-                                        ""
-                                      );
+                                        "meter",
+                                        e.target.value
+                                      )
                                     }
-                                  }}
-                                />
-                              </td>
-                              <td class="border px-2 py-1">
-                                <input
-                                  type="number"
-                                  step="0.01"
-                                  class="w-full border p-1 rounded"
-                                  value={localYard()}
-                                  onInput={(e) => {
-                                    setLocalYard(e.target.value);
-                                  }}
-                                  onBlur={(e) => {
-                                    const val = e.target.value;
-                                    handleRollChange(
-                                      i(),
-                                      j(),
-                                      "yard_total",
-                                      val
-                                    );
-                                    if (val !== "") {
-                                      const converted = yardToMeter(val);
-                                      setLocalMeter(converted);
-                                      handleRollChange(
-                                        i(),
-                                        j(),
-                                        "meter_total",
-                                        converted
-                                      );
-                                    } else {
-                                      setLocalMeter("");
-                                      handleRollChange(
-                                        i(),
-                                        j(),
-                                        "meter_total",
-                                        ""
-                                      );
-                                    }
-                                  }}
-                                />
-                              </td>
-                              <td class="border px-2 py-1 text-center">
-                                <button
-                                  type="button"
-                                  class="text-red-600 hover:text-red-800"
-                                  onClick={() => removeRoll(i(), j())}
-                                >
-                                  <Trash2 class="w-5 h-5" />
-                                </button>
-                              </td>
-                            </tr>
-                          );
-                        }}
-                      </For>
+                                  />
+                                  <button
+                                    type="button"
+                                    class="self-center top-0 right-0 text-red-500 text-xs px-1"
+                                    onClick={() => removeRoll(i(), j())}
+                                  >
+                                    <Trash2 size={20}/>
+                                  </button>
+                                </div>
+                              )}
+                            </For>
+                          </div>
+                        </td>
+
+                        <td class="border text-center align-top">
+                          {group.rolls.length}
+                        </td>
+                        <td class="border text-right px-2 align-top">
+                          {group.rolls
+                            .reduce((sum, r) => sum + Number(r.meter || 0), 0)
+                            .toFixed(2)}
+                        </td>
+                        <td class="border text-right px-2 align-top">
+                          {(
+                            group.rolls.reduce(
+                              (sum, r) => sum + Number(r.meter || 0),
+                              0
+                            ) * 1.093613
+                          ).toFixed(2)}
+                        </td>
+                      </tr>
                     </tbody>
                   </table>
+                  <div class="mt-4 border-t pt-4">
+                    <table class="text-sm w-full table-fixed">
+                      <colgroup>
+                        <col style="width: 9%" />
+                        <col style="width: 9%" />
+                        <col style="width: 9%" />
+                        <col style="width: 9%" />
+                        <col style="width: 9%" />
+                        <col style="width: 9%" />
+                        <col style="width: 9%" />
+                        <col style="width: 9%" />
+                        <col style="width: 5%" />
+                        <col style="width: 5%" />
+                        <col style="width: 5%" />
+                      </colgroup>
+                      <thead>
+                        <tr>
+                          <th></th>
+                          <th></th>
+                          <th></th>
+                          <th></th>
+                          <th></th>
+                          <th></th>
+                          <th></th>
+                          <th></th>
+                          <th></th>
+                          <th></th>
+                          <th></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td
+                            colspan={8}
+                            class="border px-2 py-1 font-semibold text-left"
+                          >
+                            Sub Total
+                          </td>
+                          <td class="border px-2 py-1 text-right">
+                            {form().itemGroups.reduce(
+                              (acc, g) => acc + g.rolls.length,
+                              0
+                            )}
+                          </td>
+                          <td class="border px-2 py-1 text-right">
+                            {form()
+                              .itemGroups.flatMap((g) => g.rolls)
+                              .reduce((sum, r) => sum + Number(r.meter || 0), 0)
+                              .toFixed(2)}{" "}
+                            m
+                          </td>
+                          <td class="border px-2 py-1 text-right">
+                            {(
+                              form()
+                                .itemGroups.flatMap((g) => g.rolls)
+                                .reduce(
+                                  (sum, r) => sum + Number(r.meter || 0),
+                                  0
+                                ) * 1.093613
+                            ).toFixed(2)}{" "}
+                            yd
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
 
-                  <div className="flex gap-2">
+                  <div class="mt-4 flex flex-wrap gap-2 items-center">
                     <button
                       type="button"
                       onClick={() => addRoll(i())}
                       class="bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700"
+                      disabled={group.rolls.length >= 50}
                     >
                       + Tambah Roll
                     </button>
-                  </div>
-                  <div class="flex gap-2 items-center mt-2">
+
                     <input
                       type="number"
                       min="1"
+                      max={50 - group.rolls.length}
                       class="border p-1 rounded w-24"
                       placeholder="Jumlah"
                       onInput={(e) => {
@@ -677,14 +584,21 @@ export default function PackingListForm() {
                           return updated;
                         });
                       }}
+                      disabled={group.rolls.length >= 50}
                     />
+
                     <button
                       type="button"
                       onClick={() => {
                         const count = groupRollCounts()[i()] || 1;
-                        addMultipleRolls(i(), count);
+                        if (group.rolls.length + count <= 50) {
+                          addMultipleRolls(i(), count);
+                        } else {
+                          Swal.fire("Max 50 roll per group!");
+                        }
                       }}
                       class="bg-purple-600 text-white px-2 py-1 rounded hover:bg-purple-700"
+                      disabled={group.rolls.length >= 50}
                     >
                       + Tambah Banyak
                     </button>
