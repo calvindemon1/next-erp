@@ -151,17 +151,26 @@ export default function PackingListForm() {
     setForm((prev) => {
       const copy = [...prev.itemGroups];
       const group = copy[groupIndex];
-      const newRoll = {
+
+      const lastRoll = group.rolls[group.rolls.length - 1] || {
         col: "",
         item: "",
         meter: "",
         yard: "",
       };
 
+      const newRoll = {
+        col: lastRoll.col || "",
+        item: lastRoll.item || "",
+        meter: lastRoll.meter || "",
+        yard: lastRoll.yard || "",
+      };
+
       copy[groupIndex] = {
         ...group,
         rolls: [...group.rolls, newRoll],
       };
+
       return { ...prev, itemGroups: copy };
     });
   };
@@ -170,18 +179,26 @@ export default function PackingListForm() {
     setForm((prev) => {
       const copy = [...prev.itemGroups];
       const group = copy[groupIndex];
-      const last = group.rolls[group.rolls.length - 1] || {};
+
+      const lastRoll = group.rolls[group.rolls.length - 1] || {
+        col: "",
+        item: "",
+        meter: "",
+        yard: "",
+      };
+
       const newRolls = Array.from({ length: count }, () => ({
-        col: last.col || "",
-        item: last.item || "",
-        meter: last.meter || "",
-        yard: last.yard || "",
+        col: lastRoll.col || "",
+        item: lastRoll.item || "",
+        meter: lastRoll.meter || "",
+        yard: lastRoll.yard || "",
       }));
 
       copy[groupIndex] = {
         ...group,
         rolls: [...group.rolls, ...newRolls],
       };
+
       return { ...prev, itemGroups: copy };
     });
   };
@@ -190,7 +207,14 @@ export default function PackingListForm() {
     setForm((prev) => {
       const copy = [...prev.itemGroups];
       const group = copy[groupIndex];
-      group.rolls.splice(rollIndex, 1);
+
+      if (!group || !Array.isArray(group.rolls)) return prev;
+
+      const updatedRolls = [...group.rolls];
+      updatedRolls.splice(rollIndex, 1);
+
+      copy[groupIndex] = { ...group, rolls: updatedRolls };
+
       return { ...prev, itemGroups: copy };
     });
   };
@@ -207,12 +231,18 @@ export default function PackingListForm() {
     setForm((prev) => {
       const copy = [...prev.itemGroups];
       const group = copy[groupIndex];
-      group.rolls[rollIndex][field] = value;
+
+      if (!group || !Array.isArray(group.rolls)) return prev;
+      if (!group.rolls[rollIndex]) return prev; // ✅ Tambahan safety check
+
+      const updatedRoll = { ...group.rolls[rollIndex], [field]: value };
 
       if (field === "meter") {
-        const yard = (parseFloat(value || 0) * 1.093613).toFixed(2);
-        group.rolls[rollIndex]["yard"] = yard;
+        const meterValue = parseFloat(value || 0);
+        updatedRoll.yard = (meterValue * 1.093613).toFixed(2);
       }
+
+      group.rolls[rollIndex] = updatedRoll;
 
       return { ...prev, itemGroups: copy };
     });
@@ -259,11 +289,16 @@ export default function PackingListForm() {
     }
   };
 
-  const chunkArray = (arr, size) =>
-    arr.reduce((acc, _, i) => {
-      if (i % size === 0) acc.push(arr.slice(i, i + size));
-      return acc;
-    }, []);
+  const chunkArrayWithIndex = (arr, size) => {
+    return arr
+      .map((roll, index) => ({ roll, index }))
+      .reduce((chunks, current, idx) => {
+        const chunkIndex = Math.floor(idx / size);
+        if (!chunks[chunkIndex]) chunks[chunkIndex] = [];
+        chunks[chunkIndex].push(current);
+        return chunks;
+      }, []);
+  };
 
   return (
     <MainLayout>
@@ -272,7 +307,7 @@ export default function PackingListForm() {
       </h1>
 
       <form class="space-y-4" onSubmit={handleSubmit}>
-        <div class="grid grid-cols-3 gap-4">
+        <div class="grid grid-cols-2 gap-4">
           <div>
             <label class="block text-sm mb-1">No Packing List</label>
             <div class="flex gap-2">
@@ -317,7 +352,7 @@ export default function PackingListForm() {
               readOnly
             />
           </div>
-          <div>
+          {/* <div>
             <label class="block text-sm mb-1">Col</label>
             <input
               class="w-full border p-2 rounded"
@@ -326,7 +361,7 @@ export default function PackingListForm() {
               onInput={(e) => setForm({ ...form(), col: e.target.value })}
               required
             />
-          </div>
+          </div> */}
         </div>
 
         <div class="block gap-4">
@@ -383,7 +418,7 @@ export default function PackingListForm() {
                     <label class="block text-sm mb-1">
                       Sales Order Item ID
                     </label>
-                    <select
+                    {/* <select
                       class="w-full border p-2 rounded"
                       value={group.sales_order_item_id || ""}
                       onInput={(e) =>
@@ -404,161 +439,176 @@ export default function PackingListForm() {
                           </option>
                         )}
                       </For>
-                    </select>
+                    </select> */}
                   </div>
 
                   <table class="w-full border text-sm mt-2">
                     <thead class="bg-gray-100">
                       <tr>
                         <th class="border px-2 py-1 w-10">No</th>
-                        <th class="border px-2 py-1">Col</th>
-                        <th class="border px-2 py-1">Item</th>
+                        <th class="border px-2 py-1 w-20">Col</th>
+                        <th class="border px-2 py-1 w-32">Item</th>
                         <For each={[1, 2, 3, 4, 5]}>
-                          {(n) => <th class="border px-2 py-1">{n}</th>}
+                          {(n) => (
+                            <th class="border px-2 py-1 w-16 text-center">
+                              {n}
+                            </th>
+                          )}
                         </For>
-                        <th class="border px-2 py-1">TTL/PCS</th>
-                        <th class="border px-2 py-1">TTL/MTR</th>
-                        <th class="border px-2 py-1">TTL/YARD</th>
+                        <th class="border px-2 py-1 w-14">TTL/PCS</th>
+                        <th class="border px-2 py-1 w-24">TTL/MTR</th>
+                        <th class="border px-2 py-1 w-24">TTL/YARD</th>
                       </tr>
                     </thead>
                     <tbody>
-                      <tr>
-                        <td class="border text-center align-top">{i() + 1}</td>
-                        <td class="border align-top">
-                          <input
-                            class="w-full border-none p-1"
-                            value={group.rolls[0]?.col || ""}
-                            onInput={(e) =>
-                              handleRollChange(i(), 0, "col", e.target.value)
-                            }
-                          />
-                        </td>
-                        <td class="border align-top">
-                          <input
-                            class="w-full border-none p-1"
-                            value={group.rolls[0]?.item || ""}
-                            onInput={(e) =>
-                              handleRollChange(i(), 0, "item", e.target.value)
-                            }
-                          />
-                        </td>
-
-                        <td class="border p-1 align-top" colspan={5}>
-                          <div class="grid grid-cols-5 gap-1">
-                            <For each={group.rolls}>
-                              {(roll, j) => (
-                                <div class="relative">
+                      <For each={chunkArrayWithIndex(group.rolls, 5)}>
+                        {(rollChunk, chunkIndex) =>
+                          rollChunk.length > 0 && (
+                            <tr>
+                              <td class="border text-center align-top">
+                                {chunkIndex() === 0 ? i() + 1 : ""}
+                              </td>
+                              <td class="border align-top">
+                                {chunkIndex() === 0 ? (
                                   <input
-                                    type="number"
-                                    class="border p-1 text-right text-xs pr-5 w-16"
-                                    value={roll.meter}
+                                    class="w-full border-none p-1"
+                                    value={rollChunk[0]?.roll.col || ""}
                                     onInput={(e) =>
                                       handleRollChange(
                                         i(),
-                                        j(),
-                                        "meter",
+                                        rollChunk[0].index,
+                                        "col",
                                         e.target.value
                                       )
                                     }
                                   />
-                                  <button
-                                    type="button"
-                                    class="self-center top-0 right-0 text-red-500 text-xs px-1"
-                                    onClick={() => removeRoll(i(), j())}
+                                ) : (
+                                  ""
+                                )}
+                              </td>
+                              <td class="border align-top">
+                                {chunkIndex() === 0 ? (
+                                  <select
+                                    class="w-full border-none p-1 bg-white"
+                                    value={rollChunk[0]?.roll.item || ""}
+                                    onInput={(e) =>
+                                      handleRollChange(
+                                        i(),
+                                        rollChunk[0].index,
+                                        "item",
+                                        e.target.value
+                                      )
+                                    }
                                   >
-                                    <Trash2 size={20}/>
-                                  </button>
-                                </div>
-                              )}
-                            </For>
-                          </div>
-                        </td>
+                                    <option value="">Pilih Item</option>
+                                    <For
+                                      each={
+                                        form().sales_order_items?.items || []
+                                      }
+                                    >
+                                      {(item) => (
+                                        <option value={item.konstruksi_kain}>
+                                          {item.konstruksi_kain}
+                                        </option>
+                                      )}
+                                    </For>
+                                  </select>
+                                ) : (
+                                  ""
+                                )}
+                              </td>
 
-                        <td class="border text-center align-top">
-                          {group.rolls.length}
+                              <td class="border p-1 align-top" colspan={5}>
+                                <div class="grid grid-cols-5 gap-1">
+                                  <For each={rollChunk}>
+                                    {(r) => (
+                                      <div class="flex flex-row">
+                                        <input
+                                          type="number"
+                                          class="border p-1 text-right text-xs pr-5 w-full"
+                                          value={r.roll.meter}
+                                          onInput={(e) =>
+                                            handleRollChange(
+                                              i(),
+                                              r.index,
+                                              "meter",
+                                              e.target.value
+                                            )
+                                          }
+                                        />
+                                        <button
+                                          type="button"
+                                          class="top-0 right-0 text-white bg-red-500 border-t border-r border-b border-black rounded-r-sm text-xs px-1"
+                                          onClick={() =>
+                                            removeRoll(i(), r.index)
+                                          }
+                                        >
+                                          <Trash2 size={15} />
+                                        </button>
+                                      </div>
+                                    )}
+                                  </For>
+                                </div>
+                              </td>
+
+                              <td class="border text-center align-top">
+                                {rollChunk.length}
+                              </td>
+                              <td class="border text-right px-2 align-top">
+                                {rollChunk
+                                  .reduce(
+                                    (sum, r) => sum + Number(r.roll.meter || 0),
+                                    0
+                                  )
+                                  .toFixed(2)}
+                              </td>
+                              <td class="border text-right px-2 align-top">
+                                {(
+                                  rollChunk.reduce(
+                                    (sum, r) => sum + Number(r.roll.meter || 0),
+                                    0
+                                  ) * 1.093613
+                                ).toFixed(2)}
+                              </td>
+                            </tr>
+                          )
+                        }
+                      </For>
+
+                      <tr>
+                        <td
+                          colspan={8}
+                          class="border px-2 py-1 font-semibold text-left"
+                        >
+                          Sub Total
                         </td>
-                        <td class="border text-right px-2 align-top">
-                          {group.rolls
+                        <td class="border px-2 py-1 text-right">
+                          {form().itemGroups.reduce(
+                            (acc, g) => acc + g.rolls.length,
+                            0
+                          )}
+                        </td>
+                        <td class="border px-2 py-1 text-right">
+                          {form()
+                            .itemGroups.flatMap((g) => g.rolls)
                             .reduce((sum, r) => sum + Number(r.meter || 0), 0)
-                            .toFixed(2)}
+                            .toFixed(2)}{" "}
+                          m
                         </td>
-                        <td class="border text-right px-2 align-top">
+                        <td class="border px-2 py-1 text-right">
                           {(
-                            group.rolls.reduce(
-                              (sum, r) => sum + Number(r.meter || 0),
-                              0
-                            ) * 1.093613
-                          ).toFixed(2)}
+                            form()
+                              .itemGroups.flatMap((g) => g.rolls)
+                              .reduce(
+                                (sum, r) => sum + Number(r.meter || 0),
+                                0
+                              ) * 1.093613
+                          ).toFixed(2)}{" "}
+                          yd
                         </td>
                       </tr>
                     </tbody>
                   </table>
-                  <div class="mt-4 border-t pt-4">
-                    <table class="text-sm w-full table-fixed">
-                      <colgroup>
-                        <col style="width: 9%" />
-                        <col style="width: 9%" />
-                        <col style="width: 9%" />
-                        <col style="width: 9%" />
-                        <col style="width: 9%" />
-                        <col style="width: 9%" />
-                        <col style="width: 9%" />
-                        <col style="width: 9%" />
-                        <col style="width: 5%" />
-                        <col style="width: 5%" />
-                        <col style="width: 5%" />
-                      </colgroup>
-                      <thead>
-                        <tr>
-                          <th></th>
-                          <th></th>
-                          <th></th>
-                          <th></th>
-                          <th></th>
-                          <th></th>
-                          <th></th>
-                          <th></th>
-                          <th></th>
-                          <th></th>
-                          <th></th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr>
-                          <td
-                            colspan={8}
-                            class="border px-2 py-1 font-semibold text-left"
-                          >
-                            Sub Total
-                          </td>
-                          <td class="border px-2 py-1 text-right">
-                            {form().itemGroups.reduce(
-                              (acc, g) => acc + g.rolls.length,
-                              0
-                            )}
-                          </td>
-                          <td class="border px-2 py-1 text-right">
-                            {form()
-                              .itemGroups.flatMap((g) => g.rolls)
-                              .reduce((sum, r) => sum + Number(r.meter || 0), 0)
-                              .toFixed(2)}{" "}
-                            m
-                          </td>
-                          <td class="border px-2 py-1 text-right">
-                            {(
-                              form()
-                                .itemGroups.flatMap((g) => g.rolls)
-                                .reduce(
-                                  (sum, r) => sum + Number(r.meter || 0),
-                                  0
-                                ) * 1.093613
-                            ).toFixed(2)}{" "}
-                            yd
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
 
                   <div class="mt-4 flex flex-wrap gap-2 items-center">
                     <button
@@ -608,6 +658,46 @@ export default function PackingListForm() {
             )}
           </For>
         </div>
+
+        <Show when={form().itemGroups.length > 0}>
+          <div class="mt-6 border rounded">
+            <table class="w-full border text-sm">
+              <thead class="bg-gray-200">
+                <tr>
+                  <th
+                    class="border px-2 py-1 text-left"
+                    colspan="8"
+                    style="width: 68%"
+                  >
+                    Total
+                  </th>
+                  <th class="border px-2 py-1 text-right w-16">
+                    {form().itemGroups.reduce(
+                      (acc, g) => acc + g.rolls.length,
+                      0
+                    )}
+                  </th>
+                  <th class="border px-2 py-1 text-right w-24">
+                    {form()
+                      .itemGroups.flatMap((g) => g.rolls)
+                      .reduce((sum, r) => sum + Number(r.meter || 0), 0)
+                      .toFixed(2)}{" "}
+                    m
+                  </th>
+                  <th class="border px-2 py-1 text-right w-24">
+                    {(
+                      form()
+                        .itemGroups.flatMap((g) => g.rolls)
+                        .reduce((sum, r) => sum + Number(r.meter || 0), 0) *
+                      1.093613
+                    ).toFixed(2)}{" "}
+                    yd
+                  </th>
+                </tr>
+              </thead>
+            </table>
+          </div>
+        </Show>
 
         <div class="mt-6">
           <button
