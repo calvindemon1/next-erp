@@ -1,0 +1,53 @@
+name: Deploy to Server
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Deploy Application
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.DPPR_HOST }}
+          username: ${{ secrets.DPPR_USER }}
+          password: ${{ secrets.DPPR_PASSWORD }}
+          port: 22
+          script: |
+            echo "Starting deployment process..."
+
+            # Cek node & npm di server
+            node -v
+            npm -v
+
+            # Pindah ke folder project
+            cd /home/navel-erp/htdocs/navel.nexttechenterprise.site || exit
+
+            # Git pull
+             git fetch origin
+             git reset --hard origin/main
+
+            # Install dependencies
+            npm install
+            npm install serve --save
+
+            # Build
+            npm run build
+
+            # Jalankan PM2
+            pm2 startOrReload ecosystem.config.cjs
+
+            # Save PM2 list
+            pm2 save
+
+            # PM2 startup
+            pm2 startup systemd -u calvin-next --hp /home/calvin-next
+
+            echo "Deployment complete!"
