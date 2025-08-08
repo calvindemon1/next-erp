@@ -16,9 +16,9 @@ jobs:
       - name: Deploy Application
         uses: appleboy/ssh-action@v0.1.7
         with:
-          host: ${{ secrets.DPPR_HOST }}
-          username: ${{ secrets.DPPR_USER }}
-          password: ${{ secrets.DPPR_PASSWORD }}
+          host: ${{ secrets.NVERP_HOST }}
+          username: ${{ secrets.NVERP_USER }}
+          password: ${{ secrets.NVERP_PASSWORD }}
           port: 22
           script: |
             echo "Starting deployment process..."
