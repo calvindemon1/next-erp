@@ -36,7 +36,6 @@ export default function UsersList() {
     if (result.isConfirmed) {
       try {
         const deleteUser = await softDeleteUser(id, user?.token);
-        console.log(deleteUser);
 
         // Optional: tampilkan alert sukses
         await Swal.fire({

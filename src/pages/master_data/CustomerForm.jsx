@@ -36,11 +36,12 @@ export default function SuppliersListForm() {
 
     if (isEdit) {
       const customerData = await getCustomer(params.id, user?.token);
+      console.log(customerData.customers)
       setForm({
         id: params.id,
         kode: customerData.customers.kode,
-        npwp: customerData.customers.npwp,
         nama: customerData.customers.nama,
+        npwp: customerData.customers.npwp,
         customer_type_id: customerData.customers.customer_type_id,
         no_telp: customerData.customers.no_telp,
         no_hp: customerData.customers.no_hp,
@@ -60,8 +61,8 @@ export default function SuppliersListForm() {
           user?.token,
           params.id,
           form().kode,
-          form().npwp,
           form().nama,
+          form().npwp,
           form().customer_type_id,
           form().no_telp,
           form().no_hp,
@@ -73,8 +74,8 @@ export default function SuppliersListForm() {
         await createCustomer(
           user?.token,
           form().kode,
-          form().npwp,
           form().nama,
+          form().npwp,
           form().customer_type_id,
           form().no_telp,
           form().no_hp,
@@ -111,116 +112,125 @@ export default function SuppliersListForm() {
       <h1 class="text-2xl font-bold mb-4">
         {isEdit ? "Edit" : "Tambah"} Customer
       </h1>
-      <form class="space-y-4 max-w-lg" onSubmit={handleSubmit}>
-        <div>
-          <label class="block mb-1 font-medium">Kode</label>
-          <input
-            type="text"
-            class="w-full border p-2 rounded"
-            value={form().kode}
-            onInput={(e) => setForm({ ...form(), kode: e.target.value })}
-            required
-          />
-        </div>
-        <div>
-          <label class="block mb-1 font-medium">NPWP</label>
-          <input
-            type="text"
-            class="w-full border p-2 rounded"
-            value={form().npwp}
-            onInput={(e) => setForm({ ...form(), npwp: e.target.value })}
-            required
-          />
-        </div>
-        <div>
-          <label class="block mb-1 font-medium">Nama</label>
-          <input
-            type="text"
-            class="w-full border p-2 rounded"
-            value={form().nama}
-            onInput={(e) => setForm({ ...form(), nama: e.target.value })}
-            required
-          />
-        </div>
-        <div>
-          <label class="block mb-1 font-medium">Tipe Customer</label>
-          <select
-            class="w-full border p-2 rounded"
-            value={form().customer_type_id}
-            onChange={(e) =>
-              setForm({ ...form(), customer_type_id: e.target.value })
-            }
-            required
-          >
-            <option value="" disabled hidden={!!form().customer_type_id}>
-              Pilih Tipe Customer
-            </option>
-            {customerTypes().map((type) => (
-              <option value={type.id}>{type.jenis}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label class="block mb-1 font-medium">No Telp</label>
-          <input
-            type="text"
-            class="w-full border p-2 rounded"
-            value={form().no_telp}
-            onInput={(e) => setForm({ ...form(), no_telp: e.target.value })}
-            required
-          />
-        </div>
-        <div>
-          <label class="block mb-1 font-medium">No HP</label>
-          <input
-            type="text"
-            class="w-full border p-2 rounded"
-            value={form().no_hp}
-            onInput={(e) => setForm({ ...form(), no_hp: e.target.value })}
-            required
-          />
+      <form class="space-y-4" onSubmit={handleSubmit}>
+        <div className="grid grid-cols-4 gap-4">
+          {" "}
+          <div>
+            <label class="block mb-1 font-medium">Kode</label>
+            <input
+              type="text"
+              class="w-full border p-2 rounded"
+              value={form().kode}
+              onInput={(e) => setForm({ ...form(), kode: e.target.value })}
+              required
+            />
+          </div>
+          <div>
+            <label class="block mb-1 font-medium">Nama</label>
+            <input
+              type="text"
+              class="w-full border p-2 rounded"
+              value={form().nama}
+              onInput={(e) => setForm({ ...form(), nama: e.target.value })}
+              required
+            />
+          </div>
+          <div>
+            <label class="block mb-1 font-medium">NPWP</label>
+            <input
+              type="number"
+              class="w-full border p-2 rounded"
+              value={form().npwp}
+              onInput={(e) => setForm({ ...form(), npwp: e.target.value })}
+              required
+            />
+          </div>
+          <div>
+            <label class="block mb-1 font-medium">Tipe Customer</label>
+            <select
+              class="w-full border p-2 rounded"
+              value={form().customer_type_id}
+              onChange={(e) =>
+                setForm({ ...form(), customer_type_id: e.target.value })
+              }
+              required
+            >
+              <option value="" disabled hidden={!!form().customer_type_id}>
+                Pilih Tipe Customer
+              </option>
+              {customerTypes().map((type) => (
+                <option value={type.id}>{type.jenis}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label class="block mb-1 font-medium">No Telp</label>
+            <input
+              type="number"
+              class="w-full border p-2 rounded"
+              value={form().no_telp}
+              onInput={(e) => setForm({ ...form(), no_telp: e.target.value })}
+              required
+            />
+          </div>
+          <div>
+            <label class="block mb-1 font-medium">No HP</label>
+            <input
+              type="number"
+              class="w-full border p-2 rounded"
+              value={form().no_hp}
+              onInput={(e) => setForm({ ...form(), no_hp: e.target.value })}
+              required
+            />
+          </div>
+          <div>
+            <label class="block mb-1 font-medium">Termin</label>
+            <div class="relative">
+              <input
+                type="number"
+                class="w-full border p-2 pr-12 rounded"
+                value={form().termin}
+                onInput={(e) => setForm({ ...form(), termin: e.target.value })}
+                required
+              />
+              <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">
+                /Hari
+              </span>
+            </div>
+          </div>
+          <div>
+            <label class="block mb-1 font-medium">Limit Kredit</label>
+            <input
+              type="text"
+              class="w-full border p-2 rounded"
+              value={
+                form().limit_kredit !== null &&
+                form().limit_kredit !== undefined
+                  ? new Intl.NumberFormat("id-ID", {
+                      style: "currency",
+                      currency: "IDR",
+                      minimumFractionDigits: 0,
+                    }).format(form().limit_kredit)
+                  : ""
+              }
+              onInput={(e) => {
+                const raw = e.target.value.replace(/[^\d]/g, ""); // ambil angka aja
+                setForm({
+                  ...form(),
+                  limit_kredit: raw ? parseInt(raw) : null,
+                });
+              }}
+              required
+            />
+          </div>
         </div>
         <div>
           <label class="block mb-1 font-medium">Alamat</label>
-          <input
+          <textarea
             type="text"
             class="w-full border p-2 rounded"
             value={form().alamat}
             onInput={(e) => setForm({ ...form(), alamat: e.target.value })}
-            required
-          />
-        </div>
-        <div>
-          <label class="block mb-1 font-medium">Termin</label>
-          <input
-            type="text"
-            class="w-full border p-2 rounded"
-            value={form().termin}
-            onInput={(e) => setForm({ ...form(), termin: e.target.value })}
-            required
-          />
-        </div>
-        <div>
-          <label class="block mb-1 font-medium">Limit Kredit</label>
-          <input
-            type="text"
-            class="w-full border p-2 rounded"
-            value={
-              form().limit_kredit !== null && form().limit_kredit !== undefined
-                ? new Intl.NumberFormat("id-ID", {
-                    style: "currency",
-                    currency: "IDR",
-                    minimumFractionDigits: 0,
-                  }).format(form().limit_kredit)
-                : ""
-            }
-            onInput={(e) => {
-              const raw = e.target.value.replace(/[^\d]/g, ""); // ambil angka aja
-              setForm({
-                ...form(),
-                limit_kredit: raw ? parseInt(raw) : null,
-              });
-            }}
             required
           />
         </div>

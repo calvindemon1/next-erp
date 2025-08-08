@@ -10,7 +10,8 @@ export default function UserForm() {
     name: "",
     username: "",
     password: "",
-    role: "0",
+    role: "1",
+    account_type_id: "1",
   });
   const [params] = useSearchParams();
   const isEdit = !!params.id;
@@ -20,11 +21,27 @@ export default function UserForm() {
   onMount(async () => {
     if (isEdit) {
       const userData = await getDataUser(params.id, user?.token);
+      let roleNumber = 0;
+      if (userData.user.role_name === "super admin") {
+        roleNumber = 1;
+      } else if (userData.user.role_name === "admin") {
+        roleNumber = 2;
+      }
+
+      let accountType = 0;
+      if (userData.user.account_type_name === "non-ppn") {
+        accountType = 1;
+      } else if (userData.user.account_type_name === "ppn") {
+        accountType = 2;
+      }
+
       setForm({
         id: params.id,
-        name: userData.name,
-        username: userData.username,
-        role: userData.role_id,
+        name: userData.user.name,
+        username: userData.user.username,
+        password: "",
+        role: roleNumber,
+        account_type_id: accountType,
       });
     }
   });
@@ -38,7 +55,9 @@ export default function UserForm() {
           form().id,
           form().name,
           form().username,
+          form().password,
           form().role,
+          form().account_type_id,
           user?.token
         );
       } else {
@@ -47,6 +66,7 @@ export default function UserForm() {
           form().username,
           form().password,
           form().role,
+          form().account_type_id,
           user?.token
         );
       }
@@ -59,6 +79,7 @@ export default function UserForm() {
         confirmButtonText: "OK",
       }).then(() => navigate("/users"));
     } catch (error) {
+      console.log(error);
       Swal.fire({
         icon: "error",
         title: "Gagal",
@@ -74,36 +95,37 @@ export default function UserForm() {
   return (
     <MainLayout>
       <h1 class="text-2xl font-bold mb-4">{isEdit ? "Edit" : "Tambah"} User</h1>
-      <form class="space-y-4 max-w-lg" onSubmit={handleSubmit}>
-        <div>
-          <label class="block mb-1 font-medium">Name</label>
-          <input
-            type="text"
-            class="w-full border p-2 rounded"
-            value={form().name}
-            onInput={(e) => setForm({ ...form(), name: e.target.value })}
-            required
-          />
-        </div>
-        <div>
-          <label class="block mb-1 font-medium">Username</label>
-          <input
-            type="text"
-            class="w-full border p-2 rounded"
-            value={form().username}
-            onInput={(e) => setForm({ ...form(), username: e.target.value })}
-            required
-          />
-        </div>
-        {!isEdit && (
+      <form class="space-y-4" onSubmit={handleSubmit}>
+        <div className="grid grid-cols-5 gap-4">
+          <div>
+            <label class="block mb-1 font-medium">Name</label>
+            <input
+              type="text"
+              class="w-full border p-2 rounded"
+              value={form().name}
+              onInput={(e) => setForm({ ...form(), name: e.target.value })}
+              required
+            />
+          </div>
+          <div>
+            <label class="block mb-1 font-medium">Username</label>
+            <input
+              type="text"
+              class="w-full border p-2 rounded"
+              value={form().username}
+              onInput={(e) => setForm({ ...form(), username: e.target.value })}
+              required
+            />
+          </div>
+          {/* {!isEdit && ( */}
           <div>
             <label class="block mb-1 font-medium">
-              Password{" "}
-              {isEdit && (
+              Password
+              {/* {isEdit && (
                 <span class="text-sm text-gray-500">
                   (kosongkan jika tidak ingin ubah)
                 </span>
-              )}
+              )} */}
             </label>
             <input
               type="text"
@@ -113,19 +135,33 @@ export default function UserForm() {
               required={!isEdit}
             />
           </div>
-        )}
-        <div>
-          <label class="block mb-1 font-medium">Role</label>
-          <select
-            class="w-full border p-2 rounded"
-            value={form().role}
-            onChange={(e) => setForm({ ...form(), role: e.target.value })}
-          >
-            <option value="1">Super Admin</option>
-            <option value="2">Admin</option>
-            <option value="3">User (Non-PPN)</option>
-            <option value="4">User (PPN)</option>
-          </select>
+          {/* )} */}
+          <div>
+            <label class="block mb-1 font-medium">Tipe Akses</label>
+            <select
+              class="w-full border p-2 rounded"
+              value={form().role}
+              onChange={(e) => setForm({ ...form(), role: e.target.value })}
+            >
+              <option value="1">Super Admin</option>
+              <option value="2">Admin</option>
+            </select>
+          </div>
+          <div>
+            <label class="block mb-1 font-medium">
+              Tipe Akun (PPN/Non-PPN)
+            </label>
+            <select
+              class="w-full border p-2 rounded"
+              value={form().account_type_id}
+              onChange={(e) =>
+                setForm({ ...form(), account_type_id: e.target.value })
+              }
+            >
+              <option value="1">User (Non-PPN)</option>
+              <option value="2">User (PPN)</option>
+            </select>
+          </div>
         </div>
         <button class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
           Simpan

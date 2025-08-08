@@ -27,7 +27,7 @@ export default function GradeForm() {
       const colorData = await getGrades(params.id, user?.token);
       setForm({
         id: params.id,
-        grade: colorData.grade,
+        grade: colorData.data.grade,
       });
     }
   });

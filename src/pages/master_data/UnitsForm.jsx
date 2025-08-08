@@ -12,8 +12,7 @@ import Swal from "sweetalert2";
 export default function UnitsForm() {
   const [form, setForm] = createSignal({
     id: "",
-    kode: "",
-    deskripsi: "",
+    satuan: "",
   });
   const [params] = useSearchParams();
   const isEdit = !!params.id;
@@ -23,10 +22,11 @@ export default function UnitsForm() {
   onMount(async () => {
     if (isEdit) {
       const satuanUnitData = await getSatuanUnits(params.id, user?.token);
+      console.log(satuanUnitData)
 
       setForm({
         id: params.id,
-        satuan: satuanUnitData.satuan,
+        satuan: satuanUnitData.data.satuan,
       });
     }
   });

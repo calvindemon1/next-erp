@@ -22,6 +22,7 @@ export default function CustomerTypeForm() {
   onMount(async () => {
     if (isEdit) {
       const customerType = await getCustomerType(params.id, user?.token);
+      console.log(customerType)
       setForm({
         id: params.id,
         jenis: customerType.data.jenis,

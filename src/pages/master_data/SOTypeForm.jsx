@@ -27,7 +27,7 @@ export default function SOTypeForm() {
       const soType = await getSOType(params.id, user?.token);
       setForm({
         id: params.id,
-        jenis: soType.jenis,
+        jenis: soType.data.jenis,
       });
     }
   });
@@ -52,13 +52,17 @@ export default function SOTypeForm() {
         confirmButtonText: "OK",
       }).then(() => navigate("/so-type"));
     } catch (error) {
-      console.log(error);
+      const serverMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        (isEdit
+          ? "Gagal mengubah data jenis SO"
+          : "Gagal membuat data jenis SO baru");
+
       Swal.fire({
         icon: "error",
         title: "Gagal",
-        text: isEdit
-          ? "Gagal mengubah data jenis SO"
-          : "Gagal membuat data jenis SO baru",
+        text: serverMessage,
         confirmButtonColor: "#6496df",
         confirmButtonText: "OK",
       });

@@ -24,7 +24,7 @@ export default function CurrencyForm() {
       const currencies = await getCurrencies(params.id, user?.token);
       setForm({
         id: params.id,
-        name: currencies.name,
+        name: currencies.data.name,
       });
     }
   });

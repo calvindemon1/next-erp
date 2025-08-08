@@ -101,11 +101,9 @@ export default function CustomerList() {
           <thead>
             <tr class="bg-gray-200 text-left text-sm uppercase text-gray-700">
               <th class="py-2 px-4">ID</th>
-              <th class="py-2 px-2">Alias</th>
+              <th class="py-2 px-2">Kode</th>
               <th class="py-2 px-2">Nama</th>
               <th class="py-2 px-2">Tipe</th>
-              <th class="py-2 px-4">No Telp</th>
-              <th class="py-2 px-4">No HP</th>
               <th class="py-2 px-4">Alamat</th>
               <th class="py-2 px-4">Termin</th>
               <th class="py-2 px-4">Limit Kredit</th>
@@ -118,11 +116,11 @@ export default function CustomerList() {
                 <td class="py-2 px-4">
                   {(currentPage() - 1) * pageSize + (index + 1)}
                 </td>
-                <td class="py-2 px-4">{cust.alias}</td>
+                <td class="py-2 px-4">{cust.kode}</td>
                 <td class="py-2 px-4">{cust.nama}</td>
-                <td class="py-2 px-4">{cust.customer_type_id}</td>
-                <td class="py-2 px-4">{formatPhoneNumber(cust.no_telp)}</td>
-                <td class="py-2 px-4">{cust.no_hp}</td>
+                <td class="py-2 px-4">
+                  {cust.customer_type_id === 1 ? "Domestik" : "Ekspor"}
+                </td>
                 <td class="py-2 px-4">{cust.alamat}</td>
                 <td class="py-2 px-4">{cust.termin}</td>
                 <td class="py-2 px-4">
@@ -143,7 +141,7 @@ export default function CustomerList() {
                     class="text-red-600 hover:underline"
                     onClick={() => handleDelete(cust.id)}
                   >
-                   <Trash size={25} />
+                    <Trash size={25} />
                   </button>
                 </td>
               </tr>

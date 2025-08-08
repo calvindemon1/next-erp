@@ -12,7 +12,7 @@ import Swal from "sweetalert2";
 export default function FabricForm() {
   const [form, setForm] = createSignal({
     id: "",
-    kode: "",
+    corak: "",
     konstruksi: "",
   });
   const [params] = useSearchParams();
@@ -22,11 +22,11 @@ export default function FabricForm() {
 
   onMount(async () => {
     if (isEdit) {
-      const colorData = await getFabric(params.id, user?.token);
+      const fabricData = await getFabric(params.id, user?.token);
       setForm({
         id: params.id,
-        kode: colorData.kode,
-        konstruksi: colorData.konstruksi,
+        corak: fabricData.corak,
+        konstruksi: fabricData.konstruksi,
       });
     }
   });
@@ -39,11 +39,11 @@ export default function FabricForm() {
         await updateDataFabric(
           user?.token,
           params.id,
-          form().kode,
+          form().corak,
           form().konstruksi
         );
       } else {
-        await createFabric(user?.token, form().kode, form().konstruksi);
+        await createFabric(user?.token, form().corak, form().konstruksi);
       }
 
       Swal.fire({
@@ -73,26 +73,30 @@ export default function FabricForm() {
       <h1 class="text-2xl font-bold mb-4">
         {isEdit ? "Edit" : "Tambah"} Warna
       </h1>
-      <form class="space-y-4 max-w-lg" onSubmit={handleSubmit}>
-        <div>
-          <label class="block mb-1 font-medium">Kode</label>
-          <input
-            type="text"
-            class="w-full border p-2 rounded"
-            value={form().kode}
-            onInput={(e) => setForm({ ...form(), kode: e.target.value })}
-            required
-          />
-        </div>
-        <div>
-          <label class="block mb-1 font-medium">konstruksi</label>
-          <input
-            type="text"
-            class="w-full border p-2 rounded"
-            value={form().konstruksi}
-            onInput={(e) => setForm({ ...form(), konstruksi: e.target.value })}
-            required
-          />
+      <form class="space-y-4" onSubmit={handleSubmit}>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block mb-1 font-medium">Kode</label>
+            <input
+              type="text"
+              class="w-full border p-2 rounded"
+              value={form().corak}
+              onInput={(e) => setForm({ ...form(), corak: e.target.value })}
+              required
+            />
+          </div>
+          <div>
+            <label class="block mb-1 font-medium">konstruksi</label>
+            <input
+              type="text"
+              class="w-full border p-2 rounded"
+              value={form().konstruksi}
+              onInput={(e) =>
+                setForm({ ...form(), konstruksi: e.target.value })
+              }
+              required
+            />
+          </div>
         </div>
         <button class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
           Simpan

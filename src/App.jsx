@@ -91,6 +91,9 @@ function App() {
   return (
     <Router>
       <Route path="/" component={LoginPage} />
+      <Route path="/users" component={UsersList} />
+      <Route path="/users/form" component={UserForm} />
+
       <Route path="/dashboard" component={Dashboard} />
 
       <Route path="/orders" component={OrdersList} />
@@ -98,9 +101,6 @@ function App() {
 
       <Route path="/transactions" component={TransactionsList} />
       <Route path="/transactions/form" component={TransactionForm} />
-
-      <Route path="/users" component={UsersList} />
-      <Route path="/users/form" component={UserForm} />
 
       {/* TRANSACTIONS */}
       <Route path="/salescontract" component={SalesContractList} />

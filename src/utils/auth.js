@@ -38,7 +38,14 @@ export async function login(username, password) {
   }
 }
 
-export async function register(name, username, password, role_id, token) {
+export async function register(
+  name,
+  username,
+  password,
+  role_id,
+  account_type_id,
+  token
+) {
   try {
     const response = await fetch(
       "https://nexttechenterprise.site/api/register",
@@ -54,6 +61,7 @@ export async function register(name, username, password, role_id, token) {
           username,
           password,
           role_id: parseInt(role_id, 10),
+          account_type_id: parseInt(account_type_id, 10),
         }),
       }
     );
@@ -151,7 +159,15 @@ export async function getAllUsers(token) {
   }
 }
 
-export async function updateUser(userId, name, username, role_id, token) {
+export async function updateUser(
+  userId,
+  name,
+  username,
+  password,
+  role_id,
+  account_type_id,
+  token
+) {
   try {
     const response = await fetch(
       `https://nexttechenterprise.site/api/update-user/${userId}`,
@@ -165,7 +181,9 @@ export async function updateUser(userId, name, username, role_id, token) {
         body: JSON.stringify({
           name,
           username,
+          password,
           role_id: parseInt(role_id, 10),
+          account_type_id: parseInt(account_type_id, 10),
         }),
       }
     );
@@ -225,7 +243,6 @@ export function getUser() {
 export async function createSupplier(
   token,
   kode,
-  alias,
   nama,
   no_telp,
   no_hp,
@@ -243,7 +260,6 @@ export async function createSupplier(
         },
         body: JSON.stringify({
           kode: kode,
-          alias: alias,
           nama: nama,
           no_telp: no_telp,
           no_hp: no_hp,
@@ -322,7 +338,6 @@ export async function updateDataSupplier(
   token,
   id,
   kode,
-  alias,
   nama,
   no_telp,
   no_hp,
@@ -340,7 +355,6 @@ export async function updateDataSupplier(
         },
         body: JSON.stringify({
           kode: kode,
-          alias: alias,
           nama: nama,
           no_telp: no_telp,
           no_hp: no_hp,
@@ -396,8 +410,8 @@ export async function softDeleteSupplier(id, token) {
 export async function createCustomer(
   token,
   kode,
-  alias,
   nama,
+  npwp,
   customer_type_id,
   no_telp,
   no_hp,
@@ -417,8 +431,8 @@ export async function createCustomer(
         },
         body: JSON.stringify({
           kode: kode,
-          alias: alias,
           nama: nama,
+          npwp: npwp,
           customer_type_id: parseInt(customer_type_id, 10),
           no_telp: no_telp,
           no_hp: no_hp,
@@ -499,8 +513,8 @@ export async function updateDataCustomer(
   token,
   id,
   kode,
-  alias,
   nama,
+  npwp,
   customer_type_id,
   no_telp,
   no_hp,
@@ -520,8 +534,8 @@ export async function updateDataCustomer(
         },
         body: JSON.stringify({
           kode: kode,
-          alias: alias,
           nama: nama,
+          npwp: npwp,
           customer_type_id: parseInt(customer_type_id, 10),
           no_telp: no_telp,
           no_hp: no_hp,
@@ -576,7 +590,7 @@ export async function softDeleteCustomer(id, token) {
 
 // #region COLORS FUNCTION
 
-export async function createColor(token, kode, jenis) {
+export async function createColor(token, kode, deskripsi) {
   try {
     const response = await fetch(
       `https://nexttechenterprise.site/api/create-warna`,
@@ -587,7 +601,7 @@ export async function createColor(token, kode, jenis) {
           Authorization: `Bearer ${token}`,
           "ngrok-skip-browser-warning": "any-value",
         },
-        body: JSON.stringify({ kode: kode, jenis: jenis }),
+        body: JSON.stringify({ kode: kode, deskripsi: deskripsi }),
       }
     );
 
@@ -652,7 +666,7 @@ export async function getColor(id, token) {
   }
 }
 
-export async function updateDataColor(token, id, kode, jenis) {
+export async function updateDataColor(token, id, kode, deskripsi) {
   try {
     const response = await fetch(
       `https://nexttechenterprise.site/api/update-warna/${id}`,
@@ -663,7 +677,7 @@ export async function updateDataColor(token, id, kode, jenis) {
           Authorization: `Bearer ${token}`,
           "ngrok-skip-browser-warning": "any-value",
         },
-        body: JSON.stringify({ kode: kode, jenis: jenis }),
+        body: JSON.stringify({ kode: kode, deskripsi: deskripsi }),
       }
     );
 
@@ -711,7 +725,7 @@ export async function softDeleteColor(id, token) {
 
 // #region FABRICS FUNCTION
 
-export async function createFabric(token, kode, jenis) {
+export async function createFabric(token, corak, konstruksi) {
   try {
     const response = await fetch(
       `https://nexttechenterprise.site/api/create-kain`,
@@ -722,7 +736,7 @@ export async function createFabric(token, kode, jenis) {
           Authorization: `Bearer ${token}`,
           "ngrok-skip-browser-warning": "any-value",
         },
-        body: JSON.stringify({ kode: kode, jenis: jenis }),
+        body: JSON.stringify({ corak: corak, konstruksi: konstruksi }),
       }
     );
 
@@ -787,7 +801,7 @@ export async function getFabric(id, token) {
   }
 }
 
-export async function updateDataFabric(token, id, kode, jenis) {
+export async function updateDataFabric(token, id, corak, konstruksi) {
   try {
     const response = await fetch(
       `https://nexttechenterprise.site/api/update-kain/${id}`,
@@ -798,7 +812,7 @@ export async function updateDataFabric(token, id, kode, jenis) {
           Authorization: `Bearer ${token}`,
           "ngrok-skip-browser-warning": "any-value",
         },
-        body: JSON.stringify({ kode: kode, jenis: jenis }),
+        body: JSON.stringify({ corak: corak, konstruksi: konstruksi }),
       }
     );
 
