@@ -1295,6 +1295,8 @@ export async function createSalesContract(token, payload) {
       }
     );
 
+    console.log(payload);
+
     const data = await response.json();
 
     if (!response.ok) {
@@ -1326,34 +1328,6 @@ export async function getAllSalesContracts(token) {
 
     if (!response.ok) {
       throw new Error(data.message || "Gagal mengambil data sales contract");
-    }
-
-    return data;
-  } catch (error) {
-    throw error;
-  }
-}
-
-export async function getLatestSalesContractNumber(token) {
-  try {
-    const response = await fetch(
-      `https://nexttechenterprise.site/api/last-sales-contract`,
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-          "ngrok-skip-browser-warning": "any-value",
-        },
-      }
-    );
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(
-        data.message || "Gagal mengambil data nomor sales contract terakhir"
-      );
     }
 
     return data;

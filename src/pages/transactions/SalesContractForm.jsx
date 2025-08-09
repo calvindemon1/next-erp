@@ -12,7 +12,6 @@ import {
   getAllGrades,
   getAllSatuanUnits,
   getLastSequence,
-  getLatestSalesContractNumber,
   getSalesContracts,
   getUser,
   updateDataSalesContract,
@@ -47,11 +46,12 @@ export default function SalesContractForm() {
     const grades = await getAllGrades(user?.token);
 
     setFabricOptions(
-      fabrics?.kain.map((f) => ({
-        value: f.id,
-        corak: f.corak,
-        konstruksi: f.konstruksi,
-      })) || ["Pilih"]
+      // fabrics?.kain.map((f) => ({
+      //   value: f.id,
+      //   corak: f.corak,
+      //   konstruksi: f.konstruksi,
+      // })) || ["Pilih"]
+      fabrics.kain || []
     );
 
     setGradeOptions(
@@ -63,12 +63,12 @@ export default function SalesContractForm() {
   });
 
   const [form, setForm] = createSignal({
-    no_pesan: "",
-    po_cust: "-",
-    validity_contract: "",
-    customer_id: "",
     type: "",
     sequence_number: "",
+    po_cust: "-",
+    no_pesan: "",
+    validity_contract: "",
+    customer_id: "",
     currency_id: "",
     kurs: "",
     termin: "",
@@ -91,11 +91,9 @@ export default function SalesContractForm() {
     const getDataUnitTypes = await getAllSatuanUnits(user?.token);
     setUnitsType(getDataUnitTypes.data);
 
-    console.log(customerType());
     if (isEdit) {
       const res = await getSalesContracts(params.id, user?.token);
-      const salesContracts = res.response; // karena dari console lu, response-nya di dalam `response`
-
+      const salesContracts = res.contract; // karena dari console lu, response-nya di dalam `response`
       let sequenceNumber = 0;
 
       if (salesContracts.no_pesan) {
@@ -115,7 +113,7 @@ export default function SalesContractForm() {
       // Normalize items
       const normalizedItems = (salesContracts.items || []).map((item, idx) => ({
         id: idx + 1,
-        kain_id: item.kain_id ?? null,
+        fabric_id: item.kain_id ?? null,
         grade_id: item.grade_id ?? "",
         lebar: item.lebar != null ? parseFloat(item.lebar) : null,
         gramasi: item.gramasi != null ? parseFloat(item.gramasi) : null,
@@ -135,7 +133,8 @@ export default function SalesContractForm() {
       setForm({
         type:
           parseInt(salesContracts.transaction_type == "domestik" ? 1 : 2) ?? "",
-        no_pesan: salesContracts.no_pesan ?? "",
+        sequence_number: sequenceNumber ?? 0,
+        no_pesan: salesContracts.no_sc ?? "",
         po_cust: salesContracts.po_cust ?? "",
         validity_contract: salesContracts.validity_contract ?? "",
         customer_id: salesContracts.customer_id ?? "",
@@ -145,7 +144,6 @@ export default function SalesContractForm() {
         ppn_percent: parseFloat(salesContracts.ppn_percent) ?? "",
         catatan: salesContracts.catatan ?? "",
         satuan_unit_id: parseInt(salesContracts.satuan_unit_id) ?? "",
-        sequence_number: sequenceNumber ?? 0,
         items: normalizedItems.length > 0 ? normalizedItems : [],
       });
       // validity_contract: salesContracts.validity_contract
@@ -255,7 +253,7 @@ export default function SalesContractForm() {
     setForm((prev) => {
       const newItem = {
         id: ++itemIdCounter,
-        kain_id: null,
+        fabric_id: null,
         grade_id: "",
         lebar: null,
         gramasi: null,
@@ -284,7 +282,7 @@ export default function SalesContractForm() {
   };
 
   const getDropdownOptions = (field) => {
-    if (field === "kain_id") {
+    if (field === "fabric_id") {
       return fabricOptions();
     } else if (field === "grade_id") {
       return gradeOptions();
@@ -302,19 +300,13 @@ export default function SalesContractForm() {
   };
 
   const handleItemChange = (index, field, value) => {
-    // const numericFields = [
-    //   "kain_id",
-    //   "lebar",
-    //   "gramasi",
-    //   "meter_total",
-    //   "yard_total",
-    //   "kilogram_total",
-    //   "harga",
-    // ];
-
     let processedValue = value;
 
-    processedValue = value === "" ? 0 : parseFloat(value);
+    if (field === "fabric_id" || field === "grade_id") {
+      processedValue = value;
+    } else {
+      processedValue = value === "" ? 0 : parseFloat(value);
+    }
 
     setForm(
       produce((f) => {
@@ -352,20 +344,20 @@ export default function SalesContractForm() {
 
       const payload = {
         ...form(),
+        type: customerTypeObj?.jenis,
         sequence_number: form().sequence_number,
         po_cust: form().po_cust,
         validity_contract: form().validity_contract,
         customer_id: parseInt(form().customer_id),
-        type: customerTypeObj?.jenis,
-        sequence_number: form().sequence_number,
         currency_id: parseInt(form().currency_id),
         kurs: toNum(form().kurs),
         termin: toNum(form().termin),
         ppn_percent: toNum(form().ppn_percent),
+        catatan: form().catatan,
         satuan_unit_id: toNum(form().satuan_unit_id),
         items: form().items.map((item) => ({
           id: item.id,
-          kain_id: toNum(item.kain_id),
+          kain_id: toNum(item.fabric_id),
           grade_id: item.grade_id || "",
           lebar: toNum(item.lebar),
           gramasi: toNum(item.gramasi),
@@ -377,7 +369,6 @@ export default function SalesContractForm() {
       };
 
       if (isEdit) {
-        console.log(params.id, payload);
         await updateDataSalesContract(user?.token, params.id, payload);
       } else {
         await createSalesContract(user?.token, payload);
@@ -393,14 +384,18 @@ export default function SalesContractForm() {
         confirmButtonColor: "#6496df",
       }).then(() => navigate("/salescontract"));
     } catch (error) {
-      console.error(error);
+      const serverMessage =
+        error?.response?.data?.message ||
+        (isEdit
+          ? "Gagal mengubah data jenis SO"
+          : "Gagal membuat data jenis SO baru");
+
       Swal.fire({
         icon: "error",
-        title: "Error",
-        text: isEdit
-          ? "Gagal mengupdate Sales Contract"
-          : "Gagal membuat Sales Contract baru",
+        title: "Gagal",
+        text: serverMessage,
         confirmButtonColor: "#6496df",
+        confirmButtonText: "OK",
       });
     }
   };
@@ -629,7 +624,7 @@ export default function SalesContractForm() {
           <thead class="bg-gray-100">
             <tr>
               {[
-                { label: "Kain", field: "kain_id" },
+                { label: "Kain", field: "fabric_id" },
                 { label: "Grade", field: "grade_id" },
                 { label: "Lebar", field: "lebar" },
                 { label: "Gramasi", field: "gramasi" },
@@ -649,7 +644,7 @@ export default function SalesContractForm() {
             {form().items.map((item, i) => (
               <tr key={item.id}>
                 {[
-                  { label: "Kain", field: "kain_id", type: "number" },
+                  { label: "Kain", field: "fabric_id", type: "number" },
                   { label: "Grade", field: "grade_id", type: "text" },
                   {
                     label: "Lebar",
@@ -684,12 +679,14 @@ export default function SalesContractForm() {
                   { label: "Harga", field: "harga", type: "text" },
                 ].map(({ label, field, type, step }) => (
                   <td class="border px-2 py-1">
-                    {field === "kain_id" ? (
+                    {field === "fabric_id" ? (
                       <FabricDropdownSearch
                         fabrics={fabricOptions}
                         item={item}
                         value={item.fabric_id}
-                        onChange={(val) => handleItemChange(i, "kain_id", val)}
+                        onChange={(val) => {
+                          handleItemChange(i, "fabric_id", val);
+                        }}
                         // disabled={isEdit}
                       />
                     ) : field === "grade_id" ? (

@@ -20,14 +20,16 @@ export default function SalesContractDropdownSearch({
     });
 
     onCleanup(cleanup);
+
+    console.log(salesContracts())
   });
 
   const filteredSalesContracts = createMemo(() => {
     const q = search().toLowerCase();
     // Panggil salesContracts() di sini
     return salesContracts().filter((c) => {
-      const no_pesan = c.no_pesan?.toLowerCase() || "";
-      return no_pesan.includes(q);
+      const no_sc = c.no_sc?.toLowerCase() || "";
+      return no_sc.includes(q);
     });
   });
 
@@ -52,7 +54,7 @@ export default function SalesContractDropdownSearch({
         onClick={() => setIsOpen(!isOpen())}
       >
         {selectedSalesContract()
-          ? `${selectedSalesContract().no_pesan}`
+          ? `${selectedSalesContract().no_sc}`
           : "Pilih Sales Contract"}
       </button>
 
@@ -73,7 +75,7 @@ export default function SalesContractDropdownSearch({
                 class="p-2 hover:bg-blue-100 cursor-pointer"
                 onClick={() => selectCustomer(cust)}
               >
-                {cust.no_pesan}
+                {cust.no_sc}
               </div>
             ))
           ) : (

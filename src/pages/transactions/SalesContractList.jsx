@@ -164,7 +164,7 @@ export default function SalesContractList() {
                 <td class="py-2 px-4">
                   {(currentPage() - 1) * pageSize + (index + 1)}
                 </td>
-                <td class="py-2 px-4">{sc.no_pesan}</td>
+                <td class="py-2 px-4">{sc.no_sc}</td>
                 <td class="py-2 px-4">{formatTanggalIndo(sc.created_at)}</td>
                 <td class="py-2 px-4">{sc.customer_name}</td>
                 <td class="py-2 px-4">{getCorakName(sc)}</td>

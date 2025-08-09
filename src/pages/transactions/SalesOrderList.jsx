@@ -68,7 +68,7 @@ export default function SalesOrderList() {
     const getDataSalesOrder = await getAllSalesOrders(tok);
 
     if (getDataSalesOrder.status === 200) {
-      const sortedData = getDataSalesOrder.orders.sort((a, b) => a.id - b.id);
+      const sortedData = getDataSalesOrder.contracts.sort((a, b) => a.id - b.id);
       setSalesOrders(sortedData);
     }
   };

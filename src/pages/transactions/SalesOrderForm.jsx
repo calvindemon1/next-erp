@@ -11,7 +11,6 @@ import {
   getAllSatuanUnits,
   getAllSOTypes,
   getLastSequence,
-  getLatestSalesContractNumber,
   getSalesContracts,
   getSalesOrders,
   getUser,
@@ -120,8 +119,6 @@ export default function SalesOrderForm() {
           item.kilogram_total != null ? parseFloat(item.kilogram_total) : 0,
         harga: item.harga != null ? parseFloat(item.harga) : null,
       }));
-
-      console.log(normalizedItems)
 
       // Set form
       setForm({
