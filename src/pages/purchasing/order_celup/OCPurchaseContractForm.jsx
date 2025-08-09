@@ -86,7 +86,6 @@ export default function OCPurchaseContractForm() {
         fabric_id: item.kain_id,
         lebar_greige: item.lebar_greige,
         lebar_finish: item.lebar_finish,
-        warna_id: item.warna_id || "",
         meter: item.meter_total,
         yard: item.yard_total,
         harga: item.harga,
@@ -185,7 +184,6 @@ export default function OCPurchaseContractForm() {
           fabric_id: "",
           lebar_greige: "",
           lebar_finish: "",
-          warna_id: "",
           meter: "",
           yard: "",
           harga: "",
@@ -297,7 +295,6 @@ export default function OCPurchaseContractForm() {
             kain_id: Number(i.fabric_id),
             lebar_greige: parseFloat(i.lebar_greige),
             lebar_finish: parseFloat(i.lebar_finish),
-            warna_id: Number(i.warna_id),
             meter_total: parseFloat(i.meter),
             yard_total: parseFloat(i.yard),
             harga: parseFloat(i.harga),
@@ -318,7 +315,6 @@ export default function OCPurchaseContractForm() {
             kain_id: Number(i.fabric_id),
             lebar_greige: parseFloat(i.lebar_greige),
             lebar_finish: parseFloat(i.lebar_finish),
-            warna_id: Number(i.warna_id),
             meter_total: parseFloat(i.meter),
             yard_total: parseFloat(i.yard),
             harga: parseFloat(i.harga),
@@ -344,35 +340,6 @@ export default function OCPurchaseContractForm() {
       });
     }
   };
-
-  // {
-  //   "sequence_number": 3,
-  //   "supplier_id": 1,
-  //   "satuan_unit_id": 1,
-  //   "termin": 30,
-  //   "ppn_percent": 0,
-  //   "catatan": "Init",
-  //   "items": [
-  //     {
-  //       "kain_id": 1,
-  //       "warna_id": 2,
-  //       "lebar_greige": 30,
-  //       "lebar_finish": 27,
-  //       "meter_total": 100,
-  //       "yard_total": 106,
-  //       "harga": 25000
-  //     },
-  //     {
-  //       "kain_id": 2,
-  //       "warna_id": 2,
-  //       "lebar_greige": 30,
-  //       "lebar_finish": 29,
-  //       "meter_total": 100,
-  //       "yard_total": 106,
-  //       "harga": 27000
-  //     }
-  //   ]
-  // }
 
   function handlePrint() {
     const encodedData = encodeURIComponent(JSON.stringify(form()));
@@ -514,7 +481,6 @@ export default function OCPurchaseContractForm() {
               <th class="border p-2">Jenis Kain</th>
               <th class="border p-2">Lebar Greige</th>
               <th class="border p-2">Lebar Finish</th>
-              <th class="border p-2">Warna</th>
               <th class="border p-2">Meter</th>
               <th class="border p-2">Yard</th>
               <th class="border p-2">Harga</th>
@@ -556,14 +522,6 @@ export default function OCPurchaseContractForm() {
                       onBlur={(e) =>
                         handleItemChange(i(), "lebar_finish", e.target.value)
                       }
-                    />
-                  </td>
-                  <td class="border p-2">
-                    <ColorDropdownSearch
-                      colors={colorOptions}
-                      form={() => item}
-                      setForm={(val) => handleItemChange(i(), "warna_id", val)}
-                      onChange={(val) => handleItemChange(i(), "warna_id", val)}
                     />
                   </td>
                   <td class="border p-2">
