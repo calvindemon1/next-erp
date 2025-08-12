@@ -62,24 +62,25 @@ export default function SalesContractDataDummyPrint() {
   const data = JSON.parse(decodeURIComponent(searchParams.data));
 
   onMount(() => {
-    const closeAfterPrint = () => {
-      window.close();
-    };
+    // const closeAfterPrint = () => {
+    //   window.close();
+    // };
 
-    window.addEventListener("afterprint", closeAfterPrint);
+    // window.addEventListener("afterprint", closeAfterPrint);
 
-    // Fallback: Kalau `afterprint` nggak terpanggil (di browser tertentu)
-    setTimeout(() => {
-      window.close();
-    }, 1000); // kasih jeda 1 detik setelah print
+    // // Fallback: Kalau `afterprint` nggak terpanggil (di browser tertentu)
+    // setTimeout(() => {
+    //   window.close();
+    // }, 1000); // kasih jeda 1 detik setelah print
 
-    // Trigger print
-    window.print();
+    // // Trigger print
+    // window.print();
 
-    // Clean up event
-    onCleanup(() => {
-      window.removeEventListener("afterprint", closeAfterPrint);
-    });
+    // // Clean up event
+    // onCleanup(() => {
+    //   window.removeEventListener("afterprint", closeAfterPrint);
+    // });
+    console.log(data)
   });
 
   return (

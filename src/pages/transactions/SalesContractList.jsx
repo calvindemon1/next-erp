@@ -82,6 +82,83 @@ export default function SalesContractList() {
     }
   };
 
+  // "summary": {
+  //       "jumlah_kain": 1,
+  //       "total_meter": "10000.00",
+  //       "total_yard": "10936.13",
+  //       "total_kilogram": "0.00",
+  //       "total_meter_dalam_proses": "0.00",
+  //       "total_kilogram_dalam_proses": "0.00",
+  //       "total_yard_dalam_proses": "0.00",
+  //       "total_meter_dalam_surat_jalan": "0.00",
+  //       "total_yard_dalam_surat_jalan": "0.00",
+  //       "total_kilogram_dalam_surat_jalan": "0.00"
+  //   }
+
+  const qtyCounterReal = (sc, satuanUnit) => {
+    let total = 0;
+    let terkirim = 0;
+
+    switch (satuanUnit) {
+      case 1: // Meter
+        total = parseFloat(sc.summary?.total_meter || 0);
+        terkirim = parseFloat(sc.summary?.total_meter_dalam_surat_jalan || 0);
+        break;
+      case 2: // Yard
+        total = parseFloat(sc.summary?.total_yard || 0);
+        terkirim = parseFloat(sc.summary?.total_yard_dalam_surat_jalan || 0);
+        break;
+      case 3: // Kilogram
+        total = parseFloat(sc.summary?.total_kilogram || 0);
+        terkirim = parseFloat(
+          sc.summary?.total_kilogram_dalam_surat_jalan || 0
+        );
+        break;
+      default:
+        return "-";
+    }
+
+    const sisa = total - terkirim;
+
+    // Kalau udah habis
+    if (sisa <= 0) {
+      return "SELESAI";
+    }
+
+    return `${sisa.toLocaleString("id-ID")} / ${total.toLocaleString("id-ID")}`;
+  };
+
+  const qtyCounterbySystem = (sc, satuanUnit) => {
+    let total = 0;
+    let terkirim = 0;
+
+    switch (satuanUnit) {
+      case 1: // Meter
+        total = parseFloat(sc.summary?.total_meter || 0);
+        terkirim = parseFloat(sc.summary?.total_meter_dalam_proses || 0);
+        break;
+      case 2: // Yard
+        total = parseFloat(sc.summary?.total_yard || 0);
+        terkirim = parseFloat(sc.summary?.total_yard_dalam_proses || 0);
+        break;
+      case 3: // Kilogram
+        total = parseFloat(sc.summary?.total_kilogram || 0);
+        terkirim = parseFloat(sc.summary?.total_kilogram_dalam_proses || 0);
+        break;
+      default:
+        return "-";
+    }
+
+    const sisa = total - terkirim;
+
+    // Kalau udah habis
+    if (sisa <= 0) {
+      return "SELESAI";
+    }
+
+    return `${sisa.toLocaleString("id-ID")} / ${total.toLocaleString("id-ID")}`;
+  };
+
   function formatTanggalIndo(tanggalString) {
     const tanggal = new Date(tanggalString);
     const bulanIndo = [
@@ -129,8 +206,6 @@ export default function SalesContractList() {
       handleGetAllSalesContracts(tokUser?.token);
       handleGetAllFabrics(tokUser?.token);
     }
-
-        // console.log(tokUser?.token);
   });
 
   return (
@@ -154,7 +229,18 @@ export default function SalesContractList() {
               <th class="py-2 px-2">Tanggal</th>
               <th class="py-2 px-2">Nama Customer</th>
               <th class="py-2 px-2">Corak</th>
-              <th class="py-2 px-2">Qty</th>
+              <th class="py-2 px-2 text-center">
+                <div>Qty Faktual</div>
+                <span class="text-xs text-gray-500">
+                  (Total - Total terkirim / Total)
+                </span>
+              </th>
+              <th class="py-2 px-2 text-center">
+                <div>Qty by System</div>
+                <span class="text-xs text-gray-500">
+                  (Total - Total diproses / Total)
+                </span>
+              </th>
               <th class="py-2 px-4">Aksi</th>
             </tr>
           </thead>
@@ -168,12 +254,16 @@ export default function SalesContractList() {
                 <td class="py-2 px-4">{formatTanggalIndo(sc.created_at)}</td>
                 <td class="py-2 px-4">{sc.customer_name}</td>
                 <td class="py-2 px-4">{getCorakName(sc)}</td>
-                <td class="py-2 px-4 text-red-500">
-                  {parseFloat(sc.summary.total_meter_kontrak || 0) -
+                <td class="py-2 px-4 text-red-500 text-center">
+                  {/* {parseFloat(sc.summary.total_meter_kontrak || 0) -
                     parseFloat(sc.summary.total_meter_terkirim || 0)}{" "}
                   <span class="text-black">
                     / {parseFloat(sc.summary.total_meter_kontrak || 0)}
-                  </span>
+                  </span> */}
+                  {qtyCounterReal(sc, sc.satuan_unit_id)}
+                </td>
+                <td class="py-2 px-4 text-red-500 text-center">
+                  {qtyCounterbySystem(sc, sc.satuan_unit_id)}
                 </td>
                 <td class="py-2 px-4 space-x-2">
                   <button
