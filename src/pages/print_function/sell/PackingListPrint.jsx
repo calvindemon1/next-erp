@@ -1,286 +1,229 @@
-import { createMemo, createSignal } from "solid-js";
 import logoNavel from "../../../assets/img/navelLogo.png";
 
-export default function PackingListPrint(props) {
-  const data = props.data;
+export default function PackingListPrintLandscape({ data }) {
+  const MAX_COL = 5;
 
-  function formatRupiahNumber(value) {
-    if (typeof value !== "number") {
-      value = parseFloat(value);
-    }
-    if (isNaN(value)) return "-";
+  function formatNumber(value) {
+    if (!value && value !== 0) return "-";
     return new Intl.NumberFormat("id-ID", {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(value);
   }
 
-  const itemsPerPage = 14;
-  const itemPages = paginateItems(data.items ?? [], itemsPerPage);
-
-  function paginateItems(items, itemsPerPage) {
-    const pages = [];
-    for (let i = 0; i < items.length; i += itemsPerPage) {
-      pages.push(items.slice(i, i + itemsPerPage));
-    }
-    return pages;
-  }
-
-  const totalMeter = data.items?.reduce(
-    (sum, i) => sum + Number(i.meter_total || 0),
-    0
+  const itemsMap = Object.fromEntries(
+    (data?.sales_order_items?.items || []).map((item) => [
+      item.id,
+      `${item.corak_kain} - ${item.deskripsi_warna}`,
+    ])
   );
-  const totalYard = data.items?.reduce(
-    (sum, i) => sum + Number(i.yard_total || 0),
-    0
-  );
-  // const subTotal = data.items?.reduce(
-  //   (sum, i) => sum + (i.harga ?? 0) * (i.meter_total ?? 0),
-  //   0
-  // );
 
-  // Misalnya kamu sudah punya:
-  const subTotal = createMemo(() => {
-    return data.items?.reduce(
-      (sum, i) => sum + (i.harga ?? 0) * (i.meter_total ?? 0),
-      0
-    );
-  });
-
-  const [form, setForm] = createSignal({
-    nilai_lain: 0,
-  });
-
-  // DPP = subTotal
-  const dpp = createMemo(() => subTotal());
-
-  // Nilai Lain dari form
-  const nilaiLain = createMemo(() => parseFloat(form().nilai_lain || 0));
-
-  // PPN = 11% dari (DPP + Nilai Lain)
-  const ppn = createMemo(() => {
-    const dasarPajak = dpp() + nilaiLain();
-    return dasarPajak * 0.11;
-  });
-
-  // Jumlah Total = DPP + Nilai Lain + PPN
-  const jumlahTotal = createMemo(() => dpp() + nilaiLain() + ppn());
-
-  // Lalu kalau ingin dijadikan object seperti `data`
-  const dataAkhir = {
-    dpp: dpp(),
-    nilai_lain: nilaiLain(),
-    ppn: ppn(),
-    total: jumlahTotal(),
-  };
+  // Hitung total semua group (untuk TOTAL bawah)
+  let grandTotalPcs = 0;
+  let grandTotalMeter = 0;
+  let grandTotalYard = 0;
 
   return (
     <>
       <style>{`
         @page {
-          size: A4 portrait;
-          margin: 0;
-        }
-        html, body {
-          margin: 0;
-          padding: 0;
-          height: 100%;
-          width: 100%;
-          -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
-          font-family: sans-serif;
+          size: A4 landscape;
+          margin: 10mm;
         }
         @media print {
-          .page {
-            page-break-after: always;
-          }
+          thead { display: table-header-group; }
+          tfoot { display: table-footer-group; }
+        }
+        body {
+          font-family: Arial, sans-serif;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+        table {
+          border-collapse: collapse;
+          width: 100%;
+          page-break-inside: auto;
+        }
+        th, td {
+          border: 1px solid black;
+          padding: 2px 4px;
+          font-size: 12px;
+        }
+        th {
+          text-align: center;
+        }
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+        .no-border { border: none !important; }
+        .header-info {
+          margin-bottom: 10px;
+          page-break-after: avoid;
         }
       `}</style>
 
+      {/* HEADER LOGO & INFO — Halaman pertama */}
       <div
-        className="flex flex-col items-center gap-2"
-        style={{
-          position: "relative",
-          width: "210mm",
-          height: "297mm",
-          overflow: "hidden",
-          padding: "5mm",
-        }}
+        class="flex flex-col items-center text-center"
+        style={{ textAlign: "center", marginBottom: "10px" }}
       >
-        <img className="w-40" src={logoNavel} alt="" />
-        <h1 className="text-2xl uppercase font-bold mb-5">Packing Order</h1>
+        <img src={logoNavel} alt="Logo" style={{ height: "40px" }} />
+        <h2 style={{ margin: "5px 0" }}>PACKING LIST</h2>
+      </div>
 
-        <div className="w-full flex gap-2 text-sm">
-          {/* LEFT TABLE */}
-          <table className="w-[55%] border-2 border-black text-[13px] table-fixed">
-            <tbody>
-              <tr>
-                <td
-                  className="px-2 pt-1 max-w-[300px] break-words whitespace-pre-wrap"
-                  colSpan={2}
-                >
-                  Kepada Yth:
-                </td>
-              </tr>
-              <tr>
-                <td
-                  className="px-2 max-w-[300px] break-words whitespace-pre-wrap"
-                  colSpan={2}
-                >
-                  {data.customer}
-                </td>
-              </tr>
-              <tr>
-                <td
-                  className="px-2 max-w-[300px] leading-relaxed break-words whitespace-pre-wrap"
-                  colSpan={2}
-                >
-                  {data.alamat}
-                </td>
-              </tr>
-              <tr>
-                <td className="px-2 py-1 whitespace-nowrap">Telp:</td>
-                <td className="px-2 py-1 whitespace-nowrap">Fax:</td>
-              </tr>
-            </tbody>
-          </table>
-
-          {/* MIDDLE TABLE */}
-          <div className="flex flex-col gap-2 w-[20%]">
-            <table className="h-full border-2 border-black table-fixed w-full">
-              <tbody>
-                <tr>
-                  <td className="px-2 pt-1 text-center align-top break-words max-w-[180px]">
-                    No Sales Contract
-                  </td>
-                </tr>
-                <tr>
-                  <td className="px-2 pb-1 text-center break-words max-w-[180px]">
-                    {data.no_sc}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-            <table className="h-full border-2 border-black table-fixed w-full">
-              <tbody>
-                <tr>
-                  <td className="px-2 pt-1 text-center align-top break-words max-w-[180px]">
-                    PO Customer
-                  </td>
-                </tr>
-                <tr>
-                  <td className="px-2 pb-1 text-center break-words max-w-[180px]">
-                    {data.po_cust}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          {/* RIGHT TABLE */}
-          <table className="w-[35%] border-2 border-black table-fixed text-sm">
-            <tbody>
-              {[
-                { label: "No. SO", value: data.no_sc },
-                { label: "Tanggal", value: data.tanggal },
-                { label: "Tgl Kirim", value: data.tgl_kirim },
-                { label: "Payment", value: data.termin + " Hari" },
-              ].map((row, idx) => (
-                <tr key={idx} className="border-b border-black">
-                  <td className="font-bold px-2 w-[30%] whitespace-nowrap">
-                    {row.label}
-                  </td>
-                  <td className="w-[5%] text-center">:</td>
-                  <td className="px-2 break-words w-[65%]">{row.value}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* ITEM TABLE */}
-        <table className="w-full table-fixed border border-black text-[12px] border-collapse mt-3">
-          <thead className="bg-gray-200">
-            <tr>
-              <th className="border border-black p-1 w-[30px]" rowSpan={2}>
-                No
-              </th>
-              <th className="border border-black p-1 w-[150px]" rowSpan={2}>
-                Deskripsi Kain
-              </th>
-              <th className="border border-black p-1 w-[150px]" rowSpan={2}>
-                Warna Kain
-              </th>
-              <th className="border border-black p-1 w-[60px]" rowSpan={2}>
-                Jumlah Meter
-              </th>
-              <th className="border border-black p-1 w-[60px]" rowSpan={2}>
-                Jumlah Yard
-              </th>
-            </tr>
-          </thead>
+      {/* INFORMASI PL & SO */}
+      <div className="header-info">
+        <table style={{ border: "none", width: "100%" }}>
           <tbody>
-            {(data.items || []).map((item, i) => (
-              <tr key={i}>
-                <td className="border border-black p-1 text-center">{i + 1}</td>
-                <td className="border border-black p-1">{item.jenis_kain}</td>
-                <td className="border border-black p-1 text-center">
-                  {item.lebar}
-                </td>
-                <td className="border border-black p-1 text-right">
-                  {item.meter_total}
-                </td>
-                <td className="border border-black p-1 text-right">
-                  {item.yard_total}
-                </td>
-              </tr>
-            ))}
-
-            {/* Tambahin row kosong */}
-            {Array.from({ length: 14 - data.items.length }).map((_, i) => (
-              <tr key={`empty-${i}`}>
-                <td className="border border-black p-1 text-center h-5">
-                  {data.items.length + i + 1}
-                </td>
-                <td className="border border-black p-1 text-center"></td>
-                <td className="border border-black p-1"></td>
-                <td className="border border-black p-1 text-center"></td>
-                <td className="border border-black p-1 text-center"></td>
-              </tr>
-            ))}
+            <tr>
+              <td style={{ border: "none" }}>
+                <span className="text-md font-bold">No PL:</span>{" "}
+                <span className="text-md">{data?.no_pl || "-"}</span>
+              </td>
+              <td style={{ border: "none" }}>
+                <span className="text-md font-bold">No SO:</span>{" "}
+                <span className="text-md">
+                  {data?.sales_order_items.no_so || "-"}
+                </span>
+              </td>
+            </tr>
+            <tr>
+              <td style={{ border: "none" }}>
+                <span className="text-md font-bold">Keterangan:</span>{" "}
+                <span className="text-md">{data?.keterangan || "-"}</span>
+              </td>
+            </tr>
           </tbody>
-          <tfoot>
-            <tr>
-              <td className="border border-black p-2 align-top" colSpan={5}>
-                <div className="font-bold mb-1">NOTE:</div>
-                <div className="whitespace-pre-wrap break-words italic">
-                  {data.catatan ?? "-"}
-                </div>
-              </td>
-            </tr>
-            <tr>
-              <td colSpan={5} className="border border-black">
-                <div className="w-full flex justify-end text-[12px] py-5 px-2">
-                  <div className="text-center w-1/3">
-                    Customer
-                    <br />
-                    <br />
-                    <br />
-                    <br />( ...................... )
-                  </div>
-                  <div className="text-center w-1/3">
-                    Marketing
-                    <br />
-                    <br />
-                    <br />
-                    <br />( ...................... )
-                  </div>
-                </div>
-              </td>
-            </tr>
-          </tfoot>
         </table>
       </div>
+
+      {/* TABLE */}
+      <table>
+        <thead>
+          <tr>
+            <th rowSpan={2}>No</th>
+            <th rowSpan={2}>Col</th>
+            <th rowSpan={2}>Item</th>
+            {[...Array(MAX_COL)].map((_, i) => (
+              <th key={i}>{i + 1}</th>
+            ))}
+            <th rowSpan={2}>TTL/PCS</th>
+            <th rowSpan={2}>TTL/MTR</th>
+            <th rowSpan={2}>TTL/YARD</th>
+          </tr>
+          <tr></tr>
+        </thead>
+        <tbody>
+          {(data?.itemGroups || []).map((group, gi) => {
+            // Pastikan nama itemnya langsung dari mapping
+            const groupName = itemsMap[group.so_item_id] || group.item || "-";
+
+            // Hitung sub total group
+            const groupTotalPcs = group.rolls.filter((r) => r.meter).length;
+            const groupTotalMeter = group.rolls.reduce(
+              (sum, r) => sum + (parseFloat(r.meter) || 0),
+              0
+            );
+            const groupTotalYard = group.rolls.reduce(
+              (sum, r) => sum + (parseFloat(r.yard) || 0),
+              0
+            );
+
+            // Tambah ke grand total
+            grandTotalPcs += groupTotalPcs;
+            grandTotalMeter += groupTotalMeter;
+            grandTotalYard += groupTotalYard;
+
+            // Hitung jumlah baris dalam group
+            const rowCount = Math.ceil(group.rolls.length / MAX_COL);
+
+            // Return array of rows, bukan fragment
+            return [
+              ...Array.from({ length: rowCount }).map((_, rowIdx) => {
+                const startIdx = rowIdx * MAX_COL;
+                const rowRolls = group.rolls.slice(
+                  startIdx,
+                  startIdx + MAX_COL
+                );
+
+                const no = rowIdx === 0 ? gi + 1 : "";
+                const totalPcsRow = rowRolls.filter((r) => r.meter).length;
+                const totalMeterRow = rowRolls.reduce(
+                  (sum, r) => sum + (parseFloat(r.meter) || 0),
+                  0
+                );
+                const totalYardRow = rowRolls.reduce(
+                  (sum, r) => sum + (parseFloat(r.yard) || 0),
+                  0
+                );
+
+                return (
+                  <tr>
+                    <td className="text-center">{no}</td>
+                    <td className="text-center">
+                      {rowIdx === 0 ? group.col : ""}
+                    </td>
+                    <td className="text-center">
+                      {rowIdx === 0 ? groupName : ""}
+                    </td>
+
+                    {Array.from({ length: MAX_COL }).map((_, ci) => (
+                      <td className="text-right">
+                        {rowRolls[ci]?.meter
+                          ? formatNumber(rowRolls[ci].meter)
+                          : ""}
+                      </td>
+                    ))}
+
+                    <td className="text-right">{formatNumber(totalPcsRow)}</td>
+                    <td className="text-right">
+                      {formatNumber(totalMeterRow)}
+                    </td>
+                    <td className="text-right">{formatNumber(totalYardRow)}</td>
+                  </tr>
+                );
+              }),
+
+              // SUB TOTAL PER GROUP
+              <tr>
+                <td colSpan={3} className="text-center">
+                  <b>SUB TOTAL</b>
+                </td>
+                {[...Array(MAX_COL)].map(() => (
+                  <td></td>
+                ))}
+                <td className="text-right">
+                  <b>{formatNumber(groupTotalPcs)}</b>
+                </td>
+                <td className="text-right">
+                  <b>{formatNumber(groupTotalMeter)}</b>
+                </td>
+                <td className="text-right">
+                  <b>{formatNumber(groupTotalYard)}</b>
+                </td>
+              </tr>,
+            ];
+          })}
+
+          {/* GRAND TOTAL */}
+          <tr>
+            <td colSpan={3} className="text-center">
+              <b>TOTAL</b>
+            </td>
+            {[...Array(MAX_COL)].map(() => (
+              <td></td>
+            ))}
+            <td className="text-right">
+              <b>{formatNumber(grandTotalPcs)}</b>
+            </td>
+            <td className="text-right">
+              <b>{formatNumber(grandTotalMeter)}</b>
+            </td>
+            <td className="text-right">
+              <b>{formatNumber(grandTotalYard)}</b>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </>
   );
 }

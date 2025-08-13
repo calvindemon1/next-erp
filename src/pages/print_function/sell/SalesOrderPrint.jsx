@@ -1,8 +1,102 @@
-import { createMemo, createSignal } from "solid-js";
+import { createMemo, createSignal, onMount } from "solid-js";
 import logoNavel from "../../../assets/img/navelLogo.png";
+import {
+  getColor,
+  getCurrencies,
+  getCustomer,
+  getFabric,
+  getGrades,
+  getUser,
+} from "../../../utils/auth";
 
 export default function SalesOrderPrint(props) {
   const data = props.data;
+  const [customer, setCustomer] = createSignal(null);
+  const [kainList, setKainList] = createSignal({});
+  const [gradeList, setGradeList] = createSignal({});
+  const [warnaList, setWarnaList] = createSignal({});
+
+  const tokUser = getUser(); // kalau token dibutuhkan
+
+  async function handleGetCustomer() {
+    try {
+      const res = await getCustomer(data.customer_id, tokUser?.token);
+      if (res.status === 200) {
+        setCustomer(res.customers || null);
+      }
+    } catch (err) {
+      console.error("Error getCustomers:", err);
+    }
+  }
+
+  async function handleGetKain(kainId) {
+    try {
+      const res = await getFabric(kainId, tokUser?.token);
+      // if (res.status === 200) {
+      setKainList((prev) => ({
+        ...prev,
+        [kainId]: res,
+      }));
+      // }
+    } catch (err) {
+      console.error("Error getFabric:", err);
+    }
+  }
+
+  async function handleGetGrade(gradeId) {
+    try {
+      const res = await getGrades(gradeId, tokUser?.token);
+      if (res.status === 200) {
+        setGradeList((prev) => ({
+          ...prev,
+          [gradeId]: res.data,
+        }));
+      }
+    } catch (err) {
+      console.error("Error getGrade:", err);
+    }
+  }
+
+  async function handleGetWarna(warnaId) {
+    try {
+      const res = await getColor(warnaId, tokUser?.token);
+      if (res.status === 200) {
+        setWarnaList((prev) => ({
+          ...prev,
+          [warnaId]: res.warna,
+        }));
+      }
+    } catch (err) {
+      console.error("Error getGrade:", err);
+    }
+  }
+
+  onMount(() => {
+    if (tokUser?.token) {
+      handleGetCustomer();
+      (data.items || []).forEach((item) => {
+        if (item.fabric_id) {
+          handleGetKain(item.fabric_id);
+        }
+        if (item.grade_id) {
+          handleGetGrade(item.grade_id);
+        }
+        if (item.warna_id) {
+          handleGetWarna(item.warna_id);
+        }
+      });
+    }
+  });
+
+  function formatRibuan(value) {
+    return value ? Number(value).toLocaleString("id-ID") : "-";
+  }
+
+  function formatTanggal(tgl) {
+    if (!tgl) return "-";
+    const [year, month, day] = tgl.split("-");
+    return `${day}-${month}-${year}`;
+  }
 
   function formatRupiahNumber(value) {
     if (typeof value !== "number") {
@@ -27,22 +121,18 @@ export default function SalesOrderPrint(props) {
   }
 
   const totalMeter = data.items?.reduce(
-    (sum, i) => sum + Number(i.meter_total || 0),
+    (sum, i) => sum + Number(i.meter || 0),
     0
   );
   const totalYard = data.items?.reduce(
-    (sum, i) => sum + Number(i.yard_total || 0),
+    (sum, i) => sum + Number(i.yard || 0),
     0
   );
-  // const subTotal = data.items?.reduce(
-  //   (sum, i) => sum + (i.harga ?? 0) * (i.meter_total ?? 0),
-  //   0
-  // );
 
   // Misalnya kamu sudah punya:
   const subTotal = createMemo(() => {
     return data.items?.reduce(
-      (sum, i) => sum + (i.harga ?? 0) * (i.meter_total ?? 0),
+      (sum, i) => sum + (i.harga ?? 0) * (i.meter ?? 0),
       0
     );
   });
@@ -52,19 +142,19 @@ export default function SalesOrderPrint(props) {
   });
 
   // DPP = subTotal
-  const dpp = createMemo(() => subTotal());
+  const dpp = createMemo(() => subTotal() / 1.11);
 
   // Nilai Lain dari form
-  const nilaiLain = createMemo(() => parseFloat(form().nilai_lain || 0));
+  const nilaiLain = createMemo(() => parseFloat((dpp() * 11) / 12 || 0));
 
   // PPN = 11% dari (DPP + Nilai Lain)
   const ppn = createMemo(() => {
-    const dasarPajak = dpp() + nilaiLain();
-    return dasarPajak * 0.11;
+    const dasarPajak = nilaiLain() * 0.12;
+    return dasarPajak;
   });
 
   // Jumlah Total = DPP + Nilai Lain + PPN
-  const jumlahTotal = createMemo(() => dpp() + nilaiLain() + ppn());
+  const jumlahTotal = createMemo(() => dpp() + ppn());
 
   // Lalu kalau ingin dijadikan object seperti `data`
   const dataAkhir = {
@@ -127,7 +217,7 @@ export default function SalesOrderPrint(props) {
                   className="px-2 max-w-[300px] break-words whitespace-pre-wrap"
                   colSpan={2}
                 >
-                  {data.customer}
+                  {customer()?.nama}
                 </td>
               </tr>
               <tr>
@@ -135,11 +225,21 @@ export default function SalesOrderPrint(props) {
                   className="px-2 max-w-[300px] leading-relaxed break-words whitespace-pre-wrap"
                   colSpan={2}
                 >
-                  {data.alamat}
+                  {customer()?.alamat}
                 </td>
               </tr>
+              {/* <tr>
+                <td
+                  className="px-2 max-w-[300px] break-words whitespace-pre-wrap"
+                  colSpan={2}
+                >
+                  KERTOHARJO PEKALONGAN SEL
+                </td>
+              </tr> */}
               <tr>
-                <td className="px-2 py-1 whitespace-nowrap">Telp:</td>
+                <td className="px-2 py-1 whitespace-nowrap">
+                  Telp: {customer()?.no_telp}
+                </td>
                 <td className="px-2 py-1 whitespace-nowrap">Fax:</td>
               </tr>
             </tbody>
@@ -155,22 +255,8 @@ export default function SalesOrderPrint(props) {
                   </td>
                 </tr>
                 <tr>
-                  <td className="px-2 pb-1 text-center break-words max-w-[180px]">
+                  <td className="px-2 pb-1 text-xs text-center break-words max-w-[180px]">
                     {data.no_sc}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-            <table className="h-full border-2 border-black table-fixed w-full">
-              <tbody>
-                <tr>
-                  <td className="px-2 pt-1 text-center align-top break-words max-w-[180px]">
-                    PO Customer
-                  </td>
-                </tr>
-                <tr>
-                  <td className="px-2 pb-1 text-center break-words max-w-[180px]">
-                    {data.po_cust}
                   </td>
                 </tr>
               </tbody>
@@ -182,8 +268,11 @@ export default function SalesOrderPrint(props) {
             <tbody>
               {[
                 { label: "No. SO", value: data.no_sc },
-                { label: "Tanggal", value: data.tanggal },
-                { label: "Tgl Kirim", value: data.tgl_kirim },
+                { label: "Tanggal", value: formatTanggal(data.tanggal) },
+                {
+                  label: "Tgl Kirim",
+                  value: formatTanggal(data.delivery_date) ?? "-",
+                },
                 { label: "Payment", value: data.termin + " Hari" },
               ].map((row, idx) => (
                 <tr key={idx} className="border-b border-black">
@@ -208,6 +297,9 @@ export default function SalesOrderPrint(props) {
               <th className="border border-black p-1 w-[150px]" rowSpan={2}>
                 Deskripsi Kain
               </th>
+              <th className="border border-black p-1 w-[50px]" rowSpan={2}>
+                Grade
+              </th>
               <th className="border border-black p-1 w-[150px]" rowSpan={2}>
                 Warna Kain
               </th>
@@ -228,23 +320,26 @@ export default function SalesOrderPrint(props) {
           <tbody>
             {(data.items || []).map((item, i) => (
               <tr key={i}>
-                <td className="border border-black p-1 text-center">{i + 1}</td>
-                <td className="border border-black p-1">{item.jenis_kain}</td>
-                <td className="border border-black p-1 text-center">
-                  {item.lebar}
+                <td className="p-1 text-center">{i + 1}</td>
+                <td className="p-1">
+                  {kainList()[item.fabric_id]?.konstruksi || "-"}
                 </td>
-                <td className="border border-black p-1 text-right">
-                  {item.meter_total}
+                <td className="p-1 text-center">
+                  {gradeList()[item.grade_id]?.grade || "-"}
                 </td>
-                <td className="border border-black p-1 text-right">
-                  {item.yard_total}
+                <td className="p-1 text-center">
+                  {warnaList()[item.warna_id]?.kode +
+                    " | " +
+                    warnaList()[item.warna_id]?.deskripsi || "-"}
                 </td>
-                <td className="border border-black p-1 text-right">
+                <td className="p-1 text-right">{item.meter}</td>
+                <td className="p-1 text-right">{item.yard}</td>
+                <td className="p-1 text-right">
                   {formatRupiahNumber(item.harga)}
                 </td>
-                <td className="border border-black p-1 text-right">
-                  {item.harga && item.meter_total
-                    ? formatRupiahNumber(item.harga * item.meter_total)
+                <td className="p-1 text-right">
+                  {item.harga && item.meter
+                    ? formatRupiahNumber(item.harga * item.meter)
                     : "-"}
                 </td>
               </tr>
@@ -253,21 +348,19 @@ export default function SalesOrderPrint(props) {
             {/* Tambahin row kosong */}
             {Array.from({ length: 14 - data.items.length }).map((_, i) => (
               <tr key={`empty-${i}`}>
-                <td className="border border-black p-1 text-center h-5">
-                  {data.items.length + i + 1}
-                </td>
-                <td className="border border-black p-1 text-center"></td>
-                <td className="border border-black p-1"></td>
-                <td className="border border-black p-1 text-center"></td>
-                <td className="border border-black p-1 text-center"></td>
-                <td className="border border-black p-1 text-right"></td>
-                <td className="border border-black p-1 text-right"></td>
+                <td className="p-1 text-center h-5"></td>
+                <td className="p-1 text-center"></td>
+                <td className="p-1"></td>
+                <td className="p-1 text-center"></td>
+                <td className="p-1 text-center"></td>
+                <td className="p-1 text-right"></td>
+                <td className="p-1 text-right"></td>
               </tr>
             ))}
           </tbody>
           <tfoot>
             <tr>
-              <td colSpan={3} className="border border-black px-2 py-1" />
+              <td colSpan={4} className="border border-black px-2 py-1" />
               <td className="border border-black px-2 py-1 text-right font-bold">
                 {formatRupiahNumber(totalMeter)}
               </td>
@@ -285,38 +378,32 @@ export default function SalesOrderPrint(props) {
               <td
                 className="border border-black p-2 align-top"
                 rowSpan={3}
-                colSpan={5}
+                colSpan={6}
               >
                 <div className="font-bold mb-1">NOTE:</div>
                 <div className="whitespace-pre-wrap break-words italic">
-                  {data.catatan ?? "-"}
+                  {data.keterangan ?? "-"}
                 </div>
               </td>
-              <td className="border border-black px-2 py-1 text-right font-bold">
-                DPP
-              </td>
-              <td className="border border-black px-2 py-1 text-right">
+              <td className="px-2 py-1 text-right font-bold">DPP</td>
+              <td className="px-2 py-1 text-right">
                 {formatRupiahNumber(dataAkhir.dpp)}
               </td>
             </tr>
             <tr>
-              <td className="border border-black px-2 py-1 text-right font-bold">
-                PPN
-              </td>
-              <td className="border border-black px-2 py-1 text-right">
+              <td className="px-2 py-1 text-right font-bold">PPN</td>
+              <td className="px-2 py-1 text-right">
                 {formatRupiahNumber(dataAkhir.ppn)}
               </td>
             </tr>
             <tr>
-              <td className="border border-black px-2 py-1 text-right font-bold">
-                Jumlah Total
-              </td>
-              <td className="border border-black px-2 py-1 text-right">
+              <td className="px-2 py-1 text-right font-bold">Jumlah Total</td>
+              <td className="px-2 py-1 text-right">
                 {formatRupiahNumber(dataAkhir.total)}
               </td>
             </tr>
             <tr>
-              <td colSpan={7} className="border border-black">
+              <td colSpan={8} className="border border-black">
                 <div className="w-full flex justify-end text-[12px] py-5 px-2">
                   <div className="text-center w-1/3">
                     Customer

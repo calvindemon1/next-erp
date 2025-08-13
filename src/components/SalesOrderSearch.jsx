@@ -75,7 +75,7 @@ export default function SalesOrderDropdownSearch({
               </div>
             ))
           ) : (
-            <div class="p-2 text-gray-400">Sales Contract tidak ditemukan</div>
+            <div class="p-2 text-gray-400">Sales Order tidak ditemukan</div>
           )}
         </div>
       )}

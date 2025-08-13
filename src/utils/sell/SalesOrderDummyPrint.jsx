@@ -53,7 +53,7 @@
 //   return <SalesOrderPrint data={dummyDataSalesOrder} />;
 // }
 
-import { onMount } from "solid-js";
+import { onCleanup, onMount } from "solid-js";
 import SalesOrderPrint from "../../pages/print_function/sell/SalesOrderPrint";
 import { useSearchParams } from "@solidjs/router";
 
@@ -61,7 +61,7 @@ export default function SalesOrderDataDummyPrints() {
   const [searchParams] = useSearchParams();
 
   const data = JSON.parse(decodeURIComponent(searchParams.data));
-
+  
   onMount(() => {
     const closeAfterPrint = () => {
       window.close();
@@ -69,15 +69,16 @@ export default function SalesOrderDataDummyPrints() {
 
     window.addEventListener("afterprint", closeAfterPrint);
 
-    // Fallback: Kalau `afterprint` nggak terpanggil (di browser tertentu)
+    // Tunggu 300ms supaya render komponen print kelar
+    setTimeout(() => {
+      window.print();
+    }, 2500);
+
+    // Fallback close jika afterprint gak jalan
     setTimeout(() => {
       window.close();
-    }, 1000); // kasih jeda 1 detik setelah print
+    }, 4000);
 
-    // Trigger print
-    window.print();
-
-    // Clean up event
     onCleanup(() => {
       window.removeEventListener("afterprint", closeAfterPrint);
     });

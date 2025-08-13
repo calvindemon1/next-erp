@@ -32,6 +32,8 @@ export default function SalesContractForm() {
   const [currencyList, setCurrencyList] = createSignal([]);
   const [customersList, setCustomersList] = createSignal([]);
   const [gradeOptions, setGradeOptions] = createSignal([]);
+  const [loading, setLoading] = createSignal(true);
+
   const [params] = useSearchParams();
   const isEdit = !!params.id;
 
@@ -66,11 +68,13 @@ export default function SalesContractForm() {
 
   const parseIDR = (str) => {
     if (!str) return "";
-    const onlyNumbers = str.replace(/[^\d]/g, "");
-    return onlyNumbers ? parseInt(onlyNumbers) : "";
+    // Keep digits and optional decimal point
+    const cleaned = str.replace(/[^0-9.]/g, "");
+    return cleaned ? parseFloat(cleaned) : "";
   };
 
   onMount(async () => {
+    setLoading(true);
     const [
       contracts,
       satuanUnits,
@@ -103,7 +107,7 @@ export default function SalesContractForm() {
       if (!data) return;
 
       const normalizedItems = (data.items || []).map((item, idx) => ({
-        id: idx + 1,
+        id: item.id,
         fabric_id: item.kain_id ?? null,
         grade_id: item.grade_id ?? "",
         lebar_greige: item.lebar ?? "",
@@ -111,12 +115,10 @@ export default function SalesContractForm() {
         meter: item.meter_total ?? "",
         yard: item.yard_total ?? "",
         kilogram: item.kilogram_total ?? "",
-        harga: item.harga ?? "",
+        harga: parseFloat(item.harga) ?? "",
         subtotal: item.subtotal ?? "",
         subtotalFormatted: item.subtotal > 0 ? formatIDR(item.subtotal) : "",
       }));
-
-      console.log(data.items);
 
       setForm((prev) => ({
         ...prev,
@@ -167,6 +169,7 @@ export default function SalesContractForm() {
         sequence_number: lastSeq?.no_sequence + 1 || "",
       }));
     }
+    setLoading(false);
   });
 
   const generateNomorKontrak = async () => {
@@ -410,6 +413,12 @@ export default function SalesContractForm() {
 
   return (
     <MainLayout>
+      {loading() && (
+        <div class="fixed inset-0 flex flex-col items-center justify-center bg-black/50 backdrop-blur-md bg-opacity-40 z-50 gap-10">
+          <div class="w-52 h-52 border-[20px] border-white border-t-transparent rounded-full animate-spin"></div>
+          <span class="animate-pulse text-[40px] text-white">Loading...</span>
+        </div>
+      )}
       <h1 class="text-2xl font-bold mb-4">Buat Sales Contract Baru</h1>
       <button
         type="button"
@@ -546,14 +555,14 @@ export default function SalesContractForm() {
                   IDR
                 </span>
                 <input
-                  type="text"
                   class="w-full border p-2 rounded rounded-l-none"
-                  value={formatIDR(form().kurs)}
+                  type="text"
+                  value={form().kurs}
                   onInput={(e) =>
-                    setForm({
-                      ...form(),
-                      kurs: parseIDR(e.target.value),
-                    })
+                    setForm({ ...form(), kurs: parseIDR(e.target.value) })
+                  }
+                  onBlur={(e) =>
+                    setForm({ ...form(), kurs: formatIDR(form().kurs) })
                   }
                   required
                 />

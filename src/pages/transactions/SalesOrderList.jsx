@@ -68,9 +68,73 @@ export default function SalesOrderList() {
     const getDataSalesOrder = await getAllSalesOrders(tok);
 
     if (getDataSalesOrder.status === 200) {
-      const sortedData = getDataSalesOrder.contracts.sort((a, b) => a.id - b.id);
+      const sortedData = getDataSalesOrder.orders.sort((a, b) => a.id - b.id);
       setSalesOrders(sortedData);
     }
+  };
+
+  const qtyCounterReal = (sc, satuanUnit) => {
+    let total = 0;
+    let terkirim = 0;
+
+    switch (satuanUnit) {
+      case 1: // Meter
+        total = parseFloat(sc.summary?.total_meter || 0);
+        terkirim = parseFloat(sc.summary?.total_meter_dalam_surat_jalan || 0);
+        break;
+      case 2: // Yard
+        total = parseFloat(sc.summary?.total_yard || 0);
+        terkirim = parseFloat(sc.summary?.total_yard_dalam_surat_jalan || 0);
+        break;
+      case 3: // Kilogram
+        total = parseFloat(sc.summary?.total_kilogram || 0);
+        terkirim = parseFloat(
+          sc.summary?.total_kilogram_dalam_surat_jalan || 0
+        );
+        break;
+      default:
+        return "-";
+    }
+
+    const sisa = total - terkirim;
+
+    // Kalau udah habis
+    if (sisa <= 0) {
+      return "SELESAI";
+    }
+
+    return `${sisa.toLocaleString("id-ID")} / ${total.toLocaleString("id-ID")}`;
+  };
+
+  const qtyCounterbySystem = (so, satuanUnit) => {
+    let total = 0;
+    let terkirim = 0;
+
+    switch (satuanUnit) {
+      case 1: // Meter
+        total = parseFloat(so.summary?.total_meter || 0);
+        terkirim = parseFloat(so.summary?.total_meter_dalam_proses || 0);
+        break;
+      case 2: // Yard
+        total = parseFloat(so.summary?.total_yard || 0);
+        terkirim = parseFloat(so.summary?.total_yard_dalam_proses || 0);
+        break;
+      case 3: // Kilogram
+        total = parseFloat(so.summary?.total_kilogram || 0);
+        terkirim = parseFloat(so.summary?.total_kilogram_dalam_proses || 0);
+        break;
+      default:
+        return "-";
+    }
+
+    const sisa = total - terkirim;
+
+    // Kalau udah habis
+    if (sisa <= 0) {
+      return "SELESAI";
+    }
+
+    return `${sisa.toLocaleString("id-ID")} / ${total.toLocaleString("id-ID")}`;
   };
 
   function formatTanggalIndo(tanggalString) {
@@ -133,7 +197,19 @@ export default function SalesOrderList() {
               <th class="py-2 px-2">Tanggal Pembuatan SO</th>
               <th class="py-2 px-2">No Sales Contract</th>
               <th class="py-2 px-4">Nama Customer</th>
-              <th class="py-2 px-4">Total Kiriman (M)</th>
+              <th class="py-2 px-4">Satuan</th>
+              <th class="py-2 px-2 text-center">
+                <div>Qty Faktual</div>
+                <span class="text-xs text-gray-500">
+                  (Total - Total terkirim / Total)
+                </span>
+              </th>
+              <th class="py-2 px-2 text-center">
+                <div>Qty by System</div>
+                <span class="text-xs text-gray-500">
+                  (Total - Total diproses / Total)
+                </span>
+              </th>
               <th class="py-2 px-4">Aksi</th>
             </tr>
           </thead>
@@ -145,9 +221,20 @@ export default function SalesOrderList() {
                 </td>
                 <td class="py-2 px-4">{so.no_so}</td>
                 <td class="py-2 px-4">{formatTanggalIndo(so.created_at)}</td>
-                <td class="py-2 px-4">{so.no_pesan}</td>
+                <td class="py-2 px-4">{so.no_sc}</td>
                 <td class="py-2 px-4">{so.customer_name}</td>
-                <td class="py-2 px-4">{so.total_meter}</td>
+                <td class="py-2 px-4">{so.satuan_unit_name}</td>
+                <td class="py-2 px-4 text-red-500 text-center">
+                  {/* {parseFloat(sc.summary.total_meter_kontrak || 0) -
+                    parseFloat(sc.summary.total_meter_terkirim || 0)}{" "}
+                  <span class="text-black">
+                    / {parseFloat(sc.summary.total_meter_kontrak || 0)}
+                  </span> */}
+                  {qtyCounterReal(so, so.satuan_unit_id)}
+                </td>
+                <td class="py-2 px-4 text-red-500 text-center">
+                  {qtyCounterbySystem(so, so.satuan_unit_id)}
+                </td>
                 <td class="py-2 px-4 space-x-2">
                   <button
                     class="text-blue-600 hover:underline"

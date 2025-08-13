@@ -15,7 +15,7 @@ import {
   getSalesOrders,
 } from "../../utils/auth";
 import SearchableSalesOrderSelect from "../../components/SalesOrderSearch";
-import { Trash2, XCircle } from "lucide-solid";
+import { Printer, Trash2, XCircle } from "lucide-solid";
 
 // (2) Component Start
 export default function PackingListForm() {
@@ -27,6 +27,7 @@ export default function PackingListForm() {
   const [salesOrderList, setSalesOrderList] = createSignal([]);
   const [openStates, setOpenStates] = createSignal([]);
   const [groupRollCounts, setGroupRollCounts] = createSignal([]);
+  const [loading, setLoading] = createSignal(true);
 
   const [form, setForm] = createSignal({
     type: "",
@@ -34,27 +35,29 @@ export default function PackingListForm() {
     sequence_number: "",
     sales_order_id: "",
     col: "",
-    catatan: "",
+    keterangan: "",
     itemGroups: [],
     sales_order_items: [],
   });
 
   // (3) onMount untuk edit atau new
   onMount(async () => {
+    setLoading(true);
     const salesOrders = await getAllSalesOrders(user?.token);
     setSalesOrderList(salesOrders?.orders || []);
 
     if (isEdit) {
       const res = await getPackingLists(params.id, user?.token);
-      const packingList = res?.response;
+      const packingList = res?.order;
       if (!packingList) return;
 
-      const items = packingList.sales_order_items || [];
+      const MAX_COL_PER_ROW = 5;
+
+      await handleSalesOrderChange(packingList.so_id);
 
       setForm((prev) => ({
         ...prev,
-        sales_order_items: items,
-        sales_order_id: packingList.sales_order_id,
+        sales_order_id: packingList.so_id,
         no_pl: packingList.no_pl,
         sequence_number: packingList.sequence_number,
         type:
@@ -63,41 +66,68 @@ export default function PackingListForm() {
             : packingList.type === "ekspor"
             ? 2
             : "",
-        catatan: packingList.catatan,
-        itemGroups: (packingList.itemGroups || []).map((group) => ({
-          sales_order_item_id: group.sales_order_item_id,
-          rolls: group.rolls.map((r) => ({
-            col: r.col || "",
-            item: r.item || "",
+        keterangan: packingList.keterangan || "",
+        itemGroups: (packingList.items || []).map((group) => {
+          const rolls = (group.rolls || []).map((r, idx) => ({
+            id: idx + 1,
+            row_num: Math.floor(idx / MAX_COL_PER_ROW) + 1,
+            col_num: (idx % MAX_COL_PER_ROW) + 1,
+            col: r.col || group.col || "",
+            item: r.so_item_id || group.so_item_id || "",
             meter: r.meter || "",
-            yard: r.yard || "",
-          })),
-        })),
+            yard: r.yard || ((r.meter || 0) * 1.093613).toFixed(2),
+            kilogram: r.kilogram || null,
+          }));
+
+          return {
+            item: group.so_item_id || [],
+            col: group.col || "",
+            meter_total: group.meter_total || 0,
+            yard_total: group.yard_total || 0,
+            kilogram_total: group.kilogram_total || null,
+            rolls,
+          };
+        }),
       }));
     }
+    setLoading(false);
   });
 
   // (4) Saat Sales Order berubah
   const handleSalesOrderChange = async (selectedSO) => {
-    if (!selectedSO?.no_so) return;
+    if (!selectedSO) return;
 
-    const soTypeLetter = selectedSO.no_so.split("/")[1];
-    const typeValue =
-      soTypeLetter === "E" ? "E" : soTypeLetter === "D" ? "D" : "";
-    const soPpn = selectedSO.no_so.split("/")[2];
-    const ppnValue = soPpn === "P" ? 1 : 0;
+    if (isEdit) {
+      const res = await getSalesOrders(selectedSO, user?.token);
+      const selectedOrder = res?.order;
 
-    const generatedNoPL = await generatePackingListNumber(typeValue, ppnValue);
-    const res = await getSalesOrders(selectedSO.id, user?.token);
-    const selectedOrder = res?.response;
+      setForm({
+        ...form(),
+        sales_order_items: selectedOrder,
+      });
+    } else {
+      const res = await getSalesOrders(selectedSO.id, user?.token);
+      const selectedOrder = res?.order;
 
-    setForm({
-      ...form(),
-      sales_order_id: selectedSO.id,
-      type: typeValue,
-      no_pl: generatedNoPL,
-      sales_order_items: selectedOrder,
-    });
+      const soTypeLetter = selectedSO.no_so.split("/")[1];
+      const typeValue =
+        soTypeLetter === "E" ? "E" : soTypeLetter === "D" ? "D" : "";
+      const soPpn = selectedSO.no_so.split("/")[2];
+      const ppnValue = soPpn === "P" ? 1 : 0;
+
+      const generatedNoPL = await generatePackingListNumber(
+        typeValue,
+        ppnValue
+      );
+
+      setForm({
+        ...form(),
+        sales_order_id: selectedSO.id,
+        type: typeValue,
+        no_pl: generatedNoPL,
+        sales_order_items: selectedOrder,
+      });
+    }
   };
 
   const generatePackingListNumber = async (type, ppn) => {
@@ -111,6 +141,11 @@ export default function PackingListForm() {
     ).slice(-2)}`;
     const nextNum = String((lastSeq?.last_sequence || 0) + 1).padStart(5, "0");
 
+    setForm({
+      ...form(),
+      sequence_number: (lastSeq?.last_sequence || 0) + 1,
+    });
+
     return `PL/${type}/${ppnType}/${mmyy}-${nextNum}`;
   };
 
@@ -121,7 +156,20 @@ export default function PackingListForm() {
         ...prev.itemGroups,
         {
           sales_order_item_id: "",
-          rolls: [{ col: "", item: "", meter: "", yard: "" }],
+          col: "", // col untuk group
+          meter_total: 0,
+          yard_total: 0,
+          kilogram_total: null,
+          rolls: [
+            {
+              row_num: 1,
+              col_num: 1,
+              col: "",
+              item: "",
+              meter: "",
+              yard: "",
+            },
+          ],
         },
       ],
     }));
@@ -147,30 +195,34 @@ export default function PackingListForm() {
     });
   };
 
+  const reindexRolls = (rolls) => {
+    return rolls.map((roll, index) => {
+      const meterValue = parseFloat(roll.meter || 0);
+      return {
+        ...roll,
+        row_num: Math.floor(index / 5) + 1,
+        col_num: (index % 5) + 1,
+        yard: (meterValue * 1.093613).toFixed(2),
+        kilogram: roll.kilogram || null,
+      };
+    });
+  };
+
   const addRoll = (groupIndex) => {
     setForm((prev) => {
       const copy = [...prev.itemGroups];
-      const group = copy[groupIndex];
-
-      const lastRoll = group.rolls[group.rolls.length - 1] || {
-        col: "",
-        item: "",
-        meter: "",
-        yard: "",
-      };
-
-      const newRoll = {
-        col: lastRoll.col || "",
-        item: lastRoll.item || "",
-        meter: lastRoll.meter || "",
-        yard: lastRoll.yard || "",
-      };
-
-      copy[groupIndex] = {
-        ...group,
-        rolls: [...group.rolls, newRoll],
-      };
-
+      const rolls = [
+        ...copy[groupIndex].rolls,
+        { meter: "", yard: "", kilogram: null },
+      ];
+      copy[groupIndex].rolls = reindexRolls(rolls);
+      copy[groupIndex].meter_total = rolls.reduce(
+        (sum, r) => sum + Number(r.meter || 0),
+        0
+      );
+      copy[groupIndex].yard_total = parseFloat(
+        (copy[groupIndex].meter_total * 1.093613).toFixed(2)
+      );
       return { ...prev, itemGroups: copy };
     });
   };
@@ -219,13 +271,13 @@ export default function PackingListForm() {
     });
   };
 
-  const handleGroupChange = (groupIndex, field, value) => {
-    setForm((prev) => {
-      const copy = [...prev.itemGroups];
-      copy[groupIndex][field] = value;
-      return { ...prev, itemGroups: copy };
-    });
-  };
+  // const handleGroupChange = (groupIndex, field, value) => {
+  //   setForm((prev) => {
+  //     const copy = [...prev.itemGroups];
+  //     copy[groupIndex][field] = value;
+  //     return { ...prev, itemGroups: copy };
+  //   });
+  // };
 
   const handleRollChange = (groupIndex, rollIndex, field, value) => {
     setForm((prev) => {
@@ -233,7 +285,6 @@ export default function PackingListForm() {
       const group = copy[groupIndex];
 
       if (!group || !Array.isArray(group.rolls)) return prev;
-      if (!group.rolls[rollIndex]) return prev; // ✅ Tambahan safety check
 
       const updatedRoll = { ...group.rolls[rollIndex], [field]: value };
 
@@ -244,33 +295,149 @@ export default function PackingListForm() {
 
       group.rolls[rollIndex] = updatedRoll;
 
+      // Update row_num dan col_num otomatis
+      group.rolls = group.rolls.map((roll, idx) => ({
+        ...roll,
+        row_num: idx + 1,
+        col_num: roll.col_num || 1,
+      }));
+
+      // Hitung total meter & yard
+      group.meter_total = group.rolls.reduce(
+        (sum, r) => sum + Number(r.meter || 0),
+        0
+      );
+      group.yard_total = parseFloat((group.meter_total * 1.093613).toFixed(2));
+
+      copy[groupIndex] = group;
       return { ...prev, itemGroups: copy };
     });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    // {
+    //     "type": "domestik",
+    //     "sequence_number": 1,
+    //     "so_id": 22,
+    //     "keterangan": "Init",
+    //     "items": [
+    //     {
+    //         "so_item_id": 17,
+    //         "col": 3,
+    //         "meter_total": 50,
+    //         "yard_total": 60,
+    //         "kilogram_total": null,
+    //         "rolls" : [
+    //         {
+    //             "row_num": 1,
+    //             "col_num": 1,
+    //             "meter": 10,
+    //             "yard": 12,
+    //             "kilogram": null
+    //         },
+    //       ]
+    //     }
+    //   ]
+    // }
 
-    const payload = {
-      type: form().type === 1 ? "domestik" : "ekspor",
-      sequence_number: form().sequence_number || null,
-      sales_order_id: Number(form().sales_order_id),
-      catatan: form().catatan,
-      itemGroups: form().itemGroups.map((g) => ({
-        sales_order_item_id: Number(g.sales_order_item_id),
-        rolls: g.rolls.map((r) => ({
-          col: r.col,
-          item: r.item,
-          meter: Number(r.meter),
-          yard: parseFloat(r.yard) || Number(r.meter) * 1.093613,
-        })),
-      })),
-    };
+    const MAX_COL_PER_ROW = 5; // jumlah col per row
 
     try {
       if (isEdit) {
+        const payload = {
+          // type: form().type === 1 ? "domestik" : "ekspor",
+          // sequence_number: form().sequence_number || null,
+          no_pl: form().no_pl,
+          so_id: Number(form().sales_order_id),
+          keterangan: form().keterangan,
+          items: form().itemGroups.map((g) => {
+            const rollsWithIndex = g.rolls.map((r, idx) => {
+              const row_num = Math.floor(idx / MAX_COL_PER_ROW) + 1;
+              const col_num = (idx % MAX_COL_PER_ROW) + 1;
+
+              return {
+                id: r.id,
+                row_num,
+                col_num,
+                meter: Number(r.meter) || 0,
+                yard: parseFloat(r.yard) || (Number(r.meter) || 0) * 1.093613,
+                kilogram: r.kilogram ? Number(r.kilogram) : null,
+              };
+            });
+
+            const meter_total = rollsWithIndex.reduce(
+              (sum, r) => sum + r.meter,
+              0
+            );
+            const yard_total = rollsWithIndex.reduce(
+              (sum, r) => sum + r.yard,
+              0
+            );
+            const kilogram_total =
+              rollsWithIndex.reduce((sum, r) => sum + (r.kilogram || 0), 0) ||
+              null; // biar null kalau totalnya 0
+
+            return {
+              so_item_id: Number(g.item || g.rolls[0]?.item || 0),
+              col: Number(g.col || g.rolls[0]?.col || 0),
+              meter_total,
+              yard_total,
+              kilogram_total,
+              rolls: rollsWithIndex,
+            };
+          }),
+        };
+
         await updateDataPackingList(user?.token, params.id, payload);
       } else {
+        const payload = {
+          type:
+            form().type === "D"
+              ? "domestik"
+              : form().type === "E"
+              ? "ekspor"
+              : "",
+          sequence_number: form().sequence_number || null,
+          so_id: Number(form().sales_order_id),
+          keterangan: form().keterangan,
+          items: form().itemGroups.map((g) => {
+            const rollsWithIndex = g.rolls.map((r, idx) => {
+              const row_num = Math.floor(idx / MAX_COL_PER_ROW) + 1;
+              const col_num = (idx % MAX_COL_PER_ROW) + 1;
+
+              return {
+                row_num,
+                col_num,
+                meter: Number(r.meter) || 0,
+                yard: parseFloat(r.yard) || (Number(r.meter) || 0) * 1.093613,
+                kilogram: r.kilogram ? Number(r.kilogram) : null,
+              };
+            });
+
+            const meter_total = rollsWithIndex.reduce(
+              (sum, r) => sum + r.meter,
+              0
+            );
+            const yard_total = rollsWithIndex.reduce(
+              (sum, r) => sum + r.yard,
+              0
+            );
+            const kilogram_total =
+              rollsWithIndex.reduce((sum, r) => sum + (r.kilogram || 0), 0) ||
+              null; // biar null kalau totalnya 0
+
+            return {
+              so_item_id: Number(g.item || g.rolls[0]?.item || 0),
+              col: Number(g.col || g.rolls[0]?.col || 0),
+              meter_total,
+              yard_total,
+              kilogram_total,
+              rolls: rollsWithIndex,
+            };
+          }),
+        };
+
         await createPackingList(user?.token, payload);
       }
 
@@ -300,11 +467,30 @@ export default function PackingListForm() {
       }, []);
   };
 
+  function handlePrint() {
+    localStorage.setItem("printData", JSON.stringify(form()));
+    window.open("/print/packinglist", "_blank");
+  }
   return (
     <MainLayout>
+      {loading() && (
+        <div class="fixed inset-0 flex flex-col items-center justify-center bg-black/50 backdrop-blur-md bg-opacity-40 z-50 gap-10">
+          <div class="w-52 h-52 border-[20px] border-white border-t-transparent rounded-full animate-spin"></div>
+          <span class="animate-pulse text-[40px] text-white">Loading...</span>
+        </div>
+      )}
       <h1 class="text-2xl font-bold mb-4">
         {isEdit ? "Edit" : "Tambah"} Packing List
       </h1>
+      <button
+        type="button"
+        class="flex gap-2 bg-blue-600 text-white px-3 py-2 mb-4 rounded hover:bg-green-700"
+        onClick={handlePrint}
+        hidden={!isEdit}
+      >
+        <Printer size={20} />
+        Print
+      </button>
 
       <form class="space-y-4" onSubmit={handleSubmit}>
         <div class="grid grid-cols-2 gap-4">
@@ -366,11 +552,13 @@ export default function PackingListForm() {
 
         <div class="block gap-4">
           <div class="col-span-2">
-            <label class="block text-sm mb-1">Catatan</label>
+            <label class="block text-sm mb-1">Keterangan</label>
             <textarea
               class="w-full border p-2 rounded"
-              value={form().catatan}
-              onInput={(e) => setForm({ ...form(), catatan: e.target.value })}
+              value={form().keterangan}
+              onInput={(e) =>
+                setForm({ ...form(), keterangan: e.target.value })
+              }
             ></textarea>
           </div>
         </div>
@@ -468,10 +656,10 @@ export default function PackingListForm() {
                               <td class="border text-center align-top">
                                 {chunkIndex() === 0 ? i() + 1 : ""}
                               </td>
-                              <td class="border align-top">
+                              <td class="border p-1 align-top">
                                 {chunkIndex() === 0 ? (
                                   <input
-                                    class="w-full border-none p-1"
+                                    class="border p-1 rounded w-full"
                                     value={rollChunk[0]?.roll.col || ""}
                                     onInput={(e) =>
                                       handleRollChange(
@@ -486,10 +674,10 @@ export default function PackingListForm() {
                                   ""
                                 )}
                               </td>
-                              <td class="border align-top">
+                              <td class="border p-1 align-top">
                                 {chunkIndex() === 0 ? (
                                   <select
-                                    class="w-full border-none p-1 bg-white"
+                                    class="w-full border rounded p-1"
                                     value={rollChunk[0]?.roll.item || ""}
                                     onInput={(e) =>
                                       handleRollChange(
@@ -507,7 +695,8 @@ export default function PackingListForm() {
                                       }
                                     >
                                       {(item) => (
-                                        <option value={item.konstruksi_kain}>
+                                        <option value={item.id}>
+                                          {item.corak_kain} |{" "}
                                           {item.konstruksi_kain}
                                         </option>
                                       )}
@@ -583,26 +772,20 @@ export default function PackingListForm() {
                           Sub Total
                         </td>
                         <td class="border px-2 py-1 text-right">
-                          {form().itemGroups.reduce(
-                            (acc, g) => acc + g.rolls.length,
-                            0
-                          )}
+                          {group.rolls.length}
                         </td>
                         <td class="border px-2 py-1 text-right">
-                          {form()
-                            .itemGroups.flatMap((g) => g.rolls)
+                          {group.rolls
                             .reduce((sum, r) => sum + Number(r.meter || 0), 0)
                             .toFixed(2)}{" "}
                           m
                         </td>
                         <td class="border px-2 py-1 text-right">
                           {(
-                            form()
-                              .itemGroups.flatMap((g) => g.rolls)
-                              .reduce(
-                                (sum, r) => sum + Number(r.meter || 0),
-                                0
-                              ) * 1.093613
+                            group.rolls.reduce(
+                              (sum, r) => sum + Number(r.meter || 0),
+                              0
+                            ) * 1.093613
                           ).toFixed(2)}{" "}
                           yd
                         </td>
@@ -611,14 +794,14 @@ export default function PackingListForm() {
                   </table>
 
                   <div class="mt-4 flex flex-wrap gap-2 items-center">
-                    <button
+                    {/* <button
                       type="button"
                       onClick={() => addRoll(i())}
                       class="bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700"
                       disabled={group.rolls.length >= 50}
                     >
                       + Tambah Roll
-                    </button>
+                    </button> */}
 
                     <input
                       type="number"
@@ -650,7 +833,7 @@ export default function PackingListForm() {
                       class="bg-purple-600 text-white px-2 py-1 rounded hover:bg-purple-700"
                       disabled={group.rolls.length >= 50}
                     >
-                      + Tambah Banyak
+                      + Tambah
                     </button>
                   </div>
                 </Show>

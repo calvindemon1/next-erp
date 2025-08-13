@@ -68,11 +68,8 @@ export default function PackingListList() {
   const handleGetAllPackingLists = async (tok) => {
     const getDatapackingLists = await getAllPackingLists(tok);
 
-    const sortedData = getDatapackingLists.sort((a, b) => a.id - b.id);
-    setPackingLists(sortedData);
-
     if (getDatapackingLists.status === 200) {
-      const sortedData = getDatapackingLists.contracts.sort(
+      const sortedData = getDatapackingLists.packing_lists.sort(
         (a, b) => a.id - b.id
       );
       setPackingLists(sortedData);
@@ -126,8 +123,8 @@ export default function PackingListList() {
           <thead>
             <tr class="bg-gray-200 text-left text-sm uppercase text-gray-700">
               <th class="py-2 px-4">ID</th>
-              <th class="py-2 px-2">No Sales Order</th>
               <th class="py-2 px-2">No Packing List</th>
+              <th class="py-2 px-2">No Sales Order</th>
               <th class="py-2 px-2">Col</th>
               <th class="py-2 px-2">Tanggal Dibuat</th>
               <th class="py-2 px-2">Catatan</th>
@@ -140,8 +137,8 @@ export default function PackingListList() {
                 <td class="py-2 px-4">
                   {(currentPage() - 1) * pageSize + (index + 1)}
                 </td>
-                <td class="py-2 px-4">{sc.no_so}</td>
                 <td class="py-2 px-4">{sc.no_pl}</td>
+                <td class="py-2 px-4">{sc.no_so}</td>
                 <td class="py-2 px-4">{sc.col}</td>
                 <td class="py-2 px-4">{formatTanggalIndo(sc.created_at)}</td>
                 <td class="py-2 px-4">{sc.catatan}</td>

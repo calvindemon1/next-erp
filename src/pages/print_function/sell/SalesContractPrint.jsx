@@ -253,9 +253,7 @@ export default function SalesContractPrint(props) {
                 <tr>
                   <td className="px-2 py-1 whitespace-nowrap">Kurs</td>
                   <td className="text-center">:</td>
-                  <td className="px-2 py-1 break-words">
-                    {formatRupiahNumber(data.kurs)}
-                  </td>
+                  <td className="px-2 py-1 break-words">{data.kurs}</td>
                 </tr>
               </tbody>
             </table>
@@ -330,7 +328,6 @@ export default function SalesContractPrint(props) {
               <tr key={i}>
                 <td className="p-1 text-center">{i + 1}</td>
                 <td className="p-1 text-center">
-                  {" "}
                   {kainList()[item.fabric_id]?.corak || "-"}
                 </td>
                 <td className="p-1">

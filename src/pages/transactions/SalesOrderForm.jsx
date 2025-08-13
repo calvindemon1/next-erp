@@ -12,10 +12,11 @@ import {
   getAllCurrenciess,
   getAllCustomers,
   getAllGrades,
-  createSalesContract,
-  updateDataSalesContract,
   getSalesContracts,
   getAllColors,
+  updateDataSalesOrder,
+  createSalesOrder,
+  getSalesOrders,
 } from "../../utils/auth";
 import { Printer, Trash2 } from "lucide-solid";
 import FabricDropdownSearch from "../../components/FabricDropdownSearch";
@@ -37,6 +38,7 @@ export default function SalesOrderForm() {
   const [gradeOptions, setGradeOptions] = createSignal([]);
   const [salesOrderNumber, setSalesOrderNumber] = createSignal(0);
   const [colorOptions, setColorOptions] = createSignal([]);
+  const [loading, setLoading] = createSignal(true);
   const [params] = useSearchParams();
   const isEdit = !!params.id;
 
@@ -77,6 +79,8 @@ export default function SalesOrderForm() {
   };
 
   onMount(async () => {
+    setLoading(true);
+
     const [
       contracts,
       satuanUnits,
@@ -107,73 +111,35 @@ export default function SalesOrderForm() {
     setColorOptions(colors?.warna || ["Pilih"]);
 
     if (isEdit) {
-      const res = await getSalesContracts(params.id, user?.token);
-      const data = res.contract;
-      if (!data) return;
+      const res = await getSalesOrders(params.id, user?.token);
+      const soData = res.order;
+      if (!soData) return;
 
-      const normalizedItems = (data.items || []).map((item, idx) => ({
-        id: idx + 1,
-        fabric_id: item.kain_id ?? null,
-        grade_id: item.grade_id ?? "",
-        lebar_greige: item.lebar ?? "",
-        gramasi: item.gramasi ?? "",
-        meter: item.meter_total ?? "",
-        yard: item.yard_total ?? "",
-        kilogram: item.kilogram_total ?? "",
-        harga: item.harga ?? "",
-        subtotal: item.subtotal ?? "",
-        subtotalFormatted: item.subtotal > 0 ? formatIDR(item.subtotal) : "",
+      const mappedItems = (soData.items || []).map((soItem) => ({
+        id: soItem.id,
+        sc_item_id: soItem.sc_item_id,
+        warna_id: soItem.warna_id ?? null,
+        meter: soItem.meter_total ?? "",
+        yard: soItem.yard_total ?? "",
+        kilogram: soItem.kilogram_total ?? "",
       }));
+
+      fetchSalesContractDetail(soData.sc_id);
 
       setForm((prev) => ({
         ...prev,
-        type: data.transaction_type?.toLowerCase() === "domestik" ? 1 : 2,
-        no_seq: data.no_sc,
-        sequence_number: data.no_sc,
-        no_pesan: data.no_sc ?? "",
-        tanggal: data.created_at
-          ? new Date(data.created_at).toISOString().split("T")[0]
-          : "",
-        po_cust: data.po_cust ?? "",
-        validity_contract: data.validity_contract
-          ? new Date(data.validity_contract).toISOString().split("T")[0]
-          : "",
-        supplier_id: data.supplier_id ?? "",
-        customer_id: data.customer_id ?? "",
-        currency_id: data.currency_id ?? "",
-        kurs: parseFloat(data.kurs) ?? 0,
-        termin: parseInt(data.termin) ?? "",
-        ppn: parseFloat(data.ppn_percent) ?? "",
-        catatan: data.catatan ?? "",
-        satuan_unit_id: parseInt(data.satuan_unit_id) ?? "",
-        items: normalizedItems,
+        ...soData,
+        sales_contract_id: soData.sc_id,
+        items: mappedItems,
       }));
-
-      (data.items || []).forEach((item, index) => {
-        handleItemChange(index, "meter", item.meter_total);
-        handleItemChange(index, "yard", item.yard_total);
-        handleItemChange(index, "harga", item.harga);
-        handleItemChange(index, "lebar_greige", item.lebar);
-      });
     } else {
-      const today = new Date().toISOString().split("T")[0];
-      // const lastSeq = await getLastSequence(
-      //   user?.token,
-      //   "so",
-      //   form().type == 1
-      //     ? "domestik"
-      //     : form().type == 2
-      //     ? "ekspor"
-      //     : "domestik",
-      //   form().ppn
-      // );
-
       setForm((prev) => ({
         ...prev,
-        tanggal: today,
-        // sequence_number: lastSeq?.no_sequence + 1 || "",
+        tanggal: new Date().toISOString().split("T")[0],
       }));
     }
+
+    setLoading(false);
   });
 
   const fetchSalesContractDetail = async (id) => {
@@ -186,18 +152,58 @@ export default function SalesOrderForm() {
       const res = await getSalesContracts(id, user.token);
 
       const custDetail = res.contract || "";
+      const existingItems = form().items || [];
 
       const { huruf, ppn, nomor } = parseNoPesan(custDetail.no_sc);
+      const tanggalValue = new Date(custDetail.created_at)
+        .toISOString()
+        .split("T")[0];
 
       // --- NEW: Map items from Sales Contract ---
       if (isEdit) {
-        // Ambil items yang sudah ada (dari form)
         const existingItems = form().items || [];
+        const scItems = custDetail.items || [];
+        const satuanId = custDetail.satuan_unit_id;
+
+        const mergedItems = scItems.map((scItem) => {
+          const existing = existingItems.find(
+            (e) => e.sc_item_id === scItem.id || e.id === scItem.id
+          );
+
+          const meter = existing?.meter ?? scItem.meter_total ?? 0;
+          const yard = existing?.yard ?? scItem.yard_total ?? 0;
+          const kilogram = existing?.kilogram ?? scItem.kilogram_total ?? 0;
+          const harga = scItem.harga ? parseFloat(scItem.harga) : 0;
+
+          let qty = 0;
+          if (satuanId === 1) qty = meter;
+          else if (satuanId === 2) qty = yard;
+          else if (satuanId === 3) qty = kilogram;
+
+          const subtotal = qty && harga ? qty * harga : 0;
+
+          return {
+            id: existing?.id ?? scItem.id,
+            sc_item_id: existing?.sc_item_id,
+            kain_id: scItem.kain_id ?? null,
+            grade_id: scItem.grade_id ?? "",
+            lebar: scItem.lebar ? parseFloat(scItem.lebar) : null,
+            gramasi: scItem.gramasi ? parseFloat(scItem.gramasi) : null,
+            warna_id: existing?.warna_id ?? null,
+            meter,
+            yard,
+            kilogram,
+            harga,
+            subtotal,
+            subtotalFormatted: subtotal > 0 ? formatIDR(subtotal) : "",
+          };
+        });
 
         handleSalesOrderChange(
           huruf,
           ppn,
           nomor,
+          tanggalValue,
           custDetail.customer_name,
           custDetail.currency_name,
           custDetail.kurs,
@@ -207,7 +213,7 @@ export default function SalesOrderForm() {
           custDetail.validity_contract,
           custDetail.customer_id,
           custDetail.currency_id,
-          custDetail.items || []
+          mergedItems
         );
       } else {
         const scItems = (custDetail.items || []).map((item, index) => ({
@@ -227,6 +233,7 @@ export default function SalesOrderForm() {
           huruf,
           ppn,
           nomor,
+          tanggalValue,
           custDetail.customer_name,
           custDetail.currency_name,
           custDetail.kurs,
@@ -266,6 +273,7 @@ export default function SalesOrderForm() {
     transType, // D / E
     ppnType,
     nomorSc,
+    tanggal,
     custName,
     currencyName,
     kurs,
@@ -288,8 +296,6 @@ export default function SalesOrderForm() {
       ppnType === "N" ? 0 : 1
     );
 
-    console.log(getLatestSalesOrderNumber);
-
     const lastNumber = getLatestSalesOrderNumber?.last_sequence || 0;
     const nextNumber = (lastNumber + 1).toString().padStart(5, "0");
 
@@ -300,15 +306,17 @@ export default function SalesOrderForm() {
     // Pastikan items sudah di-normalisasi biar field kain/grade/lebar langsung ada
     const normalizedItems = items.map((item, idx) => ({
       id: item.id ?? idx + 1,
+      sc_item_id: item.sc_item_id ?? null,
       fabric_id: item.kain_id ?? null,
       grade_id: item.grade_id ?? "",
       lebar_greige: item.lebar ?? "",
+      warna_id: item.warna_id ?? "",
       gramasi: item.gramasi ?? "",
-      meter: 0,
+      meter: item.meter ?? 0,
       meter_total: item.meter_total ?? "",
-      yard: 0,
+      yard: item.yard ?? 0,
       yard_total: item.yard_total ?? "",
-      kilogram: 0,
+      kilogram: item.kilogram ?? 0,
       kilogram_total: item.kilogram_total ?? "",
       harga: item.harga ?? "",
       subtotal: item.subtotal ?? "",
@@ -320,6 +328,7 @@ export default function SalesOrderForm() {
       no_so: noSalesOrder,
       no_seq: lastNumber + 1,
       sequence_number: noSalesOrder,
+      tanggal: tanggal,
       type: transType === "D" ? 1 : 2,
       customer_id: customerId,
       cust_name: custName,
@@ -337,20 +346,14 @@ export default function SalesOrderForm() {
   };
 
   const totalMeter = () =>
-    form().items.reduce(
-      (sum, item) => sum + (parseFloat(item.meter_total) || 0),
-      0
-    );
+    form().items.reduce((sum, item) => sum + (parseFloat(item.meter) || 0), 0);
 
   const totalYard = () =>
-    form().items.reduce(
-      (sum, item) => sum + (parseFloat(item.yard_total) || 0),
-      0
-    );
+    form().items.reduce((sum, item) => sum + (parseFloat(item.yard) || 0), 0);
 
   const totalKilogram = () =>
     form().items.reduce(
-      (sum, item) => sum + (parseFloat(item.kilogram_total) || 0),
+      (sum, item) => sum + (parseFloat(item.kilogram) || 0),
       0
     );
 
@@ -430,8 +433,8 @@ export default function SalesOrderForm() {
         .find((u) => u.id == satuanId)
         ?.satuan?.toLowerCase();
 
-      let meter = parseFloat(items[index].meter || "") || 0;
-      let yard = parseFloat(items[index].yard || "") || 0;
+      let meter = parseFloat(items[index].meter_total || "") || 0;
+      let yard = parseFloat(items[index].yard_total || "") || 0;
 
       // handle harga
       if (field === "harga") {
@@ -517,12 +520,12 @@ export default function SalesOrderForm() {
           no_so: form().sequence_number,
           sc_id: parseInt(form().sales_contract_id),
           jenis_so_id: parseInt(form().type),
-          delivery_date: form().delivery_date, // pastikan lo ada input ini
+          // delivery_date: form().delivery_date, // pastikan lo ada input ini
           komisi: parseFloat(form().komisi) || 0,
           keterangan: form().catatan || "",
           items: form().items.map((item) => ({
             id: item.id, // wajib ada untuk update
-            sc_item_id: item.sc_item_id || item.id, // tergantung API, pastikan ambil dari SC
+            sc_item_id: item.sc_item_id, // tergantung API, pastikan ambil dari SC
             warna_id: parseInt(item.warna_id) || null,
             meter_total: item.meter ? parseFloat(item.meter) : null,
             yard_total: item.yard ? parseFloat(item.yard) : null,
@@ -530,7 +533,7 @@ export default function SalesOrderForm() {
           })),
         };
 
-        await updateDataSalesContract(user?.token, params.id, payload);
+        await updateDataSalesOrder(user?.token, params.id, payload);
       } else {
         console.log(form());
         // --- CREATE ---
@@ -539,7 +542,7 @@ export default function SalesOrderForm() {
           sequence_number: form().no_seq, // angka sequence
           sc_id: parseInt(form().sales_contract_id),
           jenis_so_id: parseInt(form().type),
-          delivery_date: form().delivery_date, // pastikan ada input
+          // // delivery_date: form().delivery_date, // pastikan ada input
           komisi: parseFloat(form().komisi) || 0,
           keterangan: form().catatan || "",
           items: form().items.map((item) => ({
@@ -551,7 +554,7 @@ export default function SalesOrderForm() {
           })),
         };
 
-        await createSalesContract(user?.token, payload);
+        await createSalesOrder(user?.token, payload);
       }
 
       Swal.fire({
@@ -577,6 +580,12 @@ export default function SalesOrderForm() {
 
   return (
     <MainLayout>
+      {loading() && (
+        <div class="fixed inset-0 flex flex-col items-center justify-center bg-black/50 backdrop-blur-md bg-opacity-40 z-50 gap-10">
+          <div class="w-52 h-52 border-[20px] border-white border-t-transparent rounded-full animate-spin"></div>
+          <span class="animate-pulse text-[40px] text-white">Loading...</span>
+        </div>
+      )}
       <h1 class="text-2xl font-bold mb-4">Buat Sales Order Baru</h1>
       <button
         type="button"
@@ -693,8 +702,8 @@ export default function SalesOrderForm() {
               onChange={(id) => setForm({ ...form(), sales_contract_id: id })}
             />
           </div> */}
-        <div class="grid grid-cols-6 gap-4">
-          <div>
+        <div class="grid grid-cols-5 gap-4">
+          <div hidden>
             <label class="block mb-1 font-medium">Tanggal Pengiriman</label>
             <input
               type="date"
@@ -703,6 +712,7 @@ export default function SalesOrderForm() {
               onInput={(e) =>
                 setForm({ ...form(), delivery_date: e.target.value })
               }
+              disabled
             />
           </div>
           <div>
@@ -774,7 +784,7 @@ export default function SalesOrderForm() {
             <input
               type="number"
               class="w-full border p-2 rounded bg-gray-200"
-              value={form().termin}
+              value={form().termin ?? ""}
               onInput={(e) => setForm({ ...form(), termin: e.target.value })}
             />
           </div>

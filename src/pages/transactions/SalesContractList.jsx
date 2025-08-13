@@ -16,7 +16,6 @@ export default function SalesContractList() {
   const navigate = useNavigate();
   const tokUser = getUser();
   const [currentPage, setCurrentPage] = createSignal(1);
-  const [allFabrics, setAllFabrics] = createSignal([]);
   const pageSize = 20;
 
   const totalPages = createMemo(() => {
@@ -81,19 +80,6 @@ export default function SalesContractList() {
       setSalesContracts(sortedData);
     }
   };
-
-  // "summary": {
-  //       "jumlah_kain": 1,
-  //       "total_meter": "10000.00",
-  //       "total_yard": "10936.13",
-  //       "total_kilogram": "0.00",
-  //       "total_meter_dalam_proses": "0.00",
-  //       "total_kilogram_dalam_proses": "0.00",
-  //       "total_yard_dalam_proses": "0.00",
-  //       "total_meter_dalam_surat_jalan": "0.00",
-  //       "total_yard_dalam_surat_jalan": "0.00",
-  //       "total_kilogram_dalam_surat_jalan": "0.00"
-  //   }
 
   const qtyCounterReal = (sc, satuanUnit) => {
     let total = 0;
@@ -183,13 +169,6 @@ export default function SalesContractList() {
     return `${tanggalNum} ${bulan} ${tahun}`;
   }
 
-  const handleGetAllFabrics = async (tok) => {
-    const res = await getAllFabrics(tok);
-    if (res.status === 200) {
-      setAllFabrics(res.kain);
-    }
-  };
-
   const getCorakName = (sc) => {
     // pastikan sales contract ada items
     if (!sc.items || sc.items.length === 0) return "-";
@@ -204,7 +183,6 @@ export default function SalesContractList() {
   createEffect(() => {
     if (tokUser?.token) {
       handleGetAllSalesContracts(tokUser?.token);
-      handleGetAllFabrics(tokUser?.token);
     }
   });
 
@@ -228,7 +206,7 @@ export default function SalesContractList() {
               <th class="py-2 px-2">No Pesanan</th>
               <th class="py-2 px-2">Tanggal</th>
               <th class="py-2 px-2">Nama Customer</th>
-              <th class="py-2 px-2">Corak</th>
+              <th class="py-2 px-2">Satuan</th>
               <th class="py-2 px-2 text-center">
                 <div>Qty Faktual</div>
                 <span class="text-xs text-gray-500">
@@ -253,7 +231,7 @@ export default function SalesContractList() {
                 <td class="py-2 px-4">{sc.no_sc}</td>
                 <td class="py-2 px-4">{formatTanggalIndo(sc.created_at)}</td>
                 <td class="py-2 px-4">{sc.customer_name}</td>
-                <td class="py-2 px-4">{getCorakName(sc)}</td>
+                <td class="py-2 px-4">{sc.satuan_unit_name}</td>
                 <td class="py-2 px-4 text-red-500 text-center">
                   {/* {parseFloat(sc.summary.total_meter_kontrak || 0) -
                     parseFloat(sc.summary.total_meter_terkirim || 0)}{" "}

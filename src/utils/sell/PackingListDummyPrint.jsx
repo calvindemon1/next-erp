@@ -60,24 +60,26 @@ import { useSearchParams } from "@solidjs/router";
 export default function PackingListDataDummyPrint() {
   const [searchParams] = useSearchParams();
 
-  const data = JSON.parse(decodeURIComponent(searchParams.data));
+  const data = JSON.parse(localStorage.getItem("printData") || "{}");
 
   onMount(() => {
     const closeAfterPrint = () => {
       window.close();
+      localStorage.removeItem("printData");
     };
 
     window.addEventListener("afterprint", closeAfterPrint);
 
-    // Fallback: Kalau `afterprint` nggak terpanggil (di browser tertentu)
+    // Tunggu 300ms supaya render komponen print kelar
+    setTimeout(() => {
+      window.print();
+    }, 2500);
+
+    // Fallback close jika afterprint gak jalan
     setTimeout(() => {
       window.close();
-    }, 1000); // kasih jeda 1 detik setelah print
+    }, 4000);
 
-    // Trigger print
-    window.print();
-
-    // Clean up event
     onCleanup(() => {
       window.removeEventListener("afterprint", closeAfterPrint);
     });
