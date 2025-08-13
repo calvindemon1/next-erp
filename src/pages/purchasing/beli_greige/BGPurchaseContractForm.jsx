@@ -28,6 +28,7 @@ export default function BGPurchaseContractForm() {
   const [satuanUnitOptions, setSatuanUnitOptions] = createSignal([]);
   const [fabricOptions, setFabricOptions] = createSignal([]);
   const [salesContracts, setSalesContracts] = createSignal([]);
+  const [loading, setLoading] = createSignal(true);
   const [params] = useSearchParams();
   const isEdit = !!params.id;
 
@@ -57,6 +58,7 @@ export default function BGPurchaseContractForm() {
   // });
 
   onMount(async () => {
+    setLoading(true);
     const [contracts, jenisPO, suppliers, satuanUnits, fabrics] =
       await Promise.all([
         getAllSalesContracts(user?.token),
@@ -134,6 +136,7 @@ export default function BGPurchaseContractForm() {
         sequence_number: lastSeq?.no_sequence + 1 || "",
       }));
     }
+    setLoading(false);
   });
 
   const formatIDR = (val) => {
@@ -340,6 +343,12 @@ export default function BGPurchaseContractForm() {
 
   return (
     <MainLayout>
+      {loading() && (
+        <div class="fixed inset-0 flex flex-col items-center justify-center bg-black/50 backdrop-blur-md bg-opacity-40 z-50 gap-10">
+          <div class="w-52 h-52 border-[20px] border-white border-t-transparent rounded-full animate-spin"></div>
+          <span class="animate-pulse text-[40px] text-white">Loading...</span>
+        </div>
+      )}
       <h1 class="text-2xl font-bold mb-4">Tambah Purchase Contract</h1>
       <button
         type="button"

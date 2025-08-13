@@ -2,16 +2,16 @@ import { createMemo, createSignal, onMount } from "solid-js";
 import logoNavel from "../../../../assets/img/navelLogo.png";
 import {
   getCurrencies,
-  getCustomer,
   getFabric,
   getGrades,
+  getSupplier,
   getUser,
 } from "../../../../utils/auth";
 
 export default function BGContractPrint(props) {
   const data = props.data;
   const [currency, setCurrency] = createSignal(null);
-  const [customer, setCustomer] = createSignal(null);
+  const [supplier, setSupplier] = createSignal(null);
   const [kainList, setKainList] = createSignal({});
   const [gradeList, setGradeList] = createSignal({});
 
@@ -28,14 +28,15 @@ export default function BGContractPrint(props) {
     }
   }
 
-  async function handleGetCustomer() {
+  async function handleGetSupplier() {
     try {
-      const res = await getCustomer(data.customer_id, tokUser?.token);
+      const res = await getSupplier(data.supplier_id, tokUser?.token);
+
       if (res.status === 200) {
-        setCustomer(res.customers || null);
+        setSupplier(res.suppliers || null);
       }
     } catch (err) {
-      console.error("Error getCustomers:", err);
+      console.error("Error getSupplier:", err);
     }
   }
 
@@ -70,7 +71,7 @@ export default function BGContractPrint(props) {
   onMount(() => {
     if (tokUser?.token) {
       handleGetCurrency();
-      handleGetCustomer();
+      handleGetSupplier();
       (data.items || []).forEach((item) => {
         if (item.fabric_id) {
           handleGetKain(item.fabric_id);
@@ -192,7 +193,9 @@ export default function BGContractPrint(props) {
         }}
       >
         <img className="w-40" src={logoNavel} alt="" />
-        <h1 className="text-2xl uppercase font-bold mb-5">Sales Contract</h1>
+        <h1 className="text-2xl uppercase font-bold mb-5">
+          Kontrak Beli Greige
+        </h1>
 
         <div className="w-full flex gap-2 text-sm">
           {/* LEFT TABLE */}
@@ -211,7 +214,7 @@ export default function BGContractPrint(props) {
                   className="px-2 max-w-[300px] break-words whitespace-pre-wrap"
                   colSpan={2}
                 >
-                  {customer()?.nama}
+                  {supplier()?.nama}
                 </td>
               </tr>
               <tr>
@@ -219,7 +222,7 @@ export default function BGContractPrint(props) {
                   className="px-2 max-w-[300px] leading-relaxed break-words whitespace-pre-wrap"
                   colSpan={2}
                 >
-                  {customer()?.alamat}
+                  {supplier()?.alamat}
                 </td>
               </tr>
               {/* <tr>
@@ -232,7 +235,7 @@ export default function BGContractPrint(props) {
               </tr> */}
               <tr>
                 <td className="px-2 py-1 whitespace-nowrap">
-                  Telp: {customer()?.no_telp}
+                  Telp: {supplier()?.no_telp}
                 </td>
                 <td className="px-2 py-1 whitespace-nowrap">Fax:</td>
               </tr>
@@ -240,7 +243,7 @@ export default function BGContractPrint(props) {
           </table>
 
           {/* MIDDLE TABLE */}
-          <div className="flex flex-col gap-2 w-[20%]">
+          {/* <div className="flex flex-col gap-2 w-[20%]">
             <table className="border-2 border-black table-fixed w-full h-full">
               <tbody>
                 <tr className="border-b border-black">
@@ -257,13 +260,13 @@ export default function BGContractPrint(props) {
                 </tr>
               </tbody>
             </table>
-          </div>
+          </div> */}
 
           {/* RIGHT TABLE */}
-          <table className="w-[35%] border-2 border-black table-fixed text-sm">
+          <table className="w-[55%] border-2 border-black table-fixed text-sm">
             <tbody>
               {[
-                { label: "No. SC", value: data.no_pesan },
+                { label: "No. Kontrak", value: data.sequence_number },
                 { label: "Tanggal", value: formatTanggal(data.tanggal) },
                 {
                   label: "Validity",
@@ -428,7 +431,7 @@ export default function BGContractPrint(props) {
               <td colSpan={10} className="border border-black">
                 <div className="w-full flex justify-between text-[12px] py-5 px-2">
                   <div className="text-center w-1/3 pb-3">
-                    Customer
+                    Supplier
                     <br />
                     <br />
                     <br />
