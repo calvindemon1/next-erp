@@ -1,8 +1,87 @@
-import { createMemo, createSignal } from "solid-js";
+import { createMemo, createSignal, onMount } from "solid-js";
 import logoNavel from "../../../../assets/img/navelLogo.png";
+import {
+  getCurrencies,
+  getFabric,
+  getGrades,
+  getSupplier,
+  getUser,
+} from "../../../../utils/auth";
 
 export default function BGOrderPrint(props) {
   const data = props.data;
+  const [currency, setCurrency] = createSignal(null);
+  const [supplier, setSupplier] = createSignal(null);
+  const [kainList, setKainList] = createSignal({});
+  const [gradeList, setGradeList] = createSignal({});
+
+  const tokUser = getUser(); // kalau token dibutuhkan
+
+  async function handleGetCurrency() {
+    try {
+      const res = await getCurrencies(data.currency_id, tokUser?.token);
+      if (res.status === 200) {
+        setCurrency(res.data || null);
+      }
+    } catch (err) {
+      console.error("Error getCurrencies:", err);
+    }
+  }
+
+  async function handleGetSupplier() {
+    try {
+      const res = await getSupplier(data.supplier_id, tokUser?.token);
+
+      if (res.status === 200) {
+        setSupplier(res.suppliers || null);
+      }
+    } catch (err) {
+      console.error("Error getSupplier:", err);
+    }
+  }
+
+  async function handleGetKain(kainId) {
+    try {
+      const res = await getFabric(kainId, tokUser?.token);
+      // if (res.status === 200) {
+      setKainList((prev) => ({
+        ...prev,
+        [kainId]: res,
+      }));
+      // }
+    } catch (err) {
+      console.error("Error getFabric:", err);
+    }
+  }
+
+  async function handleGetGrade(gradeId) {
+    try {
+      const res = await getGrades(gradeId, tokUser?.token);
+      if (res.status === 200) {
+        setGradeList((prev) => ({
+          ...prev,
+          [gradeId]: res.data,
+        }));
+      }
+    } catch (err) {
+      console.error("Error getGrade:", err);
+    }
+  }
+
+  onMount(() => {
+    if (tokUser?.token) {
+      handleGetCurrency();
+      handleGetSupplier();
+      (data.items || []).forEach((item) => {
+        if (item.fabric_id) {
+          handleGetKain(item.fabric_id);
+        }
+        if (item.grade_id) {
+          handleGetGrade(item.grade_id);
+        }
+      });
+    }
+  });
 
   function formatRupiahNumber(value) {
     if (typeof value !== "number") {
@@ -37,6 +116,12 @@ export default function BGOrderPrint(props) {
 
   function formatRibuan(value) {
     return Number(value).toLocaleString("id-ID");
+  }
+
+  function formatTanggal(tgl) {
+    if (!tgl) return "-";
+    const [year, month, day] = tgl.split("-");
+    return `${day}-${month}-${year}`;
   }
 
   // Misalnya kamu sudah punya:
@@ -127,7 +212,7 @@ export default function BGOrderPrint(props) {
                   className="px-2 max-w-[300px] break-words whitespace-pre-wrap"
                   colSpan={2}
                 >
-                  {data.customer}
+                  {supplier()?.nama}
                 </td>
               </tr>
               <tr>
@@ -135,7 +220,7 @@ export default function BGOrderPrint(props) {
                   className="px-2 max-w-[300px] leading-relaxed break-words whitespace-pre-wrap"
                   colSpan={2}
                 >
-                  {data.alamat}
+                  {supplier()?.alamat}
                 </td>
               </tr>
               {/* <tr>
@@ -147,14 +232,16 @@ export default function BGOrderPrint(props) {
                 </td>
               </tr> */}
               <tr>
-                <td className="px-2 py-1 whitespace-nowrap">Telp:</td>
+                <td className="px-2 py-1 whitespace-nowrap">
+                  Telp: {supplier()?.no_telp}
+                </td>
                 <td className="px-2 py-1 whitespace-nowrap">Fax:</td>
               </tr>
             </tbody>
           </table>
 
           {/* MIDDLE TABLE */}
-          <div className="flex flex-col gap-2 w-[20%]">
+          {/* <div className="flex flex-col gap-2 w-[20%]">
             <table className="border-2 border-black table-fixed w-full h-full">
               <tbody>
                 <tr className="border-b border-black">
@@ -173,31 +260,19 @@ export default function BGOrderPrint(props) {
                 </tr>
               </tbody>
             </table>
-
-            {/* <table className="h-full border-2 border-black table-fixed w-full">
-              <tbody>
-                <tr>
-                  <td className="px-2 pt-1 text-center align-top break-words max-w-[180px]">
-                    PO Customer
-                  </td>
-                </tr>
-                <tr>
-                  <td className="px-2 pb-1 text-center break-words max-w-[180px]">
-                    {data.po_cust}
-                  </td>
-                </tr>
-              </tbody>
-            </table> */}
-          </div>
+          </div> */}
 
           {/* RIGHT TABLE */}
-          <table className="w-[35%] border-2 border-black table-fixed text-sm">
+          <table className="w-[55%] border-2 border-black table-fixed text-sm">
             <tbody>
               {[
-                { label: "No. PO", value: data.no_so },
-                { label: "Tanggal", value: data.tanggal },
-                { label: "Tgl Kirim", value: data.kirim },
-                { label: "Termin", value: data.termin + " Hari" },
+                { label: "No. Kontrak", value: data.sequence_number },
+                { label: "Tanggal", value: formatTanggal(data.tanggal) },
+                {
+                  label: "Validity",
+                  value: formatTanggal(data.validity_contract),
+                },
+                { label: "Payment", value: data.termin + " Hari" },
               ].map((row, idx) => (
                 <tr key={idx} className="border-b border-black">
                   <td className="font-bold px-2 w-[30%] whitespace-nowrap">

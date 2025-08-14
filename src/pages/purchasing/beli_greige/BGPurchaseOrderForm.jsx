@@ -31,6 +31,7 @@ export default function BGPurchaseOrderForm() {
   const [satuanUnitOptions, setSatuanUnitOptions] = createSignal([]);
   const [fabricOptions, setFabricOptions] = createSignal([]);
   const [purchaseContracts, setPurchaseContracts] = createSignal([]);
+  const [loading, setLoading] = createSignal(true);
   const [params] = useSearchParams();
   const isEdit = !!params.id;
 
@@ -43,11 +44,12 @@ export default function BGPurchaseOrderForm() {
     satuan_unit_id: "",
     termin: "",
     ppn: "",
-    catatan: "",
+    keterangan: "",
     items: [],
   });
 
   onMount(async () => {
+    setLoading(true);
     const [bgc, poTypes, suppliers, units, fabrics] = await Promise.all([
       getAllBeliGreiges(user?.token),
       getAllSOTypes(user?.token),
@@ -65,28 +67,32 @@ export default function BGPurchaseOrderForm() {
     if (isEdit) {
       const res = await getBeliGreigeOrders(params.id, user?.token);
       const data = res.order;
-      const dataItems = res.items;
+      const dataItems = res.order.items;
 
       if (!data) return;
 
       // Normalisasi item
-      const normalizedItems = (dataItems || []).map((item) => ({
-        id: item.id,
-        fabric_id: item.kain_id,
-        lebar_greige: item.lebar_greige,
-        meter: item.meter_total,
-        yard: item.yard_total,
-        harga: item.harga,
-        subtotal: item.subtotal,
-        subtotalFormatted:
-          item.subtotal > 0
-            ? new Intl.NumberFormat("id-ID", {
-                style: "currency",
-                currency: "IDR",
-                maximumFractionDigits: 0,
-              }).format(item.subtotal)
-            : "",
-      }));
+      const normalizedItems = (dataItems || []).map((item) => {
+        return {
+          id: item.id,
+          fabric_id: item.kain_id,
+          lebar_greige: item.lebar_greige,
+          meter: item.meter_total,
+          yard: item.yard_total,
+          harga: item.harga,
+          subtotal: 0,
+          subtotalFormatted:
+            item.subtotal > 0
+              ? new Intl.NumberFormat("id-ID", {
+                  style: "currency",
+                  currency: "IDR",
+                  maximumFractionDigits: 0,
+                }).format(item.subtotal)
+              : "",
+        };
+      });
+
+      handlePurchaseContractChange(data.pc_id);
 
       setForm((prev) => ({
         ...prev,
@@ -101,11 +107,9 @@ export default function BGPurchaseOrderForm() {
         satuan_unit_id: data.satuan_unit_id ?? "",
         termin: data.termin ?? "",
         ppn: data.ppn_percent ?? "",
-        catatan: data.catatan ?? "",
+        keterangan: data.keterangan ?? "",
         items: normalizedItems,
       }));
-
-      handlePurchaseContractChange(data.pc_id);
     } else {
       const lastSeq = await getLastSequence(
         user?.token,
@@ -127,16 +131,8 @@ export default function BGPurchaseOrderForm() {
         handleItemChange(index, "lebar_greige", item.lebar_greige);
       });
     }
+    setLoading(false);
   });
-
-  const formatIDR = (val) => {
-    if (val === null || val === "") return "";
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-      maximumFractionDigits: 0,
-    }).format(val);
-  };
 
   const handlePurchaseContractChange = async (contractId) => {
     let selectedContract = purchaseContracts().find(
@@ -145,7 +141,6 @@ export default function BGPurchaseOrderForm() {
 
     if (!selectedContract || !selectedContract.items?.length) {
       const detail = await getBeliGreiges(contractId, user?.token);
-      // const itemsOrder = await getBeliGreigeOrders(23, user?.token);
       selectedContract = detail.contract;
     }
 
@@ -160,7 +155,14 @@ export default function BGPurchaseOrderForm() {
     } = selectedContract;
 
     const mappedItems = items.map((item) => {
+      let qty = 0;
+
+      if (satuan_unit_id === 1) qty = item.meter_dalam_proses || 0;
+      else if (satuan_unit_id === 2) qty = item.yard_dalam_proses || 0;
+      else if (satuan_unit_id === 3) qty = item.kilogram_dalam_proses || 0;
+
       const harga = parseFloat(item.harga ?? 0);
+      const subtotal = qty && harga ? qty * harga : 0;
 
       return {
         pc_item_id: item.id,
@@ -170,8 +172,8 @@ export default function BGPurchaseOrderForm() {
         yard: item.yard_dalam_proses || "",
         harga,
         hargaFormatted: formatIDR(harga),
-        subtotal: 0,
-        subtotalFormatted: formatIDR(item.total_harga),
+        subtotal,
+        subtotalFormatted: formatIDR(subtotal),
         readOnly: true,
       };
     });
@@ -191,10 +193,19 @@ export default function BGPurchaseOrderForm() {
       satuan_unit_id: prev.satuan_unit_id || satuan_unit_id,
       termin: prev.termin || termin,
       ppn: prev.ppn || ppn_percent,
-      catatan: prev.catatan || "",
-      items: prev.items.length ? prev.items : mappedItems,
+      keterangan: prev.keterangan || "",
+      items: mappedItems, // selalu update ke hasil mapping baru
       sequence_number: prev.sequence_number || lastSeq?.no_sequence + 1 || "",
     }));
+  };
+
+  const formatIDR = (val) => {
+    if (val === null || val === "") return "";
+    return new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      maximumFractionDigits: 0,
+    }).format(val);
   };
 
   const generateNomorKontrak = async () => {
@@ -279,17 +290,34 @@ export default function BGPurchaseOrderForm() {
     });
   };
 
+  const totalMeter = () =>
+    form().items.reduce((sum, item) => sum + (parseFloat(item.meter) || 0), 0);
+
+  const totalYard = () =>
+    form().items.reduce((sum, item) => sum + (parseFloat(item.yard) || 0), 0);
+
+  const totalKilogram = () =>
+    form().items.reduce(
+      (sum, item) => sum + (parseFloat(item.kilogram) || 0),
+      0
+    );
+
+  const totalAll = () => {
+    return form().items.reduce((sum, item) => {
+      return sum + (parseFloat(item.subtotal) || 0);
+    }, 0);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     try {
       if (isEdit) {
-        // console.log(form().items)
         const payload = {
           // ...form(),
           no_po: form().sequence_number,
           pc_id: form().pc_id,
-          catatan: form().catatan,
+          keterangan: form().keterangan,
           items: form().items.map((i) => ({
             id: i.id,
             pc_item_id: i.pc_item_id,
@@ -310,7 +338,7 @@ export default function BGPurchaseOrderForm() {
           // ...form(),
           sequence_number: Number(form().no_seq),
           pc_id: form().pc_id,
-          catatan: form().catatan,
+          keterangan: form().keterangan,
           items: form().items.map((i) => ({
             pc_item_id: i.pc_item_id,
             // kain_id: Number(i.fabric_id),
@@ -349,6 +377,12 @@ export default function BGPurchaseOrderForm() {
 
   return (
     <MainLayout>
+      {loading() && (
+        <div class="fixed inset-0 flex flex-col items-center justify-center bg-black/50 backdrop-blur-md bg-opacity-40 z-50 gap-10">
+          <div class="w-52 h-52 border-[20px] border-white border-t-transparent rounded-full animate-spin"></div>
+          <span class="animate-pulse text-[40px] text-white">Loading...</span>
+        </div>
+      )}
       <h1 class="text-2xl font-bold mb-4">Tambah Purchase Order</h1>
       <button
         type="button"
@@ -466,11 +500,11 @@ export default function BGPurchaseOrderForm() {
         </div>
 
         <div>
-          <label class="block mb-1 font-medium">Catatan</label>
+          <label class="block mb-1 font-medium">Keterangan</label>
           <textarea
             class="w-full border p-2 rounded"
-            value={form().catatan}
-            onInput={(e) => setForm({ ...form(), catatan: e.target.value })}
+            value={form().keterangan}
+            onInput={(e) => setForm({ ...form(), keterangan: e.target.value })}
           ></textarea>
         </div>
 
@@ -589,6 +623,18 @@ export default function BGPurchaseOrderForm() {
               )}
             </For>
           </tbody>
+          <tfoot>
+            <tr class="font-bold bg-gray-100">
+              <td colSpan="3" class="text-right p-2">
+                TOTAL
+              </td>
+              <td class="border p-2">{totalMeter().toFixed(2)}</td>
+              <td class="border p-2">{totalYard().toFixed(2)}</td>
+              <td></td>
+              <td class="border p-2">{formatIDR(totalAll())}</td>
+              <td></td>
+            </tr>
+          </tfoot>
         </table>
 
         <div>

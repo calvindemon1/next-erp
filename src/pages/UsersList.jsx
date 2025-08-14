@@ -97,7 +97,7 @@ export default function UsersList() {
       </div>
 
       <table class="w-full bg-white shadow rounded">
-        <thead class="bg-gray-200 text-sm uppercase text-gray-700">
+        <thead class="bg-gray-200 text-left text-sm uppercase text-gray-700">
           <tr>
             <th class="py-2 px-4">ID</th>
             <th class="py-2 px-4">Name</th>
@@ -115,11 +115,12 @@ export default function UsersList() {
               <td class="py-2 px-4 capitalize">{user.username}</td>
               <td class="py-2 px-4 capitalize">{user.role_name}</td>
               <td class="py-2 px-4">
-                {new Date(user.created_at).toLocaleDateString("id-ID", {
+                {/* {new Date(user.created_at).toLocaleDateString("id-ID", {
                   day: "numeric",
                   month: "short",
                   year: "numeric",
-                })}
+                })} */}
+                {console.log(user)}
               </td>
               <td class="py-2 px-4 space-x-2">
                 <button

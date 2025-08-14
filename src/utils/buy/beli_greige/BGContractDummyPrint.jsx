@@ -67,7 +67,6 @@ export default function BGContractDataDummyPrint() {
   onMount(() => {
     const closeAfterPrint = () => {
       window.close();
-      localStorage.removeItem("printData");
     };
 
     window.addEventListener("afterprint", closeAfterPrint);
