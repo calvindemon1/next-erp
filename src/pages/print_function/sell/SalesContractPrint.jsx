@@ -304,10 +304,10 @@ export default function SalesContractPrint(props) {
               <th className="border border-black p-1 w-[6%]" rowSpan={2}>
                 Grade
               </th>
-              <th className="border border-black p-1 w-[10%]" rowSpan={2}>
+              <th className="border border-black p-1 w-[8%]" rowSpan={2}>
                 Lebar
               </th>
-              <th className="border border-black p-1 w-[10%]" rowSpan={2}>
+              <th className="border border-black p-1 w-[8%]" rowSpan={2}>
                 Gramasi
               </th>
               <th
@@ -316,16 +316,16 @@ export default function SalesContractPrint(props) {
               >
                 Quantity
               </th>
-              <th className="border border-black p-1 w-[15%]" rowSpan={2}>
+              <th className="border border-black p-1 w-[10%]" rowSpan={2}>
                 Harga
               </th>
-              <th className="border border-black p-1 w-[18%]" rowSpan={2}>
+              <th className="border border-black p-1 w-[16%]" rowSpan={2}>
                 Jumlah
               </th>
             </tr>
             <tr>
-              <th className="border border-black p-1 w-[9%]">Meter</th>
-              <th className="border border-black p-1 w-[9%]">Yard</th>
+              <th className="border border-black p-1 w-[14%]">Meter</th>
+              <th className="border border-black p-1 w-[14%]">Yard</th>
             </tr>
           </thead>
           <tbody>

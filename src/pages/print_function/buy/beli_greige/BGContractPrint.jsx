@@ -307,28 +307,38 @@ export default function BGContractPrint(props) {
               <th className="border border-black p-1 w-[6%]" rowSpan={2}>
                 Grade
               </th>
-              <th className="border border-black p-1 w-[10%]" rowSpan={2}>
+              <th className="border border-black p-1 w-[8%]" rowSpan={2}>
                 Lebar
               </th>
-              <th className="border border-black p-1 w-[10%]" rowSpan={2}>
+              <th className="border border-black p-1 w-[8%]" rowSpan={2}>
                 Gramasi
               </th>
               <th
                 className="border border-black p-1 w-[18%] text-center"
-                colSpan={2}
+                colSpan={1}
               >
                 Quantity
               </th>
-              <th className="border border-black p-1 w-[15%]" rowSpan={2}>
+              <th className="border border-black p-1 w-[10%]" rowSpan={2}>
                 Harga
               </th>
-              <th className="border border-black p-1 w-[18%]" rowSpan={2}>
+              <th className="border border-black p-1 w-[16%]" rowSpan={2}>
                 Jumlah
               </th>
             </tr>
             <tr>
-              <th className="border border-black p-1 w-[9%]">Meter</th>
-              <th className="border border-black p-1 w-[9%]">Yard</th>
+              <th
+                className="border border-black p-1 w-full"
+                hidden={data.satuan_unit_id == 2 ? true : false}
+              >
+                (Meter)
+              </th>
+              <th
+                className="border border-black p-1 w-[14%]"
+                hidden={data.satuan_unit_id == 1 ? true : false}
+              >
+                (Yard)
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -348,10 +358,16 @@ export default function BGContractPrint(props) {
                   {item.lebar_greige}
                 </td>
                 <td className="p-1 text-center break-words">{item.gramasi}</td>
-                <td className="p-1 text-right break-words">
+                <td
+                  className="p-1 text-right break-words"
+                  hidden={data.satuan_unit_id == 2 ? true : false}
+                >
                   {formatRibuan(item.meter)}
                 </td>
-                <td className="p-1 text-right break-words">
+                <td
+                  className="p-1 text-right break-words"
+                  hidden={data.satuan_unit_id == 1 ? true : false}
+                >
                   {formatRibuan(item.yard)}
                 </td>
                 <td className="p-1 text-right break-words">
@@ -376,17 +392,22 @@ export default function BGContractPrint(props) {
                 <td className="p-1 text-right"></td>
                 <td className="p-1 text-right"></td>
                 <td className="p-1 text-right"></td>
-                <td className="p-1 text-right"></td>
               </tr>
             ))}
           </tbody>
           <tfoot>
             <tr>
               <td colSpan={6} className="border border-black px-2 py-1" />
-              <td className="border border-black px-2 py-1 text-right font-bold">
+              <td
+                className="border border-black px-2 py-1 text-right font-bold"
+                hidden={data.satuan_unit_id == 2 ? true : false}
+              >
                 {formatRupiahNumber(totalMeter)}
               </td>
-              <td className="border border-black px-2 py-1 text-right font-bold">
+              <td
+                className="border border-black px-2 py-1 text-right font-bold"
+                hidden={data.satuan_unit_id == 1 ? true : false}
+              >
                 {formatRupiahNumber(totalYard)}
               </td>
               <td className="border border-black px-2 py-1 text-right font-bold">
@@ -397,35 +418,35 @@ export default function BGContractPrint(props) {
               </td>
             </tr>
             <tr>
-              <td colSpan={8} className="px-2 py-1" />
+              <td colSpan={7} className="px-2 py-1" />
               <td className="px-2 py-1 text-right font-bold">DPP</td>
               <td className="px-2 py-1 text-right">
                 {formatRupiahNumber(dataAkhir.dpp)}
               </td>
             </tr>
             <tr>
-              <td colSpan={8} className="px-2 py-1" />
+              <td colSpan={7} className="px-2 py-1" />
               <td className="px-2 py-1 text-right font-bold">Nilai Lain</td>
               <td className="px-2 py-1 text-right">
                 {formatRupiahNumber(dataAkhir.nilai_lain)}
               </td>
             </tr>
             <tr>
-              <td colSpan={8} className="px-2 py-1" />
+              <td colSpan={7} className="px-2 py-1" />
               <td className="px-2 py-1 text-right font-bold">PPN</td>
               <td className="px-2 py-1 text-right">
                 {formatRupiahNumber(dataAkhir.ppn)}
               </td>
             </tr>
             <tr>
-              <td colSpan={8} className="px-2 py-1" />
+              <td colSpan={7} className="px-2 py-1" />
               <td className="px-2 py-1 text-right font-bold">Jumlah Total</td>
               <td className="px-2 py-1 text-right">
                 {formatRupiahNumber(dataAkhir.total)}
               </td>
             </tr>
             <tr>
-              <td colSpan={10} className="border border-black p-2 align-top">
+              <td colSpan={9} className="border border-black p-2 align-top">
                 <div className="font-bold mb-1">NOTE:</div>
                 <div className="whitespace-pre-wrap break-words italic">
                   {data.catatan ?? "-"}
@@ -433,7 +454,7 @@ export default function BGContractPrint(props) {
               </td>
             </tr>
             <tr>
-              <td colSpan={10} className="border border-black">
+              <td colSpan={9} className="border border-black">
                 <div className="w-full flex justify-between text-[12px] py-5 px-2">
                   <div className="text-center w-1/3 pb-3">
                     Supplier
