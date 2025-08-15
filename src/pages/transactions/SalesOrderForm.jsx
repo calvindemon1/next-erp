@@ -535,7 +535,6 @@ export default function SalesOrderForm() {
 
         await updateDataSalesOrder(user?.token, params.id, payload);
       } else {
-        console.log(form());
         // --- CREATE ---
         const payload = {
           type: form().type == 1 ? "domestik" : "ekspor",

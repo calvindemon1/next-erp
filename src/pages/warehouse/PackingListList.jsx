@@ -76,6 +76,37 @@ export default function PackingListList() {
     }
   };
 
+  const qtyCounterbySystem = (pl, satuanUnit) => {
+    let total = 0;
+    let terkirim = 0;
+
+    switch (satuanUnit) {
+      case "Meter": // Meter
+        total = parseFloat(pl.summary?.total_meter || 0);
+        terkirim = parseFloat(pl.summary?.total_meter_dalam_proses || 0);
+        break;
+      case "Yard": // Yard
+        total = parseFloat(pl.summary?.total_yard || 0);
+        terkirim = parseFloat(pl.summary?.total_yard_dalam_proses || 0);
+        break;
+      case "Kilogram": // Kilogram
+        total = parseFloat(pl.summary?.total_kilogram || 0);
+        terkirim = parseFloat(pl.summary?.total_kilogram_dalam_proses || 0);
+        break;
+      default:
+        return "-";
+    }
+
+    const sisa = total - terkirim;
+
+    // Kalau udah habis
+    if (sisa <= 0) {
+      return "SELESAI";
+    }
+
+    return `${sisa.toLocaleString("id-ID")} / ${total.toLocaleString("id-ID")}`;
+  };
+
   function formatTanggalIndo(tanggalString) {
     const tanggal = new Date(tanggalString);
     const bulanIndo = [
@@ -125,33 +156,44 @@ export default function PackingListList() {
               <th class="py-2 px-4">ID</th>
               <th class="py-2 px-2">No Packing List</th>
               <th class="py-2 px-2">No Sales Order</th>
-              <th class="py-2 px-2">Col</th>
-              <th class="py-2 px-2">Tanggal Dibuat</th>
-              <th class="py-2 px-2">Catatan</th>
+              <th class="py-2 px-2 text-center">
+                <div>Qty by System</div>
+                <span class="text-xs text-gray-500">
+                  (Total - Total diproses / Total)
+                </span>
+              </th>
+              <th class="py-2 px-2">Satuan Unit</th>
               <th class="py-2 px-4">Aksi</th>
             </tr>
           </thead>
           <tbody>
-            {paginatedData().map((sc, index) => (
-              <tr class="border-b" key={sc.id}>
+            {paginatedData().map((pl, index) => (
+              <tr class="border-b" key={pl.id}>
                 <td class="py-2 px-4">
                   {(currentPage() - 1) * pageSize + (index + 1)}
                 </td>
-                <td class="py-2 px-4">{sc.no_pl}</td>
-                <td class="py-2 px-4">{sc.no_so}</td>
-                <td class="py-2 px-4">{sc.col}</td>
-                <td class="py-2 px-4">{formatTanggalIndo(sc.created_at)}</td>
-                <td class="py-2 px-4">{sc.catatan}</td>
+                <td class="py-2 px-4">{pl.no_pl}</td>
+                <td class="py-2 px-4">{pl.no_so}</td>
+                <td
+                  className={`py-2 px-4 text-center ${
+                    qtyCounterbySystem(pl, pl.satuan_unit_name) === "SELESAI"
+                      ? "text-green-500"
+                      : "text-red-500"
+                  }`}
+                >
+                  {qtyCounterbySystem(pl, pl.satuan_unit)}
+                </td>
+                <td class="py-2 px-4">{pl.satuan_unit}</td>
                 <td class="py-2 px-4 space-x-2">
                   <button
                     class="text-blue-600 hover:underline"
-                    onClick={() => navigate(`/packinglist/form?id=${sc.id}`)}
+                    onClick={() => navigate(`/packinglist/form?id=${pl.id}`)}
                   >
                     <Edit size={25} />
                   </button>
                   <button
                     class="text-red-600 hover:underline"
-                    onClick={() => handleDelete(sc.id)}
+                    onClick={() => handleDelete(pl.id)}
                   >
                     <Trash size={25} />
                   </button>

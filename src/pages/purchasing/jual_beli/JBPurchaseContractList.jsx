@@ -67,13 +67,41 @@ export default function JBPurchaseContractList() {
   const handleGetAllBeliGreiges = async (tok) => {
     const getDataJualBelis = await getAllJualBelis(tok);
 
-    if (getDataJualBelis.status=== 200) {
-      const sortedData = getDataJualBelis.mainRows.sort(
-        (a, b) => a.id - b.id
-      );
+    if (getDataJualBelis.status === 200) {
+      const sortedData = getDataJualBelis.mainRows.sort((a, b) => a.id - b.id);
       setBeliGreiges(sortedData);
-      console.log(sortedData);
     }
+  };
+
+  const qtyCounterbySystem = (jb, satuanUnit) => {
+    let total = 0;
+    let terkirim = 0;
+
+    switch (satuanUnit) {
+      case "Meter": // Meter
+        total = parseFloat(jb.summary?.total_meter || 0);
+        terkirim = parseFloat(jb.summary?.total_meter_dalam_proses || 0);
+        break;
+      case "Yard": // Yard
+        total = parseFloat(jb.summary?.total_yard || 0);
+        terkirim = parseFloat(jb.summary?.total_yard_dalam_proses || 0);
+        break;
+      case "Kilogram": // Kilogram
+        total = parseFloat(jb.summary?.total_kilogram || 0);
+        terkirim = parseFloat(jb.summary?.total_kilogram_dalam_proses || 0);
+        break;
+      default:
+        return "-";
+    }
+
+    const sisa = total - terkirim;
+
+    // Kalau udah habis
+    if (sisa <= 0) {
+      return "SELESAI";
+    }
+
+    return `${sisa.toLocaleString("id-ID")} / ${total.toLocaleString("id-ID")}`;
   };
 
   function formatTanggalIndo(tanggalString) {
@@ -125,34 +153,47 @@ export default function JBPurchaseContractList() {
               <th class="py-2 px-4">ID</th>
               <th class="py-2 px-2">No Pembelian</th>
               <th class="py-2 px-2">Supplier</th>
-              <th class="py-2 px-2">Total</th>
+              <th class="py-2 px-2 text-center">
+                <div>Qty by System</div>
+                <span class="text-xs text-gray-500">
+                  (Total - Total diproses / Total)
+                </span>
+              </th>
               <th class="py-2 px-2">Satuan Unit</th>
               <th class="py-2 px-4">Aksi</th>
             </tr>
           </thead>
           <tbody>
-            {paginatedData().map((sc, index) => (
-              <tr class="border-b" key={sc.id}>
+            {paginatedData().map((jb, index) => (
+              <tr class="border-b" key={jb.id}>
                 <td class="py-2 px-4">
                   {(currentPage() - 1) * pageSize + (index + 1)}
                 </td>
-                <td class="py-2 px-4">{sc.no_jb}</td>
-                <td class="py-2 px-4">{sc.supplier_name}</td>
-                <td class="py-2 px-4"></td>
-                <td class="py-2 px-4">{sc.satuan_unit_name}</td>
-                {/* <td class="py-2 px-4">{formatTanggalIndo(sc.created_at)}</td> */}
+                <td class="py-2 px-4">{jb.no_jb}</td>
+                <td class="py-2 px-4">{jb.supplier_name}</td>
+                <td
+                  className={`py-2 px-4 text-center ${
+                    qtyCounterbySystem(jb, jb.satuan_unit_name) === "SELESAI"
+                      ? "text-green-500"
+                      : "text-red-500"
+                  }`}
+                >
+                  {qtyCounterbySystem(jb, jb.satuan_unit_name)}
+                </td>
+                <td class="py-2 px-4">{jb.satuan_unit_name}</td>
+                {/* <td class="py-2 px-4">{formatTanggalIndo(jb.created_at)}</td> */}
                 <td class="py-2 px-4 space-x-2">
                   <button
                     class="text-blue-600 hover:underline"
                     onClick={() =>
-                      navigate(`/jualbeli-purchasecontract/form?id=${sc.id}`)
+                      navigate(`/jualbeli-purchasecontract/form?id=${jb.id}`)
                     }
                   >
                     <Edit size={25} />
                   </button>
                   <button
                     class="text-red-600 hover:underline"
-                    onClick={() => handleDelete(sc.id)}
+                    onClick={() => handleDelete(jb.id)}
                   >
                     <Trash size={25} />
                   </button>

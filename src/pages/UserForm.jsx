@@ -26,6 +26,10 @@ export default function UserForm() {
         roleNumber = 1;
       } else if (userData.user.role_name === "admin") {
         roleNumber = 2;
+      } else if (userData.user.role_name === "staff marketing 1") {
+        roleNumber = 3;
+      } else if (userData.user.role_name === "staff marketing 2") {
+        roleNumber = 4;
       }
 
       let accountType = 0;
@@ -135,7 +139,6 @@ export default function UserForm() {
               required={!isEdit}
             />
           </div>
-          {/* )} */}
           <div>
             <label class="block mb-1 font-medium">Tipe Akses</label>
             <select
@@ -145,6 +148,8 @@ export default function UserForm() {
             >
               <option value="1">Super Admin</option>
               <option value="2">Admin</option>
+              <option value="3">Staff Marketing 1</option>
+              <option value="4">Staff Marketing 2</option>
             </select>
           </div>
           <div>

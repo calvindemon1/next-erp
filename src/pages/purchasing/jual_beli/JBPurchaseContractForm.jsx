@@ -41,7 +41,7 @@ export default function JBPurchaseContractForm() {
     satuan_unit_id: "",
     termin: "",
     ppn: 0,
-    catatan: "",
+    keterangan: "",
     no_seq: 0,
     items: [],
   });
@@ -57,29 +57,21 @@ export default function JBPurchaseContractForm() {
   //   console.log(lastSeq);
   // });
 
-  createEffect(async () => {
-    const colors = await getAllColors(user?.token);
-
-    setColorOptions(
-      colors?.warna.map((c) => ({
-        id: c.id, // wajib biar ColorDropdownSearch bisa nemu
-        label: c.kode + " | " + c.deskripsi,
-      })) || []
-    );
-  });
-
   onMount(async () => {
-    const [suppliers, satuanUnits, fabrics, customers] = await Promise.all([
-      getAllSuppliers(user?.token),
-      getAllSatuanUnits(user?.token),
-      getAllFabrics(user?.token),
-      getAllCustomers(user?.token),
-    ]);
+    const [suppliers, satuanUnits, fabrics, customers, colors] =
+      await Promise.all([
+        getAllSuppliers(user?.token),
+        getAllSatuanUnits(user?.token),
+        getAllFabrics(user?.token),
+        getAllCustomers(user?.token),
+        getAllColors(user?.token),
+      ]);
 
     setSupplierOptions(suppliers.suppliers || []);
     setSatuanUnitOptions(satuanUnits.data || []);
     setFabricOptions(fabrics.kain || []);
     setCustomerOptions(customers.customers || []);
+    setColorOptions(colors?.warna || ["Pilih"]);
 
     if (isEdit) {
       const res = await getJualBelis(params.id, user?.token);
@@ -91,8 +83,7 @@ export default function JBPurchaseContractForm() {
       // Normalisasi item
       const normalizedItems = (dataItems || []).map((item) => ({
         fabric_id: item.kain_id,
-        lebar_greige: item.lebar_greige,
-        lebar_finish: item.lebar_finish,
+        lebar_kain: item.lebar_kain,
         warna_id: item.warna_id || "",
         meter: item.meter_total,
         yard: item.yard_total,
@@ -108,8 +99,6 @@ export default function JBPurchaseContractForm() {
             : "",
       }));
 
-      console.log(data);
-
       const str = data.no_jb;
       const bagianAkhir = str.split("-")[1]; // hasilnya: "0001"
       const sequenceNumber = parseInt(bagianAkhir, 10); // hasilnya: 1
@@ -124,7 +113,7 @@ export default function JBPurchaseContractForm() {
         tanggal: new Date(data.created_at).toISOString().split("T")[0] ?? "",
         termin: data.termin ?? "",
         ppn: data.ppn_percent ?? "",
-        catatan: data.catatan ?? "",
+        keterangan: data.keterangan ?? "",
         no_seq: sequenceNumber ?? 0,
         items: normalizedItems,
       }));
@@ -134,7 +123,7 @@ export default function JBPurchaseContractForm() {
         handleItemChange(index, "meter", item.meter);
         handleItemChange(index, "yard", item.yard);
         handleItemChange(index, "harga", item.harga);
-        handleItemChange(index, "lebar_greige", item.lebar_greige);
+        handleItemChange(index, "lebar_kain", item.lebar_kain);
       });
     } else {
       const lastSeq = await getLastSequence(
@@ -168,8 +157,6 @@ export default function JBPurchaseContractForm() {
       form().ppn
     );
 
-    console.log(lastSeq);
-
     const nextNum = String((lastSeq?.last_sequence || 0) + 1).padStart(5, "0");
     const now = new Date();
     const month = String(now.getMonth() + 1).padStart(2, "0");
@@ -192,8 +179,7 @@ export default function JBPurchaseContractForm() {
         ...prev.items,
         {
           fabric_id: "",
-          lebar_greige: "",
-          lebar_finish: "",
+          lebar_kain: "",
           warna_id: "",
           meter: "",
           yard: "",
@@ -270,8 +256,8 @@ export default function JBPurchaseContractForm() {
         }
       }
 
-      if (field === "lebar_greige") {
-        items[index].lebar_greige = value;
+      if (field === "lebar_kain") {
+        items[index].lebar_kain = value;
       }
 
       const harga = parseFloat(items[index].harga || "") || 0;
@@ -303,11 +289,10 @@ export default function JBPurchaseContractForm() {
           satuan_unit_id: Number(form().satuan_unit_id),
           termin: Number(form().termin),
           ppn_percent: Number(form().ppn),
-          catatan: form().catatan,
+          keterangan: form().keterangan,
           items: form().items.map((i) => ({
             kain_id: Number(i.fabric_id),
-            lebar_greige: parseFloat(i.lebar_greige),
-            lebar_finish: parseFloat(i.lebar_finish),
+            lebar_kain: parseFloat(i.lebar_kain),
             warna_id: Number(i.warna_id),
             meter_total: parseFloat(i.meter),
             yard_total: parseFloat(i.yard),
@@ -326,11 +311,10 @@ export default function JBPurchaseContractForm() {
           satuan_unit_id: Number(form().satuan_unit_id),
           termin: Number(form().termin),
           ppn_percent: Number(form().ppn),
-          catatan: form().catatan,
+          keterangan: form().keterangan,
           items: form().items.map((i) => ({
             kain_id: Number(i.fabric_id),
-            lebar_greige: parseFloat(i.lebar_greige),
-            lebar_finish: parseFloat(i.lebar_finish),
+            lebar_kain: parseFloat(i.lebar_kain),
             warna_id: Number(i.warna_id),
             meter_total: parseFloat(i.meter),
             yard_total: parseFloat(i.yard),
@@ -338,8 +322,6 @@ export default function JBPurchaseContractForm() {
             // subtotal: parseFloat(i.subtotal),
           })),
         };
-
-        console.log(payload);
 
         await createJualBeli(user?.token, payload);
       }
@@ -366,13 +348,12 @@ export default function JBPurchaseContractForm() {
   //   "satuan_unit_id": 1,
   //   "termin": 30,
   //   "ppn_percent": 0,
-  //   "catatan": "Init",
+  //   "keterangan": "Init",
   //   "items": [
   //     {
   //       "kain_id": 1,
   //       "warna_id": 2,
-  //       "lebar_greige": 30,
-  //       "lebar_finish": 27,
+  //       "lebar_kain": 30,
   //       "meter_total": 100,
   //       "yard_total": 106,
   //       "harga": 25000
@@ -380,8 +361,7 @@ export default function JBPurchaseContractForm() {
   //     {
   //       "kain_id": 2,
   //       "warna_id": 2,
-  //       "lebar_greige": 30,
-  //       "lebar_finish": 29,
+  //       "lebar_kain": 30,
   //       "meter_total": 100,
   //       "yard_total": 106,
   //       "harga": 27000
@@ -529,11 +509,11 @@ export default function JBPurchaseContractForm() {
         </div>
 
         <div>
-          <label class="block mb-1 font-medium">Catatan</label>
+          <label class="block mb-1 font-medium">Keterangan</label>
           <textarea
             class="w-full border p-2 rounded"
-            value={form().catatan}
-            onInput={(e) => setForm({ ...form(), catatan: e.target.value })}
+            value={form().keterangan}
+            onInput={(e) => setForm({ ...form(), keterangan: e.target.value })}
           ></textarea>
         </div>
 
@@ -552,8 +532,7 @@ export default function JBPurchaseContractForm() {
             <tr>
               <th class="border p-2">#</th>
               <th class="border p-2">Jenis Kain</th>
-              <th class="border p-2">Lebar Greige</th>
-              <th class="border p-2">Lebar Finish</th>
+              <th class="border p-2">Lebar Kain</th>
               <th class="border p-2">Warna</th>
               <th class="border p-2">Meter</th>
               <th class="border p-2">Yard</th>
@@ -581,28 +560,16 @@ export default function JBPurchaseContractForm() {
                       type="text"
                       inputmode="decimal"
                       class="border p-1 rounded w-full"
-                      value={item.lebar_greige}
+                      value={item.lebar_kain}
                       onBlur={(e) =>
-                        handleItemChange(i(), "lebar_greige", e.target.value)
-                      }
-                    />
-                  </td>
-                  <td class="border p-2">
-                    <input
-                      type="text"
-                      inputmode="decimal"
-                      class="border p-1 rounded w-full"
-                      value={item.lebar_finish}
-                      onBlur={(e) =>
-                        handleItemChange(i(), "lebar_finish", e.target.value)
+                        handleItemChange(i(), "lebar_kain", e.target.value)
                       }
                     />
                   </td>
                   <td class="border p-2">
                     <ColorDropdownSearch
                       colors={colorOptions}
-                      form={() => item}
-                      setForm={(val) => handleItemChange(i(), "warna_id", val)}
+                      item={item}
                       onChange={(val) => handleItemChange(i(), "warna_id", val)}
                     />
                   </td>
