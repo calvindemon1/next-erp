@@ -304,15 +304,15 @@ export default function BGContractPrint(props) {
               <th className="border border-black p-1 w-[15%]" rowSpan={2}>
                 Jenis Kain
               </th>
-              <th className="border border-black p-1 w-[6%]" rowSpan={2}>
+              {/* <th className="border border-black p-1 w-[6%]" rowSpan={2}>
                 Grade
-              </th>
+              </th> */}
               <th className="border border-black p-1 w-[8%]" rowSpan={2}>
                 Lebar
               </th>
-              <th className="border border-black p-1 w-[8%]" rowSpan={2}>
+              {/* <th className="border border-black p-1 w-[8%]" rowSpan={2}>
                 Gramasi
-              </th>
+              </th> */}
               <th
                 className="border border-black p-1 w-[18%] text-center"
                 colSpan={1}
@@ -351,13 +351,13 @@ export default function BGContractPrint(props) {
                 <td className="p-1">
                   {kainList()[item.fabric_id]?.konstruksi || "-"}
                 </td>
-                <td className="p-1 text-center">
+                {/* <td className="p-1 text-center">
                   {gradeList()[item.grade_id]?.grade || "-"}
-                </td>
+                </td> */}
                 <td className="p-1 text-center break-words">
                   {item.lebar_greige}
                 </td>
-                <td className="p-1 text-center break-words">{item.gramasi}</td>
+                {/* <td className="p-1 text-center break-words">{item.gramasi}</td> */}
                 <td
                   className="p-1 text-right break-words"
                   hidden={data.satuan_unit_id == 2 ? true : false}
@@ -390,14 +390,14 @@ export default function BGContractPrint(props) {
                 <td className="p-1 text-center"></td>
                 <td className="p-1 text-center"></td>
                 <td className="p-1 text-right"></td>
-                <td className="p-1 text-right"></td>
-                <td className="p-1 text-right"></td>
+                {/* <td className="p-1 text-right"></td>
+                <td className="p-1 text-right"></td> */}
               </tr>
             ))}
           </tbody>
           <tfoot>
             <tr>
-              <td colSpan={6} className="border border-black px-2 py-1" />
+              <td colSpan={4} className="border border-black px-2 py-1" />
               <td
                 className="border border-black px-2 py-1 text-right font-bold"
                 hidden={data.satuan_unit_id == 2 ? true : false}
@@ -418,35 +418,35 @@ export default function BGContractPrint(props) {
               </td>
             </tr>
             <tr>
-              <td colSpan={7} className="px-2 py-1" />
+              <td colSpan={5} className="px-2 py-1" />
               <td className="px-2 py-1 text-right font-bold">DPP</td>
               <td className="px-2 py-1 text-right">
                 {formatRupiahNumber(dataAkhir.dpp)}
               </td>
             </tr>
             <tr>
-              <td colSpan={7} className="px-2 py-1" />
+              <td colSpan={5} className="px-2 py-1" />
               <td className="px-2 py-1 text-right font-bold">Nilai Lain</td>
               <td className="px-2 py-1 text-right">
                 {formatRupiahNumber(dataAkhir.nilai_lain)}
               </td>
             </tr>
             <tr>
-              <td colSpan={7} className="px-2 py-1" />
+              <td colSpan={5} className="px-2 py-1" />
               <td className="px-2 py-1 text-right font-bold">PPN</td>
               <td className="px-2 py-1 text-right">
                 {formatRupiahNumber(dataAkhir.ppn)}
               </td>
             </tr>
             <tr>
-              <td colSpan={7} className="px-2 py-1" />
+              <td colSpan={5} className="px-2 py-1" />
               <td className="px-2 py-1 text-right font-bold">Jumlah Total</td>
               <td className="px-2 py-1 text-right">
                 {formatRupiahNumber(dataAkhir.total)}
               </td>
             </tr>
             <tr>
-              <td colSpan={9} className="border border-black p-2 align-top">
+              <td colSpan={7} className="border border-black p-2 align-top">
                 <div className="font-bold mb-1">NOTE:</div>
                 <div className="whitespace-pre-wrap break-words italic">
                   {data.catatan ?? "-"}
@@ -454,7 +454,7 @@ export default function BGContractPrint(props) {
               </td>
             </tr>
             <tr>
-              <td colSpan={9} className="border border-black">
+              <td colSpan={7} className="border border-black">
                 <div className="w-full flex justify-between text-[12px] py-5 px-2">
                   <div className="text-center w-1/3 pb-3">
                     Supplier
