@@ -36,6 +36,7 @@ export default function SalesContractForm() {
 
   const [params] = useSearchParams();
   const isEdit = !!params.id;
+  const isView = params.view === "true";
 
   const [form, setForm] = createSignal({
     type: "",
@@ -235,13 +236,37 @@ export default function SalesContractForm() {
     }, 0);
   };
 
+  const formatNumber = (num) => {
+    if (num == null || num === "") return "";
+    return new Intl.NumberFormat("id-ID").format(num);
+  };
+
+  const parseNumber = (str) => {
+    if (!str) return 0;
+    return parseFloat(str.replace(/\./g, "")) || 0;
+  };
+
   const handleItemChange = (index, field, value, options = {}) => {
     setForm((prev) => {
       const items = [...prev.items];
       items[index] = { ...items[index] };
 
       // always store raw string
-      items[index][field] = value;
+      if (
+        [
+          "lebar_greige",
+          "gramasi",
+          "meter",
+          "yard",
+          "kilogram",
+          "harga",
+        ].includes(field)
+      ) {
+        const numberValue = parseNumber(value);
+        items[index][field] = formatNumber(numberValue);
+      } else {
+        items[index][field] = value;
+      }
 
       const satuanId = parseInt(prev.satuan_unit_id);
       const satuan = satuanUnitOptions()
@@ -286,13 +311,13 @@ export default function SalesContractForm() {
           // meter
           meter = parseFloat(value) || 0;
           yard = meter * 1.093613;
-          items[index].yard = yard > 0 ? yard.toFixed(4) : "";
+          items[index].yard = yard > 0 ? formatNumber(yard.toFixed(4)) : "";
           items[index].kilogram = "0";
         } else if (satuanId === 2) {
           // yard
           yard = parseFloat(value) || 0;
           meter = yard * 0.9144;
-          items[index].meter = meter > 0 ? meter.toFixed(4) : "";
+          items[index].meter = meter > 0 ? formatNumber(meter.toFixed(4)) : "";
           items[index].kilogram = "0";
         } else if (satuanId === 3) {
           // kilogram
@@ -301,9 +326,9 @@ export default function SalesContractForm() {
         }
       }
 
-      if (field === "lebar_greige") {
-        items[index].lebar_greige = value;
-      }
+      // if (field === "lebar_greige") {
+      //   items[index].lebar_greige = value;
+      // }
 
       const harga = parseFloat(items[index].harga || "") || 0;
       let qty = 0;
@@ -378,11 +403,11 @@ export default function SalesContractForm() {
             id: item.id,
             kain_id: toNum(item.fabric_id),
             grade_id: toNum(item.grade_id) || "",
-            lebar: toNum(item.lebar_greige),
-            gramasi: toNum(item.gramasi),
-            meter_total: toNum(item.meter),
-            yard_total: toNum(item.yard),
-            kilogram_total: toNum(item.kilogram),
+            lebar: toNum(parseNumber(item.lebar_greige)),
+            gramasi: toNum(parseNumber(item.gramasi)),
+            meter_total: toNum(parseNumber(item.meter)),
+            yard_total: toNum(parseNumber(item.yard)),
+            kilogram_total: toNum(parseNumber(item.kilogram)),
             harga: toNum(item.harga),
           })),
         };
@@ -622,6 +647,7 @@ export default function SalesContractForm() {
           type="button"
           class="bg-green-600 text-white px-3 py-2 rounded hover:bg-green-700 mb-4"
           onClick={addItem}
+          hidden={isView}
         >
           + Tambah Item
         </button>
@@ -791,6 +817,7 @@ export default function SalesContractForm() {
           <button
             type="submit"
             class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            hidden={isView}
           >
             Simpan
           </button>

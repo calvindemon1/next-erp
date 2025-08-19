@@ -6,6 +6,7 @@ export default function SalesContractDropdownSearch({
   form,
   setForm,
   onChange,
+  disabled = false,
 }) {
   const [isOpen, setIsOpen] = createSignal(false);
   const [search, setSearch] = createSignal("");
@@ -46,17 +47,26 @@ export default function SalesContractDropdownSearch({
 
   return (
     <div class="relative" ref={dropdownRef}>
+      <input
+        type="hidden"
+        name="sales_contract_id"
+        value={form().sales_contract_id}
+      />
+
       <button
         type="button"
-        class="w-full border p-2 rounded text-left bg-white/10"
-        onClick={() => setIsOpen(!isOpen())}
+        class={`w-full border p-2 rounded text-left ${
+          disabled ? "bg-gray-200" : "bg-transparent"
+        } cursor-default`}
+        disabled={disabled}
+        onClick={() => !disabled && setIsOpen(!isOpen())}
       >
         {selectedSalesContract()
           ? `${selectedSalesContract().no_sc}`
           : "Pilih Sales Contract"}
       </button>
 
-      {isOpen() && (
+      {isOpen() && !disabled && (
         <div class="absolute z-10 w-full bg-white border mt-1 rounded shadow max-h-64 overflow-y-auto">
           <input
             type="text"

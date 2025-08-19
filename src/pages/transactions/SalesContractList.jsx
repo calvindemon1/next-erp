@@ -9,7 +9,7 @@ import {
   softDeleteSalesContract,
 } from "../../utils/auth";
 import Swal from "sweetalert2";
-import { Edit, Trash } from "lucide-solid";
+import { Edit, Eye, Trash } from "lucide-solid";
 
 export default function SalesContractList() {
   const [salesContracts, setSalesContracts] = createSignal([]);
@@ -245,8 +245,17 @@ export default function SalesContractList() {
                 </td>
                 <td class="py-2 px-4 space-x-2">
                   <button
+                    class="text-yellow-600 hover:underline"
+                    onClick={() =>
+                      navigate(`/salescontract/form?id=${sc.id}&view=true`)
+                    }
+                  >
+                    <Eye size={25} />
+                  </button>
+                  <button
                     class="text-blue-600 hover:underline"
                     onClick={() => navigate(`/salescontract/form?id=${sc.id}`)}
+                    hidden
                   >
                     <Edit size={25} />
                   </button>
