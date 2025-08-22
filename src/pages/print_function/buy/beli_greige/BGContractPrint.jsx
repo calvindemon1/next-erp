@@ -17,6 +17,40 @@ export default function BGContractPrint(props) {
 
   const tokUser = getUser(); // kalau token dibutuhkan
 
+  function formatAngka(value, decimals = 2) {
+    if (typeof value !== "number") {
+      value = parseFloat(value) || 0;
+    }
+    if (value === 0) {
+        return "0,00";
+    }
+    return new Intl.NumberFormat("id-ID", {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    }).format(value);
+  }
+
+  function formatRupiah(value, decimals = 2) {
+    if (typeof value !== "number") {
+      value = parseFloat(value) || 0;
+    }
+     if (value === 0) {
+        return "Rp 0,00";
+    }
+    return new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    }).format(value);
+  }
+
+  function formatTanggal(tgl) {
+    if (!tgl) return "-";
+    const [year, month, day] = tgl.split("-");
+    return `${day}-${month}-${year}`;
+  }
+
   async function handleGetCurrency() {
     try {
       const res = await getCurrencies(data.currency_id, tokUser?.token);
@@ -43,12 +77,10 @@ export default function BGContractPrint(props) {
   async function handleGetKain(kainId) {
     try {
       const res = await getFabric(kainId, tokUser?.token);
-      // if (res.status === 200) {
       setKainList((prev) => ({
         ...prev,
         [kainId]: res,
       }));
-      // }
     } catch (err) {
       console.error("Error getFabric:", err);
     }
@@ -87,23 +119,6 @@ export default function BGContractPrint(props) {
     return value ? Number(value).toLocaleString("id-ID") : "-";
   }
 
-  function formatTanggal(tgl) {
-    if (!tgl) return "-";
-    const [year, month, day] = tgl.split("-");
-    return `${day}-${month}-${year}`;
-  }
-
-  function formatRupiahNumber(value) {
-    if (typeof value !== "number") {
-      value = parseFloat(value);
-    }
-    if (isNaN(value)) return "-";
-    return new Intl.NumberFormat("id-ID", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(value);
-  }
-
   const itemsPerPage = 14;
   const itemPages = paginateItems(data.items ?? [], itemsPerPage);
 
@@ -115,43 +130,37 @@ export default function BGContractPrint(props) {
     return pages;
   }
 
-  const totalMeter = data.items?.reduce(
-    (sum, i) => sum + Number(i.meter || 0),
-    0
-  );
-  const totalYard = data.items?.reduce(
-    (sum, i) => sum + Number(i.yard || 0),
-    0
+  const totalMeter = createMemo(() => 
+    data.items?.reduce((sum, i) => sum + (i.meterValue || 0), 0)
   );
 
-  // Misalnya kamu sudah punya:
+  const totalYard = createMemo(() =>
+    data.items?.reduce((sum, i) => sum + (i.yardValue || 0), 0)
+  );
+
+  const isPPN = createMemo(() => parseFloat(data.ppn_percent) > 0);
+
   const subTotal = createMemo(() => {
-    return data.items?.reduce(
-      (sum, i) => sum + (i.harga ?? 0) * (i.meter ?? 0),
+    return (data.items || []).reduce(
+      (sum, item) => sum + (item.subtotal || 0),
       0
     );
   });
 
-  const [form, setForm] = createSignal({
-    nilai_lain: 0,
+  const dpp = createMemo(() => {
+    return subTotal() * 1.11;
   });
 
-  // DPP = subTotal
-  const dpp = createMemo(() => subTotal() / 1.11);
+  const nilaiLain = createMemo(() => {
+    return dpp() * (11 / 12);
+  });
 
-  // Nilai Lain dari form
-  const nilaiLain = createMemo(() => parseFloat((dpp() * 11) / 12 || 0));
-
-  // PPN = 11% dari (DPP + Nilai Lain)
   const ppn = createMemo(() => {
-    const dasarPajak = nilaiLain() * 0.12;
-    return dasarPajak;
+    return isPPN() ? dpp() * 0.11 : 0;
   });
 
-  // Jumlah Total = DPP + Nilai Lain + PPN
   const jumlahTotal = createMemo(() => dpp() + ppn());
 
-  // Lalu kalau ingin dijadikan object seperti `data`
   const dataAkhir = {
     dpp: dpp(),
     nilai_lain: nilaiLain(),
@@ -194,7 +203,7 @@ export default function BGContractPrint(props) {
       >
         <img
           className="w-40"
-          hidden={!data.ppn || parseInt(data.ppn) === 0}
+          hidden={!isPPN()}
           src={logoNavel}
           alt=""
         />
@@ -301,7 +310,7 @@ export default function BGContractPrint(props) {
               <th className="border border-black p-1 w-[8%]" rowSpan={2}>
                 Kode
               </th>
-              <th className="border border-black p-1 w-[15%]" rowSpan={2}>
+              <th className="border border-black p-1 w-[20%]" rowSpan={2}>
                 Jenis Kain
               </th>
               {/* <th className="border border-black p-1 w-[6%]" rowSpan={2}>
@@ -319,10 +328,10 @@ export default function BGContractPrint(props) {
               >
                 Quantity
               </th>
-              <th className="border border-black p-1 w-[10%]" rowSpan={2}>
+              <th className="border border-black p-1 w-[18%]" rowSpan={2}>
                 Harga
               </th>
-              <th className="border border-black p-1 w-[16%]" rowSpan={2}>
+              <th className="border border-black p-1 w-[18%]" rowSpan={2}>
                 Jumlah
               </th>
             </tr>
@@ -362,20 +371,20 @@ export default function BGContractPrint(props) {
                   className="p-1 text-right break-words"
                   hidden={data.satuan_unit_id == 2 ? true : false}
                 >
-                  {formatRibuan(item.meter)}
+                  {formatAngka(item.meterValue)}
                 </td>
                 <td
                   className="p-1 text-right break-words"
                   hidden={data.satuan_unit_id == 1 ? true : false}
                 >
-                  {formatRibuan(item.yard)}
+                  {formatAngka(item.yardValue)}
                 </td>
                 <td className="p-1 text-right break-words">
-                  {formatRupiahNumber(item.harga)}
+                  {formatRupiah(item.hargaValue)}
                 </td>
                 <td className="p-1 text-right break-words">
-                  {item.harga && item.meter
-                    ? formatRupiahNumber(item.harga * item.meter)
+                  {item.hargaValue && item.meterValue
+                    ? formatRupiah(item.hargaValue * item.meterValue)
                     : "-"}
                 </td>
               </tr>
@@ -402,47 +411,47 @@ export default function BGContractPrint(props) {
                 className="border border-black px-2 py-1 text-right font-bold"
                 hidden={data.satuan_unit_id == 2 ? true : false}
               >
-                {formatRupiahNumber(totalMeter)}
+                {formatAngka(totalMeter())}
               </td>
               <td
                 className="border border-black px-2 py-1 text-right font-bold"
                 hidden={data.satuan_unit_id == 1 ? true : false}
               >
-                {formatRupiahNumber(totalYard)}
+                {formatAngka(totalYard())}
               </td>
               <td className="border border-black px-2 py-1 text-right font-bold">
                 Sub Total
               </td>
               <td className="border border-black px-2 py-1 text-right">
-                {formatRupiahNumber(subTotal())}
+                {formatRupiah(subTotal())}
               </td>
             </tr>
             <tr>
               <td colSpan={5} className="px-2 py-1" />
               <td className="px-2 py-1 text-right font-bold">DPP</td>
               <td className="px-2 py-1 text-right">
-                {formatRupiahNumber(dataAkhir.dpp)}
+                {formatRupiah(dataAkhir.dpp)}
               </td>
             </tr>
             <tr>
               <td colSpan={5} className="px-2 py-1" />
               <td className="px-2 py-1 text-right font-bold">Nilai Lain</td>
               <td className="px-2 py-1 text-right">
-                {formatRupiahNumber(dataAkhir.nilai_lain)}
+                {formatRupiah(dataAkhir.nilai_lain)}
               </td>
             </tr>
             <tr>
               <td colSpan={5} className="px-2 py-1" />
               <td className="px-2 py-1 text-right font-bold">PPN</td>
               <td className="px-2 py-1 text-right">
-                {formatRupiahNumber(dataAkhir.ppn)}
+                {formatRupiah(dataAkhir.ppn)}
               </td>
             </tr>
             <tr>
               <td colSpan={5} className="px-2 py-1" />
               <td className="px-2 py-1 text-right font-bold">Jumlah Total</td>
               <td className="px-2 py-1 text-right">
-                {formatRupiahNumber(dataAkhir.total)}
+                {formatRupiah(dataAkhir.total)}
               </td>
             </tr>
             <tr>
