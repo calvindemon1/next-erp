@@ -45,6 +45,7 @@ export default function PurchaseContractDropdownSearch({
           disabled ? "bg-gray-200" : "bg-white/10"
         } cursor-default`}
         onClick={() => setIsOpen(!isOpen())}
+        disabled={disabled}
       >
         {selectedContract()
           ? `${selectedContract().no_pc}`
