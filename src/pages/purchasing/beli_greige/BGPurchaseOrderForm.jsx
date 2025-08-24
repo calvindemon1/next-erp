@@ -69,8 +69,6 @@ export default function BGPurchaseOrderForm() {
       const data = res.order;
       const dataItems = res.order.items;
 
-console.log("Struktur data asli dari API (dataItems):", dataItems);
-
       if (!data) return;
 
       // Normalisasi item
@@ -94,7 +92,6 @@ console.log("Struktur data asli dari API (dataItems):", dataItems);
               : "",
         };
       });
-      console.log("Data setelah normalisasi (normalizedItems):", normalizedItems);
       handlePurchaseContractChange(data.pc_id, normalizedItems);
 
       setForm((prev) => ({
@@ -133,103 +130,103 @@ console.log("Struktur data asli dari API (dataItems):", dataItems);
     setLoading(false);
   });
 
-    const handlePurchaseContractChange = async (contractId, overrideItems) => {
-        let selectedContract = purchaseContracts().find(
-            (sc) => sc.id == contractId
-        );
+  const handlePurchaseContractChange = async (contractId, overrideItems) => {
+      let selectedContract = purchaseContracts().find(
+          (sc) => sc.id == contractId
+      );
 
-        if (!selectedContract || !selectedContract.items?.length) {
-            const detail = await getBeliGreiges(contractId, user?.token);
-            selectedContract = detail.contract;
-        }
+      if (!selectedContract || !selectedContract.items?.length) {
+          const detail = await getBeliGreiges(contractId, user?.token);
+          selectedContract = detail.contract;
+      }
 
-        if (!selectedContract) return;
-        const {
-            supplier_id,
-            satuan_unit_id,
-            termin,
-            ppn_percent,
-            items = [],
-        } = selectedContract;
+      if (!selectedContract) return;
+      const {
+          supplier_id,
+          satuan_unit_id,
+          termin,
+          ppn_percent,
+          items = [],
+      } = selectedContract;
 
-        // Pilih sumber data: item PO (edit) atau item Kontrak (create)
-        const sourceItems = overrideItems ?? items;
+      // Pilih sumber data: item PO (edit) atau item Kontrak (create)
+      const sourceItems = overrideItems ?? items;
 
-        const mappedItems = sourceItems.map((item) => {
-            let fabricId = null;
-            let dataSumber = {};
+      const mappedItems = sourceItems.map((item) => {
+          let fabricId = null;
+          let dataSumber = {};
 
-            if (overrideItems) {
-                const contractItem = selectedContract.items.find(
-                    (pcItem) => pcItem.id == item.pc_item_id
-                );
-                // Ambil ID kain dari item kontrak yang cocok
-                fabricId = contractItem ? (contractItem.kain_id || contractItem.fabric_id || contractItem.kain?.id) : null;
-                // Gunakan item PO sebagai sumber data utama
-                dataSumber = item;
-            } else {
-                // Ambil ID kain langsung dari item kontrak
-                fabricId = item.kain_id || item.fabric_id || item.kain?.id;
-                // Siapkan data sumber dari item kontrak
-                dataSumber = {
-                    id: null,
-                    pc_item_id: item.id, 
-                    lebar_greige: item.lebar_greige,
-                    meter: item.meter_total || item.meter,
-                    yard: item.yard_total || item.yard,
-                    harga: item.harga,
-                };
-            }
+          if (overrideItems) {
+              const contractItem = selectedContract.items.find(
+                  (pcItem) => pcItem.id == item.pc_item_id
+              );
+              // Ambil ID kain dari item kontrak yang cocok
+              fabricId = contractItem ? (contractItem.kain_id || contractItem.fabric_id || contractItem.kain?.id) : null;
+              // Gunakan item PO sebagai sumber data utama
+              dataSumber = item;
+          } else {
+              // Ambil ID kain langsung dari item kontrak
+              fabricId = item.kain_id || item.fabric_id || item.kain?.id;
+              // Siapkan data sumber dari item kontrak
+              dataSumber = {
+                  id: null,
+                  pc_item_id: item.id, 
+                  lebar_greige: item.lebar_greige,
+                  meter: item.meter_total || item.meter,
+                  yard: item.yard_total || item.yard,
+                  harga: item.harga,
+              };
+          }
 
-            // Kalkulasi menggunakan dataSumber yang sudah disiapkan
-            const meterNum = parseFloat(dataSumber.meter || 0);
-            const yardNum = parseFloat(dataSumber.yard || 0);
-            
-            let qty = 0;
-            if (satuan_unit_id === 1) qty = meterNum;
-            else if (satuan_unit_id === 2) qty = yardNum;
+          // Kalkulasi menggunakan dataSumber yang sudah disiapkan
+          const meterNum = parseFloat(dataSumber.meter || 0);
+          const yardNum = parseFloat(dataSumber.yard || 0);
+          
+          let qty = 0;
+          if (satuan_unit_id === 1) qty = meterNum;
+          else if (satuan_unit_id === 2) qty = yardNum;
 
-            const harga = parseFloat(dataSumber.harga ?? 0);
-            const subtotal = qty * harga;
+          const harga = parseFloat(dataSumber.harga ?? 0);
+          const subtotal = qty * harga;
 
-            // Return objek item yang siap untuk form state
-            return {
-                id: dataSumber.id,
-                pc_item_id: dataSumber.pc_item_id,
-                fabric_id: fabricId,
-                lebar_greige: dataSumber.lebar_greige,
-                meter: formatNumber(meterNum, { decimals: 2 }),
-                meterValue: meterNum,
-                yard: formatNumber(yardNum, { decimals: 2 }),
-                yardValue: yardNum,
-                harga,
-                hargaValue: harga,
-                hargaFormatted: formatIDR(harga),
-                subtotal,
-                subtotalFormatted: formatIDR(subtotal),
-                readOnly: false,
-            };
-        });
+          // Return objek item yang siap untuk form state
+          return {
+              id: dataSumber.id,
+              pc_item_id: dataSumber.pc_item_id,
+              fabric_id: fabricId,
+              lebar_greige: dataSumber.lebar_greige,
+              meter: formatNumber(meterNum, { decimals: 2 }),
+              meterValue: meterNum,
+              yard: formatNumber(yardNum, { decimals: 2 }),
+              yardValue: yardNum,
+              harga,
+              hargaValue: harga,
+              hargaFormatted: formatIDR(harga),
+              subtotal,
+              subtotalFormatted: formatIDR(subtotal),
+              readOnly: false,
+          };
+      });
 
-        const lastSeq = await getLastSequence(
-            user?.token,
-            "bg_o",
-            "domestik",
-            form().ppn
-        );
-        
-        setForm((prev) => ({
-            ...prev,
-            pc_id: contractId,
-            supplier_id: supplier_id,
-            satuan_unit_id: satuan_unit_id,
-            termin: termin,
-            ppn: ppn_percent,
-            keterangan: prev.keterangan || "",
-            items: mappedItems,
-            sequence_number: prev.sequence_number || lastSeq?.no_sequence + 1 || "",
-        }));
-    };
+      const lastSeq = await getLastSequence(
+          user?.token,
+          "bg_o",
+          "domestik",
+          form().ppn
+      );
+      
+      setForm((prev) => ({
+          ...prev,
+          pc_id: contractId,
+          supplier_id: supplier_id,
+          satuan_unit_id: satuan_unit_id,
+          termin: termin,
+          ppn: ppn_percent,
+          keterangan: prev.keterangan || "",
+          items: mappedItems,
+          sequence_number: prev.sequence_number || lastSeq?.no_sequence + 1 || "",
+      }));
+  };
 
   const formatIDR = (val) => {
     if (val === null || val === "") return "";
@@ -343,8 +340,10 @@ const handleItemChange = (index, field, value) => {
       item[`${field}Value`] = numValue;
 
       if (field === "harga") {
-        item.hargaValue = numValue;
-        item.harga = formatIDR(numValue);
+        item.hargaValue = numValue;
+        const formattedValue = formatIDR(numValue);
+        item.harga = formattedValue; 
+        item.hargaFormatted = formattedValue;
       } else {
         item[field] = formatNumber(numValue, { decimals: field === "lebar_greige" ? 0 : 2 });
       }
@@ -462,6 +461,7 @@ const handleItemChange = (index, field, value) => {
       });
     }
   };
+
   function handlePrint() {
     const encodedData = encodeURIComponent(JSON.stringify(form()));
     window.open(`/print/beligreige/order?data=${encodedData}`, "_blank");
@@ -698,8 +698,8 @@ const handleItemChange = (index, field, value) => {
                       onBlur={(e) =>
                         handleItemChange(i(), "harga", e.target.value)
                       }
-                      disabled={isView}
-                      classList={{ "bg-gray-200": isView }}
+                      disabled={isView || isEdit}
+                      classList={{ "bg-gray-200": isView || isEdit }}
                     />
                   </td>
                   <td class="border p-2">
