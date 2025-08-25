@@ -2,6 +2,7 @@ import { createEffect, createSignal, onCleanup } from "solid-js";
 import { getTokenStatus, getUser, logout } from "../utils/auth";
 import { A, useLocation, useNavigate } from "@solidjs/router";
 import { ChevronLeft, ChevronRight, LogOut } from "lucide-solid";
+import Swal from "sweetalert2";
 import logoNavel from "../assets/img/navelLogo.png";
 
 export default function MainLayout(props) {
@@ -240,8 +241,21 @@ export default function MainLayout(props) {
   });
 
   const handleLogout = () => {
-    logout();
-    navigate("/", { replace: true });
+    Swal.fire({
+      icon: "warning",
+      title: "Logout",
+      text: "Apakah Anda yakin akan keluar?",
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#6e7881',
+      confirmButtonText: 'Ya',
+      cancelButtonText: 'Tidak',
+    }).then((result) => {
+      if(result.isConfirmed){
+        logout();
+        navigate("/", { replace: true });
+      }
+    });
   };
 
   return (
