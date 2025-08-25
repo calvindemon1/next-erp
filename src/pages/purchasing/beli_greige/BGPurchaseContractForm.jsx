@@ -1,4 +1,4 @@
-import { createSignal, createEffect, For, onMount } from "solid-js";
+import { createSignal, createEffect, For, onMount, Show } from "solid-js";
 import { useNavigate, useSearchParams } from "@solidjs/router";
 import MainLayout from "../../../layouts/MainLayout";
 import Swal from "sweetalert2";
@@ -25,13 +25,21 @@ export default function BGPurchaseContractForm() {
 
   const [jenisPOOptions, setJenisPOOptions] = createSignal([]);
   const [supplierOptions, setSupplierOptions] = createSignal([]);
-  const [satuanUnitOptions, setSatuanUnitOptions] = createSignal([]);
+  const [satuanUnitOptions, setSatuanUnitOptions] = createSignal([
+    { id: 1, satuan: 'Meter' },
+    { id: 2, satuan: 'Yard' },
+    { id: 3, satuan: 'Kilogram' },
+  ]);
   const [fabricOptions, setFabricOptions] = createSignal([]);
   const [salesContracts, setSalesContracts] = createSignal([]);
   const [loading, setLoading] = createSignal(true);
   const [params] = useSearchParams();
   const isEdit = !!params.id;
   const isView = params.view === 'true';
+  const filteredSatuanOptions = () =>
+    satuanUnitOptions().filter(
+      (u) => u.satuan.toLowerCase() !== "kilogram"
+    );
 
   const [form, setForm] = createSignal({
     jenis_po_id: "",
@@ -417,7 +425,7 @@ export default function BGPurchaseContractForm() {
               classList={{ "bg-gray-200": isView }}
             >
               <option value="">Pilih Satuan</option>
-              <For each={satuanUnitOptions()}>
+              <For each={filteredSatuanOptions()}>
                 {(u) => <option value={u.id}>{u.satuan}</option>}
               </For>
             </select>
@@ -433,7 +441,7 @@ export default function BGPurchaseContractForm() {
               classList={{ "bg-gray-200": isView }}
             >
               <option value="">-- Pilih Termin --</option>
-              <option value="0">0 Hari/Cash</option>
+              <option value="0">Cash</option>
               <option value="30">30 Hari</option>
               <option value="45">45 Hari</option>
               <option value="60">60 Hari</option>
@@ -492,8 +500,13 @@ export default function BGPurchaseContractForm() {
               <th class="border p-2">#</th>
               <th class="border p-2">Jenis Kain</th>
               <th class="border p-2">Lebar Greige</th>
-              <th class="border p-2">Meter</th>
-              <th class="border p-2">Yard</th>
+              <Show when={parseInt(form().satuan_unit_id) === 1}>
+                <th class="border p-2">Meter</th>
+              </Show>
+
+              <Show when={parseInt(form().satuan_unit_id) === 2}>
+                <th class="border p-2">Yard</th>
+              </Show>
               <th class="border p-2">Harga</th>
               <th class="border p-2">Subtotal</th>
               <th class="border p-2">Aksi</th>
@@ -527,40 +540,44 @@ export default function BGPurchaseContractForm() {
                       classList={{ "bg-gray-200": isView }}
                     />
                   </td>
-                  <td class="border p-2">
-                    <input
-                      type="text"
-                      inputmode="decimal"
-                      class="border p-1 rounded w-full"
-                      classList={{
-                        "bg-gray-200": isView || parseInt(form().satuan_unit_id) === 2,
-                      }}
-                      readOnly={isView || parseInt(form().satuan_unit_id) === 2}
-                      value={item.meter}
-                      onBlur={(e) => {
-                        if (parseInt(form().satuan_unit_id) === 1) {
-                            handleItemChange(i(), "meter", e.target.value);
-                        }
-                      }}
-                    />
-                  </td>
-                  <td class="border p-2">
-                    <input
-                      type="text"
-                      inputmode="decimal"
-                      class="border p-1 rounded w-full"
-                      classList={{
-                        "bg-gray-200": isView || parseInt(form().satuan_unit_id) === 1,
-                      }}
-                      readOnly={isView || parseInt(form().satuan_unit_id) === 1}
-                      value={item.yard}
-                      onBlur={(e) => {
-                        if (parseInt(form().satuan_unit_id) === 2) {
-                            handleItemChange(i(), "yard", e.target.value);
-                        }
-                      }}
-                    />
-                  </td>
+                  <Show when={parseInt(form().satuan_unit_id) === 1}>
+                    <td class="border p-2">
+                      <input
+                        type="text"
+                        inputmode="decimal"
+                        class="border p-1 rounded w-full"
+                        classList={{
+                          "bg-gray-200": isView || parseInt(form().satuan_unit_id) === 2,
+                        }}
+                        readOnly={isView || parseInt(form().satuan_unit_id) === 2}
+                        value={item.meter}
+                        onBlur={(e) => {
+                          if (parseInt(form().satuan_unit_id) === 1) {
+                              handleItemChange(i(), "meter", e.target.value);
+                          }
+                        }}
+                      />
+                    </td>
+                  </Show>
+                  <Show when={parseInt(form().satuan_unit_id) === 2}>
+                    <td class="border p-2">
+                      <input
+                        type="text"
+                        inputmode="decimal"
+                        class="border p-1 rounded w-full"
+                        classList={{
+                          "bg-gray-200": isView || parseInt(form().satuan_unit_id) === 1,
+                        }}
+                        readOnly={isView || parseInt(form().satuan_unit_id) === 1}
+                        value={item.yard}
+                        onBlur={(e) => {
+                          if (parseInt(form().satuan_unit_id) === 2) {
+                              handleItemChange(i(), "yard", e.target.value);
+                          }
+                        }}
+                      />
+                    </td>
+                  </Show>
                   <td class="border p-2">
                     <input
                       type="text"
