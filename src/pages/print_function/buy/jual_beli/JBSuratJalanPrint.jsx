@@ -40,15 +40,13 @@ export default function JBSuratJalanPrint(props) {
   }
 
   // Misalnya kamu sudah punya:
+  const isPPN = createMemo(() => parseFloat(data.ppn) > 0);
+
   const subTotal = createMemo(() => {
-    return data.items?.reduce(
-      (sum, i) => sum + (i.harga ?? 0) * (i.meter_total ?? 0),
+    return (data.items || []).reduce(
+      (sum, item) => sum + (item.subtotal || 0),
       0
     );
-  });
-
-  const [form, setForm] = createSignal({
-    nilai_lain: 0,
   });
 
   // DPP = subTotal
@@ -62,7 +60,7 @@ export default function JBSuratJalanPrint(props) {
   });
 
   const ppn = createMemo(() => {
-    return isPPN() ? dpp() * 0.12 : 0;
+    return isPPN() ? nilaiLain() * 0.12 : 0;
   });
 
   const jumlahTotal = createMemo(() => dpp() + ppn());
@@ -230,13 +228,17 @@ export default function JBSuratJalanPrint(props) {
             {(data.items || []).map((item, i) => (
               <tr key={i}>
                 <td className="p-1 text-center break-words">{i + 1}</td>
-                <td className="p-1 text-center break-words">{item.kode_kain}</td>
+                <td className="p-1 text-center break-words">
+                  {item.kode_kain}
+                </td>
                 <td className="p-1 break-words">{item.jenis_kain}</td>
                 <td className="p-1 text-center break-words">{item.lebar}"</td>
                 <td className="p-1 text-right break-words">
                   {formatRibuan(item.meter_total)}
                 </td>
-                <td className="p-1 text-center break-words">{item.satuan_unit}</td>
+                <td className="p-1 text-center break-words">
+                  {item.satuan_unit}
+                </td>
               </tr>
             ))}
 

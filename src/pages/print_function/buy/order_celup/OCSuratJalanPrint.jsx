@@ -40,15 +40,13 @@ export default function OCSuratJalanPrint(props) {
   }
 
   // Misalnya kamu sudah punya:
+  const isPPN = createMemo(() => parseFloat(data.ppn) > 0);
+
   const subTotal = createMemo(() => {
-    return data.items?.reduce(
-      (sum, i) => sum + (i.harga ?? 0) * (i.meter_total ?? 0),
+    return (data.items || []).reduce(
+      (sum, item) => sum + (item.subtotal || 0),
       0
     );
-  });
-
-  const [form, setForm] = createSignal({
-    nilai_lain: 0,
   });
 
   // DPP = subTotal
@@ -62,7 +60,7 @@ export default function OCSuratJalanPrint(props) {
   });
 
   const ppn = createMemo(() => {
-    return isPPN() ? dpp() * 0.12 : 0;
+    return isPPN() ? nilaiLain() * 0.12 : 0;
   });
 
   const jumlahTotal = createMemo(() => dpp() + ppn());

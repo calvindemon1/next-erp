@@ -147,7 +147,7 @@ export default function SalesContractPrint(props) {
   });
 
   const ppn = createMemo(() => {
-    return isPPN() ? dpp() * 0.12 : 0;
+    return isPPN() ? nilaiLain() * 0.12 : 0;
   });
 
   const jumlahTotal = createMemo(() => dpp() + ppn());
@@ -158,7 +158,7 @@ export default function SalesContractPrint(props) {
     ppn: ppn(),
     total: jumlahTotal(),
   };
-  
+
   return (
     <>
       <style>{`
