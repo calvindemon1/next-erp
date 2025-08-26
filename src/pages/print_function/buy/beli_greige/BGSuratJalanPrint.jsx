@@ -52,21 +52,21 @@ export default function BGSuratJalanPrint(props) {
   });
 
   // DPP = subTotal
-  const dpp = createMemo(() => subTotal());
 
-  // Nilai Lain dari form
-  const nilaiLain = createMemo(() => parseFloat(form().nilai_lain || 0));
-
-  // PPN = 11% dari (DPP + Nilai Lain)
-  const ppn = createMemo(() => {
-    const dasarPajak = dpp() + nilaiLain();
-    return dasarPajak * 0.11;
+  const dpp = createMemo(() => {
+    return subTotal() / 1.11;
   });
 
-  // Jumlah Total = DPP + Nilai Lain + PPN
-  const jumlahTotal = createMemo(() => dpp() + nilaiLain() + ppn());
+  const nilaiLain = createMemo(() => {
+    return dpp() * (11 / 12);
+  });
 
-  // Lalu kalau ingin dijadikan object seperti `data`
+  const ppn = createMemo(() => {
+    return isPPN() ? dpp() * 0.12 : 0;
+  });
+
+  const jumlahTotal = createMemo(() => dpp() + ppn());
+
   const dataAkhir = {
     dpp: dpp(),
     nilai_lain: nilaiLain(),
@@ -230,13 +230,17 @@ export default function BGSuratJalanPrint(props) {
             {(data.items || []).map((item, i) => (
               <tr key={i}>
                 <td className="p-1 text-center break-words">{i + 1}</td>
-                <td className="p-1 text-center break-words">{item.kode_kain}</td>
+                <td className="p-1 text-center break-words">
+                  {item.kode_kain}
+                </td>
                 <td className="p-1 break-words">{item.jenis_kain}</td>
                 <td className="p-1 text-center break-words">{item.lebar}"</td>
                 <td className="p-1 text-right break-words">
                   {formatRibuan(item.meter_total)}
                 </td>
-                <td className="p-1 text-center break-words">{item.satuan_unit}</td>
+                <td className="p-1 text-center break-words">
+                  {item.satuan_unit}
+                </td>
               </tr>
             ))}
 

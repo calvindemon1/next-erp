@@ -145,7 +145,7 @@ export default function BGOrderPrint(props) {
   });
 
   const dpp = createMemo(() => {
-    return subTotal() * 1.11;
+    return subTotal() / 1.11;
   });
 
   const nilaiLain = createMemo(() => {
@@ -153,7 +153,7 @@ export default function BGOrderPrint(props) {
   });
 
   const ppn = createMemo(() => {
-    return isPPN() ? dpp() * 0.11 : 0;
+    return isPPN() ? dpp() * 0.12 : 0;
   });
 
   const jumlahTotal = createMemo(() => dpp() + ppn());

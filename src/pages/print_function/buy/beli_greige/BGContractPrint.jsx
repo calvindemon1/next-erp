@@ -22,7 +22,7 @@ export default function BGContractPrint(props) {
       value = parseFloat(value) || 0;
     }
     if (value === 0) {
-        return "0,00";
+      return "0,00";
     }
     return new Intl.NumberFormat("id-ID", {
       minimumFractionDigits: decimals,
@@ -34,8 +34,8 @@ export default function BGContractPrint(props) {
     if (typeof value !== "number") {
       value = parseFloat(value) || 0;
     }
-     if (value === 0) {
-        return "Rp 0,00";
+    if (value === 0) {
+      return "Rp 0,00";
     }
     return new Intl.NumberFormat("id-ID", {
       style: "currency",
@@ -130,7 +130,7 @@ export default function BGContractPrint(props) {
     return pages;
   }
 
-  const totalMeter = createMemo(() => 
+  const totalMeter = createMemo(() =>
     data.items?.reduce((sum, i) => sum + (i.meterValue || 0), 0)
   );
 
@@ -148,7 +148,7 @@ export default function BGContractPrint(props) {
   });
 
   const dpp = createMemo(() => {
-    return subTotal() * 1.11;
+    return subTotal() / 1.11;
   });
 
   const nilaiLain = createMemo(() => {
@@ -156,7 +156,7 @@ export default function BGContractPrint(props) {
   });
 
   const ppn = createMemo(() => {
-    return isPPN() ? dpp() * 0.11 : 0;
+    return isPPN() ? dpp() * 0.12 : 0;
   });
 
   const jumlahTotal = createMemo(() => dpp() + ppn());
@@ -201,12 +201,7 @@ export default function BGContractPrint(props) {
           padding: "5mm",
         }}
       >
-        <img
-          className="w-40"
-          hidden={!isPPN()}
-          src={logoNavel}
-          alt=""
-        />
+        <img className="w-40" hidden={!isPPN()} src={logoNavel} alt="" />
         <h1 className="text-2xl uppercase font-bold mb-5">
           Kontrak Beli Greige
         </h1>

@@ -135,12 +135,27 @@ export default function OCContractPrint(props) {
     return subTotal() * 1.11;
   });
 
+<<<<<<< HEAD
   const nilaiLain = createMemo(() => {
     return dpp() * (11 / 12);
   });
 
   const ppn = createMemo(() => {
     return isPPN() ? dpp() * 0.11 : 0;
+=======
+  // DPP = subTotal
+
+  const dpp = createMemo(() => {
+    return subTotal() / 1.11;
+  });
+
+  const nilaiLain = createMemo(() => {
+    return dpp() * (11 / 12);
+  });
+
+  const ppn = createMemo(() => {
+    return isPPN() ? dpp() * 0.12 : 0;
+>>>>>>> 653bdd8 (FEAT : change all sub total logic)
   });
 
   const jumlahTotal = createMemo(() => dpp() + ppn());
@@ -151,7 +166,6 @@ export default function OCContractPrint(props) {
     ppn: ppn(),
     total: jumlahTotal(),
   };
-
   return (
     <>
       <style>{`

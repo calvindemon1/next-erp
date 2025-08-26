@@ -167,27 +167,27 @@ export default function KJOrderPrint(props) {
   });
 
   // DPP = subTotal
-  const dpp = createMemo(() => subTotal() / 1.11);
 
-  // Nilai Lain dari form
-  const nilaiLain = createMemo(() => parseFloat((dpp() * 11) / 12 || 0));
-
-  // PPN = 11% dari (DPP + Nilai Lain)
-  const ppn = createMemo(() => {
-    const dasarPajak = nilaiLain() * 0.12;
-    return dasarPajak;
+  const dpp = createMemo(() => {
+    return subTotal() / 1.11;
   });
 
-  // Jumlah Total = DPP + Nilai Lain + PPN
+  const nilaiLain = createMemo(() => {
+    return dpp() * (11 / 12);
+  });
+
+  const ppn = createMemo(() => {
+    return isPPN() ? dpp() * 0.12 : 0;
+  });
+
   const jumlahTotal = createMemo(() => dpp() + ppn());
 
-  // Lalu kalau ingin dijadikan object seperti `data`
-  const dataAkhir = createMemo(() => ({
+  const dataAkhir = {
     dpp: dpp(),
     nilai_lain: nilaiLain(),
     ppn: ppn(),
     total: jumlahTotal(),
-  }));
+  };
 
   return (
     <>
