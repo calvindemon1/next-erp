@@ -41,7 +41,7 @@ export default function LoginPage() {
     <div class="flex justify-center items-center h-screen bg-gray-100 font-mono">
       <div class="bg-white p-8 rounded shadow-md w-full max-w-md">
         <img class="h-52 mx-auto" src={logoNavel} alt="" />
-        <h1 class="text-2xl font-bold mb-6 text-center uppercase">Login</h1>
+        <h1 class="text-2xl font-bold mb-6 text-center uppercase">Logiasdf</h1>
         {error() && <p class="text-red-500 mb-4">{error()}</p>}
         <form onsubmit={handleLogin}>
           <input
