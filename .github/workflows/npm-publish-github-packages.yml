@@ -25,7 +25,7 @@ jobs:
             cd /home/nexttechenterprise-navel/htdocs/navel.nexttechenterprise.site || exit
             git fetch origin
             git reset --hard origin/main
-            rm -rf node_modules package-lock.json
-            npm ci
+            rm -rf node_modules
+            npm install
             npm run build
             pm2 startOrReload ecosystem.config.cjs
