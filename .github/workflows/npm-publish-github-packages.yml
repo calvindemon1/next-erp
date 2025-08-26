@@ -28,4 +28,4 @@ jobs:
             rm -rf node_modules package-lock.json
             npm ci
             npm run build
-pm2 startOrReload ecosystem.config.cjs
+            pm2 startOrReload ecosystem.config.cjs
