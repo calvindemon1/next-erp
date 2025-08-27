@@ -102,15 +102,14 @@ export default function BGOrderPrint(props) {
 
   onMount(() => {
     if (tokUser?.token) {
+      handleGetCurrency();
       handleGetSupplier();
-
-      if (data.satuan_unit_id) {
-        handleGetSatuanUnit(data.satuan_unit_id);
-      }
-
       (data.items || []).forEach((item) => {
         if (item.fabric_id) {
           handleGetKain(item.fabric_id);
+        }
+        if (item.grade_id) {
+          handleGetGrade(item.grade_id);
         }
       });
     }
@@ -254,7 +253,7 @@ export default function BGOrderPrint(props) {
                   label: "Validity",
                   value: formatTanggal(data.validity_contract),
                 },
-                { label: "Payment", value: data.termin + " Hari" },
+                { label: "Payment", value: data.termin == 0 ? "Cash" : data.termin + " Hari" }
               ].map((row, idx) => (
                 <tr key={idx} className="border-b border-black">
                   <td className="font-bold px-2 w-[30%] whitespace-nowrap">
@@ -272,28 +271,48 @@ export default function BGOrderPrint(props) {
         <table className="w-full table-fixed border border-black text-[12px] border-collapse mt-3">
           <thead className="bg-gray-200">
             <tr>
-              <th className="border border-black p-1 w-[30px]">No</th>
-              <th className="border border-black p-1 w-[70px]">Kode</th>
-              <th className="border border-black p-1 w-[150px]">Jenis Kain</th>
-              <th className="border border-black p-1 w-[60px]">Lebar</th>
-              <th className="border border-black p-1 w-[100px]">Quantity</th>
-              <th className="border border-black p-1 w-[70px]">Satuan Unit</th>
-              <th className="border border-black p-1 w-[100px]">Harga</th>
-              <th className="border border-black p-1 w-[130px]">Jumlah</th>
+              <th className="border border-black p-1 w-[4%]" rowSpan={2}>
+                No
+              </th>
+              <th className="border border-black p-1 w-[8%]" rowSpan={2}>
+                Kode
+              </th>
+              <th className="border border-black p-1 w-[20%]" rowSpan={2}>
+                Jenis Kain
+              </th>
+              <th className="border border-black p-1 w-[8%]" rowSpan={2}>
+                Lebar
+              </th>
+              <th
+                className="border border-black p-1 w-[18%] text-center"
+                colSpan={1}
+              >
+                Quantity
+              </th>
+              <th className="border border-black p-1 w-[18%]" rowSpan={2}>
+                Harga
+              </th>
+              <th className="border border-black p-1 w-[18%]" rowSpan={2}>
+                Jumlah
+              </th>
+            </tr>
+            <tr>
+              <th
+                className="border border-black p-1 w-full"
+                hidden={data.satuan_unit_id == 2 ? true : false}
+              >
+                (Meter)
+              </th>
+              <th
+                className="border border-black p-1 w-[14%]"
+                hidden={data.satuan_unit_id == 1 ? true : false}
+              >
+                (Yard)
+              </th>
             </tr>
           </thead>
           <tbody>
-            {(data.items || []).map((item, i) => {
-              // Logika untuk menentukan quantity berdasarkan satuan unit
-              const satuan = satuanUnitList()[data.satuan_unit_id]?.satuan;
-              let qty = 0;
-              if (satuan === "Meter") {
-                qty = item.meterValue || 0;
-              } else if (satuan === "Yard") {
-                qty = item.yardValue || 0;
-              }
-
-              return (
+            {(data.items || []).map((item, i) => (
                 <tr key={i}>
                   <td className="p-1 text-center">{i + 1}</td>
                   <td className="p-1 text-center break-words">
@@ -305,58 +324,64 @@ export default function BGOrderPrint(props) {
                   <td className="p-1 text-center break-words">
                     {item.lebar_greige}
                   </td>
+                  <td
+                  className="p-1 text-right break-words"
+                  hidden={data.satuan_unit_id == 2 ? true : false}
+                  >
+                    {formatAngka(item.meterValue)}
+                  </td>
+                  <td
+                    className="p-1 text-right break-words"
+                    hidden={data.satuan_unit_id == 1 ? true : false}
+                  >
+                    {formatAngka(item.yardValue)}
+                  </td>
                   <td className="p-1 text-right break-words">
-                    {/* Menampilkan quantity yang sudah ditentukan */}
-                    {qty > 0 ? formatAngka(qty) : "-"}
+                    {formatRupiah(item.hargaValue)}
                   </td>
-                  <td className="p-1 text-center break-words">
-                    {/* Menampilkan satuan dari data yang sudah di-fetch */}
-                    {satuan || "-"}
-                  </td>
-                  <td className="p-1 text-right break-words">
-                    {formatRupiah(item.harga)}
-                  </td>
-                  <td className="p-1 text-right break-words">
-                    {/* Menghitung jumlah dari harga * quantity */}
-                    {formatRupiah(item.subtotal)}
-                  </td>
+                <td className="p-1 text-right break-words">
+                  {(() => {
+                    // Tentukan kuantitas yang benar berdasarkan satuan unit
+                    const qtyValue = data.satuan_unit_id == 1 ? item.meterValue : item.yardValue;
+                    
+                    // Hitung subtotal baris
+                    const lineSubtotal = item.hargaValue * qtyValue;
+
+                    // Tampilkan hasilnya jika valid
+                    return item.hargaValue && qtyValue ? formatRupiah(lineSubtotal) : "-";
+                  })()}
+                </td>
                 </tr>
-              );
-            })}
+            ))}
             {/* ... Row kosong ... */}
             {Array.from({ length: 14 - (data.items || []).length }).map(
               (_, i) => (
-                <tr key={`empty-${i}`} style={{ height: "24px" }}>
-                  <td className="p-1"></td>
-                  <td className="p-1"></td>
-                  <td className="p-1"></td>
-                  <td className="p-1"></td>
-                  <td className="p-1"></td>
-                  <td className="p-1"></td>
-                  <td className="p-1"></td>
-                  <td className="p-1"></td>
+                <tr key={`empty-${i}`}>
+                <td className="p-1 text-center h-5"></td>
+                <td className="p-1 text-center"></td>
+                <td className="p-1"></td>
+                <td className="p-1 text-center"></td>
+                <td className="p-1 text-center"></td>
+                <td className="p-1 text-right"></td>
                 </tr>
               )
             )}
           </tbody>
           <tfoot>
             <tr>
+              <td colSpan={4} className="border border-black font-bold px-2 py-1" >Total</td>
               <td
-                colSpan={4}
-                className="border border-black font-bold px-2 py-1"
+                className="border border-black px-2 py-1 text-right font-bold"
+                hidden={data.satuan_unit_id == 2 ? true : false}
               >
-                Total
+                {formatAngka(totalMeter())}
               </td>
-              <td className="border border-black px-2 py-1 text-right font-bold">
-                {(() => {
-                  const satuan =
-                    satuanUnitList()[data.satuan_unit_id]?.satuan;
-                  if (satuan === "Meter") return formatAngka(totalMeter());
-                  if (satuan === "Yard") return formatAngka(totalYard());
-                  return "-";
-                })()}
+              <td
+                className="border border-black px-2 py-1 text-right font-bold"
+                hidden={data.satuan_unit_id == 1 ? true : false}
+              >
+                {formatAngka(totalYard())}
               </td>
-              <td className="border border-black px-2 py-1 text-right font-bold"></td>
               <td className="border border-black px-2 py-1 text-right font-bold">
                 Sub Total
               </td>
@@ -365,35 +390,43 @@ export default function BGOrderPrint(props) {
               </td>
             </tr>
             <tr>
-              <td colSpan={6} className="px-2 py-1" />
+              <td colSpan={5} className="px-2 py-1" />
               <td className="px-2 py-1 text-right font-bold">DPP</td>
               <td className="px-2 py-1 text-right">
                 {formatRupiah(dataAkhir.dpp)}
               </td>
             </tr>
             <tr>
-              <td colSpan={6} className="px-2 py-1" />
+              <td colSpan={5} className="px-2 py-1" />
               <td className="px-2 py-1 text-right font-bold">Nilai Lain</td>
               <td className="px-2 py-1 text-right">
                 {formatRupiah(dataAkhir.nilai_lain)}
               </td>
             </tr>
             <tr>
-              <td colSpan={6} className="px-2 py-1" />
+              <td colSpan={5} className="px-2 py-1" />
               <td className="px-2 py-1 text-right font-bold">PPN</td>
               <td className="px-2 py-1 text-right">
                 {formatRupiah(dataAkhir.ppn)}
               </td>
             </tr>
             <tr>
-              <td colSpan={6} className="px-2 py-1" />
+              <td colSpan={5} className="px-2 py-1" />
               <td className="px-2 py-1 text-right font-bold">Jumlah Total</td>
               <td className="px-2 py-1 text-right">
                 {formatRupiah(dataAkhir.total)}
               </td>
             </tr>
             <tr>
-              <td colSpan={8} className="border border-black">
+              <td colSpan={7} className="border border-black p-2 align-top">
+                <div className="font-bold mb-1">NOTE:</div>
+                <div className="whitespace-pre-wrap break-words italic">
+                  {data.keterangan ?? "-"}
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td colSpan={7} className="border border-black">
                 <div className="w-full flex justify-between text-[12px] py-5 px-2">
                   <div className="text-center w-1/3 pb-3">
                     Supplier
