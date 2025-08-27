@@ -20,7 +20,8 @@ import ColorDropdownSearch from "../../../components/ColorDropdownSearch";
 export default function OCPurchaseContractForm() {
   const navigate = useNavigate();
   const user = getUser();
-
+  
+  const [manualGenerateDone, setManualGenerateDone] = createSignal(false)
   const [supplierOptions, setSupplierOptions] = createSignal([]);
   const [satuanUnitOptions, setSatuanUnitOptions] = createSignal([
     { id: 1, satuan: 'Meter' },
@@ -49,16 +50,14 @@ export default function OCPurchaseContractForm() {
     items: [],
   });
 
-  // createEffect(async () => {
-  //   lastSeq = await getLastSequence(
-  //     user?.token,
-  //     oc",
-  //     "domestik",
-  //     form().ppn
-  //   );
+  createEffect(() => {
+    const ppn = form().ppn_percent; 
 
-  //   console.log(lastSeq);
-  // });
+    if (isEdit || isView || !manualGenerateDone()) {
+        return;
+    }
+    generateNomorKontrak();
+  });
 
   const formatNumber = (num, options = {}) => {
     const numValue = typeof num === 'string' ? parseNumber(num) : num;
@@ -190,6 +189,7 @@ export default function OCPurchaseContractForm() {
       sequence_number: nomor,
       no_seq: lastSeq?.last_sequence + 1,
     }));
+    setManualGenerateDone(true);
   };
 
   const addItem = () => {

@@ -23,6 +23,7 @@ export default function BGPurchaseContractForm() {
   const navigate = useNavigate();
   const user = getUser();
 
+  const [manualGenerateDone, setManualGenerateDone] = createSignal(false)
   const [jenisPOOptions, setJenisPOOptions] = createSignal([]);
   const [supplierOptions, setSupplierOptions] = createSignal([]);
   const [satuanUnitOptions, setSatuanUnitOptions] = createSignal([
@@ -82,16 +83,14 @@ export default function BGPurchaseContractForm() {
     return parseFloat(cleaned) || 0;
   };
 
-  // createEffect(async () => {
-  //   lastSeq = await getLastSequence(
-  //     user?.token,
-  //     "bg_c",
-  //     "domestik",
-  //     form().ppn
-  //   );
+  createEffect(() => {
+    const ppn = form().ppn_percent; 
 
-  //   console.log(lastSeq);
-  // });
+    if (isEdit || isView || !manualGenerateDone()) {
+        return;
+    }
+    generateNomorKontrak();
+  });
 
   onMount(async () => {
     setLoading(true);
@@ -185,6 +184,7 @@ export default function BGPurchaseContractForm() {
       sequence_number: nomor,
       no_seq: lastSeq?.last_sequence + 1,
     }));
+    setManualGenerateDone(true);
   };
 
   const addItem = () => {
