@@ -270,7 +270,7 @@ export default function KJContractPrint(props) {
                   label: "Validity",
                   value: formatTanggal(data.validity_contract),
                 },
-                { label: "Payment", value: data.termin + " Hari" },
+                { label: "Payment", value: data.termin == 0 ? "Cash" : data.termin + " Hari" }
               ].map((row, idx) => (
                 <tr key={idx} className="border-b border-black">
                   <td className="font-bold px-2 w-[30%] whitespace-nowrap">
@@ -304,15 +304,18 @@ export default function KJContractPrint(props) {
                 Lebar Finish
               </th>
               <th
-                className="border border-black p-1 w-[18%] text-center"
+                className="border border-black p-1 w-[13%] text-center"
                 colSpan={2}
               >
                 Quantity
               </th>
-              <th className="border border-black p-1 w-[18%]" rowSpan={2}>
-                Harga
+              <th className="border border-black p-1 w-[15%]" rowSpan={2}>
+                Harga Greige
               </th>
-              <th className="border border-black p-1 w-[18%]" rowSpan={2}>
+              <th className="border border-black p-1 w-[15%]" rowSpan={2}>
+                Harga Celup
+              </th>
+              <th className="border border-black p-1 w-[20%]" rowSpan={2}>
                 Jumlah
               </th>
             </tr>
@@ -356,13 +359,24 @@ export default function KJContractPrint(props) {
                     : formatAngka(item.yardValue)}
                 </td>
                 <td className="p-1 text-right break-words">
-                  {formatRupiah(item.hargaValue)}
+                  {formatRupiah(item.harga_greigeValue)}
                 </td>
                 <td className="p-1 text-right break-words">
-                  {item.hargaValue && item.meterValue
-                    ? formatRupiah(item.hargaValue * item.meterValue)
-                    : "-"}
+                  {formatRupiah(item.harga_maklunValue)}
                 </td>
+                <td className="p-1 text-right break-words">
+                  {(() => {
+                    const qtyValue = data.satuan_unit_id == 1 ? item.meterValue : item.yardValue;
+                    const hargaGreige = item.harga_greigeValue || 0;
+                    const hargaMaklun = item.harga_maklunValue || 0;
+
+                    const lineSubtotal = (hargaGreige + hargaMaklun) * qtyValue;
+
+                    return (hargaGreige > 0 || hargaMaklun > 0) && qtyValue > 0
+                      ? formatRupiah(lineSubtotal)
+                      : "-";
+                  })()}
+              </td>
               </tr>
             ))}
 
@@ -393,7 +407,7 @@ export default function KJContractPrint(props) {
               >
                 {formatAngka(totalYard())}
               </td>
-              <td className="border border-black px-2 py-1 text-right font-bold">
+              <td colSpan={2} className="border border-black px-2 py-1 text-right font-bold">
                 Sub Total
               </td>
               <td className="border border-black px-2 py-1 text-right">
@@ -401,35 +415,35 @@ export default function KJContractPrint(props) {
               </td>
             </tr>
             <tr>
-              <td colSpan={7} className="px-2 py-1" />
+              <td colSpan={8} className="px-2 py-1" />
               <td className="px-2 py-1 text-right font-bold">DPP</td>
               <td className="px-2 py-1 text-right">
                 {formatRupiah(dataAkhir.dpp)}
               </td>
             </tr>
             <tr>
-              <td colSpan={7} className="px-2 py-1" />
+              <td colSpan={8} className="px-2 py-1" />
               <td className="px-2 py-1 text-right font-bold">Nilai Lain</td>
               <td className="px-2 py-1 text-right">
                 {formatRupiah(dataAkhir.nilai_lain)}
               </td>
             </tr>
             <tr>
-              <td colSpan={7} className="px-2 py-1" />
+              <td colSpan={8} className="px-2 py-1" />
               <td className="px-2 py-1 text-right font-bold">PPN</td>
               <td className="px-2 py-1 text-right">
                 {formatRupiah(dataAkhir.ppn)}
               </td>
             </tr>
             <tr>
-              <td colSpan={7} className="px-2 py-1" />
+              <td colSpan={8} className="px-2 py-1" />
               <td className="px-2 py-1 text-right font-bold">Jumlah Total</td>
               <td className="px-2 py-1 text-right">
                 {formatRupiah(dataAkhir.total)}
               </td>
             </tr>
             <tr>
-              <td colSpan={9} className="border border-black p-2 align-top">
+              <td colSpan={11} className="border border-black p-2 align-top">
                 <div className="font-bold mb-1">NOTE:</div>
                 <div className="whitespace-pre-wrap break-words italic">
                   {data.keterangan ?? "-"}
@@ -437,7 +451,7 @@ export default function KJContractPrint(props) {
               </td>
             </tr>
             <tr>
-              <td colSpan={9} className="border border-black">
+              <td colSpan={11} className="border border-black">
                 <div className="w-full flex justify-between text-[12px] py-5 px-2">
                   <div className="text-center w-1/3 pb-3">
                     Supplier

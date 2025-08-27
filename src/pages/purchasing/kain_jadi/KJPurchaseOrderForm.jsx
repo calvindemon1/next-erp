@@ -124,7 +124,8 @@ export default function KJPurchaseOrderForm() {
           warna_id: item.warna_id,
           meter: item.meter_total,
           yard: item.yard_total,
-          harga: item.harga,
+          harga_greige: item.harga_greige,
+          harga_celup: item.harga_celup,
           subtotal: 0,
           subtotalFormatted:
             item.subtotal > 0 ? 
@@ -168,7 +169,8 @@ export default function KJPurchaseOrderForm() {
         // Panggil ulang handleItemChange untuk field-field penting
         handleItemChange(index, "meter", item.meter);
         handleItemChange(index, "yard", item.yard);
-        handleItemChange(index, "harga", item.harga);
+        handleItemChange(index, "harga_greige", item.harga_greige);
+        handleItemChange(index, "harga_maklun", item.harga_maklun);
         handleItemChange(index, "lebar_greige", item.lebar_greige);
         handleItemChange(index, "lebar_finish", item.lebar_finish);
       });
@@ -182,7 +184,7 @@ export default function KJPurchaseOrderForm() {
       );
 
       if (!selectedContract || !selectedContract.items?.length) {
-          const detail = await getOrderCelups(contractId, user?.token);
+          const detail = await getKainJadis(contractId, user?.token);
           selectedContract = detail.contract;
       }
 
@@ -201,6 +203,10 @@ export default function KJPurchaseOrderForm() {
           let fabricId = null;
           let dataSumber = {};
 
+          const originalContractItem = selectedContract.items.find(
+            (contractItem) => (overrideItems ? contractItem.id == item.pc_item_id : contractItem.id == item.id)
+          ) || {};
+
           if (overrideItems) {
               const contractItem = selectedContract.items.find(
                   (pcItem) => pcItem.id == item.pc_item_id
@@ -216,7 +222,8 @@ export default function KJPurchaseOrderForm() {
                   lebar_finish: item.lebar_finish,
                   meter: item.meter_total || item.meter,
                   yard: item.yard_total || item.yard,
-                  harga: item.harga,
+                  harga_greige: item.harga_greige,
+                  harga_maklun: item.harga_maklun,
               };
           }
 
@@ -227,8 +234,9 @@ export default function KJPurchaseOrderForm() {
           if (satuan_unit_id === 1) qty = meterNum;
           else if (satuan_unit_id === 2) qty = yardNum;
 
-          const harga = parseFloat(dataSumber.harga ?? 0);
-          const subtotal = qty * harga;
+          const hargaGreige = parseFloat(originalContractItem.harga_greige ?? 0);
+          const hargaMaklun = parseFloat(originalContractItem.harga_maklun ?? 0);
+          const subtotal = (hargaGreige + hargaMaklun) * qty;
 
           return {
               id: dataSumber.id,
@@ -241,9 +249,10 @@ export default function KJPurchaseOrderForm() {
               meterValue: meterNum,
               yard: formatNumber(yardNum, { decimals: 2 }),
               yardValue: yardNum,
-              harga,
-              hargaValue: harga,
-              hargaFormatted: formatIDR(harga),
+              harga_greigeValue: hargaGreige,
+              harga_greigeFormatted: formatIDR(hargaGreige),
+              harga_maklunValue: hargaMaklun,
+              harga_maklunFormatted: formatIDR(hargaMaklun),
               subtotal,
               subtotalFormatted: formatIDR(subtotal),
               readOnly: false,
@@ -323,72 +332,58 @@ export default function KJPurchaseOrderForm() {
     });
   };
 
-const handleItemChange = (index, field, value) => {
-    setForm((prev) => {
-      const items = [...prev.items];
-      const item = { ...items[index] };
-      const satuanId = parseInt(prev.satuan_unit_id);
-  
-      if (field === "fabric_id" || field === "kain_id" || field === "warna_id") {
-        item[field] = value;
-  
-        if (field === "fabric_id" || field === "kain_id") {
-          item.kain_id = value; 
-          const contract = purchaseContracts().find((sc) => sc.id == prev.pc_id);
-          if (contract && contract.items) {
-            const matchedItem = contract.items.find(
-              (i) => i.fabric_id == value || i.kain_id == value
-            );
-            if (matchedItem) {
-              item.pc_item_id = matchedItem.id;
-            }
+  const handleItemChange = (index, field, value) => {
+      setForm((prev) => {
+        const items = [...prev.items];
+        const item = { ...items[index] };
+        const satuanId = parseInt(prev.satuan_unit_id);
+    
+        // Handle perubahan ID (warna, kain)
+        if (field === "warna_id" || field === "kain_id") {
+          item[field] = value;
+        } 
+        // Handle perubahan nilai numerik (qty, dll.)
+        else { 
+          const numValue = parseNumber(value);
+          item[`${field}Value`] = numValue; // Selalu simpan nilai angka murni
+    
+          // Format tampilan untuk input yang diubah
+          item[field] = formatNumber(numValue, {
+              decimals: ["lebar_greige", "lebar_finish"].includes(field) ? 0 : 2,
+          });
+    
+          // Logika konversi antara meter dan yard
+          if (satuanId === 1 && field === "meter") {
+            const yardValue = numValue * 1.093613;
+            item.yardValue = yardValue;
+            item.yard = formatNumber(yardValue, { decimals: 2 });
+          } else if (satuanId === 2 && field === "yard") {
+            const meterValue = numValue * 0.9144;
+            item.meterValue = meterValue;
+            item.meter = formatNumber(meterValue, { decimals: 2 });
           }
         }
-      } else { 
-        const numValue = parseNumber(value);
-        item[`${field}Value`] = numValue;
-  
-        if (field === "harga") {
-          item.hargaValue = numValue;
-          const formattedValue = formatIDR(numValue);
-          item.harga = formattedValue; 
-          item.hargaFormatted = formattedValue;
-        } else {
-          item[field] = formatNumber(numValue, {
-            decimals: field === "lebar_greige" || field === "lebar_finish" ? 0 : 2,
-          });
+    
+        // --- BAGIAN PERBAIKAN UTAMA ---
+        // Selalu hitung ulang subtotal setiap kali ada perubahan pada item.
+        const hargaGreigeValue = item.harga_greigeValue || 0;
+        const hargaMaklunValue = item.harga_maklunValue || 0;
+        let qtyValue = 0;
+    
+        if (satuanId === 1) {
+          qtyValue = item.meterValue || 0;
+        } else if (satuanId === 2) {
+          qtyValue = item.yardValue || 0;
         }
-  
-        if (satuanId === 1 && field === "meter") {
-          const yardValue = numValue * 1.093613;
-          item.yardValue = yardValue;
-          item.yard = formatNumber(yardValue, { decimals: 2 });
-        } else if (satuanId === 2 && field === "yard") {
-          const meterValue = numValue * 0.9144;
-          item.meterValue = meterValue;
-          item.meter = formatNumber(meterValue, { decimals: 2 });
-        }
-      }
-  
-      const harga = item.hargaValue || 0;
-      let qty = 0;
-  
-      if (satuanId === 1) {
-        qty = item.meterValue || 0;
-      } else if (satuanId === 2) {
-        qty = item.yardValue || 0;
-      }
-  
-      const subtotal = qty * harga;
-      item.subtotal = subtotal;
-      item.subtotalFormatted = formatIDR(subtotal);
-  
-      items[index] = item;
-      return {
-        ...prev,
-        items,
-      };
-    });
+    
+        const subtotal = (hargaGreigeValue + hargaMaklunValue) * qtyValue;
+        item.subtotal = subtotal;
+        item.subtotalFormatted = formatIDR(subtotal);
+        // --- AKHIR PERBAIKAN ---
+    
+        items[index] = item;
+        return { ...prev, items };
+      });
   };
 
   const totalMeter = () =>
@@ -429,7 +424,7 @@ const handleItemChange = (index, field, value) => {
             yard_total: i.yardValue || 0,
           })),
         };
-        await updateDataOrderCelupOrder(user?.token, params.id, payload);
+        await updateDataKainJadiOrder(user?.token, params.id, payload);
       } else {
         const payload = {
           pc_id: Number(form().pc_id),
@@ -447,7 +442,7 @@ const handleItemChange = (index, field, value) => {
             yard_total: i.yardValue || 0,
           })),
         };
-        await createOrderCelupOrder(user?.token, payload);
+        await createKainJadiOrder(user?.token, payload);
       }
       Swal.fire({
         icon: "success",
@@ -456,7 +451,7 @@ const handleItemChange = (index, field, value) => {
         timer: 1000,
         timerProgressBar: true,
       }).then(() => {
-        navigate("/ordercelup-purchaseorder");
+        navigate("/kainjadi-purchaseorder");
       });
     } catch (err) {
       Swal.fire({
@@ -471,6 +466,7 @@ const handleItemChange = (index, field, value) => {
   };
 
   function handlePrint() {
+    console.log("📄 Data yang dikirim ke halaman Print:", JSON.stringify(form()));
     const encodedData = encodeURIComponent(JSON.stringify(form()));
     window.open(`/print/kainjadi/order?data=${encodedData}`, "_blank");
   }
@@ -564,8 +560,8 @@ const handleItemChange = (index, field, value) => {
                 setForm({ ...form(), satuan_unit_id: e.target.value })
               }
               required
-              disabled={isView}
-              classList={{ "bg-gray-200": isView }}
+              disabled={true}
+              classList={{ "bg-gray-200": true }}
             >
               <option value="">Pilih Satuan</option>
               <For each={filteredSatuanOptions()}>
@@ -638,19 +634,25 @@ const handleItemChange = (index, field, value) => {
         </button>
 
         <table class="w-full text-sm border border-gray-300 mb-4">
-          <thead class="bg-gray-100">
-            <tr>
-              <th class="border p-2">#</th>
-              <th class="border p-2">Jenis Kain</th>
-              <th class="border p-2">Lebar Greige</th>
-              <th class="border p-2">Lebar Finish</th>
-              <th class="border p-2">Warna</th>
-              <th class="border p-2">Meter</th>
-              <th class="border p-2">Yard</th>
-              <th class="border p-2">Harga</th>
-              <th class="border p-2">Subtotal</th>
-            </tr>
-          </thead>
+        <thead class="bg-gray-100">
+          <tr>
+            <th class="border p-2 w-[4%]">#</th>
+            <th class="border p-2 w-[20%]">Jenis Kain</th>
+            <th class="border p-2 w-[9%]">Lebar Greige</th>
+            <th class="border p-2 w-[9%]">Lebar Finish</th>
+            <th class="border p-2 w-[12%]">Warna</th>
+            <Show when={parseInt(form().satuan_unit_id) === 1}>
+                <th class="border p-2 w-[10%]">Meter</th>
+            </Show>
+            <Show when={parseInt(form().satuan_unit_id) === 2}>
+                <th class="border p-2 w-[10%]">Yard</th>
+            </Show>
+            <th class="border p-2 w-[12%]">Harga Greige</th>
+            <th class="border p-2 w-[12%]">Harga Celup</th>
+            <th class="border p-2 w-[12%]">Subtotal</th>
+            <th class="border p-2 w-[4%]">Aksi</th>
+          </tr>
+        </thead>
           <tbody>
             <For each={form().items}>
               {(item, i) => (
@@ -670,6 +672,7 @@ const handleItemChange = (index, field, value) => {
                       class="border p-1 rounded w-full"
                       value={item.lebar_greige}
                       disabled={true}
+                      classList={{ "bg-gray-200": true }}
                     />
                   </td>
                   <td class="border p-2">
@@ -678,6 +681,7 @@ const handleItemChange = (index, field, value) => {
                       class="border p-1 rounded w-full"
                       value={item.lebar_finish}
                       disabled={true}
+                      classList={{ "bg-gray-200": true }}
                     />
                   </td>
                   <td class="border p-2">
@@ -729,13 +733,17 @@ const handleItemChange = (index, field, value) => {
                   <td class="border p-2">
                     <input
                       type="text"
-                      class="border p-2 rounded w-full"
-                      value={item.hargaFormatted || ""}
-                      onBlur={(e) =>
-                        handleItemChange(i(), "harga", e.target.value)
-                      }
-                      disabled={isView || isEdit}
-                      classList={{ "bg-gray-200": isView || isEdit }}
+                      class="border p-1 rounded w-full bg-gray-200 text-right"
+                      value={item.harga_greigeFormatted || ""}
+                      disabled={true}
+                    />
+                  </td>
+                  <td class="border p-2">
+                    <input
+                      type="text"
+                      class="border p-1 rounded w-full bg-gray-200 text-right"
+                      value={item.harga_maklunFormatted || ""}
+                      disabled={true}
                     />
                   </td>
                   <td class="border p-2">
