@@ -257,7 +257,9 @@ export default function SalesContractPrint(props) {
                 <tr>
                   <td className="px-2 py-1 whitespace-nowrap">Kurs</td>
                   <td className="text-center">:</td>
-                  <td className="px-2 py-1 break-words">{data.kurs}</td>
+                  <td className="px-2 py-1 break-words">
+                    {data.kurs !== "" ? data.kurs : 0}
+                  </td>
                 </tr>
               </tbody>
             </table>
@@ -267,7 +269,7 @@ export default function SalesContractPrint(props) {
           <table className="w-[35%] border-2 border-black table-fixed text-sm">
             <tbody>
               {[
-                { label: "No. SC", value: data.no_pesan },
+                { label: "No. SC", value: data.no_seq },
                 { label: "Tanggal", value: formatTanggal(data.tanggal) },
                 {
                   label: "Validity",
@@ -345,17 +347,17 @@ export default function SalesContractPrint(props) {
                 </td>
                 <td className="p-1 text-center break-words">{item.gramasi}</td>
                 <td className="p-1 text-right break-words">
-                  {formatRibuan(item.meter)}
+                  {formatRibuan(item.meterValue)}
                 </td>
                 <td className="p-1 text-right break-words">
-                  {formatRibuan(item.yard)}
+                  {formatRibuan(item.yardValue)}
                 </td>
                 <td className="p-1 text-right break-words">
-                  {formatRupiahNumber(item.harga)}
+                  {formatRupiahNumber(item.hargaValue)}
                 </td>
                 <td className="p-1 text-right break-words">
                   {item.harga && item.meter
-                    ? formatRupiahNumber(item.harga * item.meter)
+                    ? formatRupiahNumber(item.hargaValue * item.meterValue)
                     : "-"}
                 </td>
               </tr>
@@ -380,10 +382,10 @@ export default function SalesContractPrint(props) {
             <tr>
               <td colSpan={6} className="border border-black px-2 py-1" />
               <td className="border border-black px-2 py-1 text-right font-bold">
-                {formatRupiahNumber(totalMeter)}
+                {formatRupiahNumber(totalMeter())}
               </td>
               <td className="border border-black px-2 py-1 text-right font-bold">
-                {formatRupiahNumber(totalYard)}
+                {formatRupiahNumber(totalYard())}
               </td>
               <td className="border border-black px-2 py-1 text-right font-bold">
                 Sub Total

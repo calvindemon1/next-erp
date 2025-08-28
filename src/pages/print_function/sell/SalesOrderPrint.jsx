@@ -130,15 +130,13 @@ export default function SalesOrderPrint(props) {
   );
 
   // Misalnya kamu sudah punya:
+  const isPPN = createMemo(() => parseFloat(data.ppn_percent) > 0);
+
   const subTotal = createMemo(() => {
-    return data.items?.reduce(
-      (sum, i) => sum + (i.harga ?? 0) * (i.meter ?? 0),
+    return (data.items || []).reduce(
+      (sum, item) => sum + (item.subtotal || 0),
       0
     );
-  });
-
-  const [form, setForm] = createSignal({
-    nilai_lain: 0,
   });
 
   // DPP = subTotal
@@ -163,6 +161,15 @@ export default function SalesOrderPrint(props) {
     ppn: ppn(),
     total: jumlahTotal(),
   };
+
+  const satuan = (() => {
+    if (!data.items || data.items.length === 0) return null;
+    const item = data.items[0];
+    if (item.meter && item.meter !== "0.00") return "meter";
+    if (item.yard && item.yard !== "0.00") return "yard";
+    if (item.kilogram && item.kilogram !== "0.00") return "kilogram";
+    return null;
+  })();
 
   return (
     <>
@@ -272,7 +279,7 @@ export default function SalesOrderPrint(props) {
           <table className="w-[35%] border-2 border-black table-fixed text-sm">
             <tbody>
               {[
-                { label: "No. SO", value: data.no_sc },
+                { label: "No. SO", value: data.no_so },
                 { label: "Tanggal", value: formatTanggal(data.tanggal) },
                 {
                   label: "Tgl Kirim",
@@ -296,59 +303,65 @@ export default function SalesOrderPrint(props) {
         <table className="w-full table-fixed border border-black text-[12px] border-collapse mt-3">
           <thead className="bg-gray-200">
             <tr>
-              <th className="border border-black p-1 w-[30px]" rowSpan={2}>
-                No
-              </th>
-              <th className="border border-black p-1 w-[150px]" rowSpan={2}>
+              <th className="border border-black p-1 w-[30px]">No</th>
+              <th className="border border-black p-1 w-[150px]">
                 Deskripsi Kain
               </th>
-              <th className="border border-black p-1 w-[50px]" rowSpan={2}>
-                Grade
+              <th className="border border-black p-1 w-[50px]">Grade</th>
+              <th className="border border-black p-1 w-[150px]">Warna Kain</th>
+              <th className="border border-black p-1 w-[80px]">
+                {satuan
+                  ? `Jumlah ${satuan.charAt(0).toUpperCase() + satuan.slice(1)}`
+                  : "Qty"}
               </th>
-              <th className="border border-black p-1 w-[150px]" rowSpan={2}>
-                Warna Kain
-              </th>
-              <th className="border border-black p-1 w-[60px]" rowSpan={2}>
-                Jumlah Meter
-              </th>
-              <th className="border border-black p-1 w-[60px]" rowSpan={2}>
-                Jumlah Yard
-              </th>
-              <th className="border border-black p-1 w-[100px]" rowSpan={2}>
-                Harga
-              </th>
-              <th className="border border-black p-1 w-[130px]" rowSpan={2}>
-                Total
-              </th>
+              <th className="border border-black p-1 w-[100px]">Harga</th>
+              <th className="border border-black p-1 w-[130px]">Total</th>
             </tr>
           </thead>
           <tbody>
-            {(data.items || []).map((item, i) => (
-              <tr key={i}>
-                <td className="p-1 text-center">{i + 1}</td>
-                <td className="p-1">
-                  {kainList()[item.fabric_id]?.konstruksi || "-"}
-                </td>
-                <td className="p-1 text-center">
-                  {gradeList()[item.grade_id]?.grade || "-"}
-                </td>
-                <td className="p-1 text-center">
-                  {warnaList()[item.warna_id]?.kode +
-                    " | " +
-                    warnaList()[item.warna_id]?.deskripsi || "-"}
-                </td>
-                <td className="p-1 text-right">{item.meter}</td>
-                <td className="p-1 text-right">{item.yard}</td>
-                <td className="p-1 text-right">
-                  {formatRupiahNumber(item.harga)}
-                </td>
-                <td className="p-1 text-right">
-                  {item.harga && item.meter
-                    ? formatRupiahNumber(item.harga * item.meter)
-                    : "-"}
-                </td>
-              </tr>
-            ))}
+            {(data.items || []).map((item, i) => {
+              let qty = "-";
+              let total = "-";
+
+              if (satuan === "meter") {
+                qty = item.meter;
+                total = item.harga
+                  ? formatRupiahNumber(item.harga * item.meter)
+                  : "-";
+              } else if (satuan === "yard") {
+                qty = item.yard;
+                total = item.harga
+                  ? formatRupiahNumber(item.harga * item.yard)
+                  : "-";
+              } else if (satuan === "kilogram") {
+                qty = item.kilogram;
+                total = item.harga
+                  ? formatRupiahNumber(item.harga * item.kilogram)
+                  : "-";
+              }
+
+              return (
+                <tr key={i}>
+                  <td className="p-1 text-center">{i + 1}</td>
+                  <td className="p-1">
+                    {kainList()[item.fabric_id]?.konstruksi || "-"}
+                  </td>
+                  <td className="p-1 text-center">
+                    {gradeList()[item.grade_id]?.grade || "-"}
+                  </td>
+                  <td className="p-1 text-center">
+                    {warnaList()[item.warna_id]?.kode +
+                      " | " +
+                      warnaList()[item.warna_id]?.deskripsi || "-"}
+                  </td>
+                  <td className="p-1 text-right">{qty}</td>
+                  <td className="p-1 text-right">
+                    {formatRupiahNumber(item.harga)}
+                  </td>
+                  <td className="p-1 text-right">{total}</td>
+                </tr>
+              );
+            })}
 
             {/* Tambahin row kosong */}
             {Array.from({ length: 10 - data.items.length }).map((_, i) => (
@@ -359,13 +372,13 @@ export default function SalesOrderPrint(props) {
                 <td className="p-1 text-center"></td>
                 <td className="p-1 text-center"></td>
                 <td className="p-1 text-right"></td>
-                <td className="p-1 text-right"></td>
+                {/* <td className="p-1 text-right"></td> */}
               </tr>
             ))}
           </tbody>
           <tfoot>
             <tr>
-              <td colSpan={4} className="border border-black px-2 py-1" />
+              <td colSpan={3} className="border border-black px-2 py-1" />
               <td className="border border-black px-2 py-1 text-right font-bold">
                 {formatRupiahNumber(totalMeter)}
               </td>
@@ -383,7 +396,7 @@ export default function SalesOrderPrint(props) {
               <td
                 className="border border-black p-2 align-top"
                 rowSpan={3}
-                colSpan={6}
+                colSpan={5}
               >
                 <div className="font-bold mb-1">NOTE:</div>
                 <div className="whitespace-pre-wrap break-words italic">
@@ -408,7 +421,7 @@ export default function SalesOrderPrint(props) {
               </td>
             </tr>
             <tr>
-              <td colSpan={8} className="border border-black">
+              <td colSpan={7} className="border border-black">
                 <div className="w-full flex justify-end text-[12px] py-5 px-2">
                   <div className="text-center w-1/3">
                     Customer
