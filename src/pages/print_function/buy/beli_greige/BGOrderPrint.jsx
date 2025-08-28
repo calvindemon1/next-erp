@@ -134,7 +134,7 @@ export default function BGOrderPrint(props) {
     data.items?.reduce((sum, i) => sum + (i.yardValue || 0), 0)
   );
 
-  const isPPN = createMemo(() => parseFloat(data.ppn) > 0);
+  const isPPN = createMemo(() => parseFloat(data.ppn_percent) > 0);
 
   const subTotal = createMemo(() => {
     return (data.items || []).reduce(

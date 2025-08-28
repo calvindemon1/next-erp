@@ -40,7 +40,7 @@ export default function KJSuratJalanPrint(props) {
   }
 
   // Misalnya kamu sudah punya:
-  const isPPN = createMemo(() => parseFloat(data.ppn) > 0);
+  const isPPN = createMemo(() => parseFloat(data.ppn_percent) > 0);
 
   const subTotal = createMemo(() => {
     return (data.items || []).reduce(
@@ -105,12 +105,7 @@ export default function KJSuratJalanPrint(props) {
           padding: "5mm",
         }}
       >
-        <img
-          className="w-40"
-          hidden={!data.ppn || parseInt(data.ppn) === 0}
-          src={logoNavel}
-          alt=""
-        />
+        <img className="w-40" hidden={!isPPN()} src={logoNavel} alt="" />
         <h1 className="text-2xl uppercase font-bold mb-5">
           Kain Jadi Surat Jalan
         </h1>
@@ -228,18 +223,22 @@ export default function KJSuratJalanPrint(props) {
             {(data.items || []).map((item, i) => (
               <tr key={i}>
                 <td className="p-1 text-center break-words">{i + 1}</td>
-                <td className="p-1 text-center break-words">{item.kode_kain}</td>
+                <td className="p-1 text-center break-words">
+                  {item.kode_kain}
+                </td>
                 <td className="p-1 break-words">{item.jenis_kain}</td>
                 <td className="p-1 text-center break-words">{item.lebar}"</td>
                 <td className="p-1 text-right break-words">
                   {formatRibuan(item.meter_total)}
                 </td>
-                <td className="p-1 text-center break-words">{item.satuan_unit}</td>
+                <td className="p-1 text-center break-words">
+                  {item.satuan_unit}
+                </td>
               </tr>
             ))}
 
             {/* Tambahin row kosong */}
-           {Array.from({ length: 10 - data.items.length }).map((_, i) => (
+            {Array.from({ length: 10 - data.items.length }).map((_, i) => (
               <tr key={`empty-${i}`}>
                 <td className="p-1 text-center h-5"></td>
                 <td className="p-1 text-center"></td>

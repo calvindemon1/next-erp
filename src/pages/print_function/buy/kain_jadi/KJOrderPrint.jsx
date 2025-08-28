@@ -24,7 +24,7 @@ export default function KJOrderPrint(props) {
       value = parseFloat(value) || 0;
     }
     if (value === 0) {
-        return "0,00";
+      return "0,00";
     }
     return new Intl.NumberFormat("id-ID", {
       minimumFractionDigits: decimals,
@@ -36,8 +36,8 @@ export default function KJOrderPrint(props) {
     if (typeof value !== "number") {
       value = parseFloat(value) || 0;
     }
-     if (value === 0) {
-        return "Rp 0,00";
+    if (value === 0) {
+      return "Rp 0,00";
     }
     return new Intl.NumberFormat("id-ID", {
       style: "currency",
@@ -135,7 +135,7 @@ export default function KJOrderPrint(props) {
     return pages;
   }
 
-  const totalMeter = createMemo(() => 
+  const totalMeter = createMemo(() =>
     data.items?.reduce((sum, i) => sum + (i.meterValue || 0), 0)
   );
 
@@ -143,15 +143,10 @@ export default function KJOrderPrint(props) {
     data.items?.reduce((sum, i) => sum + (i.yardValue || 0), 0)
   );
 
-  const isPPN = createMemo(() => parseFloat(data.ppn) > 0);
-
-<<<<<<< HEAD
-=======
   // Misalnya kamu sudah punya:
 
   const isPPN = createMemo(() => parseFloat(data.ppn_percent) > 0);
 
->>>>>>> 109de2f (FEAT : fixing print out spaces on all print outs)
   const subTotal = createMemo(() => {
     return (data.items || []).reduce(
       (sum, item) => sum + (item.subtotal || 0),
@@ -214,12 +209,7 @@ export default function KJOrderPrint(props) {
           padding: "5mm",
         }}
       >
-        <img
-          className="w-40"
-          hidden={!data.ppn || parseInt(data.ppn) === 0}
-          src={logoNavel}
-          alt=""
-        />
+        <img className="w-40" hidden={!isPPN()} src={logoNavel} alt="" />
         <h1 className="text-2xl uppercase font-bold mb-5">Kain Jadi Order</h1>
 
         <div className="w-full flex gap-2 text-sm">
@@ -269,7 +259,10 @@ export default function KJOrderPrint(props) {
                   label: "Validity",
                   value: formatTanggal(data.validity_contract),
                 },
-                { label: "Payment", value: data.termin == 0 ? "Cash" : data.termin + " Hari" }
+                {
+                  label: "Payment",
+                  value: data.termin == 0 ? "Cash" : data.termin + " Hari",
+                },
               ].map((row, idx) => (
                 <tr key={idx} className="border-b border-black">
                   <td className="font-bold px-2 w-[30%] whitespace-nowrap">
@@ -323,13 +316,15 @@ export default function KJOrderPrint(props) {
             </tr>
             <tr>
               <th
-                colSpan={2} className="border border-black p-1 w-full"
+                colSpan={2}
+                className="border border-black p-1 w-full"
                 hidden={data.satuan_unit_id == 2 ? true : false}
               >
                 (Meter)
               </th>
               <th
-                colSpan={2} className="border border-black p-1 w-[14%]"
+                colSpan={2}
+                className="border border-black p-1 w-[14%]"
                 hidden={data.satuan_unit_id == 1 ? true : false}
               >
                 (Yard)
@@ -355,10 +350,7 @@ export default function KJOrderPrint(props) {
                 <td className="p-1 text-center break-words">
                   {item.lebar_finish}
                 </td>
-                <td
-                  className="p-1 text-right break-words"
-                  colSpan={2}
-                >
+                <td className="p-1 text-right break-words" colSpan={2}>
                   {data.satuan_unit_id == 1
                     ? formatAngka(item.meterValue)
                     : formatAngka(item.yardValue)}
@@ -371,7 +363,10 @@ export default function KJOrderPrint(props) {
                 </td>
                 <td className="p-1 text-right break-words">
                   {(() => {
-                    const qtyValue = data.satuan_unit_id == 1 ? item.meterValue : item.yardValue;
+                    const qtyValue =
+                      data.satuan_unit_id == 1
+                        ? item.meterValue
+                        : item.yardValue;
                     const hargaGreige = item.harga_greigeValue || 0;
                     const hargaMaklun = item.harga_maklunValue || 0;
 
@@ -381,7 +376,7 @@ export default function KJOrderPrint(props) {
                       ? formatRupiah(lineSubtotal)
                       : "-";
                   })()}
-              </td>
+                </td>
               </tr>
             ))}
 
@@ -399,20 +394,30 @@ export default function KJOrderPrint(props) {
           </tbody>
           <tfoot>
             <tr>
-              <td colSpan={6} className="border border-black font-bold px-2 py-1" >Total</td>
               <td
-                colSpan={2} className="border border-black px-2 py-1 text-right font-bold"
+                colSpan={6}
+                className="border border-black font-bold px-2 py-1"
+              >
+                Total
+              </td>
+              <td
+                colSpan={2}
+                className="border border-black px-2 py-1 text-right font-bold"
                 hidden={data.satuan_unit_id == 2 ? true : false}
               >
                 {formatAngka(totalMeter())}
               </td>
               <td
-                colSpan={2} className="border border-black px-2 py-1 text-right font-bold"
+                colSpan={2}
+                className="border border-black px-2 py-1 text-right font-bold"
                 hidden={data.satuan_unit_id == 1 ? true : false}
               >
                 {formatAngka(totalYard())}
               </td>
-              <td colSpan={2} className="border border-black px-2 py-1 text-right font-bold">
+              <td
+                colSpan={2}
+                className="border border-black px-2 py-1 text-right font-bold"
+              >
                 Sub Total
               </td>
               <td className="border border-black px-2 py-1 text-right">

@@ -115,25 +115,22 @@ export default function SalesContractPrint(props) {
     return pages;
   }
 
-  const totalMeter = data.items?.reduce(
-    (sum, i) => sum + Number(i.meter || 0),
-    0
+  const totalMeter = createMemo(() =>
+    data.items?.reduce((sum, i) => sum + (i.meterValue || 0), 0)
   );
-  const totalYard = data.items?.reduce(
-    (sum, i) => sum + Number(i.yard || 0),
-    0
+
+  const totalYard = createMemo(() =>
+    data.items?.reduce((sum, i) => sum + (i.yardValue || 0), 0)
   );
 
   // Misalnya kamu sudah punya:
+  const isPPN = createMemo(() => parseFloat(data.ppn_percent) > 0);
+
   const subTotal = createMemo(() => {
-    return data.items?.reduce(
-      (sum, i) => sum + (i.harga ?? 0) * (i.meter ?? 0),
+    return (data.items || []).reduce(
+      (sum, item) => sum + (item.subtotal || 0),
       0
     );
-  });
-
-  const [form, setForm] = createSignal({
-    nilai_lain: 0,
   });
 
   // DPP = subTotal

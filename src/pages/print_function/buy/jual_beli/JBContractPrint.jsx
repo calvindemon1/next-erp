@@ -40,7 +40,7 @@ export default function JBContractPrint(props) {
   }
 
   // Misalnya kamu sudah punya:
-  const isPPN = createMemo(() => parseFloat(data.ppn) > 0);
+  const isPPN = createMemo(() => parseFloat(data.ppn_percent) > 0);
 
   const subTotal = createMemo(() => {
     return (data.items || []).reduce(
@@ -107,7 +107,7 @@ export default function JBContractPrint(props) {
       >
         <img
           className="w-40"
-          hidden={!data.ppn || parseInt(data.ppn) === 0}
+          hidden={!isPPN()}
           src={logoNavel}
           alt=""
         />
