@@ -311,7 +311,7 @@ export default function MainLayout(props) {
                         ? "bg-gray-700 text-white"
                         : ""
                     }`}
-                    hidden
+                    
                   >
                     Users
                   </A>
@@ -341,7 +341,7 @@ export default function MainLayout(props) {
 
                 {/* SUB MENU MASTER DATA */}
                 <li
-                  class={`transition-all duration-300 ease-in-out overflow-hidden ${
+                  class={`transition-all duration-300 ease-in-out overflow- ${
                     isOpen() ? "max-h-fit opacity-100" : "max-h-0 opacity-0"
                   }`}
                 >
@@ -480,7 +480,7 @@ export default function MainLayout(props) {
 
                 {/* SUB MENU PEMBELIAN */}
                 <li
-                  class={`transition-all duration-300 ease-in-out overflow-hidden ${
+                  class={`transition-all duration-300 ease-in-out overflow- ${
                     isPurchasingIsOpen()
                       ? "max-h-fit opacity-100"
                       : "max-h-0 opacity-0"
@@ -502,7 +502,7 @@ export default function MainLayout(props) {
 
                     {/* Submenu Items inside Pembelian Greige */}
                     <li
-                      class={`transition-all duration-300 ease-in-out overflow-hidden ${
+                      class={`transition-all duration-300 ease-in-out overflow- ${
                         isGreigeOpen()
                           ? "max-h-fit opacity-100"
                           : "max-h-0 opacity-0"
@@ -556,7 +556,7 @@ export default function MainLayout(props) {
 
                     {/* Submenu Items inside Order Celup */}
                     <li
-                      class={`transition-all duration-300 ease-in-out overflow-hidden ${
+                      class={`transition-all duration-300 ease-in-out overflow- ${
                         isCelupOpen()
                           ? "max-h-fit opacity-100"
                           : "max-h-0 opacity-0"
@@ -612,7 +612,7 @@ export default function MainLayout(props) {
 
                     {/* Submenu Items inside Kain Jadi */}
                     <li
-                      class={`transition-all duration-300 ease-in-out overflow-hidden ${
+                      class={`transition-all duration-300 ease-in-out overflow- ${
                         isFinishOpen()
                           ? "max-h-fit opacity-100"
                           : "max-h-0 opacity-0"
@@ -667,7 +667,7 @@ export default function MainLayout(props) {
 
                     {/* Submenu Items inside Kain Jadi */}
                     <li
-                      class={`transition-all duration-300 ease-in-out overflow-hidden ${
+                      class={`transition-all duration-300 ease-in-out overflow- ${
                         isJualBeliOpen()
                           ? "max-h-fit opacity-100"
                           : "max-h-0 opacity-0"
@@ -706,7 +706,7 @@ export default function MainLayout(props) {
                 </li>
                 {/* SUB MENU PENJUALAN */}
                 <li
-                  class={`transition-all duration-300 ease-in-out overflow-hidden ${
+                  class={`transition-all duration-300 ease-in-out overflow- ${
                     isTransactionOpen()
                       ? "max-h-fit opacity-100"
                       : "max-h-0 opacity-0"
@@ -756,7 +756,7 @@ export default function MainLayout(props) {
                 </li>
                 {/* SUB MENU GUDANG */}
                 <li
-                  class={`transition-all duration-300 ease-in-out overflow-hidden ${
+                  class={`transition-all duration-300 ease-in-out overflow- ${
                     isWarehouseIsOpen()
                       ? "max-h-fit opacity-100"
                       : "max-h-0 opacity-0"
@@ -782,7 +782,7 @@ export default function MainLayout(props) {
 
                     {/* Submenu Items inside Transaction */}
                     <li
-                      class={`transition-all duration-300 ease-in-out overflow-hidden ${
+                      class={`transition-all duration-300 ease-in-out overflow- ${
                         isWarehouseTransactionOpen()
                           ? "max-h-fit opacity-100"
                           : "max-h-0 opacity-0"
@@ -811,7 +811,7 @@ export default function MainLayout(props) {
                                 ? "bg-gray-700 text-white"
                                 : ""
                             }`}
-                            hidden
+                            
                           >
                             Surat Jalan
                           </A>
@@ -819,7 +819,7 @@ export default function MainLayout(props) {
                       </ul>
                     </li>
                   </ul>
-                  <ul hidden>
+                  <ul >
                     {/* Submenu Level 2: Pembelian Greige */}
                     <li>
                       <button
@@ -837,7 +837,7 @@ export default function MainLayout(props) {
 
                     {/* Submenu Items inside Pembelian Greige */}
                     <li
-                      class={`transition-all duration-300 ease-in-out overflow-hidden ${
+                      class={`transition-all duration-300 ease-in-out overflow- ${
                         isWarehouseGreigeOpen()
                           ? "max-h-fit opacity-100"
                           : "max-h-0 opacity-0"
@@ -862,7 +862,7 @@ export default function MainLayout(props) {
                       </ul>
                     </li>
                   </ul>
-                  <ul hidden>
+                  <ul >
                     {/* Submenu Level 2: Order Celup */}
                     <li>
                       <button
@@ -880,7 +880,7 @@ export default function MainLayout(props) {
 
                     {/* Submenu Items inside Order Celup */}
                     <li
-                      class={`transition-all duration-300 ease-in-out overflow-hidden ${
+                      class={`transition-all duration-300 ease-in-out overflow- ${
                         isWarehouseCelupOpen()
                           ? "max-h-fit opacity-100"
                           : "max-h-0 opacity-0"
@@ -905,7 +905,7 @@ export default function MainLayout(props) {
                       </ul>
                     </li>
                   </ul>
-                  <ul hidden>
+                  <ul >
                     {/* Submenu Level 2: Kain Jadi */}
                     <li>
                       <button
@@ -923,7 +923,7 @@ export default function MainLayout(props) {
 
                     {/* Submenu Items inside Kain Jadi */}
                     <li
-                      class={`transition-all duration-300 ease-in-out overflow-hidden ${
+                      class={`transition-all duration-300 ease-in-out overflow- ${
                         isWarehouseFinishOpen()
                           ? "max-h-fit opacity-100"
                           : "max-h-0 opacity-0"
@@ -947,7 +947,7 @@ export default function MainLayout(props) {
                       </ul>
                     </li>
                   </ul>
-                  <ul hidden>
+                  <ul >
                     {/* Submenu Level 2: Kain Jadi */}
                     <li>
                       <button
@@ -965,7 +965,7 @@ export default function MainLayout(props) {
 
                     {/* Submenu Items inside Kain Jadi */}
                     <li
-                      class={`transition-all duration-300 ease-in-out overflow-hidden ${
+                      class={`transition-all duration-300 ease-in-out overflow- ${
                         isWarehouseJualBeliOpen()
                           ? "max-h-fit opacity-100"
                           : "max-h-0 opacity-0"
