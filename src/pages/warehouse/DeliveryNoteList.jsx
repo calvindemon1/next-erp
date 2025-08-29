@@ -7,7 +7,7 @@ import {
   softDeleteDeliveryNote,
 } from "../../utils/auth";
 import Swal from "sweetalert2";
-import { Edit, Trash } from "lucide-solid";
+import { Edit, Trash, Eye } from "lucide-solid";
 
 export default function SuratJalanList() {
   const [suratJalan, setSuratJalan] = createSignal([]);
@@ -15,6 +15,35 @@ export default function SuratJalanList() {
   const tokUser = getUser();
   const [currentPage, setCurrentPage] = createSignal(1);
   const pageSize = 20;
+
+  const formatNumber = (num, decimals = 2) => {
+    if (num === null || num === undefined) return "0";
+    const numValue = Number(num);
+    if (isNaN(numValue)) return "0";
+
+    return new Intl.NumberFormat("id-ID", {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    }).format(numValue);
+  };
+
+  const totalSummary = createMemo(() => {
+    const list = suratJalan();
+    if (!list || list.length === 0) {
+      return { meter: 0, yard: 0, kilogram: 0, kain: 0 };
+    }
+
+    return list.reduce(
+      (acc, sj) => {
+        acc.meter += parseFloat(sj.summary?.total_meter || 0);
+        acc.yard += parseFloat(sj.summary?.total_yard || 0);
+        acc.kilogram += parseFloat(sj.summary?.total_kilogram || 0);
+        acc.kain += parseInt(sj.summary?.jumlah_kain || 0, 10);
+        return acc;
+      },
+      { meter: 0, yard: 0, kilogram: 0, kain: 0 }
+    );
+  });
 
   const totalPages = createMemo(() => {
     return Math.max(1, Math.ceil(suratJalan().length / pageSize));
@@ -57,7 +86,7 @@ export default function SuratJalanList() {
             error.message || `Gagal menghapus data surat jalan dengan ID ${id}`,
           icon: "error",
           
- showConfirmButton: false,
+        showConfirmButton: false,
         timer: 1000,
         timerProgressBar: true,
         });
@@ -67,9 +96,12 @@ export default function SuratJalanList() {
 
   const handleGetAllDeliveryNotes = async (tok) => {
     const getDataDeliveryNotes = await getAllDeliveryNotes(tok);
+    //console.log("Respons dari getAllDeliveryNotes:", JSON.stringify(getDataDeliveryNotes, null, 2));
 
     if (getDataDeliveryNotes.status === 200) {
-      const sortedData = getDataDeliveryNotes.suratJalanList.sort(
+        const suratJalanList = getDataDeliveryNotes.surat_jalan_list || [];
+      
+      const sortedData = suratJalanList.sort(
         (a, b) => a.id - b.id
       );
       setSuratJalan(sortedData);
@@ -123,12 +155,15 @@ export default function SuratJalanList() {
           <thead>
             <tr class="bg-gray-200 text-left text-sm uppercase text-gray-700">
               <th class="py-2 px-4">#</th>
-              <th class="py-2 px-4">ID</th>
-              <th class="py-2 px-2">Tipe</th>
-              <th class="py-2 px-2">No. Sequence</th>
-              <th class="py-2 px-2">Packing List ID</th>
-              <th class="py-2 px-2">Tanggal Dibuat</th>
-              <th class="py-2 px-2">keterangan</th>
+              <th class="py-2 px-4">No. Surat Jalan</th>
+              <th class="py-2 px-2">Tanggal Pembuatan Surat Jalan</th>
+              <th class="py-2 px-2">No. Packing List</th>
+              <th class="py-2 px-2">Nama Customer</th>
+              <th class="py-2 px-2">Satuan Unit</th>
+              <th class="py-2 px-2">Jenis Sales Order</th>
+              <th class="py-2 px-2">Jumlah Kain</th>
+              <th class="py-2 px-2">Total</th>
+              
               <th class="py-2 px-4">Aksi</th>
             </tr>
           </thead>
@@ -138,16 +173,32 @@ export default function SuratJalanList() {
                 <td class="py-2 px-4">
                   {(currentPage() - 1) * pageSize + (index + 1)}
                 </td>
-                <td class="py-2 px-4">{sc.id}</td>
-                <td class="py-2 px-4">{sc.type}</td>
-                <td class="py-2 px-4">{sc.sequence_number}</td>
-                <td class="py-2 px-4">{sc.packing_list_id}</td>
+                <td class="py-2 px-4">{sc.no_sj}</td>
                 <td class="py-2 px-4">{formatTanggalIndo(sc.created_at)}</td>
-                <td class="py-2 px-4">{sc.keterangan}</td>
+                <td class="py-2 px-4">{sc.first_no_pl}</td>
+                <td class="py-2 px-4">{sc.customer_name}</td>
+                <td class="py-2 px-4">{sc.satuan_unit}</td>
+                <td class="py-2 px-4">{sc.jenis_so_name}</td>
+                <td class="py-2 px-4 text-center">{sc.summary.jumlah_kain}</td>
+                <td class="py-2 px-4 text-right">
+                  {sc.satuan_unit === "Meter"
+                    ? `${formatNumber(sc.summary.total_meter)} m`
+                    : sc.satuan_unit === "Yard"
+                    ? `${formatNumber(sc.summary.total_yard)} yd`
+                    : `${formatNumber(sc.summary.total_kilogram)} kg`}
+                </td>
+                
                 <td class="py-2 px-4 space-x-2">
+                  <button
+                    class="text-yellow-600 hover:underline"
+                    onClick={() => navigate(`/deliverynote/form?id=${sc.id}&view=true`)}
+                  >
+                    <Eye size={25} />
+                  </button>
                   <button
                     class="text-blue-600 hover:underline"
                     onClick={() => navigate(`/deliverynote/form?id=${sc.id}`)}
+                    hidden
                   >
                     <Edit size={25} />
                   </button>
