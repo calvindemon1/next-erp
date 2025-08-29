@@ -1,76 +1,74 @@
 import { createSignal, createMemo, createEffect, onCleanup } from "solid-js";
-import { onClickOutside } from "./OnClickOutside";
+import { onClickOutside } from "./OnClickOutside.jsx"; 
 
-export default function PurchaseOrderDropdownSearch({
-  purchaseOrders, // array of contracts
-  form,
-  setForm,
-  onChange,
-}) {
+export default function PurchasingOrderDropdownSearch(props) {
   const [isOpen, setIsOpen] = createSignal(false);
   const [search, setSearch] = createSignal("");
   let dropdownRef;
 
+  // Efek untuk menutup dropdown saat klik di luar
   createEffect(() => {
     if (!dropdownRef) return;
-    const cleanup = onClickOutside(dropdownRef, () => setIsOpen(false));
-    onCleanup(cleanup);
+    onClickOutside(dropdownRef, () => setIsOpen(false));
   });
 
-  const filteredContracts = createMemo(() => {
-    const q = search().toLowerCase();
-    return purchaseOrders().filter((p) => {
-      const no_po = (p.no_po || "").toLowerCase();
-      return no_po.includes(q) || kode.includes(q);
-    });
+  // Memo untuk memfilter daftar PO berdasarkan input pencarian
+  const filteredItems = createMemo(() => {
+    const query = search().toLowerCase();
+    if (!Array.isArray(props.items)) return [];
+    return props.items.filter((item) =>
+      (item.no_po || "").toLowerCase().includes(query)
+    );
   });
 
-  const selectedContract = createMemo(() =>
-    purchaseOrders().find((p) => p.id == form().jenis_po_id)
-  );
+  // Memo untuk mendapatkan objek PO yang sedang dipilih berdasarkan ID
+  const selectedItem = createMemo(() => {
+    if (!Array.isArray(props.items)) return null;
+    return props.items.find((item) => item.id === props.value);
+  });
 
-  const selectContract = (contract) => {
-    setForm({ ...form(), jenis_po_id: contract.id });
+  // Fungsi saat sebuah PO dipilih dari daftar
+  const handleSelect = (item) => {
     setIsOpen(false);
     setSearch("");
-    if (onChange) onChange(contract.id);
+    if (props.onChange) {
+      props.onChange(item); // Kirim seluruh objek item ke parent
+    }
   };
 
   return (
     <div class="relative" ref={dropdownRef}>
       <button
         type="button"
-        class="w-full border p-2 rounded text-left bg-transparent"
+        class="w-full border p-2 rounded text-left bg-transparent disabled:bg-gray-200"
         onClick={() => setIsOpen(!isOpen())}
+        disabled={props.disabled}
       >
-        {selectedContract()
-          ? `${selectedContract().no_po}`
-          : "Pilih Purchase Contract"}
+        {selectedItem() ? selectedItem().no_po : "Pilih Purchase Order"}
       </button>
 
       {isOpen() && (
-        <div class="absolute z-10 w-full bg-white border mt-1 rounded shadow max-h-64 overflow-y-auto">
+        <div class="absolute z-10 w-full bg-white border mt-1 rounded shadow-lg max-h-64 overflow-y-auto">
           <input
             type="text"
-            placeholder="Cari Purchase Contract..."
-            class="w-full p-2 border-b focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Cari No. Purchase Order..."
+            class="w-full p-2 border-b sticky top-0"
             value={search()}
             onInput={(e) => setSearch(e.target.value)}
             autofocus
           />
-          {filteredContracts().length > 0 ? (
-            filteredContracts().map((p) => (
+          {filteredItems().length > 0 ? (
+            filteredItems().map((item) => (
               <div
-                key={p.id}
                 class="p-2 hover:bg-blue-100 cursor-pointer"
-                onClick={() => selectContract(p)}
+                onClick={() => handleSelect(item)}
               >
-                {p.no_po}
+                {item.no_po}
               </div>
             ))
           ) : (
             <div class="p-2 text-gray-400">
-              Purchase Contract tidak ditemukan
+              Purchase Order tidak ditemukan
             </div>
           )}
         </div>
