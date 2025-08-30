@@ -80,24 +80,24 @@ export default function KJSuratJalanDataDummyPrint() {
   const data = JSON.parse(decodeURIComponent(searchParams.data));
 
   onMount(() => {
-    // const closeAfterPrint = () => {
-    //   window.close();
-    // };
+    const closeAfterPrint = () => {
+      window.close();
+    };
 
-    // window.addEventListener("afterprint", closeAfterPrint);
-    // // Tunggu 300ms supaya render komponen print kelar
-    // setTimeout(() => {
-    //   window.print();
-    // }, 2500);
+    window.addEventListener("afterprint", closeAfterPrint);
+    // Tunggu 300ms supaya render komponen print kelar
+    setTimeout(() => {
+      window.print();
+    }, 2500);
 
-    // // Fallback close jika afterprint gak jalan
-    // setTimeout(() => {
-    //   window.close();
-    // }, 4000);
+    // Fallback close jika afterprint gak jalan
+    setTimeout(() => {
+      window.close();
+    }, 4000);
     
-    // onCleanup(() => {
-    //   window.removeEventListener("afterprint", closeAfterPrint);
-    // });
+    onCleanup(() => {
+      window.removeEventListener("afterprint", closeAfterPrint);
+    });
   });
 
   return (
