@@ -2,12 +2,12 @@ import { createEffect, createMemo, createSignal } from "solid-js";
 import { useNavigate } from "@solidjs/router";
 import MainLayout from "../../../layouts/MainLayout";
 import {
-  getAllPackingLists,
+  getAllBGDeliveryNotes,
   getUser,
-  softDeletePackingList,
+  softDeleteBGDeliveryNote,
 } from "../../../utils/auth";
 import Swal from "sweetalert2";
-import { Edit, Trash } from "lucide-solid";
+import { Edit, Trash, Eye } from "lucide-solid";
 
 export default function BGDeliveryNoteList() {
   const [packingOrders, setPackingOrders] = createSignal([]);
@@ -27,8 +27,8 @@ export default function BGDeliveryNoteList() {
 
   const handleDelete = async (id) => {
     const result = await Swal.fire({
-      title: "Hapus packing order?",
-      text: `Apakah kamu yakin ingin menghapus packing order dengan ID ${id}?`,
+      title: "Hapus surat penerimaan greige?",
+      text: `Apakah kamu yakin ingin menghapus surat penerimaan greige dengan ID ${id}?`,
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#d33",
@@ -39,11 +39,11 @@ export default function BGDeliveryNoteList() {
 
     if (result.isConfirmed) {
       try {
-        const deleteCustomer = await softDeletePackingList(id, tokUser?.token);
+        const deleteCustomer = await softDeleteBGDeliveryNote(id, tokUser?.token);
 
         await Swal.fire({
           title: "Terhapus!",
-          text: `Data packing order dengan ID ${id} berhasil dihapus.`,
+          text: `Data surat penerimaan greige dengan ID ${id} berhasil dihapus.`,
           icon: "success",
           confirmButtonColor: "#6496df",
         });
@@ -56,10 +56,10 @@ export default function BGDeliveryNoteList() {
           title: "Gagal",
           text:
             error.message ||
-            `Gagal menghapus data packing order dengan ID ${id}`,
+            `Gagal menghapus data surat penerimaan greige dengan ID ${id}`,
           icon: "error",
           
- showConfirmButton: false,
+        showConfirmButton: false,
         timer: 1000,
         timerProgressBar: true,
         });
@@ -67,18 +67,47 @@ export default function BGDeliveryNoteList() {
     }
   };
 
-  const handleGetAllpackingOrders = async (tok) => {
-    const getDatapackingOrders = await getAllPackingLists(tok);
+  const handleGetAllDeliveryNotes = async (tok) => {
+    try {
+      const response = await getAllBGDeliveryNotes(tok);
 
-    const sortedData = getDatapackingOrders.sort((a, b) => a.id - b.id);
-    setPackingOrders(sortedData);
-
-    if (getDatapackingOrders.status === 200) {
-      const sortedData = getDatapackingOrders.contracts.sort(
-        (a, b) => a.id - b.id
-      );
-      setPackingOrders(sortedData);
+      if (response && Array.isArray(response.suratJalans)) {
+        const sortedData = response.suratJalans.sort((a, b) => b.id - a.id);
+        setPackingOrders(sortedData);
+      } else {
+        setPackingOrders([]);
+      }
+    } catch (error) {
+      console.error("Gagal mengambil data Surat Penerimaan Greige:", error);
+      setPackingOrders([]);
     }
+  };
+
+  const qtyCounterbySystem = (sj, satuanUnit) => {
+    let total = 0;
+    let terkirim = 0;
+
+    switch (satuanUnit) {
+      case "Meter": // Meter
+        total = parseFloat(sj.summary?.total_meter || 0);
+        terkirim = parseFloat(sj.summary?.total_meter_dalam_proses || 0);
+        break;
+      case "Yard": // Yard
+        total = parseFloat(sj.summary?.total_yard || 0);
+        terkirim = parseFloat(sj.summary?.total_yard_dalam_proses || 0);
+        break;
+      default:
+        return "-";
+    }
+
+    const sisa = total - terkirim;
+
+    // Kalau udah habis
+    if (sisa <= 0) {
+      return "SELESAI";
+    }
+
+    return `${sisa.toLocaleString("id-ID")} / ${total.toLocaleString("id-ID")}`;
   };
 
   function formatTanggalIndo(tanggalString) {
@@ -107,14 +136,14 @@ export default function BGDeliveryNoteList() {
 
   createEffect(() => {
     if (tokUser?.token) {
-      handleGetAllpackingOrders(tokUser?.token);
+      handleGetAllDeliveryNotes(tokUser?.token);
     }
   });
 
   return (
     <MainLayout>
       <div class="flex justify-between items-center mb-4">
-        <h1 class="text-2xl font-bold">Daftar Surat Jalan</h1>
+        <h1 class="text-2xl font-bold">Daftar Surat Jalan Greige</h1>
         <button
           class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
           onClick={() => navigate("/beligreige-deliverynote/form")}
@@ -128,35 +157,61 @@ export default function BGDeliveryNoteList() {
           <thead>
             <tr class="bg-gray-200 text-left text-sm uppercase text-gray-700">
               <th class="py-2 px-4">ID</th>
-              <th class="py-2 px-2">No Pembelian</th>
+              {/* <th class="py-2 px-2">No Pembelian</th>
               <th class="py-2 px-2">No SC</th>
               <th class="py-2 px-2">Supplier</th>
               <th class="py-2 px-2">Tanggal Dibuat</th>
-              <th class="py-2 px-2">keterangan</th>
+              <th class="py-2 px-2">keterangan</th> */}
+              <th class="py-2 px-2">No Surat Jalan</th>
+              <th class="py-2 px-2">No Purchase Order</th>
+              <th class="py-2 px-2 text-center">
+                <div>Qty by System</div>
+                <span class="text-xs text-gray-500">
+                  (Total - Total diproses / Total)
+                </span>
+              </th>
+              <th class="py-2 px-2">Satuan Unit</th>
               <th class="py-2 px-4">Aksi</th>
             </tr>
           </thead>
           <tbody>
-            {paginatedData().map((sc, index) => (
-              <tr class="border-b" key={sc.id}>
+            {paginatedData().map((sj, index) => (
+              <tr class="border-b" key={sj.id}>
                 <td class="py-2 px-4">
                   {(currentPage() - 1) * pageSize + (index + 1)}
                 </td>
-                <td class="py-2 px-4">{sc.no_so}</td>
-                <td class="py-2 px-4">{sc.no_pl}</td>
-                <td class="py-2 px-4">{sc.col}</td>
-                <td class="py-2 px-4">{formatTanggalIndo(sc.created_at)}</td>
-                <td class="py-2 px-4">{sc.keterangan}</td>
+                <td class="py-2 px-4">{sj.no_sj}</td>
+                <td class="py-2 px-4">{sj.no_po}</td>
+                <td
+                  className={`py-2 px-4 text-center ${
+                    qtyCounterbySystem(sj, sj.satuan_unit_name) === "SELESAI"
+                      ? "text-green-500"
+                      : "text-red-500"
+                  }`}
+                >
+                  {qtyCounterbySystem(sj, sj.satuan_unit_name)}
+                </td>
+              <td class="py-2 px-4">{sj.satuan_unit_name}</td>
+                {/* <td class="py-2 px-4">{sj.keterangan}</td> */}
                 <td class="py-2 px-4 space-x-2">
                   <button
+                    class="text-yellow-600 hover:underline"
+                    onClick={() =>
+                      navigate(`/beligreige-deliverynote/form?id=${sj.id}&view=true`)
+                    }
+                  >
+                    <Eye size={25} />
+                  </button>
+                  <button
                     class="text-blue-600 hover:underline"
-                    onClick={() => navigate(`/purchaseorder/form?id=${sc.id}`)}
+                    onClick={() => navigate(`/beligreige-deliverynote/form?id=${sj.id}`)}
+                    hidden
                   >
                     <Edit size={25} />
                   </button>
                   <button
                     class="text-red-600 hover:underline"
-                    onClick={() => handleDelete(sc.id)}
+                    onClick={() => handleDelete(sj.id)}
                   >
                     <Trash size={25} />
                   </button>
