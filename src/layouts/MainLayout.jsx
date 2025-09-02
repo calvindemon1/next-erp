@@ -27,6 +27,9 @@ export default function MainLayout(props) {
     createSignal(false);
   const [sidebarOpen, setSidebarOpen] = createSignal(true);
 
+  // INVOICE
+  const [isInvoiceOpen, setInvoiceIsOpen] = createSignal(false);
+
   const purchasingRoutes = {
     greige: [
       "/beligreige-purchasecontract",
@@ -61,6 +64,17 @@ export default function MainLayout(props) {
     finish: ["/kainjadi-deliverynote", "/kainjadi-deliverynote/form"],
     jualbeli: ["/jualbeli-deliverynote", "/jualbeli-deliverynote/form"],
   };
+
+  const invoiceRoutes = {
+    transaction: [
+      "/deliverynote-invoice",
+      "/deliverynote-invoice/form",
+    ],
+    jualbeli: [
+      "jualbeli-invoice",
+      "jualbeli-invoice/form",
+    ],
+  }
 
   createEffect(() => {
     const interval = setInterval(async () => {
@@ -110,6 +124,15 @@ export default function MainLayout(props) {
         return "transaction";
       }
 
+      if(
+        [
+          "/deliverynote-invoice",
+          "/deliverynote-invoice/form",
+        ].some((p) => pathname.startsWith(p))
+      ) {
+        return "invoice";
+      }
+
       // if (
       //   [
       //     "/packinglist",
@@ -137,6 +160,12 @@ export default function MainLayout(props) {
           .some((p) => pathname.startsWith(p))
       ) {
         return "warehouse";
+      }
+
+      if(
+        Object.values(invoiceRoutes).flat().some((p) => pathname.startsWith(p))
+      ){
+        return "invoice";
       }
 
       return "unknown";
@@ -210,6 +239,9 @@ export default function MainLayout(props) {
         ) {
           setJualBeliIsOpen(true);
         }
+        break;
+      case "invoice":
+        setInvoiceIsOpen(true);
         break;
     }
 
@@ -956,7 +988,7 @@ export default function MainLayout(props) {
                         onClick={() =>
                           setWarehouseJualBeliIsOpen(!isWarehouseJualBeliOpen())
                         }
-                        hidden
+                        //hidden
                       >
                         Jual Beli Kain
                         <span class="text-xs">
@@ -989,6 +1021,52 @@ export default function MainLayout(props) {
                           </A>
                         </li>
                       </ul>
+                    </li>
+                  </ul>
+                </li>
+
+                {/* INVOICE */}
+                <li>
+                  <button
+                    class="w-full text-left p-4 font-semibold text-gray-400 uppercase hover:bg-gray-700 flex justify-between items-center"
+                    onClick={() => setInvoiceIsOpen(!isInvoiceOpen())}
+                  >
+                    Invoice
+                    <span class="text-xs">{isInvoiceOpen() ? "▲" : "▼"}</span>
+                  </button>
+                </li>
+
+                {/* SUB MENU INVOICE */}
+                <li
+                  class={`transition-all duration-300 ease-in-out overflow-hidden ${
+                    isInvoiceOpen() ? "max-h-fit opacity-100" : "max-h-0 opacity-0"
+                  }`}>
+                  <ul>
+                    <li>
+                      <A
+                        href="/deliverynote-invoice"
+                        class={`block pl-8 pr-4 py-2 hover:bg-gray-700 ${
+                          location.pathname === "/deliverynote-invoice" ||
+                          location.pathname === "/deliverynote-invoice/form"
+                            ? "bg-gray-700 text-white"
+                            : ""
+                        }`}
+                      >
+                        Invoice Penjualan
+                      </A>
+                    </li>
+                    <li>
+                      <A
+                        href="/jualbeli-invoice"
+                        class={`block pl-8 pr-4 py-2 hover:bg-gray-700 ${
+                          location.pathname === "/jualbeli-invoice" ||
+                          location.pathname === "/jualbeli-invoice/form"
+                            ? "bg-gray-700 text-white"
+                            : ""
+                        }`}
+                      >
+                        Invoice Jual Beli
+                      </A>
                     </li>
                   </ul>
                 </li>

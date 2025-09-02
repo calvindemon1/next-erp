@@ -3938,6 +3938,117 @@ export async function softDeleteJBDeliveryNote(id, token) {
 
 // #endregion JUAL BELI DELIVERY NOTE FUNCTION
 
+// #startregion INVOICE
+export async function setInvoiceSales(token, id, payload = {}) {
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_API_URL}/sales-surat-jalan-set-delivered/${id}`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          "ngrok-skip-browser-warning": "any-value",
+        },
+        body: JSON.stringify(payload),
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || "Gagal update status delivered Surat Jalan");
+    }
+
+    return data;
+  } catch (error) {
+    throw error;
+  }
+}
+
+export async function unsetInvoiceSales(token, id, payload = {}) {
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_API_URL}/sales-surat-jalan-unset-delivered/${id}`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          "ngrok-skip-browser-warning": "any-value",
+        },
+        body: JSON.stringify(payload),
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || "Gagal update status delivered Surat Jalan");
+    }
+
+    return data;
+  } catch (error) {
+    throw error;
+  }
+}
+
+export async function setInvoiceJB(token, id, payload = {}) {
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_API_URL}/jual-beli-surat-jalan-set-delivered/${id}`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          "ngrok-skip-browser-warning": "any-value",
+        },
+        body: JSON.stringify(payload),
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || "Gagal update status delivered Surat Jalan");
+    }
+
+    return data;
+  } catch (error) {
+    throw error;
+  }
+}
+
+export async function unsetInvoiceJB(token, id, payload = {}) {
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_API_URL}/jual-beli-surat-jalan-unset-delivered/${id}`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          "ngrok-skip-browser-warning": "any-value",
+        },
+        body: JSON.stringify(payload),
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || "Gagal update status delivered Surat Jalan");
+    }
+
+    return data;
+  } catch (error) {
+    throw error;
+  }
+}
+
+// #endregion INVOICE
+
 export function logout() {
   localStorage.removeItem("user");
 }

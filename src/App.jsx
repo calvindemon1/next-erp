@@ -86,6 +86,11 @@ import OCSuratJalanPrint from "./utils/buy/order_celup/OCSuratJalanDummyPrint";
 // JUAL BELI
 import JBContractPrint from "./utils/buy/jual_beli/JBContractDummyPrint";
 import JBSuratJalanPrint from "./utils/buy/jual_beli/JBSuratJalanDummyPrint";
+// INVOICE
+import SalesInvoiceList from "./pages/invoice/SalesInvoiceList";
+import SalesInvoicePrint from "./utils/sell/SalesInvoiceDummyPrint";
+import JBInvoiceList from "./pages/invoice/JBInvoiceList";
+import JBInvoicePrint from "./utils/buy/jual_beli/JBInvoiceDummyPrint"
 
 function App() {
   return (
@@ -266,6 +271,13 @@ function App() {
       {/* JUAL BELI */}
       {/* BUY */}
       {/* PRINT */}
+
+      {/* Invoice */}
+      <Route path="/deliverynote-invoice" component={SalesInvoiceList}/>
+      <Route path="/print/deliverynote-invoice" component={SalesInvoicePrint}/>
+      <Route path="/jualbeli-invoice" component={JBInvoiceList}/>
+      <Route path="/print/jualbeli-invoice" component={JBInvoicePrint}/>
+      {/* Invoice */}
 
       {/* MASTER DATA */}
       <Route path="/suppliers" component={SuppliersList} />
