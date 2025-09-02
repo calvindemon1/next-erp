@@ -96,12 +96,16 @@ import JBSuratJalanPrint from "./utils/buy/jual_beli/JBSuratJalanDummyPrint";
 import SalesInvoiceList from "./pages/invoice/SalesInvoiceList";
 import SalesInvoicePrint from "./utils/sell/SalesInvoiceDummyPrint";
 import JBInvoiceList from "./pages/invoice/JBInvoiceList";
-import JBInvoicePrint from "./utils/buy/jual_beli/JBInvoiceDummyPrint"
+import JBInvoicePrint from "./utils/buy/jual_beli/JBInvoiceDummyPrint";
+import FinanceMainLayout from "./layouts/FinanceMainLayout";
+import BanksList from "./finance_pages/master_data/banks/BanksList";
+import BanksForm from "./finance_pages/master_data/banks/BanksForm";
 
 function App() {
   return (
     <Router>
       <Route path="/" component={LoginPage} />
+      <Route path="/test" component={FinanceMainLayout} />
       <Route path="/users" component={UsersList} />
       <Route path="/users/form" component={UserForm} />
       
@@ -282,10 +286,10 @@ function App() {
       {/* PRINT */}
 
       {/* Invoice */}
-      <Route path="/deliverynote-invoice" component={SalesInvoiceList}/>
-      <Route path="/print/deliverynote-invoice" component={SalesInvoicePrint}/>
-      <Route path="/jualbeli-invoice" component={JBInvoiceList}/>
-      <Route path="/print/jualbeli-invoice" component={JBInvoicePrint}/>
+      <Route path="/deliverynote-invoice" component={SalesInvoiceList} />
+      <Route path="/print/deliverynote-invoice" component={SalesInvoicePrint} />
+      <Route path="/jualbeli-invoice" component={JBInvoiceList} />
+      <Route path="/print/jualbeli-invoice" component={JBInvoicePrint} />
       {/* Invoice */}
 
       {/* MASTER DATA */}
@@ -316,6 +320,15 @@ function App() {
       <Route path="/units" component={UnitsList} />
       <Route path="/units/form" component={UnitsForm} />
       {/* MASTER DATA */}
+      {/* ================================================================================================================================================================================================================= */}
+      {/* FINANCE MODULE */}
+      {/* MASTER DATA */}
+      {/* BANKS */}
+      <Route path="/banks" component={BanksList} />
+      <Route path="/banks/form" component={BanksForm} />
+      {/* BANKS */}
+      {/* MASTER DATA */}
+      {/* FINANCE MODULE */}
     </Router>
   );
 }
