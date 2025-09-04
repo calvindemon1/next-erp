@@ -1,38 +1,45 @@
 import { createSignal, createMemo, createEffect, onCleanup } from "solid-js";
-import { onClickOutside } from "./OnClickOutside.jsx"; 
+import { onClickOutside } from "./OnClickOutside.jsx";
+
+function formatSimpleDate(dateString) {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  return `${day}-${month}-${year}`;
+}
 
 export default function PurchasingOrderDropdownSearch(props) {
   const [isOpen, setIsOpen] = createSignal(false);
   const [search, setSearch] = createSignal("");
   let dropdownRef;
 
-  // Efek untuk menutup dropdown saat klik di luar
   createEffect(() => {
     if (!dropdownRef) return;
     onClickOutside(dropdownRef, () => setIsOpen(false));
   });
 
-  // Memo untuk memfilter daftar PO berdasarkan input pencarian
   const filteredItems = createMemo(() => {
     const query = search().toLowerCase();
     if (!Array.isArray(props.items)) return [];
-    return props.items.filter((item) =>
-      (item.no_jb || "").toLowerCase().includes(query)
-    );
+    return props.items.filter((item) => {
+      const no_jb = (item.no_jb || "").toLowerCase();
+      const customer = (item.customer_name || "").toLowerCase();
+      return no_jb.includes(query) || customer.includes(query);
+    });
   });
 
-  // Memo untuk mendapatkan objek PO yang sedang dipilih berdasarkan ID
   const selectedItem = createMemo(() => {
     if (!Array.isArray(props.items)) return null;
     return props.items.find((item) => item.id === props.value);
   });
 
-  // Fungsi saat sebuah PO dipilih dari daftar
   const handleSelect = (item) => {
     setIsOpen(false);
     setSearch("");
     if (props.onChange) {
-      props.onChange(item); // Kirim seluruh objek item ke parent
+      props.onChange(item);
     }
   };
 
@@ -44,14 +51,18 @@ export default function PurchasingOrderDropdownSearch(props) {
         onClick={() => setIsOpen(!isOpen())}
         disabled={props.disabled}
       >
-        {selectedItem() ? selectedItem().no_jb : "Pilih Purchase Order"}
+        <span class="block whitespace-nowrap overflow-hidden text-ellipsis">
+          {selectedItem()
+            ? `${selectedItem().no_jb} - ${selectedItem().customer_name} (${formatSimpleDate(selectedItem().created_at)})`
+            : "Pilih Purchase Order"}
+        </span>
       </button>
 
       {isOpen() && (
         <div class="absolute z-10 w-full bg-white border mt-1 rounded shadow-lg max-h-64 overflow-y-auto">
           <input
             type="text"
-            placeholder="Cari No. Purchase Order..."
+            placeholder="Cari No. JB atau Customer..."
             class="w-full p-2 border-b sticky top-0"
             value={search()}
             onInput={(e) => setSearch(e.target.value)}
@@ -60,10 +71,10 @@ export default function PurchasingOrderDropdownSearch(props) {
           {filteredItems().length > 0 ? (
             filteredItems().map((item) => (
               <div
-                class="p-2 hover:bg-blue-100 cursor-pointer"
+                class="p-2 hover:bg-blue-100 cursor-pointer whitespace-nowrap overflow-hidden text-ellipsis"
                 onClick={() => handleSelect(item)}
               >
-                {item.no_jb}
+                {item.no_jb} - {item.customer_name} ({formatSimpleDate(item.created_at)})
               </div>
             ))
           ) : (

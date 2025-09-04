@@ -1,8 +1,18 @@
 import { createSignal, createMemo, createEffect, onCleanup } from "solid-js";
 import { onClickOutside } from "./OnClickOutside";
 
-export default function PurchaseContractDropdownSearch({
-  purchaseContracts, // array of contracts
+// BARU: Fungsi kecil untuk memformat tanggal
+function formatSimpleDate(dateString) {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  return `${day}-${month}-${year}`;
+}
+
+export default function PurchasingContractDropdownSearch({
+  purchaseContracts,
   form,
   setForm,
   onChange,
@@ -22,7 +32,8 @@ export default function PurchaseContractDropdownSearch({
     const q = search().toLowerCase();
     return purchaseContracts().filter((p) => {
       const no_pc = (p.no_pc || "").toLowerCase();
-      return no_pc.includes(q) || kode.includes(q);
+      const supplier = (p.supplier_name || "").toLowerCase(); 
+      return no_pc.includes(q) || supplier.includes(q);
     });
   });
 
@@ -31,7 +42,7 @@ export default function PurchaseContractDropdownSearch({
   );
 
   const selectContract = (contract) => {
-    setForm({ ...form(), jenis_po_id: contract.id });
+    setForm({ ...form(), pc_id: contract.id }); 
     setIsOpen(false);
     setSearch("");
     if (onChange) onChange(contract.id);
@@ -42,22 +53,24 @@ export default function PurchaseContractDropdownSearch({
       <button
         type="button"
         class={`w-full border p-2 rounded text-left ${
-          disabled ? "bg-gray-200" : "bg-white/10"
+          disabled ? "bg-gray-200" : "bg-white"
         } cursor-default`}
         onClick={() => setIsOpen(!isOpen())}
         disabled={disabled}
       >
-        {selectedContract()
-          ? `${selectedContract().no_pc}`
-          : "Pilih Purchase Contract"}
+        <span class="block whitespace-nowrap overflow-hidden text-ellipsis">
+          {selectedContract()
+            ? `${selectedContract().no_pc} - ${selectedContract().supplier_name} (${formatSimpleDate(selectedContract().created_at)})`
+            : "Pilih Purchase Contract"}
+        </span>
       </button>
 
       {isOpen() && (
         <div class="absolute z-10 w-full bg-white border mt-1 rounded shadow max-h-64 overflow-y-auto">
           <input
             type="text"
-            placeholder="Cari Purchase Contract..."
-            class="w-full p-2 border-b focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Cari No. PC atau Supplier..."
+            class="w-full p-2 border-b focus:outline-none sticky top-0"
             value={search()}
             onInput={(e) => setSearch(e.target.value)}
             autofocus
@@ -66,10 +79,10 @@ export default function PurchaseContractDropdownSearch({
             filteredContracts().map((p) => (
               <div
                 key={p.id}
-                class="p-2 hover:bg-blue-100 cursor-pointer"
+                class="p-2 hover:bg-blue-100 cursor-pointer whitespace-nowrap overflow-hidden text-ellipsis"
                 onClick={() => selectContract(p)}
               >
-                {p.no_pc}
+                {p.no_pc} - {p.supplier_name} ({formatSimpleDate(p.created_at)})
               </div>
             ))
           ) : (
