@@ -1,22 +1,9 @@
 import { createMemo, createSignal, onMount } from "solid-js";
 import logoNavel from "../../../../assets/img/navelLogo.png";
-import{
-  getFabric,
-  getSatuanUnits,
-  getSupplier,
-  getUser,
-  getAllBGDeliveryNotes
-} from "../../../../utils/auth";
 
 export default function BGSuratJalanPrint(props) {
   const data = props.data;
-  const [supplier, setSupplier] = createSignal(null);
-  const [kainList, setKainList] = createSignal({});
-  const [satuanUnitList, setSatuanUnitList] = createSignal({});
-  const [suratJalan, setSuratJalan] = createSignal(null);
   const allItems = data.items?.flatMap(group => group.items) || [];
-
-  const tokUser = getUser();
 
   function formatAngka(value, decimals = 2) {
     if (typeof value !== "number") {
@@ -71,78 +58,6 @@ export default function BGSuratJalanPrint(props) {
     return `${day}-${month}-${year}`;
   }
 
-  async function handleGetSupplier() {
-    try {
-      const res = await getSupplier(data.supplier_id, tokUser?.token);
-
-      if (res.status === 200) {
-        setSupplier(res.suppliers || null);
-      }
-    } catch (err) {
-      console.error("Error getSupplier:", err);
-    }
-  }
-
-  async function handleGetKain(kainId) {
-    try {
-      const res = await getFabric(kainId, tokUser?.token);
-      setKainList((prev) => ({
-        ...prev,
-        [kainId]: res,
-      }));
-    } catch (err) {
-      console.error("Error getFabric:", err);
-    }
-  }
-
-  async function handleGetSatuanUnit(satuanUnitId) {
-    try {
-      const res = await getSatuanUnits(satuanUnitId, tokUser?.token);
-      if (res.status === 200) {
-        setSatuanUnitList((prev) => ({
-          ...prev,
-          [satuanUnitId]: res.data,
-        }));
-      }
-    } catch (err) {
-      console.error("Error getGrade:", err);
-    }
-  }
-
-  async function handleGetAllBGDeliveryNotes() {
-    try {
-      const res = await getAllBGDeliveryNotes(
-        data.no_sj,
-        data.no_sj_supplier,
-        data.no_pc,
-        data.no_po,
-        tokUser?.token
-      );
-      if (res.status === 200) {
-        // PERBAIKAN 1: Menggunakan setSuratJalan untuk menyimpan data dari response.
-        // Data yang relevan ada di dalam properti `suratJalan`.
-        setSuratJalan(res.suratJalan || null);
-      }
-    } catch (err) {
-      console.log("Error get data Surat Jalan Greige:", err);
-    }
-  }
-
-  onMount(() => {
-    if (tokUser?.token) {
-      //handleGetSupplier();
-      //handleGetAllBGDeliveryNotes();
-      (data.itemGroups || []).forEach((item) => {
-        if (item.fabric_id) {
-          handleGetKain(item.fabric_id);
-        }
-        if (item.grade_id) {
-          handleGetGrade(item.grade_id);
-        }
-      });
-    }
-  });  
-
   const itemsPerPage = 14;
   const itemPages = paginateItems(data.itemGroups ?? [], itemsPerPage);
 
@@ -164,28 +79,19 @@ export default function BGSuratJalanPrint(props) {
 
   const isPPN = createMemo(() => parseFloat(data.ppn_percent) > 0);
 
-  const subTotal = createMemo(() => {
-    return (data.itemGroups || []).reduce(
-      (sum, item) => sum + (item.subtotal || 0),
-      0
-    );
-  });
+  const subTotal = createMemo(() => Number(data?.summary?.subtotal) || 0);
 
-  const dpp = createMemo(() => {
-    return subTotal() / 1.11;
-  });
+  const dpp = createMemo(() => subTotal() / 1.11);
 
-  const nilaiLain = createMemo(() => {
-    return dpp() * (11 / 12);
-  });
+  const nilaiLain = createMemo(() => dpp() * (11 / 12));
 
-  const ppn = createMemo(() => {
-    return isPPN() ? nilaiLain() * 0.12 : 0;
-  });
+  const ppn = createMemo(() => (isPPN() ? nilaiLain() * 0.12 : 0));
 
   const jumlahTotal = createMemo(() => dpp() + ppn());
 
+  // kumpulkan ke dalam object akhir
   const dataAkhir = {
+    subtotal: subTotal(),
     dpp: dpp(),
     nilai_lain: nilaiLain(),
     ppn: ppn(),
@@ -255,14 +161,16 @@ export default function BGSuratJalanPrint(props) {
                   className="px-2 max-w-[300px] leading-relaxed break-words whitespace-pre-wrap"
                   colSpan={2}
                 >
-                  {supplier()?.alamat}
+
                 </td>
               </tr>
               <tr>
                 <td className="px-2 py-1 whitespace-nowrap">
-                  Telp: {supplier()?.telp || "-"}
+                  Telp: {data.supllier_no_telp || "-"}
                 </td>
-                <td className="px-2 py-1 whitespace-nowrap">Fax:</td>
+                <td className="px-2 py-1 whitespace-nowrap">
+                  Fax: {data.supplier_fax || "-"} 
+                </td>
               </tr>
             </tbody>
           </table>
@@ -276,7 +184,7 @@ export default function BGSuratJalanPrint(props) {
                   <td className="px-2 break-words w-[65%]">{data.no_sj}</td>
               </tr>
               <tr>
-                  <td className="font-bold px-2 w-[30%] whitespace-nowrap">Tanggal</td>
+                  <td className="font-bold px-2 w-[30%] whitespace-nowrap">Tanggal SJ</td>
                   <td className="w-[5%] text-center">:</td>
                   <td className="px-2 break-words w-[65%]">{formatTanggal(data.created_at )}</td>
               </tr>
@@ -284,6 +192,16 @@ export default function BGSuratJalanPrint(props) {
                   <td className="font-bold px-2 w-[30%] whitespace-nowrap">No. SJ Supplier</td>
                   <td className="w-[5%] text-center">:</td>
                   <td className="px-2 break-words w-[65%]">{data.no_sj_supplier}</td>
+              </tr>
+              <tr>
+                  <td className="font-bold px-2 w-[30%] whitespace-nowrap">Alamat Kirim</td>
+                  <td className="w-[5%] text-center">:</td>
+                  <td className="px-2 break-words w-[65%]">{data.supplier_alamat}</td>
+              </tr>              
+              <tr>
+                  <td className="font-bold px-2 w-[30%] whitespace-nowrap">Tanggal Kirim</td>
+                  <td className="w-[5%] text-center">:</td>
+                  <td className="px-2 break-words w-[65%]">{formatTanggal(data.tanggal_kirim)}</td>
               </tr>
               <tr>
                   <td className="font-bold px-2 w-[30%] whitespace-nowrap">No. PO</td>
@@ -300,15 +218,18 @@ export default function BGSuratJalanPrint(props) {
             <tr>
               <th className="border border-black p-1 w-[6%]" rowSpan={2}>No</th>
               <th className="border border-black p-1 w-[10%]" rowSpan={2}>Kode</th>
-              <th className="border border-black p-1 w-[24%]" rowSpan={2}>Jenis Kain</th>
-              <th className="border border-black p-1 w-[10%]" rowSpan={2}>Lebar</th>
-              <th className="border border-black p-1 w-[20%] text-center" colSpan={2}>
+              <th className="border border-black p-1 w-[20%]" rowSpan={2}>Jenis Kain</th>
+              <th className="border border-black p-1 w-[10%]" rowSpan={2}>Lebar Greige</th>
+              <th className="border border-black p-1 w-[18%] text-center" colSpan={2}>
                 Quantity
               </th>
+              <th className="border border-black p-1 w-[15%]" rowSpan={2}>Harga</th>
+              <th className="border border-black p-1 w-[15%]" rowSpan={2}>Jumlah</th>
             </tr>
             <tr>
               <th colspan={2} className="border border-black p-1 w-[24%]">
-                {`(Roll / ${data.satuan_unit_name || 'Meter'})`}
+                {/* {`(Roll / ${data.satuan_unit_name || 'Meter'})`} */}
+                {data.satuan_unit_name || 'Meter'}
               </th>
             </tr>
           </thead>
@@ -322,10 +243,23 @@ export default function BGSuratJalanPrint(props) {
                   <td className="p-1 text-center break-words">{formatAngkaNonDecimal(item.lebar_greige)}"</td>
                   <td colspan={2} className="p-1 text-center break-words">
                     {data.satuan_unit_name === 'Meter' 
-                      ? `${(item.rolls || []).length} / ${formatAngka(item.meter_total)}`
-                      : `${(item.rolls || []).length} / ${formatAngka(item.yard_total)}`
+                      // ? `${(item.rolls || []).length} / ${formatAngka(item.meter_total)}`
+                      // : `${(item.rolls || []).length} / ${formatAngka(item.yard_total)}`
+                      ? formatAngka(item.meter_total)
+                      : formatAngka(item.yard_total)
                     }
                   </td>
+                  <td className="p-1 text-center break-words">{formatRupiah(item.harga)}</td>
+                  <td className="p-1 text-right break-words">
+                    {(() => {
+                        const qty =
+                        data.satuan_unit_name === "Meter"
+                            ? parseFloat(item.meter_total || 0)
+                            : parseFloat(item.yard_total || 0);
+                        const harga = parseFloat(item.harga || 0);
+                        return harga && qty ? formatRupiah(harga * qty) : "-";
+                    })()}
+                </td>
                 </tr>
               );
             })}
@@ -344,7 +278,7 @@ export default function BGSuratJalanPrint(props) {
           </tbody>
           <tfoot>
             <tr>
-              <td colSpan={4} className="border border-black font-bold px-2 py-1 text-right">
+              <td colSpan={4} className="border border-black font-bold px-2 py-1">
                 Total:
               </td>
               <td colspan={2} className="border border-black px-2 py-1 text-center font-bold">
@@ -353,9 +287,81 @@ export default function BGSuratJalanPrint(props) {
                     : formatAngka(totalYard())
                   }
               </td>
+              <td className="border border-black px-2 py-1 text-right font-bold">
+                Sub Total
+              </td>
+              <td className="border border-black px-2 py-1 text-right">
+                {formatRupiah(subTotal())}
+              </td>
+              {/* <td className="border border-black px-2 py-1 text-right font-bold">
+                {isPPN() ? 'Sub Total' : 'Jumlah Total'}
+              </td>
+              <td className="border border-black px-2 py-1 text-right">
+                {formatRupiah(subTotal())}
+              </td> */}
             </tr>
             <tr>
-              <td colSpan={6} className="border border-black p-2 align-top">
+              <td colSpan={6} className="px-2 py-1"/>
+              <td className="px-2 py-1 text-right font-bold">DPP</td>
+              <td className="px-2 py-1 text-right">
+                {formatRupiah(dataAkhir.dpp)}
+              </td>
+            </tr>
+            <tr>
+              <td colSpan={6} className="px-2 py-1"/>
+              <td className="px-2 py-1 text-right font-bold">Nilai Lain</td>
+              <td className="px-2 py-1 text-right">
+                {formatRupiah(dataAkhir.nilai_lain)}
+              </td>
+            </tr>
+            <tr>
+              <td colSpan={6} className="px-2 py-1"/>
+              <td className="px-2 py-1 text-right font-bold">PPN</td>
+              <td className="px-2 py-1 text-right">
+                {formatRupiah(dataAkhir.ppn)}
+              </td>
+            </tr>
+            <tr>
+              <td colSpan={6} className="px-2 py-1"/>
+              <td className="px-2 py-1 text-right font-bold">Jumlah Total</td>
+              <td className="px-2 py-1 text-right">
+                {formatRupiah(dataAkhir.total)}
+              </td>
+            </tr>
+            {/* <Show when={isPPN()}>
+              <>
+                <tr>
+                  <td colSpan={8} className="px-2 py-1"/>
+                  <td className="px-2 py-1 text-right font-bold">DPP</td>
+                  <td className="px-2 py-1 text-right">
+                    {formatRupiah(dataAkhir.dpp)}
+                  </td>
+                </tr>
+                <tr>
+                  <td colSpan={8} className="px-2 py-1"/>
+                  <td className="px-2 py-1 text-right font-bold">Nilai Lain</td>
+                  <td className="px-2 py-1 text-right">
+                    {formatRupiah(dataAkhir.nilai_lain)}
+                  </td>
+                </tr>
+                <tr>
+                  <td colSpan={8} className="px-2 py-1"/>
+                  <td className="px-2 py-1 text-right font-bold">PPN</td>
+                  <td className="px-2 py-1 text-right">
+                    {formatRupiah(dataAkhir.ppn)}
+                  </td>
+                </tr>
+                <tr>
+                  <td colSpan={8} className="px-2 py-1"/>
+                  <td className="px-2 py-1 text-right font-bold">Jumlah Total</td>
+                  <td className="px-2 py-1 text-right">
+                    {formatRupiah(dataAkhir.total)}
+                  </td>
+                </tr>
+              </>
+            </Show> */}            
+            <tr>
+              <td colSpan={8} className="border border-black p-2 align-top">
                 <div className="font-bold mb-1">NOTE:</div>
                 <div className="whitespace-pre-wrap break-words italic">
                   {data.keterangan ?? "-"}
@@ -363,7 +369,7 @@ export default function BGSuratJalanPrint(props) {
               </td>
             </tr>
             <tr>
-              <td colSpan={6} className="border border-black">
+              <td colSpan={8} className="border border-black">
                 <div className="w-full flex justify-between text-[12px] py-5 px-2">
                   <div className="text-center w-1/3 pb-3">
                     Yang Menerima
