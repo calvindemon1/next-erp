@@ -145,7 +145,7 @@ export default function KJOrderPrint(props) {
 
   // Misalnya kamu sudah punya:
 
-  const isPPN = createMemo(() => parseFloat(data.ppn_percent) > 0);
+  const isPPN = createMemo(() => parseFloat(data.ppn) > 0);
 
   const subTotal = createMemo(() => {
     return (data.items || []).reduce(
@@ -353,16 +353,16 @@ export default function KJOrderPrint(props) {
                 <td className="p-1 break-words">
                   {kainList()[item.fabric_id]?.konstruksi || "-"}
                 </td>
-                <td className="p-1 break-words">
+                <td className="p-1 text-center break-words">
                   {warnaList()[item.warna_id]?.deskripsi || "-"}
                 </td>
                 <td className="p-1 text-center break-words">
                   {item.lebar_greige}"
                 </td>
                 <td className="p-1 text-center break-words">
-                  {item.lebar_finish}
+                  {item.lebar_finish}"
                 </td>
-                <td className="p-1 text-right break-words" colSpan={2}>
+                <td className="p-1 text-center break-words" colSpan={2}>
                   {data.satuan_unit_id == 1
                     ? formatAngka(item.meterValue)
                     : formatAngka(item.yardValue)}
@@ -414,14 +414,14 @@ export default function KJOrderPrint(props) {
               </td>
               <td
                 colSpan={2}
-                className="border border-black px-2 py-1 text-right font-bold"
+                className="border border-black px-2 py-1 text-center font-bold"
                 hidden={data.satuan_unit_id == 2 ? true : false}
               >
                 {formatAngka(totalMeter())}
               </td>
               <td
                 colSpan={2}
-                className="border border-black px-2 py-1 text-right font-bold"
+                className="border border-black px-2 py-1 text-center font-bold"
                 hidden={data.satuan_unit_id == 1 ? true : false}
               >
                 {formatAngka(totalYard())}

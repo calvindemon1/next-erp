@@ -144,7 +144,7 @@ export default function OCOrderPrint(props) {
     data.items?.reduce((sum, i) => sum + (i.yardValue || 0), 0)
   );
 
-  const isPPN = createMemo(() => parseFloat(data.ppn_percent) > 0);
+  const isPPN = createMemo(() => parseFloat(data.ppn) > 0);
 
   const subTotal = createMemo(() => {
     return (data.items || []).reduce(
@@ -215,7 +215,7 @@ export default function OCOrderPrint(props) {
           src={logoNavel}
           alt=""
         />
-        <h1 classsName="text-xl uppercase font-bold">Order Celup</h1>
+        <h1 className="text-xl uppercase font-bold">Order Celup</h1>
 
         <div className="w-full flex gap-2 text-sm">
           {/* LEFT TABLE */}
@@ -368,17 +368,17 @@ export default function OCOrderPrint(props) {
                 <td className="p-1 break-words">
                   {kainList()[item.fabric_id]?.konstruksi || "-"}
                 </td>
-                <td className="p-1 break-words">
+                <td className="p-1 text-center break-words">
                   {warnaList()[item.warna_id]?.deskripsi || "-"}
                 </td>
                 <td className="p-1 text-center break-words">
-                  {item.lebar_greige}
+                  {item.lebar_greige}"
                 </td>
                 <td className="p-1 text-center break-words">
-                  {item.lebar_finish}
+                  {item.lebar_finish}"
                 </td>
                 <td
-                  className="p-1 text-right break-words"
+                  className="p-1 text-center break-words"
                   colSpan={2}
                 >
                   {data.satuan_unit_id == 1
@@ -419,13 +419,13 @@ export default function OCOrderPrint(props) {
             <tr>
               <td colSpan={6} className="border border-black font-bold px-2 py-1" >Total</td>
               <td
-                colSpan={2} className="border border-black px-2 py-1 text-right font-bold"
+                colSpan={2} className="border border-black px-2 py-1 text-center font-bold"
                 hidden={data.satuan_unit_id == 2 ? true : false}
               >
                 {formatAngka(totalMeter())}
               </td>
               <td
-                colSpan={2} className="border border-black px-2 py-1 text-right font-bold"
+                colSpan={2} className="border border-black px-2 py-1 text-center font-bold"
                 hidden={data.satuan_unit_id == 1 ? true : false}
               >
                 {formatAngka(totalYard())}

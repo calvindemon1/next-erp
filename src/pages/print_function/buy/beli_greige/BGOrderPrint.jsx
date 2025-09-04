@@ -134,7 +134,7 @@ export default function BGOrderPrint(props) {
     data.items?.reduce((sum, i) => sum + (i.yardValue || 0), 0)
   );
 
-  const isPPN = createMemo(() => parseFloat(data.ppn_percent) > 0);
+  const isPPN = createMemo(() => parseFloat(data.ppn) > 0);
 
   const subTotal = createMemo(() => {
     return (data.items || []).reduce(
@@ -271,42 +271,21 @@ export default function BGOrderPrint(props) {
         <table className="w-full table-fixed border border-black text-[12px] border-collapse mt-3">
           <thead className="bg-gray-200">
             <tr>
-              <th className="border border-black p-1 w-[4%]" rowSpan={2}>
-                No
-              </th>
-              <th className="border border-black p-1 w-[8%]" rowSpan={2}>
-                Kode
-              </th>
-              <th className="border border-black p-1 w-[20%]" rowSpan={2}>
-                Jenis Kain
-              </th>
-              <th className="border border-black p-1 w-[8%]" rowSpan={2}>
-                Lebar
-              </th>
-              <th
-                className="border border-black p-1 w-[18%] text-center"
-                colSpan={1}
-              >
+              <th className="border border-black p-1 w-[4%]" rowSpan={2}>No</th>
+              <th className="border border-black p-1 w-[8%]" rowSpan={2}>Kode</th>
+              <th className="border border-black p-1 w-[20%]" rowSpan={2}>Jenis Kain</th>
+              <th className="border border-black p-1 w-[8%]" rowSpan={2}>Lebar</th>
+              <th className="border border-black p-1 w-[18%] text-center" colSpan={1}>
                 Quantity
               </th>
-              <th className="border border-black p-1 w-[18%]" rowSpan={2}>
-                Harga
-              </th>
-              <th className="border border-black p-1 w-[18%]" rowSpan={2}>
-                Jumlah
-              </th>
+              <th hidden className="border border-black p-1 w-[18%]" rowSpan={2}>Harga</th>
+              <th hidden className="border border-black p-1 w-[18%]" rowSpan={2}>Jumlah</th>
             </tr>
             <tr>
-              <th
-                className="border border-black p-1 w-full"
-                hidden={data.satuan_unit_id == 2 ? true : false}
-              >
+              <th className="border border-black p-1 w-full" hidden={data.satuan_unit_id == 2 ? true : false}>
                 (Meter)
               </th>
-              <th
-                className="border border-black p-1 w-[14%]"
-                hidden={data.satuan_unit_id == 1 ? true : false}
-              >
+              <th className="border border-black p-1 w-[14%]" hidden={data.satuan_unit_id == 1 ? true : false}>
                 (Yard)
               </th>
             </tr>
@@ -315,43 +294,29 @@ export default function BGOrderPrint(props) {
             {(data.items || []).map((item, i) => (
                 <tr key={i}>
                   <td className="p-1 text-center">{i + 1}</td>
-                  <td className="p-1 text-center break-words">
-                    {kainList()[item.fabric_id]?.corak || "-"}
-                  </td>
-                  <td className="p-1 break-words">
-                    {kainList()[item.fabric_id]?.konstruksi || "-"}
-                  </td>
-                  <td className="p-1 text-center break-words">
-                    {item.lebar_greige}
-                  </td>
-                  <td
-                  className="p-1 text-right break-words"
-                  hidden={data.satuan_unit_id == 2 ? true : false}
-                  >
+                  <td className="p-1 text-center break-words">{kainList()[item.fabric_id]?.corak || "-"}</td>
+                  <td className="p-1 break-words">{kainList()[item.fabric_id]?.konstruksi || "-"}</td>
+                  <td className="p-1 text-center break-words">{item.lebar_greige}"</td>
+                  <td className="p-1 text-center break-words" hidden={data.satuan_unit_id == 2 ? true : false}>
                     {formatAngka(item.meterValue)}
                   </td>
-                  <td
-                    className="p-1 text-right break-words"
-                    hidden={data.satuan_unit_id == 1 ? true : false}
-                  >
+                  <td className="p-1 text-center break-words" hidden={data.satuan_unit_id == 1 ? true : false}>
                     {formatAngka(item.yardValue)}
                   </td>
-                  <td className="p-1 text-right break-words">
-                    {formatRupiah(item.hargaValue)}
-                  </td>
-                <td className="p-1 text-right break-words">
-                  {(() => {
-                    // Tentukan kuantitas yang benar berdasarkan satuan unit
-                    const qtyValue = data.satuan_unit_id == 1 ? item.meterValue : item.yardValue;
-                    
-                    // Hitung subtotal baris
-                    const lineSubtotal = item.hargaValue * qtyValue;
+                  <td hidden className="p-1 text-right break-words">{formatRupiah(item.hargaValue)}</td>
+                  <td hidden className="p-1 text-right text-center break-words">
+                    {(() => {
+                      // Tentukan kuantitas yang benar berdasarkan satuan unit
+                      const qtyValue = data.satuan_unit_id == 1 ? item.meterValue : item.yardValue;
+                      
+                      // Hitung subtotal baris
+                      const lineSubtotal = item.hargaValue * qtyValue;
 
-                    // Tampilkan hasilnya jika valid
-                    return item.hargaValue && qtyValue ? formatRupiah(lineSubtotal) : "-";
-                  })()}
-                </td>
-                </tr>
+                      // Tampilkan hasilnya jika valid
+                      return item.hargaValue && qtyValue ? formatRupiah(lineSubtotal) : "-";
+                    })()}
+                  </td>
+              </tr>
             ))}
             {/* ... Row kosong ... */}
             {Array.from({ length: 10 - (data.items || []).length }).map(
@@ -362,7 +327,7 @@ export default function BGOrderPrint(props) {
                 <td className="p-1"></td>
                 <td className="p-1 text-center"></td>
                 <td className="p-1 text-center"></td>
-                <td className="p-1 text-right"></td>
+                {/* <td className="p-1 text-right"></td> */}
                 </tr>
               )
             )}
@@ -370,47 +335,37 @@ export default function BGOrderPrint(props) {
           <tfoot>
             <tr>
               <td colSpan={4} className="border border-black font-bold px-2 py-1" >Total</td>
-              <td
-                className="border border-black px-2 py-1 text-right font-bold"
-                hidden={data.satuan_unit_id == 2 ? true : false}
-              >
+              <td className="border border-black px-2 py-1 text-center font-bold" hidden={data.satuan_unit_id == 2 ? true : false}>
                 {formatAngka(totalMeter())}
               </td>
-              <td
-                className="border border-black px-2 py-1 text-right font-bold"
-                hidden={data.satuan_unit_id == 1 ? true : false}
-              >
+              <td className="border border-black px-2 py-1 text-center font-bold" hidden={data.satuan_unit_id == 1 ? true : false}>
                 {formatAngka(totalYard())}
               </td>
-              <td className="border border-black px-2 py-1 text-right font-bold">
-                Sub Total
-              </td>
-              <td className="border border-black px-2 py-1 text-right">
-                {formatRupiah(subTotal())}
-              </td>
+              <td hidden className="border border-black px-2 py-1 text-right font-bold">Sub Total</td>
+              <td hidden className="border border-black px-2 py-1 text-right">{formatRupiah(subTotal())}</td>
             </tr>
-            <tr>
+            <tr hidden>
               <td colSpan={5} className="px-2 py-1" />
               <td className="px-2 py-1 text-right font-bold">DPP</td>
               <td className="px-2 py-1 text-right">
                 {formatRupiah(dataAkhir.dpp)}
               </td>
             </tr>
-            <tr>
+            <tr hidden>
               <td colSpan={5} className="px-2 py-1" />
               <td className="px-2 py-1 text-right font-bold">Nilai Lain</td>
               <td className="px-2 py-1 text-right">
                 {formatRupiah(dataAkhir.nilai_lain)}
               </td>
             </tr>
-            <tr>
+            <tr hidden>
               <td colSpan={5} className="px-2 py-1" />
               <td className="px-2 py-1 text-right font-bold">PPN</td>
               <td className="px-2 py-1 text-right">
                 {formatRupiah(dataAkhir.ppn)}
               </td>
             </tr>
-            <tr>
+            <tr hidden>
               <td colSpan={5} className="px-2 py-1" />
               <td className="px-2 py-1 text-right font-bold">Jumlah Total</td>
               <td className="px-2 py-1 text-right">
@@ -418,7 +373,7 @@ export default function BGOrderPrint(props) {
               </td>
             </tr>
             <tr>
-              <td colSpan={7} className="border border-black p-2 align-top">
+              <td colSpan={5} className="border border-black p-2 align-top">
                 <div className="font-bold mb-1">NOTE:</div>
                 <div className="whitespace-pre-wrap break-words italic">
                   {data.keterangan ?? "-"}
@@ -426,7 +381,7 @@ export default function BGOrderPrint(props) {
               </td>
             </tr>
             <tr>
-              <td colSpan={7} className="border border-black">
+              <td colSpan={5} className="border border-black">
                 <div className="w-full flex justify-between text-[12px] py-5 px-2">
                   <div className="text-center w-1/3 pb-3">
                     Supplier
