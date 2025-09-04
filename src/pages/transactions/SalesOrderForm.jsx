@@ -40,6 +40,7 @@ export default function SalesOrderForm() {
   const [colorOptions, setColorOptions] = createSignal([]);
   const [availableSCItems, setAvailableSCItems] = createSignal([]);
   const [loading, setLoading] = createSignal(true);
+  const [salesOrderData, setSalesOrderData] = createSignal(null); 
   const [params] = useSearchParams();
   const isEdit = !!params.id;
   const isView = params.view === "true";
@@ -116,6 +117,11 @@ export default function SalesOrderForm() {
       const res = await getSalesOrders(params.id, user?.token);
       const soData = res.order;
       if (!soData) return;
+
+      const fullPrintData = {
+        ...soData,
+      };
+      setSalesOrderData(fullPrintData); 
 
       const mappedItems = (soData.items || []).map((soItem) => {
           const subtotal = (Number(soItem.meter_total) || Number(soItem.yard_total) || Number(soItem.kilogram_total)) * Number(soItem.harga);
@@ -545,7 +551,17 @@ export default function SalesOrderForm() {
   };
 
   function handlePrint() {
-    const encodedData = encodeURIComponent(JSON.stringify(form()));
+    if (!salesOrderData()) {
+      Swal.fire("Gagal", "Data untuk mencetak tidak tersedia. Pastikan Anda dalam mode Edit/View.", "error");
+      return;
+    }
+
+    const dataToPrint = {
+      ...salesOrderData(),
+      //...form(),
+    };
+    //console.log("📄 Data yang dikirim ke halaman Print:", JSON.stringify(dataToPrint, null, 2));
+    const encodedData = encodeURIComponent(JSON.stringify(dataToPrint));
     window.open(`/print/salesorder?data=${encodedData}`, "_blank");
   }
 
@@ -798,7 +814,8 @@ export default function SalesOrderForm() {
             class="w-full border p-2 rounded"
             value={form().keterangan}
             onInput={(e) => setForm({ ...form(), keterangan: e.target.value })}
-            readOnly
+            disabled={isView}
+            classList={{ "bg-gray-200" : isView }}
           ></textarea>
         </div>
 
@@ -915,6 +932,8 @@ export default function SalesOrderForm() {
                       colors={colorOptions}
                       item={item}
                       onChange={(val) => handleItemChange(i(), "warna_id", val)}
+                      disabled={isView}
+                      classList={{ "bg-gray-200" : isView }}
                     />
                   </td>
                   <td class="border p-2">
@@ -937,6 +956,8 @@ export default function SalesOrderForm() {
                                   handleItemChange(i(), "meter", e.target.value);
                               }
                           }}
+                          disabled={isView}
+                          classList={{ "bg-gray-200" : isView }}
                       />
                   </td>
                   <td class="border p-2">
@@ -951,6 +972,8 @@ export default function SalesOrderForm() {
                                   handleItemChange(i(), "yard", e.target.value);
                               }
                           }}
+                          disabled={isView}
+                          classList={{ "bg-gray-200" : isView }}
                       />
                   </td>
                   <td class="border p-2">
@@ -965,6 +988,8 @@ export default function SalesOrderForm() {
                                   handleItemChange(i(), "kilogram", e.target.value);
                               }
                           }}
+                          disabled={isView}
+                          classList={{ "bg-gray-200" : isView }}
                       />
                   </td>
                   <td class="border p-2">
@@ -988,6 +1013,7 @@ export default function SalesOrderForm() {
                       type="button"
                       class="text-red-600 hover:text-red-800 text-xs"
                       onClick={() => removeItem(i())}
+                      disabled={isView}
                     >
                       <Trash2 size={20} />
                     </button>

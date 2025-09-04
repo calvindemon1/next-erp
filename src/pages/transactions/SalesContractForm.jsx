@@ -25,6 +25,8 @@ export default function SalesContractForm() {
   const navigate = useNavigate();
   const user = getUser();
 
+  const [manualGenerateDone, setManualGenerateDone] = createSignal(false)
+
   const [salesContracts, setSalesContracts] = createSignal([]);
   const [satuanUnitOptions, setSatuanUnitOptions] = createSignal([]);
   const [fabricOptions, setFabricOptions] = createSignal([]);
@@ -55,6 +57,15 @@ export default function SalesContractForm() {
     items: [],
   });
 
+  createEffect(() => {
+    const ppn = form().ppn_percent; 
+
+    if (isEdit || isView || !manualGenerateDone()) {
+        return;
+    }
+    generateNomorKontrak();
+  });
+
   const selectedCurrency = () =>
     currencyList().find((c) => c.id == form().currency_id);
 
@@ -63,15 +74,36 @@ export default function SalesContractForm() {
     return new Intl.NumberFormat("id-ID", {
       style: "currency",
       currency: "IDR",
-      maximumFractionDigits: 0,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
     }).format(val);
   };
 
-  const parseIDR = (str) => {
-    if (!str) return "";
-    // Keep digits and optional decimal point
-    const cleaned = str.replace(/[^0-9.]/g, "");
-    return cleaned ? parseFloat(cleaned) : "";
+  const formatNumber = (num, options = {}) => {
+    const numValue = typeof num === 'string' ? parseNumber(num) : num;
+    if (isNaN(numValue)) return "";
+
+    // Opsi untuk menampilkan "0,00" jika diperlukan
+    if (numValue === 0 && options.showZero) {
+      return new Intl.NumberFormat("id-ID", {
+        minimumFractionDigits: options.decimals ?? 0,
+        maximumFractionDigits: options.decimals ?? 2,
+      }).format(0);
+    }
+    
+    if (numValue === 0) return "";
+
+    return new Intl.NumberFormat("id-ID", {
+      minimumFractionDigits: options.decimals ?? 0,
+      maximumFractionDigits: options.decimals ?? 4,
+    }).format(numValue);
+  };
+
+  const parseNumber = (str) => {
+    if (typeof str !== 'string' || !str) return 0;
+    // Hapus semua karakter non-numerik KECUALI koma, lalu ganti koma dengan titik
+    const cleaned = str.replace(/[^0-9,]/g, "").replace(",", ".");
+    return parseFloat(cleaned) || 0;
   };
 
   onMount(async () => {
@@ -203,6 +235,7 @@ export default function SalesContractForm() {
       sequence_number: nomor,
       no_seq: lastSeq?.last_sequence + 1,
     }));
+    setManualGenerateDone(true);
   };
 
   const addItem = () => {
@@ -241,32 +274,6 @@ export default function SalesContractForm() {
     }, 0);
   };
 
-  const formatNumber = (num, options = {}) => {
-    const numValue = typeof num === 'string' ? parseNumber(num) : num;
-    if (isNaN(numValue)) return "";
-
-    if (numValue === 0 && options.showZero) {
-      return new Intl.NumberFormat("id-ID", {
-        minimumFractionDigits: options.decimals ?? 2,
-        maximumFractionDigits: options.decimals ?? 4,
-      }).format(0);
-    }
-    
-    if (numValue === 0) return "";
-
-    return new Intl.NumberFormat("id-ID", {
-      minimumFractionDigits: options.decimals ?? 0,
-      maximumFractionDigits: options.decimals ?? 4,
-    }).format(numValue);
-  };
-
-  const parseNumber = (str) => {
-    if (typeof str !== 'string' || !str) return 0;
-    // 1. Hapus semua karakter non-numerik kecuali koma (untuk desimal)
-    const cleaned = str.replace(/[^0-9,]/g, "").replace(",", ".");
-    return parseFloat(cleaned) || 0;
-  };
-
   const handleItemChange = (index, field, value) => {
     setForm((prev) => {
       const items = [...prev.items];
@@ -283,11 +290,11 @@ export default function SalesContractForm() {
 
         let decimals = 2; 
         if (['meter', 'yard', 'kilogram'].includes(field)) {
-          decimals = 4;
+          decimals = 2;
         }
         
         const hasDecimal = String(value).includes(',') || numValue % 1 !== 0;
-        const finalDecimals = hasDecimal ? decimals : 0; 
+        const finalDecimals = hasDecimal ? decimals : 2; 
 
         if (field === 'harga') {
           item.harga = formatIDR(numValue);
@@ -298,17 +305,17 @@ export default function SalesContractForm() {
         const satuanId = parseInt(prev.satuan_unit_id);
         if (satuanId === 1 && field === 'meter') {
           item.yardValue = (numValue || 0) * 1.093613;
-          item.yard = formatNumber(item.yardValue, { decimals: 4, showZero: true });
+          item.yard = formatNumber(item.yardValue, { decimals: 2, showZero: true });
           item.kilogramValue = 0;
-          item.kilogram = formatNumber(0, { decimals: 4, showZero: true });
+          item.kilogram = formatNumber(0, { decimals: 2, showZero: true });
         } else if (satuanId === 2 && field === 'yard') {
           item.meterValue = (numValue || 0) * 0.9144;
-          item.meter = formatNumber(item.meterValue, { decimals: 4, showZero: true });
+          item.meter = formatNumber(item.meterValue, { decimals: 2, showZero: true });
           item.kilogramValue = 0;
-          item.kilogram = formatNumber(0, { decimals: 4, showZero: true });
+          item.kilogram = formatNumber(0, { decimals: 2, showZero: true });
         } else if (satuanId === 3 && field === 'kilogram') {
-          item.meterValue = 0; item.meter = formatNumber(0, { decimals: 4, showZero: true });
-          item.yardValue = 0; item.yard = formatNumber(0, { decimals: 4, showZero: true });
+          item.meterValue = 0; item.meter = formatNumber(0, { decimals: 2, showZero: true });
+          item.yardValue = 0; item.yard = formatNumber(0, { decimals: 2, showZero: true });
         }
       }
       
@@ -460,6 +467,8 @@ export default function SalesContractForm() {
                 });
               }}
               required
+              disabled={isView}
+              classList={{ "bg-gray-200": isView }}
             >
               <option value="" disabled>
                 Pilih Tipe Customer
@@ -475,6 +484,8 @@ export default function SalesContractForm() {
               customersList={customersList}
               form={form}
               setForm={setForm}
+              disabled={isView}
+              classList={{ "bg-gray-200": isView }}
             />
           </div>
           <div>
@@ -486,6 +497,8 @@ export default function SalesContractForm() {
               onInput={(e) =>
                 setForm({ ...form(), validity_contract: e.target.value })
               }
+              disabled={true}
+              classList={{ "bg-gray-200": true }}
             />
           </div>
         </div>
@@ -514,6 +527,8 @@ export default function SalesContractForm() {
                   kurs: curr?.name === "IDR" ? 0 : form().kurs,
                 });
               }}
+              disabled={isView}
+              classList={{ "bg-gray-200": isView }}
               required
             >
               <option value="" disabled>
@@ -543,6 +558,8 @@ export default function SalesContractForm() {
                     setForm({ ...form(), kurs: formatIDR(form().kurs) })
                   }
                   required
+                  disabled={isView}
+                  classList={{ "bg-gray-200": isView }}
                 />
               </div>
             </div>
@@ -555,6 +572,8 @@ export default function SalesContractForm() {
               onChange={(e) =>
                 setForm({ ...form(), satuan_unit_id: e.target.value })
               }
+              disabled={isView}
+              classList={{ "bg-gray-200": isView }}
               required
             >
               <option value="">Pilih Satuan</option>
@@ -570,9 +589,11 @@ export default function SalesContractForm() {
               class="w-full border p-2 rounded"
               value={form().termin}
               onInput={(e) => setForm({ ...form(), termin: e.target.value })}
+              disabled={isView}
+              classList={{ "bg-gray-200": isView }}
             >
               <option value="">-- Pilih Termin --</option>
-              <option value="0">0 Hari/Cash</option>
+              <option value="0">Cash</option>
               <option value="30">30 Hari</option>
               <option value="45">45 Hari</option>
               <option value="60">60 Hari</option>
@@ -594,7 +615,8 @@ export default function SalesContractForm() {
                     })
                   }
                   class="sr-only peer"
-                  disabled={isView}
+                  disabled={true}
+                  classList={{ "bg-gray-200": true }}
                 />
                 <div class="w-24 h-10 bg-gray-200 rounded-full peer peer-checked:bg-green-600 transition-colors"></div>
                 <div class="absolute left-0.5 top-0.5 w-9 h-9 bg-white border border-gray-300 rounded-full shadow-sm transition-transform peer-checked:translate-x-14"></div>
@@ -656,6 +678,8 @@ export default function SalesContractForm() {
                       onChange={(val) =>
                         handleItemChange(i(), "fabric_id", val)
                       }
+                      disabled={isView}
+                      classList={{ "bg-gray-200": isView }}
                     />
                   </td>
                   <td class="border p-2">
@@ -663,6 +687,8 @@ export default function SalesContractForm() {
                       grades={gradeOptions}
                       item={item}
                       onChange={(val) => handleItemChange(i(), "grade_id", val)}
+                      disabled={isView}
+                      classList={{ "bg-gray-200": isView }}
                     />
                   </td>
                   <td class="border p-2">
@@ -672,6 +698,8 @@ export default function SalesContractForm() {
                       class="border p-1 rounded w-full"
                       value={item.lebar_greige}
                       onBlur={(e) => handleItemChange(i(), "lebar_greige", e.target.value)}
+                      disabled={isView}
+                      classList={{ "bg-gray-200": isView }}
                     />
                   </td>
                   <td class="border p-2">
@@ -681,6 +709,8 @@ export default function SalesContractForm() {
                       class="border p-1 rounded w-full"
                       value={item.gramasi}
                       onBlur={(e) => handleItemChange(i(), "gramasi", e.target.value)}
+                      disabled={isView}
+                      classList={{ "bg-gray-200": isView }}
                     />
                   </td>
                   <td class="border p-2">
@@ -696,6 +726,8 @@ export default function SalesContractForm() {
                           handleItemChange(i(), "meter", e.target.value);
                         }
                       }}
+                      disabled={isView}
+                      classList={{ "bg-gray-200": isView }}
                     />
                   </td>
                   <td class="border p-2">
@@ -711,6 +743,8 @@ export default function SalesContractForm() {
                           handleItemChange(i(), "yard", e.target.value);
                         }
                       }}
+                      disabled={isView}
+                      classList={{ "bg-gray-200": isView }}
                     />
                   </td>
                   <td class="border p-2">
@@ -726,6 +760,8 @@ export default function SalesContractForm() {
                           handleItemChange(i(), "kilogram", e.target.value);
                         }
                       }}
+                      disabled={isView}
+                      classList={{ "bg-gray-200": isView }}
                     />
                   </td>
                   <td class="border p-2">
@@ -735,6 +771,8 @@ export default function SalesContractForm() {
                       class="border p-1 rounded w-full"
                       value={item.harga} // Tampilkan nilai harga yang sudah diformat
                       onBlur={(e) => handleItemChange(i(), "harga", e.target.value)}
+                      disabled={isView}
+                      classList={{ "bg-gray-200": isView }}
                     />
                   </td>
                   <td class="border p-2">
@@ -750,6 +788,7 @@ export default function SalesContractForm() {
                       type="button"
                       class="text-red-600 hover:text-red-800 text-xs"
                       onClick={() => removeItem(i())}
+                      disabled={isView}
                     >
                       <Trash2 size={20} />
                     </button>

@@ -191,7 +191,7 @@ export default function SalesContractPrint(props) {
       >
         <img
           className="w-24"
-          hidden={!data.ppn || parseInt(data.ppn) === 0}
+          hidden={!isPPN()}
           src={logoNavel}
           alt=""
         />
@@ -380,21 +380,27 @@ export default function SalesContractPrint(props) {
           </tbody>
           <tfoot>
             <tr>
-              <td colSpan={6} className="border border-black px-2 py-1" />
+              <td colSpan={6} className="border border-black font-bold px-2 py-1" >Total</td>
               <td className="border border-black px-2 py-1 text-right font-bold">
                 {formatRupiahNumber(totalMeter())}
               </td>
               <td className="border border-black px-2 py-1 text-right font-bold">
                 {formatRupiahNumber(totalYard())}
               </td>
-              <td className="border border-black px-2 py-1 text-right font-bold">
+              {/* <td className="border border-black px-2 py-1 text-right font-bold">
                 Sub Total
+              </td>
+              <td className="border border-black px-2 py-1 text-right">
+                {formatRupiahNumber(subTotal())}
+              </td> */}
+              <td className="border border-black px-2 py-1 text-right font-bold">
+                {isPPN() ? 'Sub Total' : 'Jumlah Total'}
               </td>
               <td className="border border-black px-2 py-1 text-right">
                 {formatRupiahNumber(subTotal())}
               </td>
             </tr>
-            <tr>
+            {/* <tr>
               <td colSpan={8} className="px-2 py-1" />
               <td className="px-2 py-1 text-right font-bold">DPP</td>
               <td className="px-2 py-1 text-right">
@@ -421,7 +427,39 @@ export default function SalesContractPrint(props) {
               <td className="px-2 py-1 text-right">
                 {formatRupiahNumber(dataAkhir.total)}
               </td>
-            </tr>
+            </tr> */}
+            <Show when={isPPN()}>
+              <>
+                <tr>
+                  <td colSpan={8} className="px-2 py-1"/>
+                  <td className="px-2 py-1 text-right font-bold">DPP</td>
+                  <td className="px-2 py-1 text-right">
+                    {formatRupiahNumber(dataAkhir.dpp)}
+                  </td>
+                </tr>
+                <tr>
+                  <td colSpan={8} className="px-2 py-1"/>
+                  <td className="px-2 py-1 text-right font-bold">Nilai Lain</td>
+                  <td className="px-2 py-1 text-right">
+                    {formatRupiahNumber(dataAkhir.nilai_lain)}
+                  </td>
+                </tr>
+                <tr>
+                  <td colSpan={8} className="px-2 py-1"/>
+                  <td className="px-2 py-1 text-right font-bold">PPN</td>
+                  <td className="px-2 py-1 text-right">
+                    {formatRupiahNumber(dataAkhir.ppn)}
+                  </td>
+                </tr>
+                <tr>
+                  <td colSpan={8} className="px-2 py-1"/>
+                  <td className="px-2 py-1 text-right font-bold">Jumlah Total</td>
+                  <td className="px-2 py-1 text-right">
+                    {formatRupiahNumber(dataAkhir.total)}
+                  </td>
+                </tr>
+              </>
+            </Show>
             <tr>
               <td colSpan={10} className="border border-black p-2 align-top">
                 <div className="font-bold mb-1">NOTE:</div>
