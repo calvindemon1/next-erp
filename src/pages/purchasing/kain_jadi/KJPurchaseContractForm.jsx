@@ -112,6 +112,7 @@ export default function KJPurchaseContractForm() {
 
     if (isEdit) {
       const res = await getKainJadis(params.id, user?.token);
+      //console.log("Data KJ: ", JSON.stringify(res, null, 2));
       const data = res.contract;
       const dataItems = data.items;
 
@@ -125,6 +126,7 @@ export default function KJPurchaseContractForm() {
         const hargaMaklunValue = parseFloat(item.harga_maklun) || 0;
         const lebarGreigeValue = parseFloat(item.lebar_greige) || 0;
         const lebarFinishValue = parseFloat(item.lebar_finish) || 0;
+        const stdSusutValue    = parseFloat(item.std_susut)    || 0;
 
         const qty = parseInt(data.satuan_unit_id) === 1 ? meterValue :
                     parseInt(data.satuan_unit_id) === 2 ? yardValue : 0;
@@ -132,6 +134,7 @@ export default function KJPurchaseContractForm() {
         const subtotal = (hargaGreigeValue + hargaMaklunValue) * qty;
 
         return {
+          id: item.id,  
           fabric_id: item.kain_id,
           lebar_greige: formatNumber(lebarGreigeValue, { decimals: 0 }),
           lebar_greigeValue: lebarGreigeValue,
@@ -141,6 +144,8 @@ export default function KJPurchaseContractForm() {
           meterValue: meterValue,
           yard: formatNumber(yardValue, { decimals: 2, showZero: true }),
           yardValue: yardValue,
+          std_susut: formatNumber(stdSusutValue, { decimals: 2, showZero: true }),
+          std_susutValue:   stdSusutValue,
           harga_greige: formatIDR(hargaGreigeValue),
           harga_greigeValue: hargaGreigeValue,
           harga_maklun: formatIDR(hargaMaklunValue),
@@ -201,11 +206,13 @@ export default function KJPurchaseContractForm() {
       items: [
         ...prev.items,
         {
+          id: null,
           fabric_id: "",
           lebar_greige: "", lebar_greigeValue: 0,
           lebar_finish: "", lebar_finishValue: 0,
           meter: "", meterValue: 0,
           yard: "", yardValue: 0,
+          std_susut: "", std_susutValue: 0,
           harga_greige: "", harga_greigeValue: 0,
           harga_maklun: "", harga_maklunValue: 0,
           subtotal: 0, subtotalFormatted: "",
@@ -275,16 +282,21 @@ export default function KJPurchaseContractForm() {
 
     try {
       // Kirim raw value ke API
-      const payloadItems = form().items.map((i) => ({
-        kain_id: Number(i.fabric_id),
-        lebar_greige: i.lebar_greigeValue || 0,
-        lebar_finish: i.lebar_finishValue || 0,
-        meter_total: i.meterValue || 0,
-        yard_total: i.yardValue || 0,
-        harga_greige: i.harga_greigeValue || 0,
-        harga_maklun: i.harga_maklunValue || 0,
-        subtotal: i.subtotal || 0,
-      }));
+      const buildItemPayload = (i) => {
+        const base = {
+          kain_id: Number(i.fabric_id),
+          lebar_greige: i.lebar_greigeValue || 0,
+          lebar_finish: i.lebar_finishValue || 0,
+          std_susut: i.std_susutValue || 0,
+          meter_total: i.meterValue || 0,
+          yard_total: i.yardValue || 0,
+          harga_greige: i.harga_greigeValue || 0,
+          harga_maklun: i.harga_maklunValue || 0,
+        };
+        if (isEdit && i?.id) base.id = Number(i.id);
+        return base;
+      };
+      const payloadItems = form().items.map(buildItemPayload);
 
       if (isEdit) {
         const payload = {
@@ -296,6 +308,7 @@ export default function KJPurchaseContractForm() {
           keterangan: form().keterangan,
           items: payloadItems,
         };
+        //console.log("Data update KJ: ", JSON.stringify(payload, null, 2));
         await updateDataKainJadi(user?.token, params.id, payload);
       } else {
         const payload = {
@@ -464,7 +477,7 @@ export default function KJPurchaseContractForm() {
                     setForm({ ...form(), ppn_percent: e.target.checked ? "11.00" : "0.00" })
                   }
                   class="sr-only peer"
-                  disabled={isView}
+                  disabled={isView || isEdit}
                 />
                 <div class="w-24 h-10 bg-gray-200 rounded-full peer peer-checked:bg-green-600 transition-colors"></div>
                 <div class="absolute left-0.5 top-0.5 w-9 h-9 bg-white border border-gray-300 rounded-full shadow-sm transition-transform peer-checked:translate-x-14"></div>

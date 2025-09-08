@@ -43,6 +43,7 @@ export default function KJPurchaseOrderForm() {
   const isView = params.view === "true";
   const filteredSatuanOptions = () =>
     satuanUnitOptions().filter((u) => u.satuan.toLowerCase() !== "kilogram");
+  const [contractItems, setContractItems] = createSignal([]);
 
   const [form, setForm] = createSignal({
     jenis_po_id: "",
@@ -283,6 +284,7 @@ export default function KJPurchaseOrderForm() {
       items: mappedItems,
       sequence_number: prev.sequence_number || lastSeq?.no_sequence + 1 || "",
     }));
+    setContractItems(selectedContract.items || []);
   };
 
   const generateNomorKontrak = async () => {
@@ -310,26 +312,66 @@ export default function KJPurchaseOrderForm() {
     }));
   };
 
-  const addItem = () => {
-    const existingItems = form().items;
+  const templateFromKJContractItem = (ci, satuan_unit_id) => {
+    const meterTotal = Number(ci.meter_total ?? ci.meter ?? 0) || 0;
+    const yardTotal  = Number(ci.yard_total  ?? ci.yard  ?? 0) || 0;
 
-    if (!existingItems || existingItems.length === 0) {
-      Swal.fire(
-        "Peringatan",
-        "Tidak ada item untuk diduplikasi. Silakan pilih Purchase Contract terlebih dahulu.",
-        "warning"
-      );
+    // Lengkapi unit lain bila hanya salah satu yang ada
+    const meterNum = meterTotal || (yardTotal ? yardTotal * 0.9144 : 0);
+    const yardNum  = yardTotal  || (meterTotal ? meterTotal * 1.093613 : 0);
+
+    const hargaGreige = parseFloat(ci.harga_greige ?? 0) || 0;
+    const hargaMaklun = parseFloat(ci.harga_maklun ?? 0) || 0;
+
+    const qty = parseInt(satuan_unit_id) === 2 ? yardNum : meterNum;
+    const subtotal = (hargaGreige + hargaMaklun) * qty;
+
+    const fabricId = ci.kain_id || ci.fabric_id || ci.kain?.id || null;
+
+    return {
+      id: null,
+      pc_item_id: ci.id,
+      fabric_id: fabricId,
+      warna_id: ci.warna_id ?? null,
+
+      lebar_greige: ci.lebar_greige ?? "",
+      lebar_finish: ci.lebar_finish ?? "",
+
+      meter: formatNumber(meterNum, { decimals: 2 }),
+      meterValue: meterNum,
+      yard:  formatNumber(yardNum,  { decimals: 2 }),
+      yardValue: yardNum,
+
+      harga_greigeValue: hargaGreige,
+      harga_greigeFormatted: formatIDR(hargaGreige),
+      harga_maklunValue: hargaMaklun,
+      harga_maklunFormatted: formatIDR(hargaMaklun),
+
+      subtotal,
+      subtotalFormatted: formatIDR(subtotal),
+
+      readOnly: false,
+    };
+  };
+
+  const addItem = () => {
+    if (!form().pc_id) {
+      Swal.fire("Peringatan", "Silakan pilih Purchase Contract terlebih dahulu.", "warning");
       return;
     }
 
-    const newItemsToDuplicate = existingItems.map((item) => ({
-      ...item,
-      id: null,
-    }));
+    const baseItems = contractItems();
+    if (!baseItems || baseItems.length === 0) {
+      Swal.fire("Info", "Item pada Purchase Contract tidak ditemukan.", "info");
+      return;
+    }
+
+    const satuanId = form().satuan_unit_id; // 1 = Meter, 2 = Yard
+    const paketBaru = baseItems.map((ci) => templateFromKJContractItem(ci, satuanId));
 
     setForm((prev) => ({
       ...prev,
-      items: [...prev.items, ...newItemsToDuplicate],
+      items: [...prev.items, ...paketBaru],
     }));
   };
 
