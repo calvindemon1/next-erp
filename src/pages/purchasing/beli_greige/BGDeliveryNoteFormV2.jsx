@@ -11,8 +11,10 @@ import {
   getAllBeliGreigeOrders,
   getLastSequence,
   getAllFabrics,
+  getAllSuppliers,
 } from "../../../utils/auth";
 import PurchaseOrderGreigeSearch from "../../../components/PurchasingOrderDropdownSearch";
+import SupplierAlamatDropdownSearch from "../../../components/SupplierAlamatDropdownSearch";
 import { Printer, Trash2, XCircle } from "lucide-solid";
 import FabricDropdownSearch from "../../../components/FabricDropdownSearch";
 
@@ -29,6 +31,10 @@ export default function BGDeliveryNoteForm() {
   const [loading, setLoading] = createSignal(true);
   const [allFabrics, setAllFabrics] = createSignal([]);
   const [deliveryNoteData, setDeliveryNoteData] = createSignal(null); 
+  const [deletedItems, setDeletedItems] = createSignal([]);
+  const [allSuppliers, setAllSuppliers] = createSignal([]);
+  const [selectedSupplierId, setSelectedSupplierId] = createSignal(null);
+
 
   const [form, setForm] = createSignal({
     sequence_number: "",
@@ -38,7 +44,8 @@ export default function BGDeliveryNoteForm() {
     purchase_order_items: null,
     no_sj_supplier: "",
     tanggal_kirim: "",
-    alamat_pengiriman: "",
+    supplier_kirim_alamat: "",
+    supplier_kirim_id: null, 
     unit: "Meter", 
     itemGroups: [],
   });
@@ -69,6 +76,9 @@ export default function BGDeliveryNoteForm() {
     //console.log("Data all PO BG: ", JSON.stringify(poListResponse, null, 2));
     setBeliGreigeList(poListResponse.orders || []);
 
+    const suppliersResponse = await getAllSuppliers(user?.token);
+    setAllSuppliers(suppliersResponse?.suppliers || []);
+
     if (isEdit) {
       const sjResponse = await getBGDeliveryNotes(params.id, user?.token);
       //console.log("Data SJ BG per id: ", JSON.stringify(sjResponse, null, 2));
@@ -88,46 +98,81 @@ export default function BGDeliveryNoteForm() {
         //purchase_order_detail: poData
       };
       // Simpan ke dalam signal
-      setDeliveryNoteData(fullPrintData); 
+      setDeliveryNoteData(fullPrintData);
+      
+      const supplierById = (suppliersResponse?.suppliers || []).find(
+        (s) => s.id === suratJalanData.supplier_kirim_id
+      );
+
+      const alamatKirim =
+        supplierById?.alamat ||
+        suratJalanData?.supplier_kirim_alamat ||
+        // suratJalanData?.supplier_alamat ||
+        "";
 
       setForm({
         ...form(),
         po_id: suratJalanData.no_sj,
         no_sj_supplier: suratJalanData.no_sj_supplier,
-        alamat_pengiriman: suratJalanData.supplier_alamat || "",
+        supplier_kirim_alamat: suratJalanData.supplier_kirim_alamat || "",
+        supplier_kirim_id: supplierById ? supplierById.id : null,
         tanggal_kirim: suratJalanData.tanggal_kirim ? new Date(suratJalanData.tanggal_kirim).toISOString().split("T")[0] : "",
         purchase_order_id: suratJalanData.po_id,
         purchase_order_items: poData,
         sequence_number: suratJalanData.sequence_number,
         keterangan: suratJalanData.keterangan || "",
         unit: poData?.satuan_unit_name || "Meter",
-        itemGroups: (suratJalanData.items || []).map((group) => {
-          const poItem = poData?.items.find(item => item.id === group.po_item_id);
-
-          return {
-            purchase_order_item_id: group.po_item_id,
-            item_details: {
-              corak_kain: poItem?.corak_kain || "N/A",
-              konstruksi_kain: poItem?.konstruksi_kain || "",
-              lebar_greige: poItem?.lebar_greige || "N/A",
-              harga: poItem?.harga || 0,
-            },
-            meter_total: group.meter_total || 0,
-            yard_total: group.yard_total || 0,
-          };
-        }),
+        itemGroups: (suratJalanData.items || [])
+          .filter(group => !group.deleted_at)
+          .map((group) => {
+            const poItem = poData?.items.find(item => item.id === group.po_item_id);
+            return {
+              id: group.id,
+              purchase_order_item_id: group.po_item_id,
+              item_details: {
+                corak_kain: poItem?.corak_kain || group.corak_kain || "N/A",
+                konstruksi_kain: poItem?.konstruksi_kain || group.konstruksi_kain || "",
+                lebar_greige: poItem?.lebar_greige || group.lebar_greige || "N/A",
+                harga: poItem?.harga || group.harga || 0,
+              },
+              meter_total: Number(group.meter_total) || 0,
+              yard_total: Number(group.yard_total) || 0,
+            };
+          })
       });
+
+      if (supplierById) {
+        setSelectedSupplierId(supplierById.id);
+      } else {
+        const sjAlamat = suratJalanData?.supplier_kirim_alamat || "";
+        const matchSupplier = (suppliersResponse?.suppliers || []).find(
+          (s) => (s.alamat || "").trim() === sjAlamat.trim()
+        );
+        if (matchSupplier) {
+          setSelectedSupplierId(matchSupplier.id);
+          setForm(prev => ({
+            ...prev,
+            supplier_kirim_id: matchSupplier.id,
+            supplier_kirim_alamat: matchSupplier.alamat,
+          }));
+        }
+      }
     }
     setLoading(false);
   });
 
-    const removeItem = (index) => {
-      setForm((prev) => {
-        const updatedItemGroups = [...prev.itemGroups];
-        updatedItemGroups.splice(index, 1);
-        return { ...prev, itemGroups: updatedItemGroups };
-      });
-    };
+  const removeItem = (index) => {
+    setForm((prev) => {
+      const updatedItemGroups = [...prev.itemGroups];
+      const [removed] = updatedItemGroups.splice(index, 1);
+
+      if (removed?.id) {
+        setDeletedItems((prevDeleted) => [...prevDeleted, removed.id]);
+      }
+
+      return { ...prev, itemGroups: updatedItemGroups };
+    });
+  };
 
   const formatNumber = (num, decimals = 2) => {
     if (num === "" || num === null || num === undefined) return "";
@@ -188,33 +233,11 @@ export default function BGDeliveryNoteForm() {
       return { ...prev, itemGroups: updatedItemGroups };
     });
   };
-
-  const handleFabricChange = (index, selectedFabricId) => {
-    const selectedFabric = allFabrics().find(f => f.id === selectedFabricId);
-    if (!selectedFabric) return;
-
-    setForm(prev => {
-        const updatedItemGroups = [...prev.itemGroups];
-        const itemToUpdate = { ...updatedItemGroups[index] };
-
-        // Update ID dan detail item
-        itemToUpdate.purchase_order_item_id = selectedFabric.id;
-        itemToUpdate.item_details = {
-        corak_kain: selectedFabric.corak,
-        konstruksi_kain: selectedFabric.konstruksi,
-        };
-        
-        updatedItemGroups[index] = itemToUpdate;
-        return { ...prev, itemGroups: updatedItemGroups };
-    });
-    };
   
   const handleSuratJalanChange = async (selectedPO) => {
     if (!selectedPO) return;
 
-    // Hanya jalankan logika untuk mode "Tambah Baru"
     const res = await getBeliGreigeOrders(selectedPO.id, user?.token);
-    //console.log("Data get BG ORDER ", JSON.stringify(res, null, 2));    
     const selectedGreigeData = res?.order; 
 
     const poTypeLetter = selectedPO.no_po.split("/")[1];
@@ -226,18 +249,10 @@ export default function BGDeliveryNoteForm() {
       ppnValue
     );
 
-    const newItemGroups = (selectedGreigeData.items || []).map(item => ({
-      purchase_order_item_id: item.id,
-      // Simpan detail item untuk ditampilkan di UI
-      item_details: {
-        corak_kain: item.corak_kain,
-        konstruksi_kain: item.konstruksi_kain,
-        lebar_greige: item.lebar_greige,
-        harga: item.harga,
-      },
-      meter_total: 0,
-      yard_total: 0,
-    }));
+    const unitName = selectedGreigeData.satuan_unit_name; // "Meter" / "Yard"
+    const newItemGroups = (selectedGreigeData.items || []).map(item =>
+      templateFromPOItem(item, unitName)
+    );
 
     setForm({
       ...form(),
@@ -245,9 +260,9 @@ export default function BGDeliveryNoteForm() {
       purchase_order_items: selectedGreigeData,
       po_id: newSJNumber,
       sequence_number: newSequenceNumber,
-      alamat_pengiriman: selectedGreigeData.supplier_alamat,
-      unit: selectedGreigeData.satuan_unit_name,
-      itemGroups: newItemGroups, 
+      //alamat_pengiriman: selectedGreigeData.supplier_alamat,
+      unit: unitName,
+      itemGroups: newItemGroups,
     });
   };
 
@@ -291,25 +306,51 @@ export default function BGDeliveryNoteForm() {
   //   setGroupRollCounts((prev) => [...prev, 0]);
   // };
 
+  const handleSupplierSelected = (opt) => {
+    setSelectedSupplierId(opt ? opt.id : null);
+    setForm((prev) => ({
+      ...prev,
+      supplier_kirim_id: opt ? opt.id : null,
+      supplier_kirim_alamat: opt ? opt.alamat : "",
+    }));
+  };
+
+  const templateFromPOItem = (poItem) => {
+    const m = Number(poItem.meter_total ?? poItem.meter ?? 0) || 0;
+    const y = Number(poItem.yard_total  ?? poItem.yard  ?? 0) || 0;
+
+    const hasM = m > 0;
+    const hasY = y > 0;
+
+    const meterVal = hasM ? m : (hasY ? y * 0.9144 : 0);
+    const yardVal  = hasY ? y : (hasM ? m * 1.093613 : 0);
+
+    return {
+      purchase_order_item_id: poItem.id,
+      item_details: {
+        corak_kain: poItem.corak_kain,
+        konstruksi_kain: poItem.konstruksi_kain,
+        lebar_greige: poItem.lebar_greige,
+        harga: poItem.harga,
+      },
+      meter_total: meterVal,
+      yard_total:  yardVal,
+    };
+  };
+
   const addItemGroup = () => {
-    setForm((prev) => {
-      const currentItems = [...prev.itemGroups];
+    const poDetail = form().purchase_order_items;
+    if (!poDetail || !poDetail.items || poDetail.items.length === 0) {
+      Swal.fire("Peringatan", "Silakan pilih Purchase Order terlebih dahulu.", "warning");
+      return;
+    }
 
-      if (currentItems.length === 0) {
-        return prev;
-      }
+    const paketBaru = poDetail.items.map(templateFromPOItem);
 
-      const duplicatedItems = currentItems.map(item => ({
-        ...item,
-        item_details: { ...item.item_details }, 
-        meter_total: 0,
-        yard_total: 0,  
-      }));
-
-      const newItemGroup = [...currentItems, ...duplicatedItems];
-
-      return { ...prev, itemGroups: newItemGroup };
-    });
+    setForm((prev) => ({
+      ...prev,
+      itemGroups: [...prev.itemGroups, ...paketBaru],
+    }));
   };
 
   const handleSubmit = async (e) => {
@@ -335,22 +376,27 @@ export default function BGDeliveryNoteForm() {
       }
     }
 
-
     try {
       if (isEdit) {
       const payload = {
+        no_sj: form().po_id,
+        po_id: form().purchase_order_id,
         no_sj_supplier: form().no_sj_supplier.trim(),
         tanggal_kirim: form().tanggal_kirim,
+        supplier_kirim_alamat: form().supplier_kirim_alamat,
+        supplier_kirim_id: form().supplier_kirim_id,  
         keterangan: form().keterangan,
         items: form().itemGroups
           .filter(g => (form().unit === 'Meter' ? g.meter_total : g.yard_total) > 0)
           .map((g) => ({
+            id: g.id,
             po_item_id: Number(g.purchase_order_item_id),
             meter_total: Number(g.meter_total) || 0,
             yard_total: Number(g.yard_total) || 0,
           })),
+         deleted_items: deletedItems(),
       };
-
+        //console.log("Update SJ BG: ", JSON.stringify(payload, null, 2));  
         await updateDataBGDeliveryNote(user?.token, params.id, payload);
       } else {
         const payload = {
@@ -358,21 +404,24 @@ export default function BGDeliveryNoteForm() {
           po_id: form().purchase_order_id,
           keterangan: form().keterangan,
           tanggal_kirim: form().tanggal_kirim,
-          alamat_pengiriman: form().alamat_pengiriman,
+          supplier_kirim_alamat: form().supplier_kirim_alamat,
+          supplier_kirim_id: form().supplier_kirim_id,  
           no_sj_supplier: form().no_sj_supplier.trim(),
-          items: form().itemGroups.filter(g => (form().unit === 'Meter' ? g.meter_total : g.yard_total) > 0) // Hanya kirim item yg diisi
+          items: form().itemGroups.filter(g => (form().unit === 'Meter' ? g.meter_total : g.yard_total) > 0)
             .map((g) => ({
+                //id: g.id,
                 po_item_id: Number(g.purchase_order_item_id),
                 meter_total: Number(g.meter_total) || 0,
                 yard_total: Number(g.yard_total) || 0,
           })),
         }; 
+        //console.log("Response Create SJ BG Format PO: ", JSON.stringify(payload, null, 2));
         await createBGDeliveryNote(user?.token, payload);
       }
 
       Swal.fire({
         icon: "success",
-        title: isEdit ? "Berhasil Update" : "Berhasil Simpan",
+        title: isEdit ? "Berhasil Update" : "Berhasil Simpan",  
         showConfirmButton: false,
         timer: 1000,
         timerProgressBar: true,
@@ -453,13 +502,13 @@ export default function BGDeliveryNoteForm() {
           </div>
           <div>
             <label class="block text-sm mb-1">Alamat Pengiriman</label>
-            <div class="flex gap-2">
-              <input
-                class="w-full border bg-gray-200 p-2 rounded"
-                value={form().alamat_pengiriman}
-                readOnly
+              <SupplierAlamatDropdownSearch
+                suppliers={allSuppliers()}
+                value={selectedSupplierId()}
+                onChange={handleSupplierSelected}
+                disabled={isView}
+                showPreview={true}
               />
-            </div>
           </div>
           <div>
             <label class="block text-sm mb-1">Tanggal Pengiriman</label>
@@ -483,7 +532,7 @@ export default function BGDeliveryNoteForm() {
                 form={form}
                 setForm={setForm}
                 onChange={handleSuratJalanChange}
-                disabled={isView}
+                disabled={isView || isEdit}
               />
           </div>
         </div>
@@ -537,14 +586,13 @@ export default function BGDeliveryNoteForm() {
         <div>
           <h2 class="text-lg font-bold mt-6 mb-2">Items</h2>
           <button
-  type="button"
-  // [FIX] Kembalikan ke fungsi addItemGroup untuk menambah baris kosong
-  onClick={() => addItemGroup()}
-  class="bg-green-600 text-white px-3 py-2 rounded hover:bg-green-700 mb-4"
-  hidden={isView}
->
-  + Tambah Item
-</button>
+            type="button"
+            onClick={() => addItemGroup()}
+            class="bg-green-600 text-white px-3 py-2 rounded hover:bg-green-700 mb-4"
+            hidden={isView}
+          >
+            + Tambah Item
+          </button>
           <table class="w-full text-sm border border-gray-300 mb-4">
           <thead class="bg-gray-100">
             <tr>
@@ -604,16 +652,16 @@ export default function BGDeliveryNoteForm() {
                         <input
                           class="w-full border p-2 rounded text-right"
                           value={formatHarga(group.item_details?.harga)}
-                          disabled={isView}
-                          classList={{ "bg-gray-200": isView }}
+                          disabled={true}
+                          classList={{ "bg-gray-200": true }}
                         />
                       </td>
                       <td class="border p-2 text-right font-semibold">
                         <input
                           class="w-full border p-2 rounded text-right"
                           value={formatHarga(subtotal)}
-                          disabled={isView}
-                          classList={{ "bg-gray-200": isView }}
+                          disabled={true}
+                          classList={{ "bg-gray-200": true }}
                         />
                       </td>
                       <td class="border p-2 text-center">

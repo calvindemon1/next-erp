@@ -86,6 +86,7 @@ export default function BGDeliveryNoteForm() {
           const poItem = poData?.items.find(item => item.id === group.po_item_id);
 
           return {
+            id: group.id,
             purchase_order_item_id: group.po_item_id,
             item_details: {
               corak_kain: poItem?.corak_kain || "N/A",
@@ -395,13 +396,12 @@ export default function BGDeliveryNoteForm() {
     try {
       if (isEdit) {
         const payload = {
-          // type: form().type === 1 ? "domestik" : "ekspor",
-          // sequence_number: form().sequence_number || null,
-          no_sj: form().no_sj,
-          //po_id: Number(form().sales_order_id),
+          no_sj: form().po_id,
+          po_id: form().purchase_order_id,
           keterangan: form().keterangan,
           tanggal_kirim: form().tanggal_kirim,
           alamat_pengiriman: form().alamat_pengiriman,
+          no_sj_supplier: form().no_sj_supplier.trim(),
           items: form().itemGroups.map((g) => {
             const rollsWithIndex = g.rolls.map((r, idx) => {
               const row_num = Math.floor(idx / MAX_COL_PER_ROW) + 1;

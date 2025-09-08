@@ -268,30 +268,93 @@ export default function BGPurchaseOrderForm() {
     }));
   };
 
-  const addItem = () => {
-    // 1. Ambil semua item yang sudah ada di form saat ini
-    const existingItems = form().items;
+  // const addItem = () => {
+  //   // 1. Ambil semua item yang sudah ada di form saat ini
+  //   const existingItems = form().items;
 
-    // 2. Periksa apakah ada item untuk diduplikasi
-    if (!existingItems || existingItems.length === 0) {
-      Swal.fire("Peringatan", "Tidak ada item untuk diduplikasi. Silakan pilih Purchase Contract terlebih dahulu.", "warning");
+  //   // 2. Periksa apakah ada item untuk diduplikasi
+  //   if (!existingItems || existingItems.length === 0) {
+  //     Swal.fire("Peringatan", "Tidak ada item untuk diduplikasi. Silakan pilih Purchase Contract terlebih dahulu.", "warning");
+  //     return;
+  //   }
+
+  //   // 3. Buat salinan dari setiap item yang ada
+  //   // Penting: Setel `id` menjadi `null` untuk setiap item baru agar database tahu ini adalah entri baru
+  //   const newItemsToDuplicate = existingItems.map(item => ({
+  //     ...item, // Salin semua properti dari item yang ada
+  //     id: null, // Reset ID agar dianggap sebagai item baru saat disimpan
+  //   }));
+
+  //   // 4. Tambahkan item hasil duplikasi ke akhir daftar yang sudah ada
+  //   setForm((prev) => ({
+  //     ...prev,
+  //     items: [
+  //       ...prev.items,
+  //       ...newItemsToDuplicate
+  //     ],
+  //   }));
+  // };
+
+  const templateFromContractItem = (ci, satuan_unit_id) => {
+    const hargaNum = parseFloat(ci.harga ?? 0) || 0;
+
+    let meterNum = parseFloat(ci.meter_total ?? ci.meter ?? 0) || 0;
+    let yardNum  = parseFloat(ci.yard_total  ?? ci.yard  ?? 0) || 0;
+
+    if (!meterNum && yardNum) meterNum = yardNum * 0.9144;
+    if (!yardNum && meterNum) yardNum  = meterNum * 1.093613;
+
+    const qty = (parseInt(satuan_unit_id) === 2) ? yardNum : meterNum;
+    const subtotal = qty * hargaNum;
+
+    const fabricId =
+      ci.kain_id || ci.fabric_id || ci.kain?.id || null;
+
+    return {
+      id: null,
+      pc_item_id: ci.id,
+      fabric_id: fabricId,
+      lebar_greige: ci.lebar_greige ?? "",
+
+      meter: formatNumber(meterNum, { decimals: 2 }),
+      meterValue: meterNum,
+      yard:  formatNumber(yardNum,  { decimals: 2 }),
+      yardValue: yardNum,
+
+      harga: formatIDR(hargaNum),
+      hargaValue: hargaNum,
+      hargaFormatted: formatIDR(hargaNum),
+
+      subtotal,
+      subtotalFormatted: formatIDR(subtotal),
+
+      readOnly: false,
+    };
+  };
+
+  const addItem = async () => {
+    const pcId = form().pc_id;
+    if (!pcId) {
+      Swal.fire("Peringatan", "Silakan pilih No Purchase Contract terlebih dahulu.", "warning");
       return;
     }
 
-    // 3. Buat salinan dari setiap item yang ada
-    // Penting: Setel `id` menjadi `null` untuk setiap item baru agar database tahu ini adalah entri baru
-    const newItemsToDuplicate = existingItems.map(item => ({
-      ...item, // Salin semua properti dari item yang ada
-      id: null, // Reset ID agar dianggap sebagai item baru saat disimpan
-    }));
+    let contract = purchaseContracts().find((sc) => sc.id == pcId);
+    if (!contract || !contract.items?.length) {
+      const detail = await getBeliGreiges(pcId, user?.token);
+      contract = detail?.contract;
+    }
+    if (!contract || !contract.items?.length) {
+      Swal.fire("Info", "Item pada Purchase Contract tidak ditemukan.", "info");
+      return;
+    }
+    const paketBaru = contract.items.map((ci) =>
+      templateFromContractItem(ci, contract.satuan_unit_id || form().satuan_unit_id)
+    );
 
-    // 4. Tambahkan item hasil duplikasi ke akhir daftar yang sudah ada
     setForm((prev) => ({
       ...prev,
-      items: [
-        ...prev.items,
-        ...newItemsToDuplicate
-      ],
+      items: [...prev.items, ...paketBaru],
     }));
   };
 

@@ -460,7 +460,7 @@ export default function BGPurchaseContractForm() {
                     setForm({ ...form(), ppn_percent: e.target.checked ? "11.00" : "0.00" })
                   }
                   class="sr-only peer"
-                  disabled={isView}
+                  disabled={isView || isEdit}
                 />
                 <div class="w-24 h-10 bg-gray-200 rounded-full peer peer-checked:bg-green-600 transition-colors"></div>
                 <div class="absolute left-0.5 top-0.5 w-9 h-9 bg-white border border-gray-300 rounded-full shadow-sm transition-transform peer-checked:translate-x-14"></div>
