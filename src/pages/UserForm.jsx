@@ -1,7 +1,13 @@
-import { createSignal, onMount } from "solid-js";
+import { createSignal, onMount, For } from "solid-js";
 import { useNavigate, useSearchParams } from "@solidjs/router";
 import MainLayout from "../layouts/MainLayout";
-import { getDataUser, getUser, register, updateUser } from "../utils/auth";
+import { 
+  getDataUser, 
+  getUser, 
+  register, 
+  updateUser,
+  getAllRoles
+} from "../utils/auth";
 import Swal from "sweetalert2";
 
 export default function UserForm() {
@@ -10,49 +16,55 @@ export default function UserForm() {
     name: "",
     username: "",
     password: "",
-    role: "1",
+    role_id: "",
     account_type_id: "1",
   });
   const [params] = useSearchParams();
   const isEdit = !!params.id;
   const navigate = useNavigate();
   const user = getUser();
+  const [roles, setRoles] = createSignal([]);
 
   onMount(async () => {
-    if (isEdit) {
-      const userData = await getDataUser(params.id, user?.token);
-      let roleNumber = 0;
-      if (userData.user.role_name === "super admin") {
-        roleNumber = 1;
-      } else if (userData.user.role_name === "admin") {
-        roleNumber = 2;
-      } else if (userData.user.role_name === "staff marketing 1") {
-        roleNumber = 3;
-      } else if (userData.user.role_name === "staff marketing 2") {
-        roleNumber = 4;
+    try {
+      // GET All Data Roles
+      const rolesData = await getAllRoles(user?.token);
+      if (rolesData.status === 200 && rolesData.result) {
+        setRoles(rolesData.result);
+        // Set role_id default ke role pertama jika membuat user baru
+        if (!isEdit && rolesData.result.length > 0) {
+          setForm(prev => ({ ...prev, role_id: rolesData.result[0].id }));
+        }
       }
 
-      let accountType = 0;
-      if (userData.user.account_type_name === "non-ppn") {
-        accountType = 1;
-      } else if (userData.user.account_type_name === "ppn") {
-        accountType = 2;
-      }
+      // GET Data user ketika edit
+      if (isEdit) {
+        const userDataResponse = await getDataUser(params.id, user?.token);
+        const userData = userDataResponse.user;
+        
+        // Konversi tipe akun dari nama ke angka
+        let accountType = 1;
+        if (userData.account_type_name === "ppn") {
+          accountType = 2;
+        }
 
-      setForm({
-        id: params.id,
-        name: userData.user.name,
-        username: userData.user.username,
-        password: "",
-        role: roleNumber,
-        account_type_id: accountType,
-      });
+        setForm({
+          id: params.id,
+          name: userData.name,
+          username: userData.username,
+          password: "",
+          role_id: userData.role_id,
+          account_type_id: accountType,
+        });
+      }
+    } catch (error) {
+      console.error("Gagal memuat data:", error);
+      Swal.fire("Error", "Gagal memuat data roles atau user.", "error");
     }
   });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     try {
       if (isEdit) {
         await updateUser(
@@ -60,7 +72,7 @@ export default function UserForm() {
           form().name,
           form().username,
           form().password,
-          form().role,
+          form().role_id,
           form().account_type_id,
           user?.token
         );
@@ -69,12 +81,11 @@ export default function UserForm() {
           form().name,
           form().username,
           form().password,
-          form().role,
+          form().role_id,
           form().account_type_id,
           user?.token
         );
       }
-
       Swal.fire({
         icon: "success",
         title: "Berhasil",
@@ -84,16 +95,11 @@ export default function UserForm() {
         timerProgressBar: true,
       }).then(() => navigate("/users"));
     } catch (error) {
-      console.log(error);
+      console.error(error);
       Swal.fire({
         icon: "error",
         title: "Gagal",
-        text:
-          error.message ||
-          (isEdit ? "Gagal mengubah user" : "Gagal membuat user baru"),
-        showConfirmButton: false,
-        timer: 1000,
-        timerProgressBar: true,
+        text: error.message || (isEdit ? "Gagal mengubah user" : "Gagal membuat user baru"),
       });
     }
   };
@@ -102,7 +108,7 @@ export default function UserForm() {
     <MainLayout>
       <h1 class="text-2xl font-bold mb-4">{isEdit ? "Edit" : "Tambah"} User</h1>
       <form class="space-y-4" onSubmit={handleSubmit}>
-        <div className="grid grid-cols-5 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           <div>
             <label class="block mb-1 font-medium">Name</label>
             <input
@@ -123,37 +129,39 @@ export default function UserForm() {
               required
             />
           </div>
-          {/* {!isEdit && ( */}
           <div>
             <label class="block mb-1 font-medium">
-              Password
-              {/* {isEdit && (
-                <span class="text-sm text-gray-500">
-                  (kosongkan jika tidak ingin ubah)
-                </span>
-              )} */}
+              Password 
+              {isEdit && <span class="text-sm text-gray-500"></span>}
             </label>
             <input
-              type="text"
+              type="password"
               class="w-full border p-2 rounded"
               value={form().password}
               onInput={(e) => setForm({ ...form(), password: e.target.value })}
               required={!isEdit}
             />
           </div>
+          
           <div>
             <label class="block mb-1 font-medium">Tipe Akses</label>
             <select
-              class="w-full border p-2 rounded"
-              value={form().role}
-              onChange={(e) => setForm({ ...form(), role: e.target.value })}
+              class="w-full border p-2 rounded capitalize"
+              value={form().role_id}
+              onChange={(e) => setForm({ ...form(), role_id: e.target.value })}
+              required
             >
-              <option value="1">Super Admin</option>
-              <option value="2">Admin</option>
-              <option value="3">Staff Marketing 1</option>
-              <option value="4">Staff Marketing 2</option>
+              <option value="" disabled>Pilih Tipe Akses</option>
+              <For each={roles()}>
+                {(role) => (
+                  <option value={role.id} class="capitalize">
+                    {role.name}
+                  </option>
+                )}
+              </For>
             </select>
           </div>
+
           <div>
             <label class="block mb-1 font-medium">
               Tipe Akun (PPN/Non-PPN)
@@ -161,9 +169,7 @@ export default function UserForm() {
             <select
               class="w-full border p-2 rounded"
               value={form().account_type_id}
-              onChange={(e) =>
-                setForm({ ...form(), account_type_id: e.target.value })
-              }
+              onChange={(e) => setForm({ ...form(), account_type_id: e.target.value })}
             >
               <option value="1">User (Non-PPN)</option>
               <option value="2">User (PPN)</option>

@@ -61,19 +61,45 @@ export default function UsersList() {
     }
   };
 
+  // const handleGetAllUsers = async () => {
+  //   try {
+  //     const users = await getAllUsers(user?.token);
+
+  //     if (users.status === 200) {
+  //       const sortedData = users.users.sort((a, b) => a.id - b.id);
+
+  //       setUsers(sortedData);
+  //     }
+  //   } catch (error) {
+  //     Swal.fire({
+  //       title: "Gagal",
+  //       text: "Gagal mengambil seluruh data pengguna",
+  //       showConfirmButton: false,
+  //       timer: 1000,
+  //       timerProgressBar: true,
+  //     });
+  //   }
+  // };
+
   const handleGetAllUsers = async () => {
-    try {
-      const users = await getAllUsers(user?.token);
+    const result = await getAllUsers(user?.token);
 
-      if (users.status === 200) {
-        const sortedData = users.users.sort((a, b) => a.id - b.id);
-
-        setUsers(sortedData);
-      }
-    } catch (error) {
+    if (result.status === 200) {
+      const sortedData = result.users.sort((a, b) => a.id - b.id);
+      setUsers(sortedData);
+    } else if (result.status === 403) {
+      await Swal.fire({
+        title: "Tidak Ada Akses",
+        text: "Anda tidak memiliki izin untuk melihat data pengguna",
+        icon: "warning",
+        confirmButtonColor: "#6496df",
+      });
+      navigate("/dashboard");
+    } else {
       Swal.fire({
         title: "Gagal",
-        text: "Gagal mengambil seluruh data pengguna",
+        text: result.message || "Gagal mengambil seluruh data pengguna",
+        icon: "error",
         showConfirmButton: false,
         timer: 1000,
         timerProgressBar: true,
