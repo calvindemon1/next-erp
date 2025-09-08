@@ -1,6 +1,6 @@
 import { createSignal } from "solid-js";
 import { useNavigate } from "@solidjs/router";
-import { login } from "../utils/auth";
+import { login, saveUser } from "../utils/auth";
 import Swal from "sweetalert2";
 import logoNavel from "../assets/img/navelLogo.png";
 
@@ -15,6 +15,7 @@ export default function LoginPage() {
 
     try {
       const user = await login(username(), password());
+      saveUser(user);
 
       Swal.fire({
         title: "Berhasil Login!",

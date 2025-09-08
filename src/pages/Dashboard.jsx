@@ -1,8 +1,16 @@
 import MainLayout from "../layouts/MainLayout";
-// import { getUser } from "../utils/auth";
+import { getUser, hasPermission, hasRole } from "../utils/auth";
+import { onMount, createSignal } from "solid-js";
 
 export default function Dashboard() {
-  // const user = getUser();
+  const user = getUser();
+  const [permissions, setPermissions] = createSignal([]);
+
+  onMount(() => {
+    const perms = JSON.parse(localStorage.getItem("permissions") || "[]");
+    setPermissions(perms);
+  });
+
 
   const stats = [
     { title: "Pesanan", value: 128 },
