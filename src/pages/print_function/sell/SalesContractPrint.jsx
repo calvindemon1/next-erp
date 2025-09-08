@@ -343,7 +343,7 @@ export default function SalesContractPrint(props) {
                   {gradeList()[item.grade_id]?.grade || "-"}
                 </td>
                 <td className="p-1 text-center break-words">
-                  {item.lebar_greige}
+                  {item.lebar}
                 </td>
                 <td className="p-1 text-center break-words">{item.gramasi}</td>
                 <td className="p-1 text-right break-words">

@@ -95,7 +95,7 @@ export default function SalesContractForm() {
 
     return new Intl.NumberFormat("id-ID", {
       minimumFractionDigits: options.decimals ?? 0,
-      maximumFractionDigits: options.decimals ?? 4,
+      maximumFractionDigits: options.decimals ?? 2,
     }).format(numValue);
   };
 
@@ -104,6 +104,14 @@ export default function SalesContractForm() {
     // Hapus semua karakter non-numerik KECUALI koma, lalu ganti koma dengan titik
     const cleaned = str.replace(/[^0-9,]/g, "").replace(",", ".");
     return parseFloat(cleaned) || 0;
+  };
+
+  const roundTo = (n, d = 2) =>
+    Math.round((Number(n) + Number.EPSILON) * 10 ** d) / 10 ** d;
+
+  const sanitizeInt = (v) => {
+    const s = String(v).replace(/[^\d]/g, ""); // hanya digit
+    return s === "" ? 0 : parseInt(s, 10);
   };
 
   onMount(async () => {
@@ -139,40 +147,47 @@ export default function SalesContractForm() {
       const data = res.contract;
       if (!data) return;
 
-      const normalizedItems = (data.items || []).map((item) => {
-        const lebarValue = parseFloat(item.lebar) || 0;
-        const gramasiValue = parseFloat(item.gramasi) || 0;
-        const meterValue = parseFloat(item.meter_total) || 0;
-        const yardValue = parseFloat(item.yard_total) || 0;
-        const kilogramValue = parseFloat(item.kilogram_total) || 0;
-        const hargaValue = parseFloat(item.harga) || 0;
+      const normalizedItems = (data.items || []).map((item) => {
+        const lebarValue     = parseFloat(item.lebar) || 0;
+        const gramasiValue   = parseFloat(item.gramasi) || 0;
+        const meterValue     = parseFloat(item.meter_total) || 0;
+        const yardValue      = parseFloat(item.yard_total) || 0;
+        const kilogramValue  = parseFloat(item.kilogram_total) || 0;
+        const hargaValue     = parseFloat(item.harga) || 0;
 
-        const subtotal = hargaValue * (
-          parseInt(data.satuan_unit_id) === 1 ? meterValue :
-          parseInt(data.satuan_unit_id) === 2 ? yardValue :
-          parseInt(data.satuan_unit_id) === 3 ? kilogramValue : 0
-        );
+        const subtotal = hargaValue * (
+          parseInt(data.satuan_unit_id) === 1 ? meterValue :
+          parseInt(data.satuan_unit_id) === 2 ? yardValue :
+          parseInt(data.satuan_unit_id) === 3 ? kilogramValue : 0
+        );
 
-        return {
-          id: item.id,
-          fabric_id: item.kain_id ?? null,
-          grade_id: item.grade_id ?? "",
-          lebar_greige: formatNumber(lebarValue, { decimals: 2, showZero: true }),
-          lebar_greigeValue: lebarValue,
-          gramasi: formatNumber(gramasiValue, { decimals: 2, showZero: true }),
-          gramasiValue: gramasiValue,
-          meter: formatNumber(meterValue, { decimals: 4, showZero: true }),
-          meterValue: meterValue,
-          yard: formatNumber(yardValue, { decimals: 4, showZero: true }),
-          yardValue: yardValue,
-          kilogram: formatNumber(kilogramValue, { decimals: 4, showZero: true }),
-          kilogramValue: kilogramValue,
-          harga: formatIDR(hargaValue),
-          hargaValue: hargaValue,
-          subtotal: subtotal,
-          subtotalFormatted: formatIDR(subtotal),
-        };
-      });
+        return {
+          id: item.id,
+          fabric_id: item.kain_id ?? null,
+          grade_id: item.grade_id ?? "",
+          // lebar: tanpa desimal
+          lebar: formatNumber(lebarValue, { decimals: 0, showZero: true }),
+          lebarValue: Math.round(lebarValue),
+
+          gramasi:  formatNumber(roundTo(gramasiValue, 2), { decimals: 2, showZero: true }),
+          gramasiValue: roundTo(gramasiValue, 2),
+
+          meter:    formatNumber(roundTo(meterValue, 2),   { decimals: 2, showZero: true }),
+          meterValue: roundTo(meterValue, 2),
+
+          yard:     formatNumber(roundTo(yardValue, 2),    { decimals: 2, showZero: true }),
+          yardValue: roundTo(yardValue, 2),
+
+          kilogram: formatNumber(roundTo(kilogramValue, 2),{ decimals: 2, showZero: true }),
+          kilogramValue: roundTo(kilogramValue, 2),
+
+          harga: formatIDR(roundTo(hargaValue, 2)),
+          hargaValue: roundTo(hargaValue, 2),
+
+          subtotal,
+          subtotalFormatted: formatIDR(subtotal),
+        };
+      });
 
       setForm({
         type: data.transaction_type?.toLowerCase() === "domestik" ? 1 : 2,
@@ -245,7 +260,7 @@ export default function SalesContractForm() {
         ...prev.items,
         {
           fabric_id: null, grade_id: "",
-          lebar_greige: "", lebar_greigeValue: 0,
+          lebar: "", lebarValue: 0,
           gramasi: "", gramasiValue: 0,
           meter: "", meterValue: 0,
           yard: "", yardValue: 0,
@@ -278,56 +293,51 @@ export default function SalesContractForm() {
     setForm((prev) => {
       const items = [...prev.items];
       const item = { ...items[index] };
+      const satuanId = parseInt(prev.satuan_unit_id);
 
-      // Logika untuk dropdown
       if (field === 'fabric_id' || field === 'grade_id') {
         item[field] = value;
-      } 
-      // Logika untuk input numerik
-      else {
-        const numValue = parseNumber(value);
+      } else if (field === 'lebar') {
+        // khusus lebar → integer only
+        const intVal = sanitizeInt(value);
+        item.lebarValue = intVal;
+        item.lebar = formatNumber(intVal, { decimals: 0, showZero: true });
+      } else {
+        // numeric lain → maksimal 2 desimal
+        const numValue = roundTo(parseNumber(value), 2);
         item[`${field}Value`] = numValue;
-
-        let decimals = 2; 
-        if (['meter', 'yard', 'kilogram'].includes(field)) {
-          decimals = 2;
-        }
-        
-        const hasDecimal = String(value).includes(',') || numValue % 1 !== 0;
-        const finalDecimals = hasDecimal ? decimals : 2; 
 
         if (field === 'harga') {
           item.harga = formatIDR(numValue);
         } else {
-          item[field] = formatNumber(numValue, { decimals: finalDecimals, showZero: true });
+          item[field] = formatNumber(numValue, { decimals: 2, showZero: true });
         }
-        
-        const satuanId = parseInt(prev.satuan_unit_id);
+
+        // konversi otomatis antar satuan (tetap 2 desimal)
         if (satuanId === 1 && field === 'meter') {
-          item.yardValue = (numValue || 0) * 1.093613;
+          item.yardValue = roundTo((numValue || 0) * 1.093613, 2);
           item.yard = formatNumber(item.yardValue, { decimals: 2, showZero: true });
           item.kilogramValue = 0;
           item.kilogram = formatNumber(0, { decimals: 2, showZero: true });
         } else if (satuanId === 2 && field === 'yard') {
-          item.meterValue = (numValue || 0) * 0.9144;
+          item.meterValue = roundTo((numValue || 0) * 0.9144, 2);
           item.meter = formatNumber(item.meterValue, { decimals: 2, showZero: true });
           item.kilogramValue = 0;
           item.kilogram = formatNumber(0, { decimals: 2, showZero: true });
         } else if (satuanId === 3 && field === 'kilogram') {
           item.meterValue = 0; item.meter = formatNumber(0, { decimals: 2, showZero: true });
-          item.yardValue = 0; item.yard = formatNumber(0, { decimals: 2, showZero: true });
+          item.yardValue  = 0; item.yard  = formatNumber(0, { decimals: 2, showZero: true });
         }
       }
-      
-      // Hitung ulang subtotal
-      const satuanId = parseInt(prev.satuan_unit_id);
+
+      // subtotal
       const hargaValue = item.hargaValue || 0;
       let qtyValue = 0;
       if (satuanId === 1) qtyValue = item.meterValue || 0;
       else if (satuanId === 2) qtyValue = item.yardValue || 0;
       else if (satuanId === 3) qtyValue = item.kilogramValue || 0;
 
-      const subtotal = qtyValue * hargaValue;
+      const subtotal = roundTo(qtyValue * hargaValue, 2);
       item.subtotal = subtotal;
       item.subtotalFormatted = formatIDR(subtotal);
 
@@ -345,7 +355,7 @@ export default function SalesContractForm() {
         id: item.id,
         kain_id: item.fabric_id,
         grade_id: item.grade_id,
-        lebar: item.lebar_greigeValue || 0,
+        lebar: item.lebarValue || 0,
         gramasi: item.gramasiValue || 0,
         meter_total: item.meterValue || 0,
         yard_total: item.yardValue || 0,
@@ -355,6 +365,7 @@ export default function SalesContractForm() {
 
       const payload = {
         type: customerTypeObj?.jenis.toLowerCase(),
+        no_sc: form().no_seq,
         po_cust: form().po_cust,
         validity_contract: form().validity_contract,
         customer_id: parseInt(form().customer_id),
@@ -368,7 +379,8 @@ export default function SalesContractForm() {
       };
 
       if (isEdit) {
-        payload.no_sc = form().no_seq;
+        //payload.no_sc = form().no_seq;
+        //console.log("Update SC: ", JSON.stringify(payload, null, 2));
         await updateDataSalesContract(user?.token, params.id, payload);
       } else {
         payload.sequence_number = form().no_seq;
@@ -378,6 +390,9 @@ export default function SalesContractForm() {
       Swal.fire({
         icon: "success",
         title: "Sales Contract berhasil disimpan!",
+        showConfirmButton: false,
+        timer: 1000,
+        timerProgressBar: true,
       }).then(() => {
         navigate("/salescontract");
       });
@@ -387,6 +402,9 @@ export default function SalesContractForm() {
         icon: "error",
         title: "Gagal menyimpan Sales Contract",
         text: err?.message || "Terjadi kesalahan.",
+        showConfirmButton: false,
+        timer: 1000,
+        timerProgressBar: true,
       });
     }
   };
@@ -497,8 +515,8 @@ export default function SalesContractForm() {
               onInput={(e) =>
                 setForm({ ...form(), validity_contract: e.target.value })
               }
-              disabled={true}
-              classList={{ "bg-gray-200": true }}
+              disabled={isView || isEdit}
+              classList={{ "bg-gray-200": isView || isEdit }}
             />
           </div>
         </div>
@@ -615,8 +633,8 @@ export default function SalesContractForm() {
                     })
                   }
                   class="sr-only peer"
-                  disabled={true}
-                  classList={{ "bg-gray-200": true }}
+                  disabled={isView || isEdit}
+                  classList={{ "bg-gray-200": isView || isEdit }}
                 />
                 <div class="w-24 h-10 bg-gray-200 rounded-full peer peer-checked:bg-green-600 transition-colors"></div>
                 <div class="absolute left-0.5 top-0.5 w-9 h-9 bg-white border border-gray-300 rounded-full shadow-sm transition-transform peer-checked:translate-x-14"></div>
@@ -656,7 +674,7 @@ export default function SalesContractForm() {
               <th class="border p-2">#</th>
               <th class="border p-2">Jenis Kain</th>
               <th class="border p-2">Grade Kain</th>
-              <th class="border p-2">Lebar Finish</th>
+              <th class="border p-2">Lebar</th>
               <th class="border p-2">Gramasi</th>
               <th class="border p-2">Meter</th>
               <th class="border p-2">Yard</th>
@@ -696,8 +714,8 @@ export default function SalesContractForm() {
                       type="text"
                       inputmode="decimal"
                       class="border p-1 rounded w-full"
-                      value={item.lebar_greige}
-                      onBlur={(e) => handleItemChange(i(), "lebar_greige", e.target.value)}
+                      value={item.lebar}
+                      onBlur={(e) => handleItemChange(i(), "lebar", e.target.value)}
                       disabled={isView}
                       classList={{ "bg-gray-200": isView }}
                     />

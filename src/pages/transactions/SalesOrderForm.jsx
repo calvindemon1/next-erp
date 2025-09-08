@@ -419,66 +419,77 @@ export default function SalesOrderForm() {
     }, 0);
   };
 
-  const formatNumber = (num, decimals = 4) => {
-      const numValue = typeof num === 'string' ? parseFloat(num) : num;
-      if (isNaN(numValue)) return "";
+  const normalizeNumberInput = (s) => {
+    if (s === null || s === undefined) return 0;
+    s = String(s).trim();
+    if (!s) return 0;
 
-      // Tampilkan desimal hanya jika ada
-      const hasDecimal = numValue % 1 !== 0;
+    const lastDot = s.lastIndexOf(".");
+    const lastComma = s.lastIndexOf(",");
 
-      return new Intl.NumberFormat("id-ID", {
-          minimumFractionDigits: hasDecimal ? Math.min(decimals, 2) : 0, // Tampilkan min 2 desimal jika ada
-          maximumFractionDigits: decimals,
-      }).format(numValue);
+    // Jika keduanya ada, anggap pemisah desimal adalah yang paling kanan
+    if (lastComma > lastDot) {
+      // Format Indonesia: 1.234,56 -> 1234.56
+      s = s.replace(/\./g, "").replace(",", ".");
+    } else {
+      // Format Intl/US: 1,234.56 -> 1234.56
+      s = s.replace(/,/g, "");
+    }
+
+    const n = parseFloat(s);
+    return Number.isFinite(n) ? n : 0;
   };
 
-  const parseNumber = (str) => {
-      if (typeof str !== 'string' || !str) return 0;
-      // Hapus semua karakter kecuali angka dan koma (untuk desimal gaya Indonesia)
-      const cleaned = str.replace(/[^0-9,]/g, "").replace(",", ".");
-      return parseFloat(cleaned) || 0;
+  const parseNumber = (str) => normalizeNumberInput(str);
+
+  // Selalu tampilkan pemisah ribuan & 2 desimal (id-ID)
+  const formatNumber = (num, decimals = 2) => {
+    if (num === null || num === undefined || num === "") return "";
+    const val = typeof num === "string" ? normalizeNumberInput(num) : Number(num);
+    if (!Number.isFinite(val)) return "";
+    return new Intl.NumberFormat("id-ID", {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    }).format(val);
   };
 
   const handleItemChange = (index, field, value) => {
-      setForm((prev) => {
-          const items = [...prev.items];
-          const item = { ...items[index] };
+    setForm((prev) => {
+      const items = [...prev.items];
+      const item = { ...items[index] };
 
-          const satuanId = parseInt(prev.satuan_unit_id);
-          const numValue = parseNumber(value);
+      const satuanId = parseInt(prev.satuan_unit_id);
+      const numValue = parseNumber(value);
 
-          // Update nilai berdasarkan field yang diubah
-          if (field === 'meter') {
-              item.meter = numValue;
-              item.yard = numValue * 1.093613;
-              item.kilogram = 0;
-          } else if (field === 'yard') {
-              item.yard = numValue;
-              item.meter = numValue * 0.9144;
-              item.kilogram = 0;
-          } else if (field === 'kilogram') {
-              item.kilogram = numValue;
-              item.meter = 0;
-              item.yard = 0;
-          } else {
-              // Untuk field lain seperti warna_id
-              item[field] = value;
-          }
+      if (field === "meter") {
+        item.meter = numValue;
+        item.yard = +(numValue * 1.093613).toFixed(2);
+        item.kilogram = 0;
+      } else if (field === "yard") {
+        item.yard = numValue;
+        item.meter = +(numValue * 0.9144).toFixed(2);
+        item.kilogram = 0;
+      } else if (field === "kilogram") {
+        item.kilogram = numValue;
+        item.meter = 0;
+        item.yard = 0;
+      } else {
+        item[field] = value;
+      }
 
-          // Hitung ulang subtotal
-          const harga = parseFloat(item.harga) || 0;
-          let qty = 0;
-          if (satuanId === 1) qty = item.meter || 0;
-          else if (satuanId === 2) qty = item.yard || 0;
-          else if (satuanId === 3) qty = item.kilogram || 0;
+      const harga = parseFloat(item.harga) || 0; // harga readonly di UI
+      let qty = 0;
+      if (satuanId === 1) qty = item.meter || 0;
+      else if (satuanId === 2) qty = item.yard || 0;
+      else if (satuanId === 3) qty = item.kilogram || 0;
 
-          const subtotal = qty * harga;
-          item.subtotal = subtotal;
-          item.subtotalFormatted = formatIDR(subtotal);
+      const subtotal = qty * harga;
+      item.subtotal = subtotal;
+      item.subtotalFormatted = formatIDR(subtotal);
 
-          items[index] = item;
-          return { ...prev, items };
-      });
+      items[index] = item;
+      return { ...prev, items };
+    });
   };
 
   const handleSubmit = async (e) => {
@@ -537,6 +548,9 @@ export default function SalesOrderForm() {
       Swal.fire({
         icon: "success",
         title: "Sales Order berhasil disimpan!",
+        showConfirmButton: false,
+        timer: 1000,
+        timerProgressBar: true,
       }).then(() => {
         navigate("/salesorder");
       });
@@ -546,6 +560,9 @@ export default function SalesOrderForm() {
         icon: "error",
         title: "Gagal menyimpan Sales Order",
         text: err?.message || "Terjadi kesalahan.",
+        showConfirmButton: false,
+        timer: 1000,
+        timerProgressBar: true,
       });
     }
   };
@@ -814,8 +831,8 @@ export default function SalesOrderForm() {
             class="w-full border p-2 rounded"
             value={form().keterangan}
             onInput={(e) => setForm({ ...form(), keterangan: e.target.value })}
-            disabled={isView}
-            classList={{ "bg-gray-200" : isView }}
+            disabled={true}
+            classList={{ "bg-gray-200" : true }}
           ></textarea>
         </div>
 
@@ -874,7 +891,7 @@ export default function SalesOrderForm() {
           type="button"
           class="bg-green-600 text-white px-3 py-2 rounded hover:bg-green-700 mb-4"
           onClick={addItem}
-          hidden={isView}
+          hidden
         >
           + Tambah Item
         </button>
@@ -1024,16 +1041,10 @@ export default function SalesOrderForm() {
           </tbody>
           <tfoot>
             <tr class="font-bold bg-gray-100">
-              <td colSpan="6" class="text-right p-2">
-                TOTAL
-              </td>
-              <td class="border p-2">
-                {formatNumber(totalMeter())}
-              </td>
-              <td class="border p-2">{formatNumber(totalYard().toFixed(4))}</td>
-              <td class="border p-2">
-                {formatNumber(totalKilogram())}
-              </td>
+              <td colSpan="6" class="text-right p-2">TOTAL</td>
+              <td class="border p-2">{formatNumber(totalMeter())}</td>
+              <td class="border p-2">{formatNumber(totalYard())}</td>
+              <td class="border p-2">{formatNumber(totalKilogram())}</td>
               <td></td>
               <td class="border p-2">{formatIDR(totalAll())}</td>
               <td></td>
