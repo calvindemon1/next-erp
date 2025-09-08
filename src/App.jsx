@@ -5,6 +5,8 @@ import OrdersList from "./pages/OrdersList";
 import OrderForm from "./pages/OrderForm";
 import UsersList from "./pages/UsersList";
 import UserForm from "./pages/UserForm";
+import ManagePermissionsList from "./pages/ManagePermissionsList";
+import ManagePermissionsForm from "./pages/ManagePermissionsForm";
 import TransactionsList from "./pages/TransactionsList";
 import TransactionForm from "./pages/TransactionForm";
 // PURCHASING
@@ -23,6 +25,7 @@ import OrderCelupPurchaseOrderList from "./pages/purchasing/order_celup/OCPurcha
 import OrderCelupPurchaseOrderForm from "./pages/purchasing/order_celup/OCPurchaseOrderForm";
 import OrderCelupDeliveryNoteList from "./pages/purchasing/order_celup/OCDeliveryNoteList";
 import OrderCelupDeliveryNoteForm from "./pages/purchasing/order_celup/OCDeliveryNoteForm";
+import OrderCelupDeliveryNoteFormV2 from "./pages/purchasing/order_celup/OCDeliveryNoteFormV2";
 // // KAIN JADI/FINISH
 import KainJadiPurchaseContractList from "./pages/purchasing/kain_jadi/KJPurchaseContractList";
 import KainJadiPurchaseContractForm from "./pages/purchasing/kain_jadi/KJPurchaseContractForm";
@@ -30,11 +33,13 @@ import KainJadiPurchaseOrderList from "./pages/purchasing/kain_jadi/KJPurchaseOr
 import KainJadiPurchaseOrderForm from "./pages/purchasing/kain_jadi/KJPurchaseOrderForm";
 import KainJadiDeliveryNoteList from "./pages/purchasing/kain_jadi/KJDeliveryNoteList";
 import KainJadiDeliveryNoteForm from "./pages/purchasing/kain_jadi/KJDeliveryNoteForm";
+import KainJadiDeliveryNoteFormV2 from "./pages/purchasing/kain_jadi/KJDeliveryNoteFormV2";
 // // JUAL BELI
 import JualBeliPurchaseContractList from "./pages/purchasing/jual_beli/JBPurchaseContractList";
 import JualBeliPurchaseContractForm from "./pages/purchasing/jual_beli/JBPurchaseContractForm";
 import JualBeliDeliveryNoteList from "./pages/purchasing/jual_beli/JBDeliveryNoteList";
 import JualBeliDeliveryNoteForm from "./pages/purchasing/jual_beli/JBDeliveryNoteForm";
+import JualBeliDeliveryNoteFormV2 from "./pages/purchasing/jual_beli/JBDeliveryNoteFormV2";
 // TRANSACTIONS
 import SalesContractForm from "./pages/transactions/SalesContractForm";
 import SalesContractList from "./pages/transactions/SalesContractList";
@@ -99,6 +104,9 @@ function App() {
       <Route path="/" component={LoginPage} />
       <Route path="/users" component={UsersList} />
       <Route path="/users/form" component={UserForm} />
+      
+      <Route path="/manage-permissions" component={ManagePermissionsList} />
+      <Route path="/manage-permissions/form" component={ManagePermissionsForm} />
 
       <Route path="/dashboard" component={Dashboard} />
 
@@ -180,7 +188,7 @@ function App() {
       />
       <Route
         path="/ordercelup-deliverynote/form"
-        component={OrderCelupDeliveryNoteForm}
+        component={OrderCelupDeliveryNoteFormV2}
       />
       {/* ORDER CELUP */}
 
@@ -209,7 +217,7 @@ function App() {
       />
       <Route
         path="/kainjadi-deliverynote/form"
-        component={KainJadiDeliveryNoteForm}
+        component={KainJadiDeliveryNoteFormV2}
       />
       {/* KAIN JADI */}
 
@@ -229,7 +237,7 @@ function App() {
       />
       <Route
         path="/jualbeli-deliverynote/form"
-        component={JualBeliDeliveryNoteForm}
+        component={JualBeliDeliveryNoteFormV2}
       />
       {/* JUAL BELI */}
 

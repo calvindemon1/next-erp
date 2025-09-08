@@ -12,33 +12,43 @@ import { users } from "../data/users";
 //   }
 // }
 
-// #region LOGIN, REGISTER AND REGISTER
+import { jwtDecode } from "jwt-decode";
 
-export async function login(username, password) {
+export default function getPermissionsFromToken(token) {
   try {
-    const response = await fetch(
-        //"https://nexttechenterprise.site/api/login",
-        `${import.meta.env.VITE_API_URL}/login`,
-      {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ username, password }),
-    });
-
-    const data = await response.json();
-
-    localStorage.setItem("user", JSON.stringify(data));
-
-    if (!response.ok) {
-      throw new Error(data.message || "Login gagal");
-    }
-
-    return data;
-  } catch (error) {
-    throw error;
+    const decoded = jwtDecode(token);
+    return decoded?.role?.permissions || [];
+  } catch (err) {
+    console.error("Failed to decode token", err);
+    return [];
   }
+}
+
+// #region LOGIN, REGISTER AND REGISTER
+export async function login(username, password) {
+  const response = await fetch(`${import.meta.env.VITE_API_URL}/login`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ username, password }),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message || "Login gagal");
+  }
+
+  localStorage.setItem("user", JSON.stringify(data));
+
+  // Ambil permissions dari token
+  if (data.token) {
+    const perms = getPermissionsFromToken(data.token);
+    localStorage.setItem("permissions", JSON.stringify(perms));
+  }
+
+  return data;
 }
 
 export async function register(
@@ -141,12 +151,36 @@ export async function getDataUser(id, token) {
   }
 }
 
+// export async function getAllUsers(token) {
+//   try {
+//     const response = await fetch(
+//         //"https://nexttechenterprise.site/api/users",
+//         `${import.meta.env.VITE_API_URL}/users`,
+//       {
+//       method: "GET",
+//       headers: {
+//         "Content-Type": "application/json",
+//         Authorization: `Bearer ${token}`,
+//         "ngrok-skip-browser-warning": "any-value",
+//       },
+//     });
+
+//     const data = await response.json();
+
+//     if (!response.ok) {
+//       throw new Error(data.message || "Gagal mengambiil data pengguna");
+//     }
+
+//     return data;
+//   } catch (error) {
+//     // console.error("Gagal mengambil seluruh data pengguna: ", error.message);
+//     throw error;
+//   }
+// }
+
 export async function getAllUsers(token) {
   try {
-    const response = await fetch(
-        //"https://nexttechenterprise.site/api/users",
-        `${import.meta.env.VITE_API_URL}/users`,
-      {
+    const response = await fetch(`${import.meta.env.VITE_API_URL}/users`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -157,16 +191,19 @@ export async function getAllUsers(token) {
 
     const data = await response.json();
 
-    if (!response.ok) {
-      throw new Error(data.message || "Gagal mengambiil data pengguna");
-    }
-
-    return data;
+    // jangan langsung throw kalau !ok, balikin aja dengan status
+    return {
+      status: response.status,
+      ...data,
+    };
   } catch (error) {
-    // console.error("Gagal mengambil seluruh data pengguna: ", error.message);
-    throw error;
+    return {
+      status: 500,
+      message: error.message || "Gagal mengambil data pengguna",
+    };
   }
 }
+
 
 export async function updateUser(
   userId,
@@ -243,11 +280,180 @@ export async function softDeleteUser(userId, token) {
   }
 }
 
+export function saveUser(user) {
+  localStorage.setItem("user", JSON.stringify(user));
+}
+
 export function getUser() {
-  return JSON.parse(localStorage.getItem("user"));
+  const data = localStorage.getItem("user");
+  return data ? JSON.parse(data) : null;
 }
 
 // #endregion USERS FUNCTION
+
+// #region ROLE AND PERMISSION
+export function hasRole(user, roles = []) {
+  if (!user) return false;
+  return roles.includes(user.role_id) || roles.includes(user.role_name);
+}
+
+export function hasPermission(permissionName) {
+  const permissions = JSON.parse(localStorage.getItem("permissions") || "[]");
+  return permissions.includes(permissionName);
+}
+
+export function hasAnyPermission(permissionNames = []) {
+  const permissions = JSON.parse(localStorage.getItem("permissions") || "[]");
+  return permissionNames.some((perm) => permissions.includes(perm));
+}
+
+export function hasAllPermission(permissionNames = []) {
+  const permissions = JSON.parse(localStorage.getItem("permissions") || "[]");
+  return permissionNames.every((perm) => permissions.includes(perm));
+}
+
+export async function getAllRoles(token) {
+  try {
+    const response = await fetch(`${import.meta.env.VITE_API_URL}/roles`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+        "ngrok-skip-browser-warning": "any-value",
+      },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || "Gagal mengambil data roles");
+    }
+
+    return data; // { status: 200, result: [...] }
+  } catch (error) {
+    throw error;
+  }
+}
+
+export async function getRoleById(roleId, token) {
+  if (!roleId) {
+    throw new Error("Role ID tidak boleh kosong.");
+  }
+
+  const apiUrl = `${import.meta.env.VITE_API_URL}/roles/${roleId}`;
+
+  try {
+    const response = await fetch(apiUrl, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+        "ngrok-skip-browser-warning": "any-value",
+      },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || `Gagal mengambil data untuk role ID ${roleId}.`);
+    }
+
+    return data;
+  } catch (error) {
+    console.error(`Error pada getRoleById untuk ID ${roleId}:`, error);
+    throw error;
+  }
+}
+
+export async function createRole(name, permissionIds, token) {
+  const apiUrl = `${import.meta.env.VITE_API_URL}/create-role`;
+
+  try {
+    const response = await fetch(apiUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+        "ngrok-skip-browser-warning": "any-value",
+      },
+      body: JSON.stringify({
+        name: name,
+        permission_ids: permissionIds,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || "Gagal membuat role baru.");
+    }
+
+    return data;
+  } catch (error) {
+    console.error("Error pada createRole:", error);
+    throw error;
+  }
+}
+
+export async function deleteRole(roleId, token) {
+  const apiUrl = `${import.meta.env.VITE_API_URL}/delete-role/${roleId}`;
+
+  try {
+    const response = await fetch(apiUrl, {
+      method: "DELETE",
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json",
+        "ngrok-skip-browser-warning": "any-value",
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `Gagal menghapus role ID ${roleId}.`);
+    }
+    
+    return { success: true, message: "Role berhasil dihapus." };
+  } catch (error) {
+    console.error(`Error pada deleteRole untuk ID ${roleId}:`, error);
+    throw error;
+  }
+}
+
+export async function getPermissions(token) {
+  const response = await fetch(`${import.meta.env.VITE_API_URL}/permissions`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("Gagal mengambil permissions");
+  }
+  return response.json();
+}
+
+export async function updateRolePermissions(roleId, permissionIds, token) {
+  const response = await fetch(
+    `${import.meta.env.VITE_API_URL}/update-role/${roleId}`,
+    {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ permission_ids: permissionIds }),
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error("Gagal update role permissions");
+  }
+  return response.json();
+}
+
+// #endregion ROLE AND PERMISSION
 
 // #region SUPPLIERS FUNCTION
 
@@ -1068,11 +1274,37 @@ export async function createCustomerType(token, jenis) {
   }
 }
 
+// export async function getAllCustomerTypes(token) {
+//   try {
+//     const response = await fetch(
+//         //`https://nexttechenterprise.site/api/customer-types`,
+//         `${import.meta.env.VITE_API_URL}/customer-types`,
+//       {
+//         method: "GET",
+//         headers: {
+//           "Content-Type": "application/json",
+//           Authorization: `Bearer ${token}`,
+//           "ngrok-skip-browser-warning": "any-value",
+//         },
+//       }
+//     );
+
+//     const data = await response.json();
+
+//     if (!response.ok) {
+//       throw new Error(data.message || "Gagal mengambil data jenis so");
+//     }
+
+//     return data;
+//   } catch (error) {
+//     throw error;
+//   }
+// }
+
 export async function getAllCustomerTypes(token) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/customer-types`,
-        `${import.meta.env.VITE_API_URL}/customer-types`,
+      `${import.meta.env.VITE_API_URL}/customer-types`,
       {
         method: "GET",
         headers: {
@@ -1085,13 +1317,15 @@ export async function getAllCustomerTypes(token) {
 
     const data = await response.json();
 
-    if (!response.ok) {
-      throw new Error(data.message || "Gagal mengambil data jenis so");
-    }
-
-    return data;
+    return {
+      status: response.status,
+      ...data,            
+    };
   } catch (error) {
-    throw error;
+    return {
+      status: 500,
+      message: error.message || "Gagal mengambil data Customer Type",
+    };
   }
 }
 
@@ -1213,11 +1447,37 @@ export async function createCurrencies(token, name) {
   }
 }
 
+// export async function getAllCurrenciess(token) {
+//   try {
+//     const response = await fetch(
+//         //`https://nexttechenterprise.site/api/currencies`,
+//         `${import.meta.env.VITE_API_URL}/currencies`,
+//       {
+//         method: "GET",
+//         headers: {
+//           "Content-Type": "application/json",
+//           Authorization: `Bearer ${token}`,
+//           "ngrok-skip-browser-warning": "any-value",
+//         },
+//       }
+//     );
+
+//     const data = await response.json();
+
+//     if (!response.ok) {
+//       throw new Error(data.message || "Gagal mengambil data jenis so");
+//     }
+
+//     return data;
+//   } catch (error) {
+//     throw error;
+//   }
+// }
+
 export async function getAllCurrenciess(token) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/currencies`,
-        `${import.meta.env.VITE_API_URL}/currencies`,
+      `${import.meta.env.VITE_API_URL}/currencies`,
       {
         method: "GET",
         headers: {
@@ -1230,13 +1490,15 @@ export async function getAllCurrenciess(token) {
 
     const data = await response.json();
 
-    if (!response.ok) {
-      throw new Error(data.message || "Gagal mengambil data jenis so");
-    }
-
-    return data;
+    return {
+      status: response.status,
+      ...data,            
+    };
   } catch (error) {
-    throw error;
+    return {
+      status: 500,
+      message: error.message || "Gagal mengambil data Currencies",
+    };
   }
 }
 
@@ -1436,7 +1698,7 @@ function cleanObject(obj) {
 export async function updateDataSalesContract(token, id, payload) {
   const cleanedPayload = cleanObject(payload);
 
-  console.log("PAYLOAD TO SEND:", JSON.stringify(cleanedPayload, null, 2));
+  //console.log("PAYLOAD TO SEND:", JSON.stringify(cleanedPayload, null, 2));
 
   try {
     const response = await fetch(
@@ -1454,7 +1716,7 @@ export async function updateDataSalesContract(token, id, payload) {
     );
 
     const text = await response.text();
-    console.log("RESPONSE TEXT:", text);
+    //console.log("RESPONSE TEXT:", text);
 
     let data;
     try {
@@ -1539,11 +1801,37 @@ export async function createSalesOrder(token, payload) {
   }
 }
 
+// export async function getAllSalesOrders(token) {
+//   try {
+//     const response = await fetch(
+//         //`https://nexttechenterprise.site/api/sales-orders`,
+//         `${import.meta.env.VITE_API_URL}/sales-orders`,
+//       {
+//         method: "GET",
+//         headers: {
+//           "Content-Type": "application/json",
+//           Authorization: `Bearer ${token}`,
+//           "ngrok-skip-browser-warning": "any-value",
+//         },
+//       }
+//     );
+
+//     const data = await response.json();
+
+//     if (!response.ok) {
+//       throw new Error(data.message || "Gagal mengambil data sales order");
+//     }
+
+//     return data;
+//   } catch (error) {
+//     throw error;
+//   }
+// }
+
 export async function getAllSalesOrders(token) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/sales-orders`,
-        `${import.meta.env.VITE_API_URL}/sales-orders`,
+      `${import.meta.env.VITE_API_URL}/sales-orders`,
       {
         method: "GET",
         headers: {
@@ -1556,13 +1844,15 @@ export async function getAllSalesOrders(token) {
 
     const data = await response.json();
 
-    if (!response.ok) {
-      throw new Error(data.message || "Gagal mengambil data sales order");
-    }
-
-    return data;
+    return {
+      status: response.status,
+      ...data,            
+    };
   } catch (error) {
-    throw error;
+    return {
+      status: 500,
+      message: error.message || "Gagal mengambil data sales order",
+    };
   }
 }
 
@@ -1688,11 +1978,37 @@ export async function createPackingList(token, payload) {
   }
 }
 
+// export async function getAllPackingLists(token) {
+//   try {
+//     const response = await fetch(
+//         //`https://nexttechenterprise.site/api/packing-lists`,
+//         `${import.meta.env.VITE_API_URL}/packing-lists`,
+//       {
+//         method: "GET",
+//         headers: {
+//           "Content-Type": "application/json",
+//           Authorization: `Bearer ${token}`,
+//           "ngrok-skip-browser-warning": "any-value",
+//         },
+//       }
+//     );
+
+//     const data = await response.json();
+
+//     if (!response.ok) {
+//       throw new Error(data.message || "Gagal mengambil data packing list");
+//     }
+
+//     return data;
+//   } catch (error) {
+//     throw error;
+//   }
+// }
+
 export async function getAllPackingLists(token) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/packing-lists`,
-        `${import.meta.env.VITE_API_URL}/packing-lists`,
+      `${import.meta.env.VITE_API_URL}/packing-lists`,
       {
         method: "GET",
         headers: {
@@ -1705,13 +2021,15 @@ export async function getAllPackingLists(token) {
 
     const data = await response.json();
 
-    if (!response.ok) {
-      throw new Error(data.message || "Gagal mengambil data packing list");
-    }
-
-    return data;
+    return {
+      status: response.status,
+      ...data,            
+    };
   } catch (error) {
-    throw error;
+    return {
+      status: 500,
+      message: error.message || "Gagal mengambil data Packing List",
+    };
   }
 }
 
@@ -1835,11 +2153,39 @@ export async function createDeliveryNote(token, payload) {
   }
 }
 
+// export async function getAllDeliveryNotes(token) {
+//   try {
+//     const response = await fetch(
+//         //`https://nexttechenterprise.site/api/surat-jalan`,
+//         `${import.meta.env.VITE_API_URL}/surat-jalan`,
+//       {
+//         method: "GET",
+//         headers: {
+//           "Content-Type": "application/json",
+//           Authorization: `Bearer ${token}`,
+//           "ngrok-skip-browser-warning": "any-value",
+//         },
+//       }
+//     );
+
+//     const data = await response.json();
+
+//     if (!response.ok) {
+//       throw new Error(
+//         data.message || "Gagal mengambil data packing list order"
+//       );
+//     }
+
+//     return data;
+//   } catch (error) {
+//     throw error;
+//   }
+// }
+
 export async function getAllDeliveryNotes(token) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/surat-jalan`,
-        `${import.meta.env.VITE_API_URL}/surat-jalan`,
+      `${import.meta.env.VITE_API_URL}/surat-jalan`,
       {
         method: "GET",
         headers: {
@@ -1852,15 +2198,15 @@ export async function getAllDeliveryNotes(token) {
 
     const data = await response.json();
 
-    if (!response.ok) {
-      throw new Error(
-        data.message || "Gagal mengambil data packing list order"
-      );
-    }
-
-    return data;
+    return {
+      status: response.status,
+      ...data,            
+    };
   } catch (error) {
-    throw error;
+    return {
+      status: 500,
+      message: error.message || "Gagal mengambil data Surat Jalan Sales",
+    };
   }
 }
 
@@ -2132,29 +2478,57 @@ export async function createGrade(token, grade) {
   }
 }
 
+// export async function getAllGrades(token) {
+//   try {
+//     const response = await fetch(
+//         //`https://nexttechenterprise.site/api/grades`,
+//         `${import.meta.env.VITE_API_URL}/grades`,
+//       {
+//       method: "GET",
+//       headers: {
+//         "Content-Type": "application/json",
+//         Authorization: `Bearer ${token}`,
+//         "ngrok-skip-browser-warning": "any-value",
+//       },
+//     });
+
+//     const data = await response.json();
+
+//     if (!response.ok) {
+//       throw new Error(data.message || "Gagal mengambil data grade");
+//     }
+
+//     return data;
+//   } catch (error) {
+//     throw error;
+//   }
+// }
+
 export async function getAllGrades(token) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/grades`,
-        `${import.meta.env.VITE_API_URL}/grades`,
+      `${import.meta.env.VITE_API_URL}/grades`,
       {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-        "ngrok-skip-browser-warning": "any-value",
-      },
-    });
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          "ngrok-skip-browser-warning": "any-value",
+        },
+      }
+    );
 
     const data = await response.json();
 
-    if (!response.ok) {
-      throw new Error(data.message || "Gagal mengambil data grade");
-    }
-
-    return data;
+    return {
+      status: response.status,
+      ...data,            
+    };
   } catch (error) {
-    throw error;
+    return {
+      status: 500,
+      message: error.message || "Gagal mengambil data Grades",
+    };
   }
 }
 
@@ -2309,11 +2683,39 @@ export async function createBeliGreige(token, payload) {
   }
 }
 
+// export async function getAllBeliGreiges(token) {
+//   try {
+//     const response = await fetch(
+//         //`https://nexttechenterprise.site/api/purchase-greige-contracts`,
+//         `${import.meta.env.VITE_API_URL}/purchase-greige-contracts`,
+//       {
+//         method: "GET",
+//         headers: {
+//           "Content-Type": "application/json",
+//           Authorization: `Bearer ${token}`,
+//           "ngrok-skip-browser-warning": "any-value",
+//         },
+//       }
+//     );
+
+//     const data = await response.json();
+
+//     if (!response.ok) {
+//       throw new Error(
+//         data.message || "Gagal mengambil data beli greige contract"
+//       );
+//     }
+
+//     return data;
+//   } catch (error) {
+//     throw error;
+//   }
+// }
+
 export async function getAllBeliGreiges(token) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/purchase-greige-contracts`,
-        `${import.meta.env.VITE_API_URL}/purchase-greige-contracts`,
+      `${import.meta.env.VITE_API_URL}/purchase-greige-contracts`,
       {
         method: "GET",
         headers: {
@@ -2326,15 +2728,15 @@ export async function getAllBeliGreiges(token) {
 
     const data = await response.json();
 
-    if (!response.ok) {
-      throw new Error(
-        data.message || "Gagal mengambil data beli greige contract"
-      );
-    }
-
-    return data;
+    return {
+      status: response.status,
+      ...data,            
+    };
   } catch (error) {
-    throw error;
+    return {
+      status: 500,
+      message: error.message || "Gagal mengambil data Greige Contract List",
+    };
   }
 }
 
@@ -2463,11 +2865,37 @@ export async function createBeliGreigeOrder(token, payload) {
   }
 }
 
+// export async function getAllBeliGreigeOrders(token) {
+//   try {
+//     const response = await fetch(
+//         //`https://nexttechenterprise.site/api/purchase-greige-orders`,
+//         `${import.meta.env.VITE_API_URL}/purchase-greige-orders`,
+//       {
+//         method: "GET",
+//         headers: {
+//           "Content-Type": "application/json",
+//           Authorization: `Bearer ${token}`,
+//           "ngrok-skip-browser-warning": "any-value",
+//         },
+//       }
+//     );
+
+//     const data = await response.json();
+
+//     if (!response.ok) {
+//       throw new Error(data.message || "Gagal mengambil data beli greige");
+//     }
+
+//     return data;
+//   } catch (error) {
+//     throw error;
+//   }
+// }
+
 export async function getAllBeliGreigeOrders(token) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/purchase-greige-orders`,
-        `${import.meta.env.VITE_API_URL}/purchase-greige-orders`,
+      `${import.meta.env.VITE_API_URL}/purchase-greige-orders`,
       {
         method: "GET",
         headers: {
@@ -2480,13 +2908,15 @@ export async function getAllBeliGreigeOrders(token) {
 
     const data = await response.json();
 
-    if (!response.ok) {
-      throw new Error(data.message || "Gagal mengambil data beli greige");
-    }
-
-    return data;
+    return {
+      status: response.status,
+      ...data,            
+    };
   } catch (error) {
-    throw error;
+    return {
+      status: 500,
+      message: error.message || "Gagal mengambil data Purchase Order Greige",
+    };
   }
 }
 
@@ -2611,11 +3041,39 @@ export async function createBGDeliveryNote(token, payload) {
   }
 }
 
+// export async function getAllBGDeliveryNotes(token) {
+//   try {
+//     const response = await fetch(
+//         //`https://nexttechenterprise.site/api/purchase-greige-surat-jalan`,
+//         `${import.meta.env.VITE_API_URL}/purchase-greige-surat-jalan`,
+//       {
+//         method: "GET",
+//         headers: {
+//           "Content-Type": "application/json",
+//           Authorization: `Bearer ${token}`,
+//           "ngrok-skip-browser-warning": "any-value",
+//         },
+//       }
+//     );
+
+//     const data = await response.json();
+
+//     if (!response.ok) {
+//       throw new Error(
+//         data.message || "Gagal mengambil data surat jalan beli greige"
+//       );
+//     }
+
+//     return data;
+//   } catch (error) {
+//     throw error;
+//   }
+// }
+
 export async function getAllBGDeliveryNotes(token) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/purchase-greige-surat-jalan`,
-        `${import.meta.env.VITE_API_URL}/purchase-greige-surat-jalan`,
+      `${import.meta.env.VITE_API_URL}/purchase-greige-surat-jalan`,
       {
         method: "GET",
         headers: {
@@ -2628,15 +3086,15 @@ export async function getAllBGDeliveryNotes(token) {
 
     const data = await response.json();
 
-    if (!response.ok) {
-      throw new Error(
-        data.message || "Gagal mengambil data surat jalan beli greige"
-      );
-    }
-
-    return data;
+    return {
+      status: response.status,
+      ...data,            
+    };
   } catch (error) {
-    throw error;
+    return {
+      status: 500,
+      message: error.message || "Gagal mengambil data Surat Penerimaan Greige",
+    };
   }
 }
 
@@ -2762,32 +3220,57 @@ export async function createOrderCelup(token, payload) {
   }
 }
 
+// export async function getAllOrderCelups(token) {
+//   try {
+//     const response = await fetch(
+//         //`https://nexttechenterprise.site/api/purchase-celup-contracts`,
+//         `${import.meta.env.VITE_API_URL}/purchase-celup-contracts`,
+//       {
+//         method: "GET",
+//         headers: {
+//           "Content-Type": "application/json",
+//           Authorization: `Bearer ${token}`,
+//           "ngrok-skip-browser-warning": "any-value",
+//         },
+//       }
+//     );
+
+//     const data = await response.json();
+
+//     if (!response.ok) {
+//       throw new Error(
+//         data.message || "Gagal mengambil data order celup contract"
+//       );
+//     }
+
+//     return data;
+//   } catch (error) {
+//     throw error;
+//   }
+// }
+
 export async function getAllOrderCelups(token) {
   try {
-    const response = await fetch(
-        //`https://nexttechenterprise.site/api/purchase-celup-contracts`,
-        `${import.meta.env.VITE_API_URL}/purchase-celup-contracts`,
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-          "ngrok-skip-browser-warning": "any-value",
-        },
-      }
-    );
+    const response = await fetch(`${import.meta.env.VITE_API_URL}/purchase-celup-contracts`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+        "ngrok-skip-browser-warning": "any-value",
+      },
+    });
 
     const data = await response.json();
 
-    if (!response.ok) {
-      throw new Error(
-        data.message || "Gagal mengambil data order celup contract"
-      );
-    }
-
-    return data;
+    return {
+      status: response.status,
+      ...data,
+    };
   } catch (error) {
-    throw error;
+    return {
+      status: 500,
+      message: error.message || "Gagal mengambil data kontrak proses",
+    };
   }
 }
 
@@ -2916,32 +3399,58 @@ export async function createOrderCelupOrder(token, payload) {
   }
 }
 
+// export async function getAllOrderCelupOrders(token) {
+//   try {
+//     const response = await fetch(
+//         //`https://nexttechenterprise.site/api/purchase-celup-orders`,
+//         `${import.meta.env.VITE_API_URL}/purchase-celup-orders`,
+//       {
+//         method: "GET",
+//         headers: {
+//           "Content-Type": "application/json",
+//           Authorization: `Bearer ${token}`,
+//           "ngrok-skip-browser-warning": "any-value",
+//         },
+//       }
+//     );
+
+//     const data = await response.json();
+
+//     if (!response.ok) {
+//       throw new Error(data.message || "Gagal mengambil data order celup order");
+//     }
+
+//     return data;
+//   } catch (error) {
+//     throw error;
+//   }
+// }
+
 export async function getAllOrderCelupOrders(token) {
   try {
-    const response = await fetch(
-        //`https://nexttechenterprise.site/api/purchase-celup-orders`,
-        `${import.meta.env.VITE_API_URL}/purchase-celup-orders`,
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-          "ngrok-skip-browser-warning": "any-value",
-        },
-      }
-    );
+    const response = await fetch(`${import.meta.env.VITE_API_URL}/purchase-celup-orders`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+        "ngrok-skip-browser-warning": "any-value",
+      },
+    });
 
     const data = await response.json();
 
-    if (!response.ok) {
-      throw new Error(data.message || "Gagal mengambil data order celup order");
-    }
-
-    return data;
+    return {
+      status: response.status,
+      ...data,
+    };
   } catch (error) {
-    throw error;
+    return {
+      status: 500,
+      message: error.message || "Gagal mengambil data order celup",
+    };
   }
 }
+
 
 export async function getOrderCelupOrders(id, token) {
   try {
@@ -3065,11 +3574,39 @@ export async function createOCDeliveryNote(token, payload) {
   }
 }
 
+// export async function getAllOCDeliveryNotes(token) {
+//   try {
+//     const response = await fetch(
+//         //`https://nexttechenterprise.site/api/purchase-celup-surat-jalan`,
+//         `${import.meta.env.VITE_API_URL}/purchase-celup-surat-jalan`,
+//       {
+//         method: "GET",
+//         headers: {
+//           "Content-Type": "application/json",
+//           Authorization: `Bearer ${token}`,
+//           "ngrok-skip-browser-warning": "any-value",
+//         },
+//       }
+//     );
+
+//     const data = await response.json();
+
+//     if (!response.ok) {
+//       throw new Error(
+//         data.message || "Gagal mengambil data surat jalan order celup"
+//       );
+//     }
+
+//     return data;
+//   } catch (error) {
+//     throw error;
+//   }
+// }
+
 export async function getAllOCDeliveryNotes(token) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/purchase-celup-surat-jalan`,
-        `${import.meta.env.VITE_API_URL}/purchase-celup-surat-jalan`,
+      `${import.meta.env.VITE_API_URL}/purchase-celup-surat-jalan`,
       {
         method: "GET",
         headers: {
@@ -3082,15 +3619,15 @@ export async function getAllOCDeliveryNotes(token) {
 
     const data = await response.json();
 
-    if (!response.ok) {
-      throw new Error(
-        data.message || "Gagal mengambil data surat jalan order celup"
-      );
-    }
-
-    return data;
+    return {
+      status: response.status,
+      ...data,            
+    };
   } catch (error) {
-    throw error;
+    return {
+      status: 500,
+      message: error.message || "Gagal mengambil data Surat Penerimaan Order Celup",
+    };
   }
 }
 
@@ -3216,11 +3753,39 @@ export async function createKainJadi(token, payload) {
   }
 }
 
+// export async function getAllKainJadis(token) {
+//   try {
+//     const response = await fetch(
+//         //`https://nexttechenterprise.site/api/purchase-finish-contracts`,
+//         `${import.meta.env.VITE_API_URL}/purchase-finish-contracts`,
+//       {
+//         method: "GET",
+//         headers: {
+//           "Content-Type": "application/json",
+//           Authorization: `Bearer ${token}`,
+//           "ngrok-skip-browser-warning": "any-value",
+//         },
+//       }
+//     );
+
+//     const data = await response.json();
+
+//     if (!response.ok) {
+//       throw new Error(
+//         data.message || "Gagal mengambil data kain finish contract"
+//       );
+//     }
+
+//     return data;
+//   } catch (error) {
+//     throw error;
+//   }
+// }
+
 export async function getAllKainJadis(token) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/purchase-finish-contracts`,
-        `${import.meta.env.VITE_API_URL}/purchase-finish-contracts`,
+      `${import.meta.env.VITE_API_URL}/purchase-finish-contracts`,
       {
         method: "GET",
         headers: {
@@ -3233,17 +3798,18 @@ export async function getAllKainJadis(token) {
 
     const data = await response.json();
 
-    if (!response.ok) {
-      throw new Error(
-        data.message || "Gagal mengambil data kain finish contract"
-      );
-    }
-
-    return data;
+    return {
+      status: response.status, // ← simpan status asli dari server
+      ...data,                 // ← gabung dengan body JSON
+    };
   } catch (error) {
-    throw error;
+    return {
+      status: 500,
+      message: error.message || "Gagal mengambil data kontrak kain jadi",
+    };
   }
 }
+
 
 export async function getKainJadis(id, token) {
   try {
@@ -3291,7 +3857,7 @@ export async function updateDataKainJadi(token, id, payload) {
       }
     );
 
-    console.log(payload);
+    //console.log(payload);
 
     const data = await response.json();
 
@@ -3370,11 +3936,37 @@ export async function createKainJadiOrder(token, payload) {
   }
 }
 
+// export async function getAllKainJadiOrders(token) {
+//   try {
+//     const response = await fetch(
+//         //`https://nexttechenterprise.site/api/purchase-finish-orders`,
+//         `${import.meta.env.VITE_API_URL}/purchase-finish-orders`,
+//       {
+//         method: "GET",
+//         headers: {
+//           "Content-Type": "application/json",
+//           Authorization: `Bearer ${token}`,
+//           "ngrok-skip-browser-warning": "any-value",
+//         },
+//       }
+//     );
+
+//     const data = await response.json();
+
+//     if (!response.ok) {
+//       throw new Error(data.message || "Gagal mengambil data kain finish order");
+//     }
+
+//     return data;
+//   } catch (error) {
+//     throw error;
+//   }
+// }
+
 export async function getAllKainJadiOrders(token) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/purchase-finish-orders`,
-        `${import.meta.env.VITE_API_URL}/purchase-finish-orders`,
+      `${import.meta.env.VITE_API_URL}/purchase-finish-orders`,
       {
         method: "GET",
         headers: {
@@ -3387,15 +3979,18 @@ export async function getAllKainJadiOrders(token) {
 
     const data = await response.json();
 
-    if (!response.ok) {
-      throw new Error(data.message || "Gagal mengambil data kain finish order");
-    }
-
-    return data;
+    return {
+      status: response.status,
+      ...data,            
+    };
   } catch (error) {
-    throw error;
+    return {
+      status: 500,
+      message: error.message || "Gagal mengambil data order kain jadi",
+    };
   }
 }
+
 
 export async function getKainJadiOrders(id, token) {
   try {
@@ -3519,11 +4114,39 @@ export async function createKJDeliveryNote(token, payload) {
   }
 }
 
+// export async function getAllKJDeliveryNotes(token) {
+//   try {
+//     const response = await fetch(
+//         //`https://nexttechenterprise.site/api/purchase-finish-surat-jalan`,
+//         `${import.meta.env.VITE_API_URL}/purchase-finish-surat-jalan`,
+//       {
+//         method: "GET",
+//         headers: {
+//           "Content-Type": "application/json",
+//           Authorization: `Bearer ${token}`,
+//           "ngrok-skip-browser-warning": "any-value",
+//         },
+//       }
+//     );
+
+//     const data = await response.json();
+
+//     if (!response.ok) {
+//       throw new Error(
+//         data.message || "Gagal mengambil data surat jalan kain finish"
+//       );
+//     }
+
+//     return data;
+//   } catch (error) {
+//     throw error;
+//   }
+// }
+
 export async function getAllKJDeliveryNotes(token) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/purchase-finish-surat-jalan`,
-        `${import.meta.env.VITE_API_URL}/purchase-finish-surat-jalan`,
+      `${import.meta.env.VITE_API_URL}/purchase-finish-surat-jalan`,
       {
         method: "GET",
         headers: {
@@ -3536,15 +4159,15 @@ export async function getAllKJDeliveryNotes(token) {
 
     const data = await response.json();
 
-    if (!response.ok) {
-      throw new Error(
-        data.message || "Gagal mengambil data surat jalan kain finish"
-      );
-    }
-
-    return data;
+    return {
+      status: response.status,
+      ...data,            
+    };
   } catch (error) {
-    throw error;
+    return {
+      status: 500,
+      message: error.message || "Gagal mengambil data Surat Penerimaan Kain Finish",
+    };
   }
 }
 
@@ -3670,11 +4293,37 @@ export async function createJualBeli(token, payload) {
   }
 }
 
+// export async function getAllJualBelis(token) {
+//   try {
+//     const response = await fetch(
+//         //`https://nexttechenterprise.site/api/jual-beli`,
+//         `${import.meta.env.VITE_API_URL}/jual-beli`,
+//       {
+//         method: "GET",
+//         headers: {
+//           "Content-Type": "application/json",
+//           Authorization: `Bearer ${token}`,
+//           "ngrok-skip-browser-warning": "any-value",
+//         },
+//       }
+//     );
+
+//     const data = await response.json();
+
+//     if (!response.ok) {
+//       throw new Error(data.message || "Gagal mengambil data jual beli");
+//     }
+
+//     return data;
+//   } catch (error) {
+//     throw error;
+//   }
+// }
+
 export async function getAllJualBelis(token) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/jual-beli`,
-        `${import.meta.env.VITE_API_URL}/jual-beli`,
+      `${import.meta.env.VITE_API_URL}/jual-beli`,
       {
         method: "GET",
         headers: {
@@ -3687,13 +4336,15 @@ export async function getAllJualBelis(token) {
 
     const data = await response.json();
 
-    if (!response.ok) {
-      throw new Error(data.message || "Gagal mengambil data jual beli");
-    }
-
-    return data;
+    return {
+      status: response.status,
+      ...data,            
+    };
   } catch (error) {
-    throw error;
+    return {
+      status: 500,
+      message: error.message || "Gagal mengambil data jual beli order",
+    };
   }
 }
 
@@ -3817,11 +4468,39 @@ export async function createJBDeliveryNote(token, payload) {
   }
 }
 
+// export async function getAllJBDeliveryNotes(token) {
+//   try {
+//     const response = await fetch(
+//         //`https://nexttechenterprise.site/api/purchase-finish-surat-jalan`,
+//         `${import.meta.env.VITE_API_URL}/jual-beli-surat-jalan`,
+//       {
+//         method: "GET",
+//         headers: {
+//           "Content-Type": "application/json",
+//           Authorization: `Bearer ${token}`,
+//           "ngrok-skip-browser-warning": "any-value",
+//         },
+//       }
+//     );
+
+//     const data = await response.json();
+
+//     if (!response.ok) {
+//       throw new Error(
+//         data.message || "Gagal mengambil data surat jalan jual beli"
+//       );
+//     }
+
+//     return data;
+//   } catch (error) {
+//     throw error;
+//   }
+// }
+
 export async function getAllJBDeliveryNotes(token) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/purchase-finish-surat-jalan`,
-        `${import.meta.env.VITE_API_URL}/jual-beli-surat-jalan`,
+      `${import.meta.env.VITE_API_URL}/jual-beli-surat-jalan`,
       {
         method: "GET",
         headers: {
@@ -3834,15 +4513,15 @@ export async function getAllJBDeliveryNotes(token) {
 
     const data = await response.json();
 
-    if (!response.ok) {
-      throw new Error(
-        data.message || "Gagal mengambil data surat jalan jual beli"
-      );
-    }
-
-    return data;
+    return {
+      status: response.status,
+      ...data,            
+    };
   } catch (error) {
-    throw error;
+    return {
+      status: 500,
+      message: error.message || "Gagal mengambil data Surat Penerimaan Jual Beli",
+    };
   }
 }
 
@@ -4051,4 +4730,5 @@ export async function unsetInvoiceJB(token, id, payload = {}) {
 
 export function logout() {
   localStorage.removeItem("user");
+  localStorage.removeItem("permissions");
 }
