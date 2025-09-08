@@ -43,7 +43,7 @@ export default function ColorDropdownSearch({
   };
 
   return (
-    <div class="relative w-64" ref={dropdownRef}>
+    <div class="relative w-full" ref={dropdownRef}>
       <input type="hidden" name="warna_id" value={item.warna_id} />
       <button
         type="button"
