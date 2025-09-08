@@ -49,12 +49,13 @@ export default function DeliveryNoteForm() {
 
   onMount(async () => {
     const pls = await getAllPackingLists(user?.token);
+    //console.log("Data PL: ", JSON.stringify(pls, null, 2));
     const dataSalesOrders = await getAllSalesOrders(user?.token);
     setSalesOrders(dataSalesOrders.orders || []);
 
     if (isEdit) {
       const res = await getDeliveryNotes(params.id, user?.token);
-      //console.log("Data Surat Jalan: ", JSON.stringify(res, null, 2));
+      //console.log("Data SJ: ", JSON.stringify(res, null, 2));
       if (!res || !res.order) return;
 
       setDeliveryNoteData(res.order); 
@@ -71,44 +72,99 @@ export default function DeliveryNoteForm() {
         setPackingLists(relatedPackingLists || []);
       }
 
-      const itemGroups = (deliveryNote.packing_lists || []).map(pl => {
-          const items = (pl.items || []).flatMap(item => 
-              (item.rolls || []).map(roll => ({
-                  packing_list_roll_id: roll.pli_roll_id,
-                  meter: roll.meter,
-                  yard: roll.yard,
-                  packing_list_item_id: item.pl_item_id,
-                  konstruksi_kain: item.konstruksi_kain || "",
-                  checked: true, 
-                  disabled: true, 
-              }))
+      const deliveredRollsSet = new Set();
+      (deliveryNote.packing_lists || []).forEach(pl => {
+        (pl.items || []).forEach(item => {
+          (item.rolls || []).forEach(roll => {
+            // backend mengembalikan 'pli_roll_id' = id roll di Packing List
+            deliveredRollsSet.add(roll.pli_roll_id);
+          });
+        });
+      });
+
+      const existingLotByPlId = new Map();
+        (deliveryNote.packing_lists || []).forEach(pl => {
+          const lots = new Set();
+          (pl.items || []).forEach(it => {
+            if (it.lot) {
+              String(it.lot)
+                .split(",")
+                .map(s => s.trim())
+                .filter(Boolean)
+                .forEach(v => lots.add(v));
+            }
+          });
+          existingLotByPlId.set(pl.id, Array.from(lots).join(","));
+      });
+
+      const itemGroups = await Promise.all(
+        (deliveryNote.packing_lists || []).map(async (pl) => {
+          const plDetail = await getPackingLists(pl.id, user?.token);
+          //console.log("Data PL : ", JSON.stringify(plDetail, null, 2));
+          const fullPl = plDetail?.order;
+
+          // let items = (fullPl.items || []).flatMap(item =>
+          //   (item.rolls || []).map(roll => ({
+          //     id: item.id,
+          //     packing_list_roll_id: roll.id,
+          //     meter: roll.meter,
+          //     yard: roll.yard,
+          //     packing_list_item_id: item.id,
+          //     konstruksi_kain: item.konstruksi_kain || "",
+          //     row_num: roll.row_num,
+          //     col_num: roll.col_num,
+          //     checked: !!deliveredPlItemMap[item.id],
+          //     disabled: !!deliveredPlItemMap[item.id],
+          //   }))
+          // );
+
+          let items = (fullPl.items || []).flatMap(item =>
+            (item.rolls || []).map(roll => {
+              const isInThisSJ = deliveredRollsSet.has(roll.id); // roll.id = ID roll di PL
+              return {
+                packing_list_roll_id: roll.id,
+                meter: roll.meter,
+                yard: roll.yard,
+                kilogram: roll.kilogram,
+                packing_list_item_id: item.id,
+                konstruksi_kain: item.konstruksi_kain || "",
+                row_num: roll.row_num,
+                col_num: roll.col_num,
+                checked: isInThisSJ,   // yang pernah dipilih → checked
+                disabled: false,       // di EDIT semuanya tetap checkbox (tidak pakai label "Terkirim")
+              };
+            })
           );
 
+          if (isView) {
+            items = items.filter(r => r.checked);
+          }
+
           return {
-              packing_list_id: pl.id,
-              no_pl: pl.no_pl,
-              type: deliveryNote.type, 
-              items,
+            packing_list_id: fullPl.id,
+            no_pl: fullPl.no_pl,
+            type: deliveryNote.type,
+            lot: existingLotByPlId.get(fullPl.id) || "",
+            items,
           };
-      });
+        })
+      );
 
       setForm({
         no_sj: deliveryNote.no_sj,
         sequence_number: deliveryNote.no_sj, 
         no_surat_jalan_supplier: deliveryNote.no_surat_jalan_supplier || "", 
-        tanggal_surat_jalan: new Date(deliveryNote.created_at)
-          .toISOString()
-          .split("T")[0],
+        tanggal_surat_jalan: new Date(deliveryNote.created_at).toISOString().split("T")[0],
         keterangan: deliveryNote.keterangan,
-        itemGroups,
+        itemGroups, // ✅ sekarang semua roll tampil
         ppn: selectedSO?.ppn_percent ?? 0,
         sales_order_id: selectedSO?.id ?? null, 
         no_mobil: deliveryNote.no_mobil,
         sopir: deliveryNote.sopir,
         delivered_status: deliveryNote.delivered_status,
       });
-
-    } else {
+    }
+    else {
       setPackingLists(pls?.packing_lists || []);
     }
   });
@@ -163,12 +219,16 @@ export default function DeliveryNoteForm() {
   const handleSelectAll = (groupIndex, checked) => {
     setForm((prev) => {
       const groups = [...prev.itemGroups];
-      groups[groupIndex] = {
-        ...groups[groupIndex],
-        items: groups[groupIndex].items.map((item) =>
-          item.disabled ? item : { ...item, checked }
-        ),
-      };
+      // groups[groupIndex] = {
+      //   ...groups[groupIndex],
+      //   items: groups[groupIndex].items.map((item) =>
+      //     item.disabled ? item : { ...item, checked }
+      //   ),
+      // };
+         groups[groupIndex] = {
+     ...groups[groupIndex],
+     items: groups[groupIndex].items.map((item) => ({ ...item, checked })),
+   };
       return { ...prev, itemGroups: groups };
     });
   };
@@ -215,6 +275,7 @@ export default function DeliveryNoteForm() {
         packing_list_id: plId,
         no_pl: pl?.no_pl,
         type: typeValue,
+        lot: groups[groupIndex]?.lot ?? "",
         items: allRolls,
       };
       return {
@@ -238,14 +299,39 @@ export default function DeliveryNoteForm() {
     });
   };
 
+  const sanitizeLot = (v) =>
+    String(v ?? "")
+      .replace(/[^0-9,]/g, "")     // hanya angka & koma
+      .replace(/,{2,}/g, ",")      // buang koma ganda
+      .replace(/(^,|,$)/g, "");    // buang koma di awal/akhir
+
+  const handleGroupLotBlur = (groupIndex, value) => {
+    setForm(prev => {
+      const groups = [...prev.itemGroups];
+      groups[groupIndex] = {
+        ...groups[groupIndex],
+        lot: sanitizeLot(value),
+      };
+      return { ...prev, itemGroups: groups };
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     const selectedRolls = form().itemGroups.flatMap((group) =>
-      group.items.filter((item) => item.checked && !item.disabled)
+      group.items.filter((item) => item.checked)  // ⬅️ hapus && !item.disabled
     );
 
     const groupedItems = {};
+
+    const lotByPlItemId = new Map();
+    form().itemGroups.forEach(g => {
+      const lotVal = String(g.lot || "");
+      (g.items || []).forEach(it => {
+        lotByPlItemId.set(it.packing_list_item_id, lotVal);
+      });
+    });
 
     // 3. Iterasi dan kelompokkan setiap roll
     for (const roll of selectedRolls) {
@@ -263,6 +349,7 @@ export default function DeliveryNoteForm() {
       }
 
       groupedItems[groupId].rolls.push({
+        //id: roll.id,
         pli_roll_id: roll.packing_list_roll_id,
         row_num: roll.row_num, 
         col_num: roll.col_num, 
@@ -286,6 +373,7 @@ export default function DeliveryNoteForm() {
       // Pembulatan untuk menghindari angka desimal yang panjang
       group.meter_total = parseFloat(group.meter_total.toFixed(2));
       group.yard_total = parseFloat(group.yard_total.toFixed(2));
+      group.lot = lotByPlItemId.get(group.pl_item_id) || "";
       return group;
     });
 
@@ -351,7 +439,7 @@ export default function DeliveryNoteForm() {
         ...deliveryNoteData(), 
         ...form(),            
     };
-    console.log("📄 Data yang dikirim ke halaman Print:", JSON.stringify(form(), null, 2));
+    //console.log("📄 Data yang dikirim ke halaman Print:", JSON.stringify(form(), null, 2));
     const encodedData = encodeURIComponent(JSON.stringify(dataToPrint));
     window.open(`/print/suratjalan?data=${encodedData}`, "_blank");
 }
@@ -425,33 +513,14 @@ export default function DeliveryNoteForm() {
               </div>
             </div>
 
-            {/* <div class="w-full mt-4">
-              <label class="text-sm font-medium">
-                No. Surat Jalan Supplier
-              </label>
-              <input
-                type="text"
-                class="w-full border p-2 rounded"
-                value={form().no_surat_jalan_supplier || ""}
-                onInput={(e) =>
-                  setForm({
-                    ...form(),
-                    no_surat_jalan_supplier: e.target.value,
-                  })
-                }
-                disabled={isView}
-                classList={{ "bg-gray-200" : isView }}
-              />
-            </div> */}
-
             <div class="w-full mt-4">
               <label class="text-sm font-medium">Tanggal Surat Jalan</label>
               <input
                 type="date"
                 class="w-full border p-2 rounded bg-gray-100"
                 value={form().tanggal_surat_jalan}
-                disabled={true}
-                classList={{ "bg-gray-200" : true }}
+                disabled={isView}
+                classList={{ "bg-gray-200" : isView }}
               />
             </div>
 
@@ -529,13 +598,25 @@ export default function DeliveryNoteForm() {
                     handlePackingListChange(groupIndex(), e.target.value)
                   }
                   disabled={isView}
-                  classList={{ "bg-gray-200" : isView }}
+                  classList={{ "bg-gray-200" : isView}}
                 >
                   <option value="">Pilih Packing List</option>
                   <For each={packingLists()}>
                     {(pl) => <option value={pl.id}>{pl.no_pl}</option>}
                   </For>
                 </select>
+
+                <div class="mb-3 flex items-center gap-3">
+                  <label class="text-sm font-medium w-6">Lot: </label>
+                  <input
+                    type="text"
+                    class="border p-1 rounded w-48"
+                    value={group.lot ?? ""}
+                    onBlur={(e) => handleGroupLotBlur(groupIndex(), e.currentTarget.value)}
+                    disabled={isView}
+                    classList={{ "bg-gray-200": isView }}
+                  />
+                </div>
 
                 <Show when={group.items?.length}>
                   <table class="w-full border border-gray-300 text-sm mb-3">
@@ -589,7 +670,7 @@ export default function DeliveryNoteForm() {
                             </td>
 
                             <td class="border px-2 py-1 text-center">
-                              <Show
+                              {/* <Show
                                 when={!isView}
                                 fallback={
                                   <span
@@ -621,7 +702,29 @@ export default function DeliveryNoteForm() {
                                     }
                                   />
                                 </Show>
-                              </Show>
+                              </Show> */}
+                                <Show
+                                  when={!isView}
+                                  fallback={
+                                    <span
+                                      classList={{
+                                        "font-semibold": true,
+                                        "text-green-600": form().delivered_status === 1,
+                                        "text-gray-500": form().delivered_status !== 1,
+                                      }}
+                                    >
+                                      {form().delivered_status === 1 ? "Terkirim" : "Belum Terkirim"}
+                                    </span>
+                                  }
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={roll.checked}
+                                    onChange={(e) =>
+                                      handleRollCheckedChange(groupIndex(), rollIndex(), e.target.checked)
+                                    }
+                                  />
+                                </Show>
                             </td>
                           </tr>
                         )}
