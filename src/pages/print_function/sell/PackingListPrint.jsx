@@ -3,19 +3,32 @@ import logoNavel from "../../../assets/img/navelLogo.png";
 export default function PackingListPrintLandscape({ data }) {
   const MAX_COL = 5;
 
+  // 2) Format tanggal: "dd MMMM yyyy" (Indonesia), diletakkan kanan atas tabel
+  const todayStr = new Date().toLocaleDateString("id-ID", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
+
+  // 5) Kolom roll mengikuti satuan_unit (Yard → pakai 'yard', selain itu pakai 'meter')
+  const unit = (data?.satuan_unit || data?.sales_order_items?.satuan_unit || "")
+    .toString()
+    .toLowerCase();
+  const ROLL_KEY = unit === "yard" ? "yard" : "meter";
+
   function formatNumber(value) {
-    if (!value && value !== 0) return "-";
+    if (value === null || value === undefined || value === "") return "-";
+    const num = Number(value);
+    if (Number.isNaN(num)) return "-";
     return new Intl.NumberFormat("id-ID", {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
-    }).format(value);
+    }).format(num);
   }
 
+  // 3) "Item" adalah corak_kain (ambil dari sales_order_items.items)
   const itemsMap = Object.fromEntries(
-    (data?.sales_order_items?.items || []).map((item) => [
-      item.id,
-      `${item.corak_kain} - ${item.deskripsi_warna}`,
-    ])
+    (data?.sales_order_items?.items || []).map((item) => [item.id, item.corak_kain])
   );
 
   // Hitung total semua group (untuk TOTAL bawah)
@@ -26,6 +39,8 @@ export default function PackingListPrintLandscape({ data }) {
   return (
     <>
       <style>{`
+        /* 7) Tidak ada kontrol CSS untuk header/footer browser.
+              Tapi kita pastikan layout rapi untuk cetak. */
         @page {
           size: A4 landscape;
           margin: 10mm;
@@ -33,6 +48,8 @@ export default function PackingListPrintLandscape({ data }) {
         @media print {
           thead { display: table-header-group; }
           tfoot { display: table-footer-group; }
+          /* Hilangkan margin default agar tidak menambah ruang ekstra */
+          body { margin: 0; }
         }
         body {
           font-family: Arial, sans-serif;
@@ -49,25 +66,24 @@ export default function PackingListPrintLandscape({ data }) {
           padding: 2px 4px;
           font-size: 12px;
         }
-        th {
-          text-align: center;
-        }
+        th { text-align: center; }
         .text-right { text-align: right; }
         .text-center { text-align: center; }
         .no-border { border: none !important; }
-        .header-info {
-          margin-bottom: 10px;
-          page-break-after: avoid;
-        }
+        .header-info { margin-bottom: 10px; page-break-after: avoid; }
+        .title { margin: 5px 0 2px 0; font-weight: 600; }
       `}</style>
 
-      {/* HEADER LOGO & INFO — Halaman pertama */}
+      {/* 1) "Navel ERP" dihilangkan; hanya judul & logo (kondisional) */}
       <div
-        class="flex flex-col items-center text-center"
-        style={{ textAlign: "center", marginBottom: "10px" }}
+        className="flex flex-col items-center text-center"
+        style={{ textAlign: "center", marginBottom: "6px" }}
       >
-        <img src={logoNavel} alt="Logo" style={{ height: "40px" }} />
-        <h2 style={{ margin: "5px 0" }}>PACKING LIST</h2>
+        {/* 4) Logo hanya muncul jika ppn_percent > 0 */}
+        {Number(data?.sales_order_items?.ppn_percent) > 0 && (
+          <img src={logoNavel} alt="Logo" style={{ height: "40px" }} />
+        )}
+        <h2 className="title">PACKING LIST</h2>
       </div>
 
       {/* INFORMASI PL & SO */}
@@ -81,19 +97,29 @@ export default function PackingListPrintLandscape({ data }) {
               </td>
               <td style={{ border: "none" }}>
                 <span className="text-md font-bold">No SO:</span>{" "}
-                <span className="text-md">
-                  {data?.sales_order_items.no_so || "-"}
-                </span>
+                <span className="text-md">{data?.sales_order_items?.no_so || "-"}</span>
               </td>
             </tr>
+            {/* 6) Tambahkan customer di bawah No PL */}
             <tr>
               <td style={{ border: "none" }}>
+                <span className="text-md font-bold">Customer:</span>{" "}
+                <span className="text-md">{data?.sales_order_items?.customer_name || "-"}</span>
+              </td>
+              <td style={{ border: "none" }}>
                 <span className="text-md font-bold">Keterangan:</span>{" "}
-                <span className="text-md">{data?.keterangan || "-"}</span>
+                <span className="text-md" style={{ whiteSpace: "pre-line" }}>
+                  {data?.keterangan || "-"}
+                </span>
               </td>
             </tr>
           </tbody>
         </table>
+      </div>
+
+      {/* 2) Tanggal di kanan atas tabel */}
+      <div style={{ width: "100%", textAlign: "right", margin: "4px 0" }}>
+        <span style={{ fontSize: "12px" }}>{todayStr}</span>
       </div>
 
       {/* TABLE */}
@@ -114,11 +140,11 @@ export default function PackingListPrintLandscape({ data }) {
         </thead>
         <tbody>
           {(data?.itemGroups || []).map((group, gi) => {
-            // Pastikan nama itemnya langsung dari mapping
-            const groupName = itemsMap[group.so_item_id] || group.item || "-";
+            const groupName =
+              itemsMap[group.so_item_id] || itemsMap[group.item] || group.item || "-";
 
-            // Hitung sub total group
-            const groupTotalPcs = group.rolls.filter((r) => r.meter).length;
+            // Sub total per group
+            const groupTotalPcs = group.rolls.filter((r) => r?.[ROLL_KEY]).length;
             const groupTotalMeter = group.rolls.reduce(
               (sum, r) => sum + (parseFloat(r.meter) || 0),
               0
@@ -128,25 +154,21 @@ export default function PackingListPrintLandscape({ data }) {
               0
             );
 
-            // Tambah ke grand total
+            // Grand total
             grandTotalPcs += groupTotalPcs;
             grandTotalMeter += groupTotalMeter;
             grandTotalYard += groupTotalYard;
 
-            // Hitung jumlah baris dalam group
+            // Baris-baris dalam group
             const rowCount = Math.ceil(group.rolls.length / MAX_COL);
 
-            // Return array of rows, bukan fragment
             return [
               ...Array.from({ length: rowCount }).map((_, rowIdx) => {
                 const startIdx = rowIdx * MAX_COL;
-                const rowRolls = group.rolls.slice(
-                  startIdx,
-                  startIdx + MAX_COL
-                );
+                const rowRolls = group.rolls.slice(startIdx, startIdx + MAX_COL);
 
                 const no = rowIdx === 0 ? gi + 1 : "";
-                const totalPcsRow = rowRolls.filter((r) => r.meter).length;
+                const totalPcsRow = rowRolls.filter((r) => r?.[ROLL_KEY]).length;
                 const totalMeterRow = rowRolls.reduce(
                   (sum, r) => sum + (parseFloat(r.meter) || 0),
                   0
@@ -157,39 +179,33 @@ export default function PackingListPrintLandscape({ data }) {
                 );
 
                 return (
-                  <tr>
+                  <tr key={`g${gi}-r${rowIdx}`}>
                     <td className="text-center">{no}</td>
-                    <td className="text-center">
-                      {rowIdx === 0 ? group.col : ""}
-                    </td>
-                    <td className="text-center">
-                      {rowIdx === 0 ? groupName : ""}
-                    </td>
+                    <td className="text-center">{rowIdx === 0 ? group.col : ""}</td>
+                    <td className="text-center">{rowIdx === 0 ? groupName : ""}</td>
 
                     {Array.from({ length: MAX_COL }).map((_, ci) => (
-                      <td className="text-right">
-                        {rowRolls[ci]?.meter
-                          ? formatNumber(rowRolls[ci].meter)
+                      <td className="text-right" key={`g${gi}-r${rowIdx}-c${ci}`}>
+                        {rowRolls[ci]?.[ROLL_KEY]
+                          ? formatNumber(rowRolls[ci][ROLL_KEY])
                           : ""}
                       </td>
                     ))}
 
                     <td className="text-right">{formatNumber(totalPcsRow)}</td>
-                    <td className="text-right">
-                      {formatNumber(totalMeterRow)}
-                    </td>
+                    <td className="text-right">{formatNumber(totalMeterRow)}</td>
                     <td className="text-right">{formatNumber(totalYardRow)}</td>
                   </tr>
                 );
               }),
 
               // SUB TOTAL PER GROUP
-              <tr>
+              <tr key={`g${gi}-subtotal`}>
                 <td colSpan={3} className="text-center">
                   <b>SUB TOTAL</b>
                 </td>
-                {[...Array(MAX_COL)].map(() => (
-                  <td></td>
+                {[...Array(MAX_COL)].map((_, i) => (
+                  <td key={`g${gi}-stc${i}`}></td>
                 ))}
                 <td className="text-right">
                   <b>{formatNumber(groupTotalPcs)}</b>
@@ -209,8 +225,8 @@ export default function PackingListPrintLandscape({ data }) {
             <td colSpan={3} className="text-center">
               <b>TOTAL</b>
             </td>
-            {[...Array(MAX_COL)].map(() => (
-              <td></td>
+            {[...Array(MAX_COL)].map((_, i) => (
+              <td key={`gtc${i}`}></td>
             ))}
             <td className="text-right">
               <b>{formatNumber(grandTotalPcs)}</b>

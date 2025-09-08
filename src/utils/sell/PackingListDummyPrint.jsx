@@ -53,7 +53,7 @@
 //   return <PackingListPrint data={dummyDataPackingOrder} />;
 // }
 
-import { onMount } from "solid-js";
+import { onMount, onCleanup } from "solid-js";
 import PackingListPrint from "../../pages/print_function/sell/PackingListPrint";
 import { useSearchParams } from "@solidjs/router";
 
