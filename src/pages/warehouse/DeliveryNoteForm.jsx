@@ -35,6 +35,33 @@ export default function DeliveryNoteForm() {
   const [deliveryNoteData, setDeliveryNoteData] = createSignal(null); 
   const [customersList, setCustomersList] = createSignal([]);
 
+  const qtyCounterbySystem = (pl, satuanUnit) => {
+    let total = 0;
+    let terkirim = 0;
+
+    switch (satuanUnit) {
+      case "Meter":
+        total = parseFloat(pl.summary?.total_meter || 0);
+        terkirim = parseFloat(pl.summary?.total_meter_dalam_proses || 0);
+        break;
+      case "Yard":
+        total = parseFloat(pl.summary?.total_yard || 0);
+        terkirim = parseFloat(pl.summary?.total_yard_dalam_proses || 0);
+        break;
+      case "Kilogram":
+        total = parseFloat(pl.summary?.total_kilogram || 0);
+        terkirim = parseFloat(pl.summary?.total_kilogram_dalam_proses || 0);
+        break;
+      default:
+        return "-";
+    }
+
+    const sisa = total - terkirim;
+    if (sisa <= 0) return "SELESAI";
+
+    return `${sisa.toLocaleString("id-ID")} / ${total.toLocaleString("id-ID")}`;
+  };
+
   const [form, setForm] = createSignal({
     no_sj: "",
     sequence_number: "",
@@ -594,14 +621,14 @@ export default function DeliveryNoteForm() {
                 <select
                   class="w-full border p-2 rounded mb-4"
                   value={group.packing_list_id}
-                  onInput={(e) =>
-                    handlePackingListChange(groupIndex(), e.target.value)
-                  }
+                  onInput={(e) => handlePackingListChange(groupIndex(), e.target.value)}
                   disabled={isView}
-                  classList={{ "bg-gray-200" : isView}}
+                  classList={{ "bg-gray-200": isView }}
                 >
                   <option value="">Pilih Packing List</option>
-                  <For each={packingLists()}>
+                  <For each={packingLists().filter(
+                    (pl) => qtyCounterbySystem(pl, pl.satuan_unit) !== "SELESAI"
+                  )}>
                     {(pl) => <option value={pl.id}>{pl.no_pl}</option>}
                   </For>
                 </select>
