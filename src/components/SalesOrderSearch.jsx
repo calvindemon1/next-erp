@@ -10,6 +10,37 @@ function formatSimpleDate(dateString) {
   return `${day}-${month}-${year}`;
 }
 
+const qtyCounterbySystem = (pl, satuanUnit) => {
+  let total = 0;
+  let terkirim = 0;
+
+  switch (satuanUnit) {
+    case "Meter": // Meter
+      total = parseFloat(pl.summary?.total_meter || 0);
+      terkirim = parseFloat(pl.summary?.total_meter_dalam_proses || 0);
+      break;
+    case "Yard": // Yard
+      total = parseFloat(pl.summary?.total_yard || 0);
+      terkirim = parseFloat(pl.summary?.total_yard_dalam_proses || 0);
+      break;
+    case "Kilogram": // Kilogram
+      total = parseFloat(pl.summary?.total_kilogram || 0);
+      terkirim = parseFloat(pl.summary?.total_kilogram_dalam_proses || 0);
+      break;
+    default:
+      return "-";
+  }
+
+  const sisa = total - terkirim;
+
+  // Kalau udah habis
+  if (sisa <= 0) {
+    return "SELESAI";
+  }
+
+  return `${sisa.toLocaleString("id-ID")} / ${total.toLocaleString("id-ID")}`;
+};
+
 export default function SalesOrderDropdownSearch({
   salesOrders,
   form,
@@ -27,12 +58,27 @@ export default function SalesOrderDropdownSearch({
     onCleanup(cleanup);
   });
 
+  // const filteredSalesOrders = createMemo(() => {
+  //   const q = search().toLowerCase();
+  //   return salesOrders().filter((so) => {
+  //     const no_so = (so.no_so || "").toLowerCase();
+  //     const customer = (so.customer_name || "").toLowerCase();
+  //     return no_so.includes(q) || customer.includes(q);
+  //   });
+  // });
+
   const filteredSalesOrders = createMemo(() => {
     const q = search().toLowerCase();
     return salesOrders().filter((so) => {
       const no_so = (so.no_so || "").toLowerCase();
       const customer = (so.customer_name || "").toLowerCase();
-      return no_so.includes(q) || customer.includes(q);
+
+      // cek status
+      const status = qtyCounterbySystem(so, so.satuan_unit_name);
+      const statusStr = typeof status === "string" ? status : "SELESAI";
+
+      // hanya tampilkan kalau cocok pencarian DAN bukan SELESAI
+      return (no_so.includes(q) || customer.includes(q)) && statusStr !== "SELESAI";
     });
   });
 

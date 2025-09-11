@@ -10,6 +10,33 @@ function formatSimpleDate(dateString) {
   return `${day}-${month}-${year}`;
 }
 
+const qtyCounterbySystem = (sj, satuanUnit) => {
+  let total = 0;
+  let terkirim = 0;
+
+  switch (satuanUnit) {
+    case "Meter": // Meter
+      total = parseFloat(sj.summary?.total_meter || 0);
+      terkirim = parseFloat(sj.summary?.total_meter_dalam_proses || 0);
+      break;
+    case "Yard": // Yard
+      total = parseFloat(sj.summary?.total_yard || 0);
+      terkirim = parseFloat(sj.summary?.total_yard_dalam_proses || 0);
+      break;
+    default:
+      return "-";
+  }
+
+  const sisa = total - terkirim;
+
+  // Kalau udah habis
+  if (sisa <= 0) {
+    return "SELESAI";
+  }
+
+  return `${sisa.toLocaleString("id-ID")} / ${total.toLocaleString("id-ID")}`;
+};
+
 export default function PurchasingOrderDropdownSearch(props) {
   const [isOpen, setIsOpen] = createSignal(false);
   const [search, setSearch] = createSignal("");
@@ -20,13 +47,32 @@ export default function PurchasingOrderDropdownSearch(props) {
     onClickOutside(dropdownRef, () => setIsOpen(false));
   });
 
+  // const filteredItems = createMemo(() => {
+  //   const query = search().toLowerCase();
+  //   if (!Array.isArray(props.items)) return [];
+  //   return props.items.filter((item) => {
+  //     const no_jb = (item.no_jb || "").toLowerCase();
+  //     const customer = (item.customer_name || "").toLowerCase();
+  //     return no_jb.includes(query) || customer.includes(query);
+  //   });
+  // });
+
   const filteredItems = createMemo(() => {
     const query = search().toLowerCase();
     if (!Array.isArray(props.items)) return [];
+
+    // Hanya tampilkan item yang BELUM selesai
     return props.items.filter((item) => {
+      // cek status sisa
+      const satuan = item.satuan_unit_name || "Meter"; // sesuaikan dengan datamu
+      const status = qtyCounterbySystem(item, satuan);
+
+      // filter berdasarkan pencarian & status ≠ "SELESAI"
       const no_jb = (item.no_jb || "").toLowerCase();
       const customer = (item.customer_name || "").toLowerCase();
-      return no_jb.includes(query) || customer.includes(query);
+      const matchQuery = no_jb.includes(query) || customer.includes(query);
+
+      return matchQuery && status !== "SELESAI"; // hanya yg belum selesai
     });
   });
 

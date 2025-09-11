@@ -10,6 +10,33 @@ function formatSimpleDate(dateString) {
   return `${day}-${month}-${year}`;
 }
 
+const qtyCounterbySystem = (sc, satuanUnit) => {
+  let total = 0;
+  let terkirim = 0;
+
+  switch (satuanUnit) {
+    case 1:
+      total = parseFloat(sc.summary?.total_meter || 0);
+      terkirim = parseFloat(sc.summary?.total_meter_dalam_proses || 0);
+      break;
+    case 2:
+      total = parseFloat(sc.summary?.total_yard || 0);
+      terkirim = parseFloat(sc.summary?.total_yard_dalam_proses || 0);
+      break;
+    case 3:
+      total = parseFloat(sc.summary?.total_kilogram || 0);
+      terkirim = parseFloat(sc.summary?.total_kilogram_dalam_proses || 0);
+      break;
+    default:
+      return "-";
+  }
+
+  const sisa = total - terkirim;
+  if (sisa <= 0) return "SELESAI";
+
+  return `${sisa.toLocaleString("id-ID")} / ${total.toLocaleString("id-ID")}`;
+};
+
 export default function SalesContractDropdownSearch({
   salesContracts, 
   form,
@@ -27,12 +54,31 @@ export default function SalesContractDropdownSearch({
     onCleanup(cleanup);
   });
 
+  // const filteredSalesContracts = createMemo(() => {
+  //   const q = search().toLowerCase();
+  //   return salesContracts().filter((c) => {
+  //     const no_sc = (c.no_sc || "").toLowerCase();
+  //     const customer = (c.customer_name || "").toLowerCase();
+  //     return no_sc.includes(q) || customer.includes(q);
+  //   });
+  // });
+
   const filteredSalesContracts = createMemo(() => {
     const q = search().toLowerCase();
     return salesContracts().filter((c) => {
       const no_sc = (c.no_sc || "").toLowerCase();
       const customer = (c.customer_name || "").toLowerCase();
-      return no_sc.includes(q) || customer.includes(q);
+
+      // cek status SELESAI (gunakan satuan_unit_id dari contract)
+      // karena di qtyCounterbySystem kamu return <span> untuk SELESAI,
+      // lebih baik ubah dulu supaya hanya return string, mis. "SELESAI"
+      const status = qtyCounterbySystem(c, c.satuan_unit_id);
+
+      // kalau status berupa React element, convert ke string:
+      const statusStr = typeof status === "string" ? status : "SELESAI";
+
+      // hanya tampilkan kalau cocok search DAN bukan SELESAI
+      return (no_sc.includes(q) || customer.includes(q)) && statusStr !== "SELESAI";
     });
   });
 

@@ -1,6 +1,37 @@
 import { createSignal, createMemo, createEffect, onCleanup } from "solid-js";
 import { onClickOutside } from "./OnClickOutside";
 
+  const qtyCounterbySystem = (so, satuanUnit) => {
+    let total = 0;
+    let terkirim = 0;
+
+    switch (satuanUnit) {
+      case 1: // Meter
+        total = parseFloat(so.summary?.total_meter || 0);
+        terkirim = parseFloat(so.summary?.total_meter_dalam_proses || 0);
+        break;
+      case 2: // Yard
+        total = parseFloat(so.summary?.total_yard || 0);
+        terkirim = parseFloat(so.summary?.total_yard_dalam_proses || 0);
+        break;
+      case 3: // Kilogram
+        total = parseFloat(so.summary?.total_kilogram || 0);
+        terkirim = parseFloat(so.summary?.total_kilogram_dalam_proses || 0);
+        break;
+      default:
+        return "-";
+    }
+
+    const sisa = total - terkirim;
+
+    // Kalau udah habis
+    if (sisa <= 0) {
+      return "SELESAI";
+    }
+
+    return `${sisa.toLocaleString("id-ID")} / ${total.toLocaleString("id-ID")}`;
+  };
+
 // BARU: Fungsi kecil untuk memformat tanggal
 function formatSimpleDate(dateString) {
   if (!dateString) return '';
@@ -28,13 +59,27 @@ export default function PurchasingContractDropdownSearch({
     onCleanup(cleanup);
   });
 
+  // const filteredContracts = createMemo(() => {
+  //   const q = search().toLowerCase();
+  //   return purchaseContracts().filter((p) => {
+  //     const no_pc = (p.no_pc || "").toLowerCase();
+  //     const supplier = (p.supplier_name || "").toLowerCase(); 
+  //     return no_pc.includes(q) || supplier.includes(q);
+  //   });
+  // });
+
   const filteredContracts = createMemo(() => {
     const q = search().toLowerCase();
-    return purchaseContracts().filter((p) => {
-      const no_pc = (p.no_pc || "").toLowerCase();
-      const supplier = (p.supplier_name || "").toLowerCase(); 
-      return no_pc.includes(q) || supplier.includes(q);
-    });
+    return purchaseContracts()
+      .filter((p) => {
+        const no_pc = (p.no_pc || "").toLowerCase();
+        const supplier = (p.supplier_name || "").toLowerCase();
+        return no_pc.includes(q) || supplier.includes(q);
+      })
+      .filter((p) => {
+        const satuanUnitId = p.satuan_unit_id || 1;
+        return qtyCounterbySystem(p, satuanUnitId) !== "SELESAI";
+      });
   });
 
   const selectedContract = createMemo(() =>
