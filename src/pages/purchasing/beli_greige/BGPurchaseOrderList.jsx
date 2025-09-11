@@ -132,7 +132,7 @@ export default function BGPurchaseOrderList() {
     const sisa = total - terkirim;
 
     // Kalau udah habis
-    if (sisa <= 0) {
+    if (total > 0 && sisa <= total * 0.1) {
       return "SELESAI";
     }
 
