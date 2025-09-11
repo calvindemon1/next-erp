@@ -188,6 +188,9 @@ export default function BGPurchaseContractForm() {
         termin: data.termin ?? "",
         ppn_percent: parseFloat(data.ppn_percent) > 0 ? "11.00" : "0.00",
         keterangan: data.keterangan ?? "",
+        tanggal: data.created_at 
+          ? new Date(data.created_at).toISOString().substring(0, 10) // ⬅️ ambil created_at dari API
+          : prev.tanggal,
         no_seq: sequenceNumber ?? 0,
         items: normalizedItems,
       }));
@@ -390,7 +393,9 @@ export default function BGPurchaseContractForm() {
           <span class="animate-pulse text-[40px] text-white">Loading...</span>
         </div>
       )}
-      <h1 class="text-2xl font-bold mb-4">Tambah Purchase Contract</h1>
+      <h1 class="text-2xl font-bold mb-4">
+        {isView ? "Detail" : isEdit ? "Edit" : "Tambah"} Purchase Contract Greige
+      </h1>
       <button
         type="button"
         class="flex gap-2 bg-blue-600 text-white px-3 py-2 mb-4 rounded hover:bg-green-700"
