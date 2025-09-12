@@ -117,7 +117,7 @@ export default function SalesOrderForm() {
       const res = await getSalesOrders(params.id, user?.token);
       const soData = res.order;
 
-      console.log("Data sales order: ", JSON.stringify(soData, null, 2));
+      //console.log("Data sales order: ", JSON.stringify(soData, null, 2));
 
       if (!soData) return;
 

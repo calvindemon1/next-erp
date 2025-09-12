@@ -1,388 +1,275 @@
-import { createMemo, createSignal, onMount } from "solid-js";
+import { createMemo, createEffect, For, Show } from "solid-js";
 import logoNavel from "../../../assets/img/navelLogo.png";
-import {
-  getCurrencies,
-  getCustomer,
-  getFabric,
-  getGrades,
-  getUser,
-} from "../../../utils/auth";
+import { splitIntoPagesWithOffsets, createStretch } from "../../../components/PrintUtils";
 
 export default function SalesContractPrint(props) {
-  const data = props.data;
-  const [currency, setCurrency] = createSignal(null);
-  const [customer, setCustomer] = createSignal(null);
-  const [kainList, setKainList] = createSignal({});
-  const [gradeList, setGradeList] = createSignal({});
+  const data = props.data || { items: [], summary: {} };
 
-  const tokUser = getUser(); // kalau token dibutuhkan
-
-  async function handleGetCurrency() {
-    try {
-      const res = await getCurrencies(data.currency_id, tokUser?.token);
-      if (res.status === 200) {
-        setCurrency(res.data || null);
-      }
-    } catch (err) {
-      console.error("Error getCurrencies:", err);
-    }
+  // ===== Formatter =====
+  function formatTanggal(s) {
+    if (!s) return "-";
+    const d = new Date(s);
+    const dd = String(d.getDate()).padStart(2, "0");
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const yy = d.getFullYear();
+    return `${dd}-${mm}-${yy}`;
   }
 
-  async function handleGetCustomer() {
-    try {
-      const res = await getCustomer(data.customer_id, tokUser?.token);
-      if (res.status === 200) {
-        setCustomer(res.customers || null);
-      }
-    } catch (err) {
-      console.error("Error getCustomers:", err);
-    }
-  }
-
-  async function handleGetKain(kainId) {
-    try {
-      const res = await getFabric(kainId, tokUser?.token);
-      // if (res.status === 200) {
-      setKainList((prev) => ({
-        ...prev,
-        [kainId]: res,
-      }));
-      // }
-    } catch (err) {
-      console.error("Error getFabric:", err);
-    }
-  }
-
-  async function handleGetGrade(gradeId) {
-    try {
-      const res = await getGrades(gradeId, tokUser?.token);
-      if (res.status === 200) {
-        setGradeList((prev) => ({
-          ...prev,
-          [gradeId]: res.data,
-        }));
-      }
-    } catch (err) {
-      console.error("Error getGrade:", err);
-    }
-  }
-
-  onMount(() => {
-    console.log(data);
-    if (tokUser?.token) {
-      handleGetCurrency();
-      handleGetCustomer();
-      (data.items || []).forEach((item) => {
-        if (item.fabric_id) {
-          handleGetKain(item.fabric_id);
-        }
-        if (item.grade_id) {
-          handleGetGrade(item.grade_id);
-        }
-      });
-    }
-  });
-
-  function formatRibuan(value) {
-    return value ? Number(value).toLocaleString("id-ID") : "-";
-  }
-
-  function formatTanggal(tgl) {
-    if (!tgl) return "-";
-    const [year, month, day] = tgl.split("-");
-    return `${day}-${month}-${year}`;
-  }
-
-  function formatRupiah(value, decimals = 2) {
-    if (typeof value !== "number") {
-      value = parseFloat(value) || 0;
-    }
-     if (value === 0) {
-        return "Rp 0,00";
-    }
+  function formatRupiah(v, decimals = 2) {
+    if (typeof v !== "number") v = parseFloat(v) || 0;
+    if (v === 0) return "Rp 0,00";
     return new Intl.NumberFormat("id-ID", {
       style: "currency",
       currency: "IDR",
       minimumFractionDigits: decimals,
       maximumFractionDigits: decimals,
-    }).format(value);
+    }).format(v);
   }
 
-  function formatAngka(value, decimals = 2) {
-    if (typeof value !== "number") {
-      value = parseFloat(value) || 0;
-    }
-    if (value === 0) {
-        return "0,00";
-    }
+  function formatAngka(v, decimals = 2) {
+    if (typeof v !== "number") v = parseFloat(v) || 0;
+    if (v === 0) return "0,00";
     return new Intl.NumberFormat("id-ID", {
       minimumFractionDigits: decimals,
       maximumFractionDigits: decimals,
-    }).format(value);
-  }  
-
-  const itemsPerPage = 14;
-  const itemPages = paginateItems(data.items ?? [], itemsPerPage);
-
-  function paginateItems(items, itemsPerPage) {
-    const pages = [];
-    for (let i = 0; i < items.length; i += itemsPerPage) {
-      pages.push(items.slice(i, i + itemsPerPage));
-    }
-    return pages;
+    }).format(v);
   }
 
-  const totalMeter = createMemo(() =>
-    data.items?.reduce((sum, i) => sum + (i.meterValue || 0), 0)
-  );
+  function formatAngkaNonDecimal(v) {
+    if (typeof v !== "number") v = parseFloat(v) || 0;
+    return new Intl.NumberFormat("id-ID", {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(v);
+  }
 
-  const totalYard = createMemo(() =>
-    data.items?.reduce((sum, i) => sum + (i.yardValue || 0), 0)
-  );
-
-  // Misalnya kamu sudah punya:
-  const isPPN = createMemo(() => parseFloat(data.ppn_percent) > 0);
-
-  const subTotal = createMemo(() => {
-    return (data.items || []).reduce(
-      (sum, item) => sum + (item.subtotal || 0),
-      0
-    );
-  });
-
-  // DPP = subTotal
-
-  const dpp = createMemo(() => {
-    return subTotal() / 1.11;
-  });
-
-  const nilaiLain = createMemo(() => {
-    return dpp() * (11 / 12);
-  });
-
-  const ppn = createMemo(() => {
-    return isPPN() ? nilaiLain() * 0.12 : 0;
-  });
-
+  // ===== Totals =====
+  const isPPN       = createMemo(() => parseFloat(data.ppn_percent) > 0);
+  const totalMeter  = createMemo(() => parseFloat(data.summary?.total_meter || 0));
+  const totalYard   = createMemo(() => parseFloat(data.summary?.total_yard  || 0));
+  const subTotal    = createMemo(() => Number(data?.summary?.subtotal) || 0);
+  const dpp         = createMemo(() => subTotal() / 1.11);
+  const nilaiLain   = createMemo(() => dpp() * (11 / 12));
+  const ppn         = createMemo(() => (isPPN() ? nilaiLain() * 0.12 : 0));
   const jumlahTotal = createMemo(() => dpp() + ppn());
 
-  const dataAkhir = {
+  const totals = createMemo(() => ({
+    subTotal: subTotal(),
     dpp: dpp(),
-    nilai_lain: nilaiLain(),
+    nilaiLain: nilaiLain(),
     ppn: ppn(),
-    total: jumlahTotal(),
-  };
+    grand: jumlahTotal(),
+    totalMeter: totalMeter(),
+    totalYard: totalYard(),
+  }));
+
+  // ===== Pagination =====
+  const ROWS_FIRST_PAGE  = 15; // kapasitas item halaman 1
+  const ROWS_OTHER_PAGES = 24; // kapasitas item halaman 2+
+
+  const pagesWithOffsets = createMemo(() =>
+    splitIntoPagesWithOffsets(data.items || [], ROWS_FIRST_PAGE, ROWS_OTHER_PAGES)
+  );
 
   return (
     <>
       <style>{`
-        @page {
-          size: A4 portrait;
-          margin: 0;
-        }
+        @page { size: A4 portrait; margin: 0; }
         html, body {
-          margin: 0;
-          padding: 0;
-          height: 100%;
-          width: 100%;
-          -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
+          margin: 0; padding: 0; height: 100%; width: 100%;
+          -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;
           font-family: sans-serif;
         }
+        .page {
+          width: 210mm;
+          height: 297mm;
+          padding: 5mm;
+          box-sizing: border-box;
+          position: relative;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 8px;
+        }
         @media print {
-          .page {
-            page-break-after: always;
-          }
+          .page { page-break-after: always; }
+          .page:last-child { page-break-after: auto; }
         }
       `}</style>
 
-      <div
-        className="flex flex-col items-center gap-2"
-        style={{
-          position: "relative",
-          width: "210mm",
-          height: "297mm",
-          overflow: "hidden",
-          padding: "5mm",
+      <For each={pagesWithOffsets()}>
+        {(p, idx) => {
+          const pageIndex = idx();
+          const count     = pagesWithOffsets().length;
+          const isLast    = pageIndex === count - 1;
+          return (
+            <PrintPage
+              data={data}
+              items={p.items}
+              startIndex={p.offset}  // Penomoran lanjut saat new page
+              pageNo={pageIndex + 1}
+              pageCount={count}
+              isPPN={isPPN()}
+              isLast={isLast}
+              totals={totals()}
+              formatters={{ formatTanggal, formatRupiah, formatAngka, formatAngkaNonDecimal }}
+              logoNavel={logoNavel}
+            />
+          );
         }}
-      >
-        <img
-          className="w-24"
-          hidden={!isPPN()}
-          src={logoNavel}
-          alt=""
-        />
+      </For>
+    </>
+  );
+}
 
-        <h1 className="text-xl uppercase font-bold">Sales Contract</h1>
+/* ==== Komponen Halaman 1 ====== */
+function PrintPage(props) {
+  const { data, items, startIndex, pageNo, pageCount, isPPN, isLast, totals, formatters, logoNavel } = props;
+  const { formatTanggal, formatRupiah, formatAngka, formatAngkaNonDecimal } = formatters;
 
-        <div className="w-full flex gap-2 text-sm">
-          {/* LEFT TABLE */}
-          <table className="w-[55%] border-2 border-black text-[13px] table-fixed">
+  createEffect(() => {
+    (items?.length ?? 0);
+    isLast;
+    requestAnimationFrame(recalc);
+  });
+
+  const { extraRows, bind, recalc } = createStretch({ fudge: 25 });
+
+  return (
+    <div ref={bind("pageRef")} className="page">
+      {/* row measurer khusus halaman ini */}
+      <table style="position:absolute; top:-10000px; left:-10000px; visibility:hidden;">
+        <tbody>
+          <tr ref={bind("measureRowRef")}>
+            <td class="p-1 text-center h-5"></td>
+            <td class="p-1 text-center"></td>
+            <td class="p-1"></td>
+            <td class="p-1 text-center"></td>
+            <td class="p-1 text-center"></td>
+            <td class="p-1 text-right"></td>
+            <td class="p-1 text-right"></td>
+            <td class="p-1 text-right"></td>
+            <td class="p-1 text-right"></td>
+          </tr>
+        </tbody>
+      </table>
+
+      {/* HEADER (ditampilkan di semua halaman) */}
+      <img
+        className="w-24"
+        src={logoNavel}
+        alt=""
+        onLoad={recalc}
+        hidden={!isPPN}
+      />
+      <h1 className="text-xl uppercase font-bold">Sales Contract</h1>
+
+      <div className="w-full flex gap-2 text-sm">
+        {/* LEFT */}
+        <table className="w-[55%] border-2 border-black text-[13px] table-fixed">
+          <tbody>
+            <tr><td className="px-2 pt-1 max-w-[300px] break-words whitespace-pre-wrap" colSpan={2}>Kepada Yth:</td></tr>
+            <tr><td className="px-2 max-w-[300px] break-words whitespace-pre-wrap" colSpan={2}>{data.customer_name}</td></tr>
+            <tr><td className="px-2 max-w-[300px] leading-relaxed break-words whitespace-pre-wrap" colSpan={2}>{data.customer_alamat}</td></tr>
+            <tr>
+              <td className="px-2 py-1 whitespace-nowrap">Telp: {data.customer_no_telp}</td>
+              <td className="px-2 py-1 whitespace-nowrap">Fax:</td>
+            </tr>
+          </tbody>
+        </table>
+
+        {/* MIDDLE */}
+        <div className="flex flex-col gap-2 w-[20%]">
+          <table className="border-2 border-black table-fixed w-full h-full">
             <tbody>
-              <tr>
-                <td
-                  className="px-2 pt-1 max-w-[300px] break-words whitespace-pre-wrap"
-                  colSpan={2}
-                >
-                  Kepada Yth:
-                </td>
+              <tr className="border-b border-black">
+                <td className="px-2 py-1 w-[30%] whitespace-nowrap">Jenis</td>
+                <td className="w-[5%] text-center">:</td>
+                <td className="px-2 py-1 w-[65%] break-words">{data.currency_name}</td>
               </tr>
               <tr>
-                <td
-                  className="px-2 max-w-[300px] break-words whitespace-pre-wrap"
-                  colSpan={2}
-                >
-                  {customer()?.nama}
-                </td>
+                <td className="px-2 py-1 whitespace-nowrap">Kurs</td>
+                <td className="text-center">:</td>
+                <td className="px-2 py-1 break-words">{data.kurs !== "" ? data.kurs : 0}</td>
               </tr>
-              <tr>
-                <td
-                  className="px-2 max-w-[300px] leading-relaxed break-words whitespace-pre-wrap"
-                  colSpan={2}
-                >
-                  {customer()?.alamat}
-                </td>
-              </tr>
-              {/* <tr>
-                <td
-                  className="px-2 max-w-[300px] break-words whitespace-pre-wrap"
-                  colSpan={2}
-                >
-                  KERTOHARJO PEKALONGAN SEL
-                </td>
-              </tr> */}
-              <tr>
-                <td className="px-2 py-1 whitespace-nowrap">
-                  Telp: {customer()?.no_telp}
-                </td>
-                <td className="px-2 py-1 whitespace-nowrap">Fax:</td>
-              </tr>
-            </tbody>
-          </table>
-
-          {/* MIDDLE TABLE */}
-          <div className="flex flex-col gap-2 w-[20%]">
-            <table className="border-2 border-black table-fixed w-full h-full">
-              <tbody>
-                <tr className="border-b border-black">
-                  <td className="px-2 py-1 w-[30%] whitespace-nowrap">Jenis</td>
-                  <td className="w-[5%] text-center">:</td>
-                  <td className="px-2 py-1 w-[65%] break-words">
-                    {currency()?.name}
-                  </td>
-                </tr>
-                <tr>
-                  <td className="px-2 py-1 whitespace-nowrap">Kurs</td>
-                  <td className="text-center">:</td>
-                  <td className="px-2 py-1 break-words">
-                    {data.kurs !== "" ? data.kurs : 0}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          {/* RIGHT TABLE */}
-          <table className="w-[35%] border-2 border-black table-fixed text-sm">
-            <tbody>
-              {[
-                { label: "No. SC", value: data.no_seq },
-                { label: "Tanggal", value: formatTanggal(data.tanggal) },
-                {
-                  label: "Validity",
-                  value: formatTanggal(data.validity_contract),
-                },
-                { label: "Payment", value: data.termin + " Hari" },
-              ].map((row, idx) => (
-                <tr key={idx} className="border-b border-black">
-                  <td className="font-bold px-2 w-[30%] whitespace-nowrap">
-                    {row.label}
-                  </td>
-                  <td className="w-[5%] text-center">:</td>
-                  <td className="px-2 break-words w-[65%]">{row.value}</td>
-                </tr>
-              ))}
             </tbody>
           </table>
         </div>
 
-        {/* ITEM TABLE */}
-        <table className="w-full table-fixed border border-black text-[12px] border-collapse mt-3">
-          <thead className="bg-gray-200">
-            <tr>
-              <th className="border border-black p-1 w-[4%]" rowSpan={2}>
-                No
-              </th>
-              <th className="border border-black p-1 w-[8%]" rowSpan={2}>
-                Kode
-              </th>
-              <th className="border border-black p-1 w-[15%]" rowSpan={2}>
-                Jenis Kain
-              </th>
-              <th className="border border-black p-1 w-[6%]" rowSpan={2}>
-                Grade
-              </th>
-              <th className="border border-black p-1 w-[8%]" rowSpan={2}>
-                Lebar
-              </th>
-              <th className="border border-black p-1 w-[8%]" rowSpan={2}>
-                Gramasi
-              </th>
-              <th
-                className="border border-black p-1 w-[18%] text-center"
-                colSpan={2}
-              >
-                Quantity
-              </th>
-              <th className="border border-black p-1 w-[10%]" rowSpan={2}>
-                Harga
-              </th>
-              <th className="border border-black p-1 w-[16%]" rowSpan={2}>
-                Jumlah
-              </th>
-            </tr>
-            <tr>
-              <th className="border border-black p-1 w-[14%]">Meter</th>
-              <th className="border border-black p-1 w-[14%]">Yard</th>
-            </tr>
-          </thead>
+        {/* RIGHT */}
+        <table className="w-[35%] border-2 border-black table-fixed text-sm">
           <tbody>
-            {(data.items || []).map((item, i) => (
-              <tr key={i}>
-                <td className="p-1 text-center">{i + 1}</td>
-                <td className="p-1 text-center">
-                  {kainList()[item.fabric_id]?.corak || "-"}
-                </td>
-                <td className="p-1">
-                  {kainList()[item.fabric_id]?.konstruksi || "-"}
-                </td>
-                <td className="p-1 text-center">
-                  {gradeList()[item.grade_id]?.grade || "-"}
-                </td>
-                <td className="p-1 text-center break-words">
-                  {item.lebar}
-                </td>
-                <td className="p-1 text-center break-words">{item.gramasi}</td>
-                <td className="p-1 text-right break-words">
-                  {formatAngka(item.meterValue)}
-                </td>
-                <td className="p-1 text-right break-words">
-                  {formatAngka(item.yardValue)}
-                </td>
-                <td className="p-1 text-right break-words">
-                  {formatRupiah(item.hargaValue)}
-                </td>
-                <td className="p-1 text-right break-words">
-                  {item.harga && item.meter
-                    ? formatRupiah(item.hargaValue * item.meterValue)
-                    : "-"}
-                </td>
+            {[
+              { label: "No. SC", value: data.no_sc },
+              { label: "Tanggal", value: formatTanggal(data.created_at) },
+              { label: "Validity", value: formatTanggal(data.validity_contract) },
+              { label: "Payment", value: data.termin == 0 ? "Cash" : data.termin + " Hari" }
+            ].map((row) => (
+              <tr className="border-b border-black">
+                <td className="font-bold px-2 w-[30%] whitespace-nowrap">{row.label}</td>
+                <td className="w-[5%] text-center">:</td>
+                <td className="px-2 break-words w-[65%]">{row.value}</td>
               </tr>
             ))}
+          </tbody>
+        </table>
+      </div>
 
-            {/* Tambahin row kosong */}
-            {Array.from({ length: 10 - data.items.length }).map((_, i) => (
-              <tr key={`empty-${i}`}>
+      {/* ITEM TABLE */}
+      <table ref={bind("tableRef")} className="w-full table-fixed border border-black text-[12px] border-collapse mt-3">
+        <thead ref={bind("theadRef")} className="bg-gray-200">
+          <tr>
+            <th className="border border-black p-1 w-[4%]" rowSpan={2}>No</th>
+            <th className="border border-black p-1 w-[8%]" rowSpan={2}>Kode</th>
+            <th className="border border-black p-1 w-[15%]" rowSpan={2}>Jenis Kain</th>
+            <th className="border border-black p-1 w-[6%]" rowSpan={2}>Grade</th>
+            <th className="border border-black p-1 w-[8%]" rowSpan={2}>Lebar</th>
+            <th className="border border-black p-1 w-[8%]" rowSpan={2}>Gramasi</th>
+            <th className="border border-black p-1 w-[18%] text-center" colSpan={1}>Quantity</th>
+            <th className="border border-black p-1 w-[10%]" rowSpan={2}>Harga</th>
+            <th className="border border-black p-1 w-[16%]" rowSpan={2}>Jumlah</th>
+          </tr>
+          <tr>
+            <th className="border border-black p-1 w-[24%]">
+              {data.satuan_unit_name || "Meter"}
+            </th>
+          </tr>
+        </thead>
+
+        <tbody ref={bind("tbodyRef")}>
+          <For each={items}>
+            {(item, i) => (
+              <tr>
+                {/* nomor lanjut: startIndex + nomor di halaman + 1 */}
+                <td className="p-1 text-center break-words">{startIndex + i() + 1}</td>
+                <td className="p-1 text-center break-words">{item.corak_kain || "-"}</td>
+                <td className="p-1 break-words">{item.konstruksi_kain}</td>
+                <td className="p-1 break-words text-center">{item.grade_name}</td>
+                <td className="p-1 text-center break-words">{formatAngkaNonDecimal(item.lebar)}"</td>
+                <td className="p-1 text-center break-words">{formatAngka(item.gramasi)}</td>
+                <td className="p-1 text-center break-words">
+                  {data.satuan_unit_name === "Meter"
+                    ? formatAngka(item.meter_total)
+                    : formatAngka(item.yard_total)}
+                </td>
+                <td className="p-1 text-center break-words">{formatRupiah(item.harga)}</td>
+                <td className="p-1 text-right break-words">
+                  {(() => {
+                    const qty = data.satuan_unit_name === "Meter"
+                      ? parseFloat(item.meter_total || 0)
+                      : parseFloat(item.yard_total || 0);
+                    const harga = parseFloat(item.harga || 0);
+                    return harga && qty ? formatRupiah(harga * qty) : "-";
+                  })()}
+                </td>
+              </tr>
+            )}
+          </For>
+
+          {/* ROW KOSONG DINAMIS */}
+          <For each={Array.from({ length: extraRows() })}>
+            {() => (
+              <tr>
                 <td className="p-1 text-center h-5"></td>
                 <td className="p-1 text-center"></td>
                 <td className="p-1"></td>
@@ -393,128 +280,72 @@ export default function SalesContractPrint(props) {
                 <td className="p-1 text-right"></td>
                 <td className="p-1 text-right"></td>
               </tr>
-            ))}
-          </tbody>
-          <tfoot>
+            )}
+          </For>
+        </tbody>
+
+        <tfoot ref={bind("tfootRef")}>
+          {/* Total lengkap hanya di halaman terakhir */}
+          <Show when={isLast}>
             <tr>
-              <td colSpan={6} className="border border-black font-bold px-2 py-1" >Total</td>
-              <td className="border border-black px-2 py-1 text-right font-bold">
-                {formatAngka(totalMeter())}
+              <td colSpan={6} className="border border-black font-bold px-2 py-1">Total:</td>
+              <td className="border border-black px-2 py-1 text-center font-bold">
+                {data.satuan_unit_name === "Meter"
+                  ? formatAngka(totals.totalMeter)
+                  : formatAngka(totals.totalYard)}
               </td>
-              <td className="border border-black px-2 py-1 text-right font-bold">
-                {formatAngka(totalYard())}
-              </td>
-              {/* <td className="border border-black px-2 py-1 text-right font-bold">
-                Sub Total
-              </td>
-              <td className="border border-black px-2 py-1 text-right">
-                {formatRupiahNumber(subTotal())}
-              </td> */}
-              <td className="border border-black px-2 py-1 text-right font-bold">
-                {isPPN() ? 'Sub Total' : 'Jumlah Total'}
-              </td>
-              <td className="border border-black px-2 py-1 text-right">
-                {formatRupiah(subTotal())}
-              </td>
+              <td className="border border-black px-2 py-1 text-right font-bold">Sub Total</td>
+              <td className="border border-black px-2 py-1 text-right">{formatRupiah(totals.subTotal)}</td>
             </tr>
-            {/* <tr>
-              <td colSpan={8} className="px-2 py-1" />
+            <tr>
+              <td colSpan={7} className="px-2 py-1" />
               <td className="px-2 py-1 text-right font-bold">DPP</td>
-              <td className="px-2 py-1 text-right">
-                {formatRupiahNumber(dataAkhir.dpp)}
-              </td>
+              <td className="px-2 py-1 text-right">{formatRupiah(totals.dpp)}</td>
             </tr>
             <tr>
-              <td colSpan={8} className="px-2 py-1" />
+              <td colSpan={7} className="px-2 py-1" />
               <td className="px-2 py-1 text-right font-bold">Nilai Lain</td>
-              <td className="px-2 py-1 text-right">
-                {formatRupiahNumber(dataAkhir.nilai_lain)}
-              </td>
+              <td className="px-2 py-1 text-right">{formatRupiah(totals.nilaiLain)}</td>
             </tr>
             <tr>
-              <td colSpan={8} className="px-2 py-1" />
+              <td colSpan={7} className="px-2 py-1" />
               <td className="px-2 py-1 text-right font-bold">PPN</td>
-              <td className="px-2 py-1 text-right">
-                {formatRupiahNumber(dataAkhir.ppn)}
-              </td>
+              <td className="px-2 py-1 text-right">{formatRupiah(totals.ppn)}</td>
             </tr>
             <tr>
-              <td colSpan={8} className="px-2 py-1" />
+              <td colSpan={7} className="px-2 py-1" />
               <td className="px-2 py-1 text-right font-bold">Jumlah Total</td>
-              <td className="px-2 py-1 text-right">
-                {formatRupiahNumber(dataAkhir.total)}
-              </td>
-            </tr> */}
-            <Show when={isPPN()}>
-              <>
-                <tr>
-                  <td colSpan={8} className="px-2 py-1"/>
-                  <td className="px-2 py-1 text-right font-bold">DPP</td>
-                  <td className="px-2 py-1 text-right">
-                    {formatRupiah(dataAkhir.dpp)}
-                  </td>
-                </tr>
-                <tr>
-                  <td colSpan={8} className="px-2 py-1"/>
-                  <td className="px-2 py-1 text-right font-bold">Nilai Lain</td>
-                  <td className="px-2 py-1 text-right">
-                    {formatRupiah(dataAkhir.nilai_lain)}
-                  </td>
-                </tr>
-                <tr>
-                  <td colSpan={8} className="px-2 py-1"/>
-                  <td className="px-2 py-1 text-right font-bold">PPN</td>
-                  <td className="px-2 py-1 text-right">
-                    {formatRupiah(dataAkhir.ppn)}
-                  </td>
-                </tr>
-                <tr>
-                  <td colSpan={8} className="px-2 py-1"/>
-                  <td className="px-2 py-1 text-right font-bold">Jumlah Total</td>
-                  <td className="px-2 py-1 text-right">
-                    {formatRupiah(dataAkhir.total)}
-                  </td>
-                </tr>
-              </>
-            </Show>
+              <td className="px-2 py-1 text-right">{formatRupiah(totals.grand)}</td>
+            </tr>
             <tr>
-              <td colSpan={10} className="border border-black p-2 align-top">
+              <td colSpan={9} className="border border-black p-2 align-top">
                 <div className="font-bold mb-1">NOTE:</div>
-                <div className="whitespace-pre-wrap break-words italic">
-                  {data.keterangan ?? "-"}
-                </div>
+                <div className="whitespace-pre-wrap break-words italic">{data.keterangan ?? "-"}</div>
               </td>
             </tr>
             <tr>
-              <td colSpan={10} className="border border-black">
+              <td colSpan={9} className="border border-black">
                 <div className="w-full flex justify-between text-[12px] py-5 px-2">
                   <div className="text-center w-1/3 pb-3">
-                    Customer
-                    <br />
-                    <br />
-                    <br />
-                    <br />( ...................... )
+                    Customer<br/><br/><br/><br/>( ...................... )
                   </div>
                   <div className="text-center w-1/3">
-                    Mengetahui
-                    <br />
-                    <br />
-                    <br />
-                    <br />( ...................... )
+                    Mengetahui<br/><br/><br/><br/>( ...................... )
                   </div>
                   <div className="text-center w-1/3">
-                    Dibuat Oleh
-                    <br />
-                    <br />
-                    <br />
-                    <br />( ...................... )
+                    Dibuat Oleh<br/><br/><br/><br/>( ...................... )
                   </div>
                 </div>
               </td>
             </tr>
-          </tfoot>
-        </table>
-      </div>
-    </>
+          </Show>
+          <tr>
+            <td colSpan={9} className="border border-black px-2 py-1 text-right italic">
+              Halaman {pageNo} dari {pageCount}
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
   );
 }

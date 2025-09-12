@@ -35,6 +35,7 @@ export default function SalesContractForm() {
   const [customersList, setCustomersList] = createSignal([]);
   const [gradeOptions, setGradeOptions] = createSignal([]);
   const [loading, setLoading] = createSignal(true);
+  const [purchaseContractData, setPurchaseContractData] = createSignal(null);
 
   const [params] = useSearchParams();
   const isEdit = !!params.id;
@@ -161,7 +162,13 @@ export default function SalesContractForm() {
       const res = await getSalesContracts(params.id, user?.token);
       const data = res.contract;
 
-      console.log("Data sales contracts: ", JSON.stringify(data, null, 2));
+      //console.log("Data sales contracts: ", JSON.stringify(data, null, 2));
+
+      const fullPrintData = {
+        ...data,
+      };
+      // Simpan ke dalam signal
+      setPurchaseContractData(fullPrintData);
 
       if (!data) return;
 
@@ -436,10 +443,26 @@ export default function SalesContractForm() {
     }
   };
 
+  // function handlePrint() {
+  //   const encodedData = encodeURIComponent(JSON.stringify(form()));
+  //   window.open(`/print/salescontract?data=${encodedData}`, "_blank");
+  // }
+
   function handlePrint() {
-    const encodedData = encodeURIComponent(JSON.stringify(form()));
+    if (!purchaseContractData()) {
+      Swal.fire("Gagal", "Data untuk mencetak tidak tersedia. Pastikan Anda dalam mode Edit/View.", "error");
+      return;
+    }
+
+    const dataToPrint = {
+      ...purchaseContractData(),
+      //...form(),
+    };
+
+    //console.log("📄 Data yang dikirim ke halaman Print:", JSON.stringify(dataToPrint, null, 2));
+    const encodedData = encodeURIComponent(JSON.stringify(dataToPrint));
     window.open(`/print/salescontract?data=${encodedData}`, "_blank");
-  }
+  }  
 
   return (
     <MainLayout>
