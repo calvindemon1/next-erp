@@ -442,7 +442,7 @@ export default function MainLayout(props) {
                         </A>
                       </li>
                     )}
-                    {hasPermission("view_kain") && (
+                    {hasAllPermission(["view_kain", "create_kain"]) && (
                       <li>
                         <A
                           href="/fabrics"
@@ -727,7 +727,7 @@ export default function MainLayout(props) {
                   </ul>
                   <ul>
                     {/* Submenu Level 2: Kain Jadi */}
-                    {hasPermission("view_jual_beli") && (
+                    {hasAllPermission(["view_jual_beli", "create_jual_beli"]) && (
                       <li>
                         <button
                           class="w-full text-left pl-8 pr-4 py-2 font-semibold text-gray-400 hover:bg-gray-700 flex justify-between items-center"
@@ -1036,7 +1036,7 @@ export default function MainLayout(props) {
                   </ul>
                   <ul >
                     {/* Submenu Level 2: Kain Jadi */}
-                    {hasPermission("view_jual_beli_surat_jalan") && (
+                    {hasAllPermission("view_jual_beli_surat_jalan") && (
                       <li>
                         <button
                           class="w-full text-left pl-8 pr-4 py-2 font-semibold text-gray-400 hover:bg-gray-700 flex justify-between items-center"
