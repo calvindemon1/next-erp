@@ -1036,7 +1036,7 @@ export default function MainLayout(props) {
                   </ul>
                   <ul >
                     {/* Submenu Level 2: Kain Jadi */}
-                    {hasAllPermission("view_jual_beli_surat_jalan") && (
+                    {hasPermission("view_jual_beli_surat_jalan") && (
                       <li>
                         <button
                           class="w-full text-left pl-8 pr-4 py-2 font-semibold text-gray-400 hover:bg-gray-700 flex justify-between items-center"
