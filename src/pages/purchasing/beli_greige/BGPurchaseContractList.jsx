@@ -11,6 +11,7 @@ import {
 } from "../../../utils/auth";
 import Swal from "sweetalert2";
 import { Edit, Eye, Trash } from "lucide-solid";
+import { formatCorak } from "../../../components/CorakKainList";
 
 export default function BGPurchaseContractList() {
   const [beliGreiges, setBeliGreiges] = createSignal([]);
@@ -82,6 +83,8 @@ export default function BGPurchaseContractList() {
 
   const handleGetAllBeliGreiges = async (tok) => {
     const result = await getAllBeliGreiges(tok);
+
+    //console.log("Data All PC BG: ", JSON.stringify(result, null, 2));
 
     if (result.status === 200) {
       const sortedData = result.contracts.sort((a, b) => a.id - b.id);
@@ -219,6 +222,7 @@ export default function BGPurchaseContractList() {
               <th class="py-2 px-4">ID</th>
               <th class="py-2 px-2">No Pembelian</th>
               <th class="py-2 px-2">Supplier</th>
+              <th class="py-2 px-2">Corak Kain</th>
               <th class="py-2 px-2 text-center">
                 <div>Qty Faktual</div>
                 <span class="text-xs text-gray-500">
@@ -243,6 +247,19 @@ export default function BGPurchaseContractList() {
                 </td>
                 <td class="py-2 px-4">{bg.no_pc}</td>
                 <td class="py-2 px-4">{bg.supplier_name}</td>
+                <td class="py-2 px-4">
+                  {(() => {
+                    const { display, full } = formatCorak(bg.items, { maxShow: 3 });
+                    return (
+                      <span
+                        class="inline-block max-w-[260px] truncate align-middle"
+                        title={full}
+                      >
+                        {display}
+                      </span>
+                    );
+                  })()}
+                </td>
                 <td
                   class={`py-2 px-4 text-center ${
                     qtyCounterReal(bg, bg.satuan_unit_id) === "SELESAI"

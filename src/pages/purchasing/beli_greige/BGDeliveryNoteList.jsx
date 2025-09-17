@@ -9,6 +9,7 @@ import {
 } from "../../../utils/auth";
 import Swal from "sweetalert2";
 import { Edit, Trash, Eye } from "lucide-solid";
+import { formatCorak } from "../../../components/CorakKainList";
 
 export default function BGDeliveryNoteList() {
   const [packingOrders, setPackingOrders] = createSignal([]);
@@ -176,12 +177,12 @@ export default function BGDeliveryNoteList() {
   return (
     <MainLayout>
       <div class="flex justify-between items-center mb-4">
-        <h1 class="text-2xl font-bold">Daftar Surat Jalan Greige</h1>
+        <h1 class="text-2xl font-bold">Daftar Surat Penerimaan Greige</h1>
         <button
           class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
           onClick={() => navigate("/beligreige-deliverynote/form")}
         >
-          + Tambah Surat Jalan
+          + Tambah Surat Penerimaan
         </button>
       </div>
 
@@ -195,8 +196,10 @@ export default function BGDeliveryNoteList() {
               <th class="py-2 px-2">Supplier</th>
               <th class="py-2 px-2">Tanggal Dibuat</th>
               <th class="py-2 px-2">keterangan</th> */}
-              <th class="py-2 px-2">No Surat Jalan</th>
+              <th class="py-2 px-2">No Surat Penerimaan</th>
               <th class="py-2 px-2">No Purchase Order</th>
+              <th class="py-2 px-2">Supplier</th>
+              <th class="py-2 px-2">Corak Kain</th>
               <th class="py-2 px-2 text-center">
                 <div>Qty by System</div>
                 <span class="text-xs text-gray-500">
@@ -215,6 +218,20 @@ export default function BGDeliveryNoteList() {
                 </td>
                 <td class="py-2 px-4">{sj.no_sj}</td>
                 <td class="py-2 px-4">{sj.no_po}</td>
+                <td class="py-2 px-4">{sj.supplier_name}</td>
+                <td class="py-2 px-4">
+                  {(() => {
+                    const { display, full } = formatCorak(sj.items, { maxShow: 3 });
+                    return (
+                      <span
+                        class="inline-block max-w-[260px] truncate align-middle"
+                        title={full}
+                      >
+                        {display}
+                      </span>
+                    );
+                  })()}
+                </td>
                 <td
                   className={`py-2 px-4 text-center ${
                     qtyCounterbySystem(sj, sj.satuan_unit_name) === "SELESAI"
