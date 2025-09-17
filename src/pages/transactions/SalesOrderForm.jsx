@@ -146,6 +146,8 @@ export default function SalesOrderForm() {
               lebar_greige: soItem.lebar,
               gramasi: soItem.gramasi,
               warna_id: soItem.warna_id ?? null,
+              // Field keterangan warna
+              keterangan_warna: soItem.keterangan_warna ?? "",
               meter: soItem.meter_total ?? "0.00",
               yard: soItem.yard_total ?? "0.00",
               kilogram: soItem.kilogram_total ?? "0.00",
@@ -330,6 +332,8 @@ export default function SalesOrderForm() {
       grade_id: item.grade_id ?? "",
       lebar_greige: item.lebar_greige ?? "",
       warna_id: item.warna_id ?? "",
+      // Field keterangan warna
+      keterangan_warna: item.keterangan_warna ?? "",
       gramasi: item.gramasi ?? "",
       meter: item.meter ?? 0,
       yard: item.yard ?? 0,
@@ -396,6 +400,8 @@ export default function SalesOrderForm() {
         grade_id: lastItem.grade_id ?? "",
         lebar_greige: lastItem.lebar_greige ?? "",
         gramasi: lastItem.gramasi ?? "",
+        // Field keterangan warna
+        keterangan_warna: "",
         meter: 0,
         yard: 0,
         kilogram: 0,
@@ -477,25 +483,32 @@ export default function SalesOrderForm() {
       const item = { ...items[index] };
 
       const satuanId = parseInt(prev.satuan_unit_id);
-      const numValue = parseNumber(value);
 
-      if (field === "meter") {
-        item.meter = numValue;
-        item.yard = +(numValue * 1.093613).toFixed(2);
-        item.kilogram = 0;
-      } else if (field === "yard") {
-        item.yard = numValue;
-        item.meter = +(numValue * 0.9144).toFixed(2);
-        item.kilogram = 0;
-      } else if (field === "kilogram") {
-        item.kilogram = numValue;
-        item.meter = 0;
-        item.yard = 0;
-      } else {
+      if (field === "fabric_id" || field === "grade_id" || field === "warna_id") {
         item[field] = value;
+      } else if (field === "keterangan_warna") {
+        item.keterangan_warna = value;    // ← tangani string keterangan
+      } else {
+        const numValue = parseNumber(value);
+
+        if (field === "meter") {
+          item.meter = numValue;
+          item.yard = +(numValue * 1.093613).toFixed(2);
+          item.kilogram = 0;
+        } else if (field === "yard") {
+          item.yard = numValue;
+          item.meter = +(numValue * 0.9144).toFixed(2);
+          item.kilogram = 0;
+        } else if (field === "kilogram") {
+          item.kilogram = numValue;
+          item.meter = 0;
+          item.yard = 0;
+        } else {
+          item[field] = value;
+        }
       }
 
-      const harga = parseFloat(item.harga) || 0; // harga readonly di UI
+      const harga = parseFloat(item.harga) || 0;
       let qty = 0;
       if (satuanId === 1) qty = item.meter || 0;
       else if (satuanId === 2) qty = item.yard || 0;
@@ -527,6 +540,8 @@ export default function SalesOrderForm() {
             id: item.id,
             sc_item_id: item.sc_item_id,
             warna_id: parseInt(item.warna_id) || null,
+            // Field keterangan warna
+            keterangan_warna: item.keterangan_warna ?? "",
             meter_total: item.meter ? parseFloat(item.meter) : 0,
             yard_total: item.yard ? parseFloat(item.yard) : 0,
             kilogram_total: item.kilogram ? parseFloat(item.kilogram) : 0,
@@ -554,6 +569,8 @@ export default function SalesOrderForm() {
           items: form().items.map((item) => ({
               sc_item_id: item.sc_item_id,
               warna_id: parseInt(item.warna_id) || null,
+              // Field keterangan warna
+              keterangan_warna: item.keterangan_warna ?? "",
               meter_total: item.meter ? parseFloat(item.meter) : 0,
               yard_total: item.yard ? parseFloat(item.yard) : 0,
               kilogram_total: item.kilogram ? parseFloat(item.kilogram) : 0,
@@ -585,19 +602,31 @@ export default function SalesOrderForm() {
     }
   };
 
+  // function handlePrint() {
+  //   if (!salesOrderData()) {
+  //     Swal.fire("Gagal", "Data untuk mencetak tidak tersedia. Pastikan Anda dalam mode Edit/View.", "error");
+  //     return;
+  //   }
+
+  //   const dataToPrint = {
+  //     ...salesOrderData(),
+  //     //...form(),
+  //   };
+  //   //console.log("📄 Data yang dikirim ke halaman Print:", JSON.stringify(dataToPrint, null, 2));
+  //   const encodedData = encodeURIComponent(JSON.stringify(dataToPrint));
+  //   window.open(`/print/salesorder?data=${encodedData}`, "_blank");
+  // }
+
   function handlePrint() {
     if (!salesOrderData()) {
       Swal.fire("Gagal", "Data untuk mencetak tidak tersedia. Pastikan Anda dalam mode Edit/View.", "error");
       return;
     }
 
-    const dataToPrint = {
-      ...salesOrderData(),
-      //...form(),
-    };
-    //console.log("📄 Data yang dikirim ke halaman Print:", JSON.stringify(dataToPrint, null, 2));
+    const dataToPrint = { ...salesOrderData() };
+    // CHANGED: kirim via hash, bukan query, agar tidak kena 431
     const encodedData = encodeURIComponent(JSON.stringify(dataToPrint));
-    window.open(`/print/salesorder?data=${encodedData}`, "_blank");
+    window.open(`/print/salesorder#${encodedData}`, "_blank");
   }
 
   return (
@@ -940,6 +969,8 @@ export default function SalesOrderForm() {
                       yard: null,
                       kilogram: null,
                       warna_id: null,
+                      // Field keterangan warna
+                      keterangan_warna: "",
                       subtotal: 0,
                       subtotalFormatted: "",
                     },
@@ -976,15 +1007,18 @@ export default function SalesOrderForm() {
         <table class="w-full text-sm border border-gray-300 mb-4">
           <thead class="bg-gray-100">
             <tr>
-              <th class="border p-2">#</th>
-              <th class="border p-2">Jenis Kain</th>
-              <th class="border p-2">Grade Kain</th>
-              <th class="border p-2">Lebar Finish</th>
-              <th class="border p-2">Warna</th>
-              <th class="border p-2">Gramasi</th>
-              <th class="border p-2">Meter</th>
-              <th class="border p-2">Yard</th>
-              <th class="border p-2">Kilogram</th>
+              <th class="border p-2 w-[2%]">#</th>
+              <th class="border p-2 w-[16%]">Jenis Kain</th>
+              <th class="border p-2 w-[4%]">Grade Kain</th>
+              <th class="border p-2 w-[7%]">Lebar Finish</th>
+              <th class="border p-2 w-[12%]">Warna</th>
+              <th class="border p-2 w-[18%]">Keterangan</th>
+              <th class="border p-2 w-[7%]">Gramasi</th>
+              <th class="border p-2 w-[10%]">
+                <Show when={parseInt(form().satuan_unit_id) === 1}>Meter</Show>
+                <Show when={parseInt(form().satuan_unit_id) === 2}>Yard</Show>
+                <Show when={parseInt(form().satuan_unit_id) === 3}>Kilogram</Show>
+              </th>
               <th class="border p-2">Harga</th>
               <th class="border p-2">Subtotal</th>
               <th class="border p-2">Aksi</th>
@@ -999,9 +1033,7 @@ export default function SalesOrderForm() {
                     <FabricDropdownSearch
                       fabrics={fabricOptions}
                       item={item}
-                      onChange={(val) =>
-                        handleItemChange(i(), "fabric_id", val)
-                      }
+                      onChange={(val) => handleItemChange(i(), "fabric_id", val)}
                       disabled={true}
                     />
                   </td>
@@ -1013,10 +1045,10 @@ export default function SalesOrderForm() {
                       disabled={true}
                     />
                   </td>
-                  <td class="border p-2">
+                  <td class="border p-2 text-right">
                     <input
                       type="text"
-                      class="border p-1 rounded w-full bg-gray-200"
+                      class="border p-1 rounded w-full bg-gray-200 text-right"
                       value={formatNumber(item.lebar_greige, 2)}
                       readOnly
                     />
@@ -1027,77 +1059,78 @@ export default function SalesOrderForm() {
                       item={item}
                       onChange={(val) => handleItemChange(i(), "warna_id", val)}
                       disabled={isView}
-                      classList={{ "bg-gray-200" : isView }}
+                      classList={{ "bg-gray-200": isView }}
                     />
                   </td>
                   <td class="border p-2">
                     <input
                       type="text"
-                      class="border p-1 rounded w-full bg-gray-200"
+                      class="border p-1 rounded w-full"
+                      value={item.keterangan_warna ?? ""}
+                      onBlur={(e) => handleItemChange(i(), "keterangan_warna", e.target.value)}
+                      disabled={isView}
+                      classList={{ "bg-gray-200": isView }}
+                      placeholder="Keterangan warna..."
+                    />
+                  </td>
+                  <td class="border p-2 text-right">
+                    <input
+                      type="text"
+                      class="border p-1 rounded w-full bg-gray-200 text-right"
                       value={formatNumber(item.gramasi, 2)}
                       readOnly
                     />
                   </td>
                   <td class="border p-2">
+                    <Show when={parseInt(form().satuan_unit_id) === 1}>
                       <input
-                          type="text"
-                          inputmode="decimal"
-                          class={`border p-1 rounded w-full ${parseInt(form().satuan_unit_id) !== 1 ? "bg-gray-200" : ""}`}
-                          readOnly={parseInt(form().satuan_unit_id) !== 1}
-                          value={formatNumber(item.meter)}
-                          onBlur={(e) => {
-                              if (parseInt(form().satuan_unit_id) === 1) {
-                                  handleItemChange(i(), "meter", e.target.value);
-                              }
-                          }}
-                          disabled={isView}
-                          classList={{ "bg-gray-200" : isView }}
+                        type="text"
+                        inputmode="decimal"
+                        class="border p-1 rounded w-full text-right"
+                        readOnly={isView}
+                        value={formatNumber(item.meter)}
+                        onBlur={(e) => handleItemChange(i(), "meter", e.target.value)}
+                        disabled={isView}
+                        classList={{ "bg-gray-200": isView }}
                       />
-                  </td>
-                  <td class="border p-2">
+                    </Show>
+                    <Show when={parseInt(form().satuan_unit_id) === 2}>
                       <input
-                          type="text"
-                          inputmode="decimal"
-                          class={`border p-1 rounded w-full ${parseInt(form().satuan_unit_id) !== 2 ? "bg-gray-200" : ""}`}
-                          readOnly={parseInt(form().satuan_unit_id) !== 2}
-                          value={formatNumber(item.yard)}
-                          onBlur={(e) => {
-                              if (parseInt(form().satuan_unit_id) === 2) {
-                                  handleItemChange(i(), "yard", e.target.value);
-                              }
-                          }}
-                          disabled={isView}
-                          classList={{ "bg-gray-200" : isView }}
+                        type="text"
+                        inputmode="decimal"
+                        class="border p-1 rounded w-full text-right"
+                        readOnly={isView}
+                        value={formatNumber(item.yard)}
+                        onBlur={(e) => handleItemChange(i(), "yard", e.target.value)}
+                        disabled={isView}
+                        classList={{ "bg-gray-200": isView }}
                       />
-                  </td>
-                  <td class="border p-2">
+                    </Show>
+                    <Show when={parseInt(form().satuan_unit_id) === 3}>
                       <input
-                          type="text"
-                          inputmode="decimal"
-                          class={`border p-1 rounded w-full ${parseInt(form().satuan_unit_id) !== 3 ? "bg-gray-200" : ""}`}
-                          readOnly={parseInt(form().satuan_unit_id) !== 3}
-                          value={formatNumber(item.kilogram)}
-                          onBlur={(e) => {
-                              if (parseInt(form().satuan_unit_id) === 3) {
-                                  handleItemChange(i(), "kilogram", e.target.value);
-                              }
-                          }}
-                          disabled={isView}
-                          classList={{ "bg-gray-200" : isView }}
+                        type="text"
+                        inputmode="decimal"
+                        class="border p-1 rounded w-full text-right"
+                        readOnly={isView}
+                        value={formatNumber(item.kilogram)}
+                        onBlur={(e) => handleItemChange(i(), "kilogram", e.target.value)}
+                        disabled={isView}
+                        classList={{ "bg-gray-200": isView }}
                       />
+                    </Show>
                   </td>
-                  <td class="border p-2">
+                  <td class="border p-2 text-right">
                     <input
                       type="text"
-                      class="border p-1 rounded w-full bg-gray-200"
+                      class="border p-1 rounded w-full bg-gray-200 text-right"
                       value={formatIDR(item.harga)}
                       readOnly
                     />
                   </td>
-                  <td class="border p-2">
+                  <td class="border p-2 text-right">
                     <input
                       type="text"
-                      class="border p-1 rounded w-full bg-gray-200"
+                      class="border p-1 rounded w-full bg-gray-200 text-right"
                       value={item.subtotalFormatted ?? ""}
                       readOnly
                     />
@@ -1118,10 +1151,18 @@ export default function SalesOrderForm() {
           </tbody>
           <tfoot>
             <tr class="font-bold bg-gray-100">
-              <td colSpan="6" class="text-right p-2">TOTAL</td>
-              <td class="border p-2">{formatNumber(totalMeter())}</td>
-              <td class="border p-2">{formatNumber(totalYard())}</td>
-              <td class="border p-2">{formatNumber(totalKilogram())}</td>
+              <td colSpan="7" class="text-right p-2">TOTAL</td>
+              <td class="border p-2 text-right">
+                <Show when={parseInt(form().satuan_unit_id) === 1}>
+                  {formatNumber(totalMeter())}
+                </Show>
+                <Show when={parseInt(form().satuan_unit_id) === 2}>
+                  {formatNumber(totalYard())}
+                </Show>
+                <Show when={parseInt(form().satuan_unit_id) === 3}>
+                  {formatNumber(totalKilogram())}
+                </Show>
+              </td>
               <td></td>
               <td class="border p-2">{formatIDR(totalAll())}</td>
               <td></td>
