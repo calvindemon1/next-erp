@@ -105,6 +105,26 @@ export default function KJPurchaseContractForm() {
     }).format(numValue);
   };
 
+  const parsePercent = (s) => {
+    if (s === null || s === undefined) return 0;
+    if (typeof s !== "string") return Number(s) || 0;
+    let clean = s.replace(/[^0-9,.\-]/g, "");
+    const lastDot = clean.lastIndexOf(".");
+    const lastComma = clean.lastIndexOf(",");
+    if (lastComma > lastDot) {
+      clean = clean.replace(/\./g, "").replace(",", ".");
+    } else {
+      clean = clean.replace(/,/g, "");
+    }
+    const n = parseFloat(clean);
+    return Number.isFinite(n) ? n : 0;
+  };
+
+  const formatPercent = (num) => {
+    if (num === "" || num === null || num === undefined || isNaN(num)) return "";
+    return `${formatNumber(Number(num), { decimals: 2 })} %`;
+  };
+
   createEffect(() => {
     const ppn = form().ppn_percent; 
 
@@ -148,7 +168,7 @@ export default function KJPurchaseContractForm() {
         const hargaMaklunValue = parseFloat(item.harga_maklun) || 0;
         const lebarGreigeValue = parseFloat(item.lebar_greige) || 0;
         const lebarFinishValue = parseFloat(item.lebar_finish) || 0;
-        const stdSusutValue    = parseFloat(item.std_susut)    || 0;
+        //const std_susutValue    = parseFloat(item.std_susut)    || 0;
 
         const qty = parseInt(data.satuan_unit_id) === 1 ? meterValue :
                     parseInt(data.satuan_unit_id) === 2 ? yardValue : 0;
@@ -174,8 +194,8 @@ export default function KJPurchaseContractForm() {
           meterValue: meterValue,
           yard: formatNumber(yardValue, { decimals: 2, showZero: true }),
           yardValue: yardValue,
-          std_susut: formatNumber(stdSusutValue, { decimals: 2, showZero: true }),
-          std_susutValue:   stdSusutValue,
+          std_susutValue: item.std_susut != null ? parseFloat(item.std_susut) : 0,
+          std_susut: item.std_susut != null ? formatPercent(parseFloat(item.std_susut)) : "",
           harga_greige: formatIDR(hargaGreigeValue),
           harga_greigeValue: hargaGreigeValue,
           harga_maklun: formatIDR(hargaMaklunValue),
@@ -270,22 +290,30 @@ export default function KJPurchaseContractForm() {
 
       if (field === 'fabric_id') {
         item[field] = value;
-      }
-      else {
+      } else if (field === 'std_susut') {
+        const raw = (value ?? "").toString().trim();
+        if (raw === "") {
+          item.std_susutValue = 0;
+          item.std_susut = "";
+        } else {
+          const p = parsePercent(raw);     // sudah ada di file
+          item.std_susutValue = p;
+          item.std_susut = formatPercent(p); // "7,00 %"
+        }
+      } else {
         const numValue = parseNumber(value);
         item[`${field}Value`] = numValue;
 
         let decimals = 2;
-        if (['meter', 'yard'].includes(field)) decimals = 2;
         if (field === 'lebar_greige') decimals = 0;
         if (field === 'lebar_finish') decimals = 0;
 
         if (field === 'harga_greige' || field === 'harga_maklun') {
-          item[field] = formatIDR(numValue);
-        } else {
-          item[field] = formatNumber(numValue, { decimals });
-        }
-        
+          item[field] = formatIDR(numValue);
+        } else {
+          item[field] = formatNumber(numValue, { decimals });
+        }
+
         if (satuanId === 1 && field === 'meter') {
           item.yardValue = numValue * 1.093613;
           item.yard = formatNumber(item.yardValue, { decimals: 2, showZero: true });
@@ -294,9 +322,10 @@ export default function KJPurchaseContractForm() {
           item.meter = formatNumber(item.meterValue, { decimals: 2, showZero: true });
         }
       }
-      
+
+      // hitung ulang subtotal (tidak terpengaruh std_susut)
       const hargaGreigeValue = item.harga_greigeValue || 0;
-      const hargaMaklunValue = item.harga_maklunValue || 0;
+      const hargaMaklunValue = item.harga_maklunValue || 0;
       let qtyValue = 0;
       if (satuanId === 1) qtyValue = item.meterValue || 0;
       else if (satuanId === 2) qtyValue = item.yardValue || 0;
@@ -390,14 +419,10 @@ export default function KJPurchaseContractForm() {
       return;
     }
 
-    const dataToPrint = {
-      ...purchaseContractData(),
-      //...form(),
-    };
-
-    //console.log("📄 Data yang dikirim ke halaman Print:", JSON.stringify(dataToPrint, null, 2));
+    const dataToPrint = { ...purchaseContractData() };
+    // CHANGED: kirim via hash, bukan query, agar tidak kena 431
     const encodedData = encodeURIComponent(JSON.stringify(dataToPrint));
-    window.open(`/print/kainjadi/contract?data=${encodedData}`, "_blank");
+    window.open(`/print/kainjadi/contract#${encodedData}`, "_blank");
   }
 
   return (
@@ -600,8 +625,9 @@ export default function KJPurchaseContractForm() {
             <tr>
               <th class="border p-2">#</th>
               <th class="border p-2">Jenis Kain</th>
-              <th class="border p-2">Lebar Greige</th>
+              <th hidden class="border p-2">Lebar Greige</th>
               <th class="border p-2">Lebar Finish</th>
+              <th class="border p-2">Std Susut</th>
               <Show when={parseInt(form().satuan_unit_id) === 1}>
                 <th class="border p-2">Meter</th>
               </Show>
@@ -630,7 +656,7 @@ export default function KJPurchaseContractForm() {
                       disabled={isView}
                     />
                   </td>
-                  <td class="border p-2">
+                  <td hidden class="border p-2">
                     <input
                       type="text"
                       inputmode="decimal"
@@ -654,6 +680,18 @@ export default function KJPurchaseContractForm() {
                       }
                       disabled={isView}
                       classList={{ "bg-gray-200": isView }}
+                    />
+                  </td>
+                  <td class="border p-2">
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      class="border p-1 rounded w-full"
+                      value={item.std_susut ?? ""}
+                      onBlur={(e) => handleItemChange(i(), "std_susut", e.target.value)}
+                      disabled={isView}
+                      classList={{ "bg-gray-200": isView }}
+                      // placeholder="0,00 %"
                     />
                   </td>
                   <Show when={parseInt(form().satuan_unit_id) === 1}>

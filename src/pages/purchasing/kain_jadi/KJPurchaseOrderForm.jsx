@@ -101,7 +101,27 @@ export default function KJPurchaseOrderForm() {
       minimumFractionDigits: decimals,
       maximumFractionDigits: decimals,
     }).format(numValue);
-  };  
+  };
+  
+  const parsePercent = (s) => {
+    if (s === null || s === undefined) return 0;
+    if (typeof s !== "string") return Number(s) || 0;
+    let clean = s.replace(/[^0-9,.\-]/g, "");
+    const lastDot = clean.lastIndexOf(".");
+    const lastComma = clean.lastIndexOf(",");
+    if (lastComma > lastDot) {
+      clean = clean.replace(/\./g, "").replace(",", ".");
+    } else {
+      clean = clean.replace(/,/g, "");
+    }
+    const n = parseFloat(clean);
+    return Number.isFinite(n) ? n : 0;
+  };
+
+  const formatPercent = (num) => {
+    if (num === "" || num === null || num === undefined || isNaN(num)) return "";
+    return `${formatNumber(Number(num), { decimals: 2 })} %`;
+  };
 
   onMount(async () => {
     setLoading(true);
@@ -128,6 +148,8 @@ export default function KJPurchaseOrderForm() {
       const data = res.order;
       const dataItems = res.order.items;
 
+      //console.log("Data PO Kain Jadi:", JSON.stringify(data, null, 2));
+
       const fullPrintData = {
         ...data,
       };
@@ -151,6 +173,12 @@ export default function KJPurchaseOrderForm() {
           lebar_greige: item.lebar_greige,
           lebar_finish: item.lebar_finish,
           warna_id: item.warna_id,
+          // Field Keterangan untuk warna
+          keterangan_warna: item.keterangan_warna || "",
+
+          std_susutValue: item.std_susut != null ? parseFloat(item.std_susut) : 0,
+          std_susut: item.std_susut != null ? formatPercent(parseFloat(item.std_susut)) : "",
+
           meter: item.meter_total,
           yard: item.yard_total,
           harga_greige: item.harga_greige,
@@ -212,16 +240,18 @@ export default function KJPurchaseOrderForm() {
   });
 
   const handlePurchaseContractChange = async (contractId, overrideItems) => {
-    let selectedContract = purchaseContracts().find(
-      (sc) => sc.id == contractId
-    );
+    // Ambil dari cache
+    let selectedContract = purchaseContracts().find((sc) => sc.id == contractId);
 
-    if (!selectedContract || !selectedContract.items?.length) {
+    // SELALU fetch detail agar qty/lebar/harga lengkap
+    try {
       const detail = await getKainJadis(contractId, user?.token);
-      selectedContract = detail.contract;
+      if (detail?.contract) selectedContract = detail.contract;
+    } catch (e) {
+      console.warn("[KJ] gagal fetch detail PC, pakai cache:", e);
     }
-
     if (!selectedContract) return;
+
     const {
       supplier_id,
       satuan_unit_id,
@@ -232,99 +262,92 @@ export default function KJPurchaseOrderForm() {
 
     const sourceItems = overrideItems ?? items;
 
-    const mappedItems = sourceItems.map((item) => {
-      let fabricId = null;
-      let dataSumber = {};
+    const mappedItems = sourceItems.map((raw) => {
+      // Samakan struktur saat override vs dari kontrak
+      const ci = overrideItems ? raw : { ...raw, pc_item_id: raw.id };
 
-      const originalContractItem =
-        selectedContract.items.find((contractItem) =>
-          overrideItems
-            ? contractItem.id == item.pc_item_id
-            : contractItem.id == item.id
-        ) || {};
+      // Cari item asli di kontrak untuk ambil harga/std_susut dsb
+      const contractItem = (selectedContract.items || []).find(
+        (x) => x.id == (ci.pc_item_id ?? ci.id)
+      ) || {};
 
-      if (overrideItems) {
-        const contractItem = selectedContract.items.find(
-          (pcItem) => pcItem.id == item.pc_item_id
-        );
-        fabricId = contractItem
-          ? contractItem.kain_id ||
-            contractItem.fabric_id ||
-            contractItem.kain?.id
-          : null;
-        dataSumber = item;
-      } else {
-        fabricId = item.kain_id || item.fabric_id || item.kain?.id;
-        dataSumber = {
-          id: null,
-          pc_item_id: item.id,
-          lebar_greige: item.lebar_greige,
-          lebar_finish: item.lebar_finish,
-          meter: item.meter_total || item.meter,
-          yard: item.yard_total || item.yard,
-          harga_greige: item.harga_greige,
-          harga_maklun: item.harga_maklun,
-        };
-      }
+      // Pastikan fabric_id valid (bukan corak_kain)
+      const fabricId =
+        ci.kain_id ??
+        ci.fabric_id ??
+        ci.kain?.id ??
+        contractItem.kain_id ??
+        contractItem.fabric_id ??
+        contractItem.kain?.id ??
+        null;
 
-      const meterNum = parseFloat(dataSumber.meter || 0);
-      const yardNum = parseFloat(dataSumber.yard || 0);
+      const meterNum = parseFloat(ci.meter_total ?? ci.meter ?? 0) || 0;
+      const yardNum  = parseFloat(ci.yard_total  ?? ci.yard  ?? 0) || 0;
 
-      let qty = 0;
-      if (satuan_unit_id === 1) qty = meterNum;
-      else if (satuan_unit_id === 2) qty = yardNum;
+      const hargaGreige = parseFloat(contractItem.harga_greige ?? ci.harga_greige ?? 0) || 0;
+      const hargaMaklun = parseFloat(contractItem.harga_maklun ?? ci.harga_maklun ?? 0) || 0;
 
-      const hargaGreige = parseFloat(originalContractItem.harga_greige ?? 0);
-      const hargaMaklun = parseFloat(originalContractItem.harga_maklun ?? 0);
+      const qty = String(satuan_unit_id) === "2" ? yardNum : meterNum;
       const subtotal = (hargaGreige + hargaMaklun) * qty;
 
-      return {
-        // Data asli disimpan untuk display Quantity
-        meter_total: item.meter_total,
-        yard_total: item.yard_total,
-        meter_dalam_proses: item.meter_dalam_proses,
-        yard_dalam_proses: item.yard_dalam_proses,
-        corak_kain: item.corak_kain,
-        konstruksi_kain: item.konstruksi_kain,
+      const stdSusut = contractItem.std_susut ?? ci.std_susut;
 
-        id: dataSumber.id,
-        pc_item_id: dataSumber.pc_item_id,
+      return {
+        // Panel "Quantity Kain"
+        meter_total:        parseFloat(ci.meter_total ?? ci.meter ?? 0) || 0,
+        yard_total:         parseFloat(ci.yard_total  ?? ci.yard  ?? 0) || 0,
+        meter_dalam_proses: parseFloat(ci.meter_dalam_proses ?? 0) || 0,
+        yard_dalam_proses:  parseFloat(ci.yard_dalam_proses  ?? 0) || 0,
+        corak_kain:         ci.corak_kain ?? contractItem.corak_kain ?? ci.kain?.corak_kain ?? "-",
+        konstruksi_kain:    ci.konstruksi_kain ?? contractItem.konstruksi_kain ?? ci.kain?.konstruksi_kain ?? "-",
+
+        // Kunci referensi / dropdown
+        id: ci.id ?? null,
+        pc_item_id: ci.pc_item_id ?? ci.id ?? null,
         fabric_id: fabricId,
-        warna_id: dataSumber.warna_id,
-        lebar_greige: dataSumber.lebar_greige,
-        lebar_finish: dataSumber.lebar_finish,
-        meter: formatNumber(meterNum, { decimals: 2 }),
+        warna_id: ci.warna_id ?? null,
+
+        // Lebar & atribut lain
+        lebar_greige: String(ci.lebar_greige ?? contractItem.lebar_greige ?? ""),
+        lebar_finish: String(ci.lebar_finish ?? contractItem.lebar_finish ?? ""),
+        keterangan_warna: ci.keterangan_warna ?? "",
+
+        std_susutValue: stdSusut != null ? parseFloat(stdSusut) : 0,
+        std_susut:      stdSusut != null ? formatPercent(parseFloat(stdSusut)) : "",
+
+        // Qty tampilan + value mentah
+        meter:      formatNumber(meterNum, { decimals: 2 }),
         meterValue: meterNum,
-        yard: formatNumber(yardNum, { decimals: 2 }),
-        yardValue: yardNum,
-        harga_greigeValue: hargaGreige,
+        yard:       formatNumber(yardNum,  { decimals: 2 }),
+        yardValue:  yardNum,
+
+        // Harga dari kontrak
+        harga_greigeValue:     hargaGreige,
         harga_greigeFormatted: formatIDR(hargaGreige),
-        harga_maklunValue: hargaMaklun,
+        harga_maklunValue:     hargaMaklun,
         harga_maklunFormatted: formatIDR(hargaMaklun),
+
         subtotal,
         subtotalFormatted: formatIDR(subtotal),
+
         readOnly: false,
       };
     });
 
-    const lastSeq = await getLastSequence(
-      user?.token,
-      "kj_o",
-      "domestik",
-      form().ppn
-    );
+    const lastSeq = await getLastSequence(user?.token, "kj_o", "domestik", form().ppn);
 
     setForm((prev) => ({
       ...prev,
       pc_id: contractId,
-      supplier_id: supplier_id,
-      satuan_unit_id: satuan_unit_id,
-      termin: termin,
-      ppn: ppn_percent,
+      supplier_id: supplier_id ?? prev.supplier_id,
+      satuan_unit_id: satuan_unit_id ?? prev.satuan_unit_id,
+      termin: termin ?? prev.termin,
+      ppn: ppn_percent ?? prev.ppn,
       keterangan: prev.keterangan || "",
       items: mappedItems,
       sequence_number: prev.sequence_number || lastSeq?.no_sequence + 1 || "",
     }));
+
     setContractItems(selectedContract.items || []);
   };
 
@@ -374,9 +397,13 @@ export default function KJPurchaseOrderForm() {
       pc_item_id: ci.id,
       fabric_id: fabricId,
       warna_id: ci.warna_id ?? null,
-
+      // Field Keterangan untuk warna
+      keterangan_warna: "",
       lebar_greige: ci.lebar_greige ?? "",
       lebar_finish: ci.lebar_finish ?? "",
+
+      std_susutValue: ci.std_susut != null ? parseFloat(ci.std_susut) : 0,
+      std_susut: ci.std_susut != null ? formatPercent(parseFloat(ci.std_susut)) : "",
 
       meter: formatNumber(meterNum, { decimals: 2 }),
       meterValue: meterNum,
@@ -433,9 +460,14 @@ export default function KJPurchaseOrderForm() {
       // Handle perubahan ID (warna, kain)
       if (field === "warna_id" || field === "kain_id") {
         item[field] = value;
-      }
-      // Handle perubahan nilai numerik (qty, dll.)
-      else {
+      } else if (field === "keterangan_warna") {
+        item.keterangan_warna = value; // Simpan keterangan warna
+      } else if (field === "std_susut") {
+        const p = parsePercent(value);
+        item.std_susutValue = p;
+        item.std_susut = formatPercent(p);
+      } else {
+
         const numValue = parseNumber(value);
         item[`${field}Value`] = numValue; // Selalu simpan nilai angka murni
 
@@ -512,6 +544,9 @@ export default function KJPurchaseOrderForm() {
           items: form().items.map((i) => ({
             pc_item_id: i.pc_item_id,
             warna_id: i.warna_id,
+            std_susut: i.std_susutValue || 0,
+            // Field Keterangan untuk warna
+            keterangan_warna: i.keterangan_warna,
             meter_total: i.meterValue || 0,
             yard_total: i.yardValue || 0,
           })),
@@ -530,10 +565,14 @@ export default function KJPurchaseOrderForm() {
           items: form().items.map((i) => ({
             pc_item_id: i.pc_item_id,
             warna_id: i.warna_id,
+            std_susut: i.std_susutValue || 0,
+            // Field Keterangan untuk warna
+            keterangan_warna: i.keterangan_warna,
             meter_total: i.meterValue || 0,
             yard_total: i.yardValue || 0,
           })),
         };
+        //console.log("Create PO KJ:", JSON.stringify(payload, null, 2));
         await createKainJadiOrder(user?.token, payload);
       }
       Swal.fire({
@@ -569,15 +608,11 @@ export default function KJPurchaseOrderForm() {
       return;
     }
 
-    const dataToPrint = {
-      ...purchaseContractData(),
-      //...form(),
-    };
-
-    //console.log("📄 Data yang dikirim ke halaman Print:", JSON.stringify(dataToPrint, null, 2));
+    const dataToPrint = { ...purchaseContractData() };
+    // CHANGED: kirim via hash, bukan query, agar tidak kena 431
     const encodedData = encodeURIComponent(JSON.stringify(dataToPrint));
-    window.open(`/print/kainjadi/order?data=${encodedData}`, "_blank");
-  }  
+    window.open(`/print/kainjadi/order#${encodedData}`, "_blank");
+  }
 
   return (
     <MainLayout>
@@ -779,11 +814,13 @@ export default function KJPurchaseOrderForm() {
         <table class="w-full text-sm border border-gray-300 mb-4">
           <thead class="bg-gray-100">
             <tr>
-              <th class="border p-2 w-[4%]">#</th>
-              <th class="border p-2 w-[20%]">Jenis Kain</th>
-              <th class="border p-2 w-[9%]">Lebar Greige</th>
-              <th class="border p-2 w-[9%]">Lebar Finish</th>
+              <th class="border p-2 w-[2%]">#</th>
+              <th class="border p-2 w-[16%]">Jenis Kain</th>
+              <th hidden class="border p-2 w-[7%]">Lebar Greige</th>
+              <th class="border p-2 w-[7%]">Lebar Finish</th>
+              <th class="border p-2 w-[7%]">Std Susut</th>
               <th class="border p-2 w-[12%]">Warna</th>
+              <th class="border p-2 w-[18%]">Keterangan Warna</th>
               <Show when={parseInt(form().satuan_unit_id) === 1}>
                 <th class="border p-2 w-[10%]">Meter</th>
               </Show>
@@ -809,7 +846,7 @@ export default function KJPurchaseOrderForm() {
                       disabled={true}
                     />
                   </td>
-                  <td class="border p-2">
+                  <td hidden class="border p-2">
                     <input
                       type="number"
                       class="border p-1 rounded w-full"
@@ -828,11 +865,33 @@ export default function KJPurchaseOrderForm() {
                     />
                   </td>
                   <td class="border p-2">
+                    <input
+                      type="text"
+                      class="border p-1 rounded w-full"
+                      value={item.std_susut ?? ""}
+                      onBlur={(e) => handleItemChange(i(), "std_susut", e.target.value)}
+                      disabled={true}
+                      classList={{ "bg-gray-200": true }}
+                      // placeholder="0,00 %"
+                    />
+                  </td>
+                  <td class="border p-2">
                     <ColorDropdownSearch
                       colors={colorOptions}
                       item={item}
                       onChange={(val) => handleItemChange(i(), "warna_id", val)}
                       disabled={isView}
+                    />
+                  </td>
+                  <td class="border p-2">  {/* kolom Keterangan warna */}
+                    <input
+                      type="text"
+                      class="border p-1 rounded w-full"
+                      value={item.keterangan_warna ?? ""}
+                      onBlur={(e) => handleItemChange(i(), "keterangan_warna", e.target.value)}
+                      disabled={isView}
+                      classList={{ "bg-gray-200 " : isView }}
+                      placeholder="Keterangan warna..."
                     />
                   </td>
                   <Show when={parseInt(form().satuan_unit_id) === 1}>
