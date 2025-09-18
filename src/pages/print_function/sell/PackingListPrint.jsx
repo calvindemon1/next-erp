@@ -1,245 +1,477 @@
+import { createMemo, createSignal, For, Show, onMount, createEffect } from "solid-js";
 import logoNavel from "../../../assets/img/navelLogo.png";
+import { splitIntoPagesWithOffsets, createStretch } from "../../../components/PrintUtils";
 
-export default function PackingListPrintLandscape({ data }) {
-  const MAX_COL = 5;
+export default function PackingListPrint(props) {
+  const [plData, setPlData] = createSignal(props.data ?? null);
 
-  // 2) Format tanggal: "dd MMMM yyyy" (Indonesia), diletakkan kanan atas tabel
-  const todayStr = new Date().toLocaleDateString("id-ID", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
+  // fallback ke localStorage bila props tidak ada
+  onMount(() => {
+    if (!plData()) {
+      try {
+        const raw = localStorage.getItem("printData");
+        if (raw) setPlData(JSON.parse(raw));
+      } catch (e) {
+        console.error("Gagal parse localStorage printData:", e);
+      }
+    }
   });
 
-  // 5) Kolom roll mengikuti satuan_unit (Yard → pakai 'yard', selain itu pakai 'meter')
-  const unit = (data?.satuan_unit || data?.sales_order_items?.satuan_unit || "")
-    .toString()
-    .toLowerCase();
-  const ROLL_KEY = unit === "yard" ? "yard" : "meter";
+  const data = createMemo(() => plData() ?? { itemGroups: [], sales_order_items: {} });
 
-  function formatNumber(value) {
-    if (value === null || value === undefined || value === "") return "-";
-    const num = Number(value);
-    if (Number.isNaN(num)) return "-";
-    return new Intl.NumberFormat("id-ID", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(num);
+  /* ===== Helpers ===== */
+  const isEkspor = createMemo(() => {
+    const t = data()?.type;
+    const s = (t == null ? "" : String(t)).trim().toUpperCase();
+    if (s === "2" || s === "E" || s === "EKSPOR") return true;
+    if (s === "1" || s === "D" || s === "DOMESTIK") return false;
+    const noSO = data()?.sales_order_items?.no_so || "";
+    const kode = (noSO.split("/")[1] || "").toUpperCase();
+    return kode === "E";
+  });
+
+  const MAX_COL = createMemo(() => (isEkspor() ? 10 : 5));
+
+  const unit = createMemo(() =>
+    (data()?.satuan_unit || data()?.sales_order_items?.satuan_unit || "")
+      .toString()
+      .toLowerCase()
+  );
+  const ROLL_KEY = createMemo(() => (unit() === "yard" ? "yard" : "meter"));
+
+  const todayStr = createMemo(() =>
+    new Date().toLocaleDateString("id-ID", { day: "2-digit", month: "long", year: "numeric" })
+  );
+  const createdShort = createMemo(() => {
+    const src =
+      data()?.sales_order_items?.created_at ||
+      data()?.created_at ||
+      new Date().toISOString();
+    const d = new Date(src.replace(" ", "T"));
+    return d.toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" }); // 15 Sep 2025
+  });
+
+  function fmt2(v) {
+    if (v === null || v === undefined || v === "" || Number.isNaN(Number(v))) return "0,00";
+    return new Intl.NumberFormat("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(v));
   }
 
-  // 3) "Item" adalah corak_kain (ambil dari sales_order_items.items)
-  const itemsMap = Object.fromEntries(
-    (data?.sales_order_items?.items || []).map((item) => [item.id, item.corak_kain])
+  // peta item id -> nama corak
+  const itemsMap = createMemo(() =>
+    Object.fromEntries((data()?.sales_order_items?.items || []).map((it) => [it.id, it.corak_kain]))
   );
 
-  // Hitung total semua group (untuk TOTAL bawah)
-  let grandTotalPcs = 0;
-  let grandTotalMeter = 0;
-  let grandTotalYard = 0;
+  // peta colorId -> deskripsi warna
+  const colorDescMap = createMemo(() =>
+    Object.fromEntries(
+      (data()?.sales_order_items?.items || []).map((it) => [
+        it.warna_id ?? it.color_id ?? it.warna?.id ?? it.col ?? "",
+        it.deskripsi_warna ?? it.warna_deskripsi ?? it.warna?.deskripsi ?? it.color_desc ?? "",
+      ])
+    )
+  );
+
+  /* ===== Flatten rows (per MAX_COL) + subtotal per group ===== */
+  const flattenedRows = createMemo(() => {
+    const rows = [];
+    (data()?.itemGroups || []).forEach((g, gi) => {
+      const itemName =
+        itemsMap()[g.so_item_id] || itemsMap()[g.item] || g.item || "-";
+      const colorDesc =
+        colorDescMap()[g.col] ||
+        colorDescMap()[(g.rolls?.[0]?.col)] ||
+        g.col ||
+        "";
+
+      const rolls = g.rolls || [];
+      const rowCount = Math.ceil(rolls.length / MAX_COL());
+
+      // group totals
+      const gPcs = rolls.filter((r) => Number(r?.[ROLL_KEY()]) > 0).length;
+      const gMtr = rolls.reduce((s, r) => s + (parseFloat(r.meter) || 0), 0);
+      const gYrd = rolls.reduce((s, r) => s + (parseFloat(r.yard) || 0), 0);
+
+      for (let rowIdx = 0; rowIdx < rowCount; rowIdx++) {
+        const start = rowIdx * MAX_COL();
+        const rowRolls = rolls.slice(start, start + MAX_COL());
+
+        const first = rowRolls[0] || {};
+        const bal = first?.no_bal ?? "";
+        const lot = first?.lot ?? "";
+
+        const pcsRow = rowRolls.filter((r) => Number(r?.[ROLL_KEY()]) > 0).length;
+        const mRow = rowRolls.reduce((s, r) => s + (parseFloat(r.meter) || 0), 0);
+        const yRow = rowRolls.reduce((s, r) => s + (parseFloat(r.yard) || 0), 0);
+
+        rows.push({
+          type: "row",
+          gi,
+          rowIdx,
+          isFirst: rowIdx === 0,
+          colorDesc,           // Col (deskripsi warna)
+          itemName,            // Item (corak)
+          lot,
+          bal,
+          rowRolls,
+          pcsRow,
+          mRow,
+          yRow,
+        });
+      }
+
+      rows.push({
+        type: "subtotal",
+        gi,
+        gPcs,
+        gMtr,
+        gYrd,
+      });
+    });
+    return rows;
+  });
+
+  /* ===== Grand totals ===== */
+  const grandTotals = createMemo(() => {
+    let pcs = 0, m = 0, y = 0;
+    (data()?.itemGroups || []).forEach((g) => {
+      (g.rolls || []).forEach((r) => {
+        if (Number(r?.[ROLL_KEY()]) > 0) pcs += 1;
+        m += parseFloat(r.meter || 0);
+        y += parseFloat(r.yard || 0);
+      });
+    });
+    return { pcs, m, y };
+  });
+
+  /* ===== Pagination ===== */
+  const ROWS_FIRST_PAGE = 40;
+  const ROWS_OTHER_PAGES = 40;
+  const pagesWithOffsets = createMemo(() =>
+    splitIntoPagesWithOffsets(flattenedRows(), ROWS_FIRST_PAGE, ROWS_OTHER_PAGES)
+  );
 
   return (
     <>
       <style>{`
-        /* 7) Tidak ada kontrol CSS untuk header/footer browser.
-              Tapi kita pastikan layout rapi untuk cetak. */
-        @page {
-          size: A4 landscape;
-          margin: 10mm;
+        :root { 
+          --safe: 10mm;
+          --logo-size: 16mm;
         }
-        @media print {
-          thead { display: table-header-group; }
-          tfoot { display: table-footer-group; }
-          /* Hilangkan margin default agar tidak menambah ruang ekstra */
-          body { margin: 0; }
-        }
-        body {
-          font-family: Arial, sans-serif;
+
+        @page { size: A4 portrait; margin: 0; }
+        html, body {
+          margin: 0; 
+          padding: 0; 
+          height: 100%; 
+          width: 100%;
           -webkit-print-color-adjust: exact !important;
           print-color-adjust: exact !important;
+          font-family: Arial, sans-serif;
+          display: flex; 
+          justify-content: center;
         }
-        table {
-          border-collapse: collapse;
-          width: 100%;
-          page-break-inside: auto;
+        .page { 
+          width: 210mm; 
+          height: 285mm; 
+          padding: 0; 
+          box-sizing: border-box;
+          position: relative; 
+          display: flex; 
+          flex-direction: column; 
+          align-items: center; 
         }
-        th, td {
-          border: 1px solid black;
-          padding: 2px 4px;
-          font-size: 12px;
+        .safe { 
+          width: 100%; 
+          height: 100%; 
+          padding: var(--safe); 
+          box-sizing: border-box;
+          display: flex; 
+          flex-direction: column; 
+          gap: 8px; 
         }
-        th { text-align: center; }
-        .text-right { text-align: right; }
-        .text-center { text-align: center; }
-        .no-border { border: none !important; }
-        .header-info { margin-bottom: 10px; page-break-after: avoid; }
-        .title { margin: 5px 0 2px 0; font-weight: 600; }
+        .header-center{
+          width:100%;
+          display:flex;
+          flex-direction:column;
+          align-items:center;
+          justify-content:center;
+          text-align:center;
+          gap:4px;
+          margin: 0 0 4px 0;
+        }
+        .header-center .title{
+          margin: 4px 0 2px 0;
+          font-weight:700;
+          text-transform:uppercase;
+          font-size:18px;
+          line-height:1.1;
+        }  
+        table { 
+          border-collapse: collapse; 
+          width: 100%; 
+          page-break-inside: auto; 
+        }
+        th, td { 
+          border: 1px solid #000; 
+          padding: 1px 2px; 
+          font-size: 11px; 
+        }
+        th { 
+          text-align: center; 
+        }
+        .no-border { 
+          border: none !important; 
+        }
+        .table-fixed { 
+          table-layout: fixed; 
+        }
+        td.num { 
+          text-align: right; 
+          white-space: nowrap; 
+        }
+        @media print {
+          .page { page-break-after: always; }
+          .page:last-child { page-break-after: auto; }
+          thead { display: table-header-group; }
+          tfoot { display: table-footer-group; }
+        }
       `}</style>
 
-      {/* 1) "Navel ERP" dihilangkan; hanya judul & logo (kondisional) */}
-      <div
-        className="flex flex-col items-center text-center"
-        style={{ textAlign: "center", marginBottom: "6px" }}
-      >
-        {/* 4) Logo hanya muncul jika ppn_percent > 0 */}
-        {Number(data?.sales_order_items?.ppn_percent) > 0 && (
-          <img src={logoNavel} alt="Logo" style={{ height: "40px" }} />
-        )}
-        <h2 className="title">PACKING LIST</h2>
-      </div>
+      <For each={pagesWithOffsets()}>
+        {(p, idx) => {
+          const pageIndex = idx();
+          const count = pagesWithOffsets().length;
+          const isLast = pageIndex === count - 1;
+          return (
+            <PrintPage
+              pageNo={pageIndex + 1}
+              pageCount={count}
+              isLast={isLast}
+              data={data()}
+              items={p.items}
+              todayStr={todayStr()}
+              createdShort={createdShort()}
+              unitKey={ROLL_KEY()}
+              maxCol={MAX_COL()}
+              totals={grandTotals()}
+              isPPN={Number(data()?.sales_order_items?.ppn_percent) > 0}
+            />
+          );
+        }}
+      </For>
+    </>
+  );
+}
 
-      {/* INFORMASI PL & SO */}
-      <div className="header-info">
-        <table style={{ border: "none", width: "100%" }}>
+/* ===== Halaman ===== */
+function PrintPage(props) {
+  const { data, items, pageNo, pageCount, isLast, todayStr, createdShort, unitKey, maxCol, totals, isPPN } = props;
+
+  // Auto-stretch row kosong agar footer/halaman rapi
+  const { extraRows, bind, recalc } = createStretch({ fudge: 56 });
+
+  // Pastikan recalc terpanggil untuk semua kasus (dengan/ tanpa logo, 5/10 kolom)
+  onMount(() => {
+    requestAnimationFrame(recalc);
+    setTimeout(recalc, 60);
+  });
+  createEffect(() => { (items?.length ?? 0); isLast; requestAnimationFrame(recalc); });
+  createEffect(() => { maxCol; requestAnimationFrame(recalc); });
+  createEffect(() => { isPPN ? 1 : 0; requestAnimationFrame(recalc); });
+
+  // ====== COLGROUP dinamis agar tidak kepotong kanan ======
+  // Fixed width (persen) untuk kolom non-roll
+  const W_NO = 3, W_BAL = 5, W_COL = 8, W_ITEM = 9, W_LOT = 5, W_TTL = 8; // TTL dipakai 3x
+  const fixedPct = W_NO + W_BAL + W_COL + W_ITEM + W_LOT + (W_TTL * 3);     // = 53%
+  const rollPct = Math.max(0, 100 - fixedPct);
+  const eachRollPct = rollPct / maxCol;
+
+  const ColGroup = () => (
+    <colgroup>
+      <col style={`width:${W_NO}%`} />
+      <col style={`width:${W_BAL}%`} />
+      <col style={`width:${W_COL}%`} />
+      <col style={`width:${W_ITEM}%`} />
+      <col style={`width:${W_LOT}%`} />
+      <For each={Array.from({ length: maxCol })}>
+        {() => <col style={`width:${eachRollPct}%`} />}
+      </For>
+      <col style={`width:${W_TTL}%`} />
+      <col style={`width:${W_TTL}%`} />
+      <col style={`width:${W_TTL}%`} />
+    </colgroup>
+  );
+  // ========================================================
+
+  return (
+    <div ref={bind("pageRef")} className="page">
+      <div className="safe">
+        {/* Row measurer: jumlah kolom dinamis */}
+        <table style="position:absolute; top:-10000px; left:-10000px; visibility:hidden;">
           <tbody>
-            <tr>
-              <td style={{ border: "none" }}>
-                <span className="text-md font-bold">No PL:</span>{" "}
-                <span className="text-md">{data?.no_pl || "-"}</span>
-              </td>
-              <td style={{ border: "none" }}>
-                <span className="text-md font-bold">No SO:</span>{" "}
-                <span className="text-md">{data?.sales_order_items?.no_so || "-"}</span>
-              </td>
-            </tr>
-            {/* 6) Tambahkan customer di bawah No PL */}
-            <tr>
-              <td style={{ border: "none" }}>
-                <span className="text-md font-bold">Customer:</span>{" "}
-                <span className="text-md">{data?.sales_order_items?.customer_name || "-"}</span>
-              </td>
-              <td style={{ border: "none" }}>
-                <span className="text-md font-bold">Keterangan:</span>{" "}
-                <span className="text-md" style={{ whiteSpace: "pre-line" }}>
-                  {data?.keterangan || "-"}
-                </span>
-              </td>
+            <tr ref={bind("measureRowRef")}>
+              {/* No, Bal, Col, Item, Lot */}
+              <td class="p-1 text-center h-5"></td>
+              <td class="p-1 text-center"></td>
+              <td class="p-1"></td>
+              <td class="p-1"></td>
+              <td class="p-1"></td>
+              {/* N kolom roll */}
+              <For each={Array.from({ length: maxCol })}>{() => <td class="p-1 text-right"></td>}</For>
+              {/* TTL */}
+              <td class="p-1 text-right"></td>
+              <td class="p-1 text-right"></td>
+              <td class="p-1 text-right"></td>
             </tr>
           </tbody>
         </table>
-      </div>
 
-      {/* 2) Tanggal di kanan atas tabel */}
-      <div style={{ width: "100%", textAlign: "right", margin: "4px 0" }}>
-        <span style={{ fontSize: "12px" }}>{todayStr}</span>
-      </div>
+        {/* HEADER — logo + judul di TENGAH */}
+        <div className="header-center">
+          <div
+            style={{
+              height: isPPN ? "var(--logo-size)" : "0",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center"
+            }}
+          >
+            <img
+              src={logoNavel}
+              alt="Logo"
+              style={{
+                height: "var(--logo-size)",
+                display: isPPN ? "block" : "none"
+              }}
+              onLoad={recalc}
+            />
+          </div>
+          <div className="title">PACKING LIST</div>
+        </div>
 
-      {/* TABLE */}
-      <table>
-        <thead>
-          <tr>
-            <th rowSpan={2}>No</th>
-            <th rowSpan={2}>Col</th>
-            <th rowSpan={2}>Item</th>
-            {[...Array(MAX_COL)].map((_, i) => (
-              <th key={i}>{i + 1}</th>
-            ))}
-            <th rowSpan={2}>TTL/PCS</th>
-            <th rowSpan={2}>TTL/MTR</th>
-            <th rowSpan={2}>TTL/YARD</th>
-          </tr>
-          <tr></tr>
-        </thead>
-        <tbody>
-          {(data?.itemGroups || []).map((group, gi) => {
-            const groupName =
-              itemsMap[group.so_item_id] || itemsMap[group.item] || group.item || "-";
+        {/* Info blok atas */}
+        <table className="no-border" style={{ border: "none", width: "100%" }}>
+          <tbody>
+            <tr>
+              <td className="no-border"><b>No PL:</b> {data?.no_pl || "-"}</td>
+              <td className="no-border" style={{ textAlign: "right" }}><b>No SO:</b> {data?.sales_order_items?.no_so || "-"}</td>
+            </tr>
+            <tr>
+              <td className="no-border"><b>Customer:</b> {data?.sales_order_items?.customer_name || "-"}</td>
+              <td className="no-border" style={{ textAlign: "right" }}><b>Tanggal Pembuatan:</b> {createdShort}</td>
+            </tr>
+            <tr>
+              <td className="no-border"><b>Keterangan:</b> <span style={{ whiteSpace: "pre-line" }}>{data?.keterangan || "-"}</span></td>
+            </tr>
+          </tbody>
+        </table>
 
-            // Sub total per group
-            const groupTotalPcs = group.rolls.filter((r) => r?.[ROLL_KEY]).length;
-            const groupTotalMeter = group.rolls.reduce(
-              (sum, r) => sum + (parseFloat(r.meter) || 0),
-              0
-            );
-            const groupTotalYard = group.rolls.reduce(
-              (sum, r) => sum + (parseFloat(r.yard) || 0),
-              0
-            );
+        {/* TABEL UTAMA */}
+        <table ref={bind("tableRef")} className="border border-black table-fixed">
+          <ColGroup />
+          <thead ref={bind("theadRef")} className="bg-gray-200">
+            <tr>
+              <th rowSpan={2}>No</th>
+              <th rowSpan={2}>Bal</th>
+              <th rowSpan={2}>Col</th>
+              <th rowSpan={2}>Item</th>
+              <th rowSpan={2}>Lot</th>
+              <For each={Array.from({ length: maxCol })}>
+                {(_, i) => <th>{i() + 1}</th>}
+              </For>
+              <th rowSpan={2}>TTL/PCS</th>
+              <th rowSpan={2}>TTL/MTR</th>
+              <th rowSpan={2}>TTL/YARD</th>
+            </tr>
+            <tr></tr>
+          </thead>
 
-            // Grand total
-            grandTotalPcs += groupTotalPcs;
-            grandTotalMeter += groupTotalMeter;
-            grandTotalYard += groupTotalYard;
+          <tbody ref={bind("tbodyRef")}>
+            <For each={items}>
+              {(row) => (
+                <Show
+                  when={row.type === "row"}
+                  fallback={
+                    // SUBTOTAL
+                    <tr>
+                      <td colSpan={5} className="text-center"><b>SUB TOTAL</b></td>
+                      <For each={Array.from({ length: maxCol })}>{() => <td></td>}</For>
+                      <td className="text-right"><b>{fmt2Blank(row.gPcs)}</b></td>
+                      <td className="text-right"><b>{fmt2Blank(row.gMtr)}</b></td>
+                      <td className="text-right"><b>{fmt2Blank(row.gYrd)}</b></td>
+                    </tr>
+                  }
+                >
+                  <tr>
+                    <td className="text-center">{row.isFirst ? (row.gi + 1) : ""}</td>
+                    <td className="text-center">{row.bal ?? ""}</td>
+                    <td className="text-center">{row.isFirst ? (row.colorDesc ?? "") : ""}</td>
+                    <td className="text-center">{row.isFirst ? (row.itemName ?? "-") : ""}</td>
+                    <td className="text-center">{row.lot ?? ""}</td>
 
-            // Baris-baris dalam group
-            const rowCount = Math.ceil(group.rolls.length / MAX_COL);
+                    {/* kolom roll dinamis */}
+                    <For each={Array.from({ length: maxCol })}>
+                      {(_, ci) => (
+                        <td className="text-right">
+                          {fmt2Blank(row.rowRolls[ci()]?.[unitKey])}
+                        </td>
+                      )}
+                    </For>
 
-            return [
-              ...Array.from({ length: rowCount }).map((_, rowIdx) => {
-                const startIdx = rowIdx * MAX_COL;
-                const rowRolls = group.rolls.slice(startIdx, startIdx + MAX_COL);
-
-                const no = rowIdx === 0 ? gi + 1 : "";
-                const totalPcsRow = rowRolls.filter((r) => r?.[ROLL_KEY]).length;
-                const totalMeterRow = rowRolls.reduce(
-                  (sum, r) => sum + (parseFloat(r.meter) || 0),
-                  0
-                );
-                const totalYardRow = rowRolls.reduce(
-                  (sum, r) => sum + (parseFloat(r.yard) || 0),
-                  0
-                );
-
-                return (
-                  <tr key={`g${gi}-r${rowIdx}`}>
-                    <td className="text-center">{no}</td>
-                    <td className="text-center">{rowIdx === 0 ? group.col : ""}</td>
-                    <td className="text-center">{rowIdx === 0 ? groupName : ""}</td>
-
-                    {Array.from({ length: MAX_COL }).map((_, ci) => (
-                      <td className="text-right" key={`g${gi}-r${rowIdx}-c${ci}`}>
-                        {rowRolls[ci]?.[ROLL_KEY]
-                          ? formatNumber(rowRolls[ci][ROLL_KEY])
-                          : ""}
-                      </td>
-                    ))}
-
-                    <td className="text-right">{formatNumber(totalPcsRow)}</td>
-                    <td className="text-right">{formatNumber(totalMeterRow)}</td>
-                    <td className="text-right">{formatNumber(totalYardRow)}</td>
+                    <td className="text-right">{fmt2Blank(row.pcsRow)}</td>
+                    <td className="text-right">{fmt2Blank(row.mRow)}</td>
+                    <td className="text-right">{fmt2Blank(row.yRow)}</td>
                   </tr>
-                );
-              }),
+                </Show>
+              )}
+            </For>
 
-              // SUB TOTAL PER GROUP
-              <tr key={`g${gi}-subtotal`}>
-                <td colSpan={3} className="text-center">
-                  <b>SUB TOTAL</b>
-                </td>
-                {[...Array(MAX_COL)].map((_, i) => (
-                  <td key={`g${gi}-stc${i}`}></td>
-                ))}
-                <td className="text-right">
-                  <b>{formatNumber(groupTotalPcs)}</b>
-                </td>
-                <td className="text-right">
-                  <b>{formatNumber(groupTotalMeter)}</b>
-                </td>
-                <td className="text-right">
-                  <b>{formatNumber(groupTotalYard)}</b>
-                </td>
-              </tr>,
-            ];
-          })}
+            {/* ROW KOSONG DINAMIS */}
+            <For each={Array.from({ length: extraRows() })}>
+              {() => (
+            <tr>
+                  <td className="p-1 text-center h-5"></td>
+                  <td className="p-1 text-center"></td>
+                  <td className="p-1 text-center"></td>
+                  <td className="p-1"></td>
+                  <td className="p-1 text-center"></td>
+                  <For each={Array.from({ length: maxCol })}>{() => <td className="p-1 text-right"></td>}</For>
+                  <td className="p-1 text-right"></td>
+                  <td className="p-1 text-right"></td>
+                  <td className="p-1 text-right"></td>
+                </tr>
+              )}
+            </For>
+          </tbody>
 
-          {/* GRAND TOTAL */}
-          <tr>
-            <td colSpan={3} className="text-center">
-              <b>TOTAL</b>
-            </td>
-            {[...Array(MAX_COL)].map((_, i) => (
-              <td key={`gtc${i}`}></td>
-            ))}
-            <td className="text-right">
-              <b>{formatNumber(grandTotalPcs)}</b>
-            </td>
-            <td className="text-right">
-              <b>{formatNumber(grandTotalMeter)}</b>
-            </td>
-            <td className="text-right">
-              <b>{formatNumber(grandTotalYard)}</b>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </>
+          <tfoot ref={bind("tfootRef")}>
+            <Show when={isLast}>
+              <tr>
+                <td colSpan={5} className="text-center"><b>TOTAL</b></td>
+                <For each={Array.from({ length: maxCol })}>{() => <td></td>}</For>
+                <td className="text-right"><b>{fmt2Blank(totals.pcs)}</b></td>
+                <td className="text-right"><b>{fmt2Blank(totals.m)}</b></td>
+                <td className="text-right"><b>{fmt2Blank(totals.y)}</b></td>
+              </tr>
+            </Show>
+            <tr>
+              <td colSpan={5 + maxCol + 3} className="no-border text-right" style={{ borderTop: "1px solid #000" }}>
+                <i>Halaman {pageNo} dari {pageCount}</i>
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
   );
+}
+
+// Utils
+function fmt2Blank(v) {
+  const n = Number(v);
+  if (!isFinite(n) || n === 0) return "";    // 0 → kosong
+  return new Intl.NumberFormat("id-ID", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(n);
 }

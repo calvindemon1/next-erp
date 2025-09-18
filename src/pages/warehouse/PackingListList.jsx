@@ -196,6 +196,7 @@ export default function PackingListList() {
               <th class="py-2 px-4">ID</th>
               <th class="py-2 px-2">No Packing List</th>
               <th class="py-2 px-2">No Sales Order</th>
+              <th class="py-2 px-2">Nama Customer</th>
               <th class="py-2 px-2 text-center">
                 <div>Qty by System</div>
                 <span class="text-xs text-gray-500">
@@ -214,6 +215,7 @@ export default function PackingListList() {
                 </td>
                 <td class="py-2 px-4">{pl.no_pl}</td>
                 <td class="py-2 px-4">{pl.no_so}</td>
+                <td class="py-2 px-4">{pl.customer_name}</td>
                 <td
                   className={`py-2 px-4 text-center ${
                     qtyCounterbySystem(pl, pl.satuan_unit) === "SELESAI"
