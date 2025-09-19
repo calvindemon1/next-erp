@@ -64,8 +64,8 @@ export default function OCOrderPrint(props) {
   }));
 
   // ===== Pagination =====
-  const ROWS_FIRST_PAGE  = 15; // kapasitas item halaman 1
-  const ROWS_OTHER_PAGES = 24; // kapasitas item halaman 2+
+  const ROWS_FIRST_PAGE  = 18; // kapasitas item halaman 1
+  const ROWS_OTHER_PAGES = 18; // kapasitas item halaman 2+
 
   const pagesWithOffsets = createMemo(() =>
     splitIntoPagesWithOffsets(data().items || [], ROWS_FIRST_PAGE, ROWS_OTHER_PAGES)
@@ -256,13 +256,16 @@ function PrintPage(props) {
                 No
               </th>
               <th className="border border-black p-1 w-[8%]" rowSpan={2}>
-                Kode
+                Jenis Kain
               </th>
-              <th className="border border-black p-1 w-[15%]" rowSpan={2}>
+              <th hidden className="border border-black p-1 w-[15%]" rowSpan={2}>
                 Jenis Kain
               </th>
               <th className="border border-black p-1 w-[10%]" rowSpan={2}>
                 Warna
+              </th>
+              <th className="border border-black p-1 w-[15%]" rowSpan={2}>
+                Keterangan Warna
               </th>
               <th className="border border-black p-1 w-[10%]" rowSpan={2}>
                 Lebar Greige
@@ -271,15 +274,15 @@ function PrintPage(props) {
                 Lebar Finish
               </th>
               <th
-                className="border border-black p-1 w-[18%] text-center"
+                className="border border-black p-1 w-[14%] text-center"
                 colSpan={2}
               >
                 Quantity
               </th>
-              <th className="border border-black p-1 w-[18%]" hidden rowSpan={2}>
+              <th className="border border-black p-1 w-[14%]" hidden rowSpan={2}>
                 Harga
               </th>
-              <th className="border border-black p-1 w-[18%]" hidden rowSpan={2}>
+              <th className="border border-black p-1 w-[14%]" hidden rowSpan={2}>
                 Jumlah
               </th>
             </tr>
@@ -297,8 +300,9 @@ function PrintPage(props) {
                   {/* nomor lanjut: startIndex + nomor di halaman + 1 */}
                   <td className="p-1 text-center break-words">{startIndex + i() + 1}</td>
                   <td className="p-1 text-center break-words">{item.corak_kain || "-"}</td>
-                  <td className="p-1 break-words">{item.konstruksi_kain}</td>
-                  <td className="p-1 break-words">{item.deskripsi_warna}</td>
+                  <td hidden className="p-1 break-words">{item.konstruksi_kain}</td>
+                  <td className="p-1 break-words text-center">{item.deskripsi_warna}</td>
+                  <td className="p-1 break-words">{item.keterangan_warna}</td>
                   <td className="p-1 text-center break-words">{formatAngkaNonDecimal(item.lebar_greige)}"</td>
                   <td className="p-1 text-center break-words">{formatAngkaNonDecimal(item.lebar_finish)}"</td>
                   <td colSpan={2} className="p-1 text-center break-words">

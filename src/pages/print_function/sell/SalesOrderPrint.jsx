@@ -66,8 +66,8 @@ export default function SalesOrderPrint(props) {
   }));
 
   // ===== Pagination =====
-  const ROWS_FIRST_PAGE  = 15; // kapasitas item halaman 1
-  const ROWS_OTHER_PAGES = 24; // kapasitas item halaman 2+
+  const ROWS_FIRST_PAGE  = 18; // kapasitas item halaman 1
+  const ROWS_OTHER_PAGES = 18; // kapasitas item halaman 2+
 
   const pagesWithOffsets = createMemo(() =>
     splitIntoPagesWithOffsets(data().items || [], ROWS_FIRST_PAGE, ROWS_OTHER_PAGES)
@@ -274,10 +274,11 @@ function PrintPage(props) {
             <thead ref={bind("theadRef")} className="bg-gray-200">
               <tr>
                 <th className="border border-black p-1 w-[6%]" rowSpan={2}>No</th>
-                <th className="border border-black p-1 w-[10%]" rowSpan={2}>Kode</th>
-                <th className="border border-black p-1 w-[20%]" rowSpan={2}>Jenis Kain</th>
+                <th className="border border-black p-1 w-[10%]" rowSpan={2}>Jenis Kain</th>
+                <th hidden className="border border-black p-1 w-[20%]" rowSpan={2}>Jenis Kain</th>
                 <th className="border border-black p-1 w-[8%]" rowSpan={2}>Grade</th>
                 <th className="border border-black p-1 w-[12%]" rowSpan={2}>Warna</th>
+                <th className="border border-black p-1 w-[15%]" rowSpan={2}>Keterangan Warna</th>
                 <th className="border border-black p-1 w-[10%]" rowSpan={2}>Lebar Finish</th>
                 <th className="border border-black p-1 w-[10%]" rowSpan={2}>Gramasi</th>
                 <th className="border border-black p-1 w-[18%] text-center" colSpan={2}>
@@ -300,9 +301,10 @@ function PrintPage(props) {
                     {/* nomor lanjut: startIndex + nomor di halaman + 1 */}
                     <td className="p-1 text-center break-words">{startIndex + i() + 1}</td>
                     <td className="p-1 text-center break-words">{item.corak_kain || "-"}</td>
-                    <td className="p-1 break-words">{item.konstruksi_kain}</td>
+                    <td hidden className="p-1 break-words">{item.konstruksi_kain}</td>
                     <td className="p-1 text-center break-words">{item.grade_name}</td>
                     <td className="p-1 text-center break-words">{item.deskripsi_warna || "-"}</td>
+                    <td className="p-1 text-center break-words">{item.keterangan_warna || "-"}</td>
                     <td className="p-1 text-center break-words">{formatAngkaNonDecimal(item.lebar)}"</td>
                     <td className="p-1 text-center break-words">{item.gramasi}</td>
                     <td colSpan={2} className="p-1 text-center break-words">
