@@ -91,6 +91,8 @@ export default function DeliveryNoteForm() {
         setPackingLists(relatedPackingLists || []);
       }
 
+      const soColorByWarnaIdSel = buildSoColorMapByWarnaId(selectedSO);
+
       // set roll yang ada di SJ ini (by pli_roll_id)
       const deliveredRollsSet = new Set();
       (deliveryNote.packing_lists || []).forEach((pl) => {
@@ -110,22 +112,28 @@ export default function DeliveryNoteForm() {
               const meterVal = parseFloat(roll.meter ?? 0);
               const yardVal = parseFloat(roll.yard ?? 0);
               if ((isNaN(meterVal) || meterVal === 0) && (isNaN(yardVal) || yardVal === 0)) {
-                return []; // sembunyikan roll qty 0
+                return [];
               }
 
-              const pliRollId = Number(roll.id); // id roll di PL
+              const pliRollId = Number(roll.id);
               const isInThisSJ = deliveredRollsSet.has(pliRollId);
 
+              // === ambil warna dari Sales Order ===
+              const warnaKey = String(item.col ?? item.pl_item_col ?? item.warna_id ?? "");
+              const soCol = warnaKey ? soColorByWarnaIdSel.get(warnaKey) : null;
+              const finalKode = soCol?.code ?? item.kode_warna ?? "";
+              const finalDesk = soCol?.desc ?? item.deskripsi_warna ?? "";
+
               return [{
-                // identitas PL roll
                 packing_list_roll_id: pliRollId,
                 packing_list_item_id: Number(item.id),
 
-                // info display
+                // tampilkan warna dari SO
+                kode_warna: finalKode,
+                deskripsi_warna: finalDesk,
+
                 no_bal: roll.no_bal,
                 lot: roll.lot,
-                kode_warna: item.kode_warna,
-                deskripsi_warna: item.deskripsi_warna,
                 corak_kain: item.corak_kain,
                 konstruksi_kain: item.konstruksi_kain,
                 row_num: roll.row_num,
@@ -134,10 +142,7 @@ export default function DeliveryNoteForm() {
                 yard: roll.yard,
                 kilogram: roll.kilogram,
 
-                // FLAG UI
                 checked: isInThisSJ,
-
-                // kunci untuk EDIT diff:
                 sj_item_id: sjItemIdByPlItemId.get(Number(item.id)) || null,
                 sj_roll_id: isInThisSJ ? (sjRollIdByPliRollId.get(pliRollId) || null) : null,
               }];
