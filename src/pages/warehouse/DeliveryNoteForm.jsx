@@ -206,67 +206,24 @@ export default function DeliveryNoteForm() {
 
   const norm = (v) => (v == null ? "" : String(v).trim());
 
-  function buildSoColorMaps(soDetail) {
-    const byColCode = new Map();
-    const byColDesc = new Map();
-    const bySoIdCode = new Map();
-    const bySoIdDesc = new Map();
-
+  function buildSoColorMapByWarnaId(soDetail) {
+    const map = new Map();
     const items =
       soDetail?.items ||
       soDetail?.sales_order_items ||
       soDetail?.detail_items ||
       soDetail?.details ||
       [];
-
     for (const it of items) {
-      const code =
-        norm(it.kode_warna) ||
-        norm(it.color_code) ||
-        norm(it.kode) ||
-        "";
-
-      const desc =
-        norm(it.deskripsi_warna) ||
-        norm(it.warna_kain) ||
-        norm(it.warna) ||
-        norm(it.color_name) ||
-        "";
-
-      const colKey = norm(it.col) || norm(it.colour) || norm(it.color) || "";
-      const soItemId = it.id ?? it.so_item_id;
-
-      if (colKey) {
-        if (code) byColCode.set(colKey, code);
-        if (desc) byColDesc.set(colKey, desc);
-      }
-      if (soItemId != null) {
-        if (code) bySoIdCode.set(Number(soItemId), code);
-        if (desc) bySoIdDesc.set(Number(soItemId), desc);
-      }
+      const wid = it.warna_id != null ? String(it.warna_id) : "";
+      if (!wid) continue;
+      map.set(wid, {
+        code: norm(it.kode_warna) || "-",
+        desc: norm(it.deskripsi_warna) || "-",
+        so_item_id: it.id ?? it.so_item_id, // kalau suatu saat butuh
+      });
     }
-
-    return { byColCode, byColDesc, bySoIdCode, bySoIdDesc };
-  }
-
-  /** Ambil pasangan {code, desc} yg benar utk item PL */
-  function pickColorsForPlItem(plItem, soMaps) {
-    const colKey = norm(plItem.col);
-
-    const code =
-      (colKey && soMaps.byColCode.get(colKey)) ||
-      (plItem.so_item_id != null && soMaps.bySoIdCode.get(Number(plItem.so_item_id))) ||
-      norm(plItem.kode_warna);
-
-    const desc =
-      (colKey && soMaps.byColDesc.get(colKey)) ||
-      (plItem.so_item_id != null && soMaps.bySoIdDesc.get(Number(plItem.so_item_id))) ||
-      norm(plItem.deskripsi_warna);
-
-    return {
-      code: code || "-",
-      desc: desc || "-",
-    };
+    return map;
   }
 
   const addPackingListGroup = () => {
@@ -349,35 +306,40 @@ export default function DeliveryNoteForm() {
   const handlePackingListChange = async (groupIndex, plId) => {
     if (!plId) return;
 
-    // ambil PL detail
+    // 1) Ambil detail PL
     const plDetail = await getPackingLists(plId, user?.token);
     const pl = plDetail?.order;
 
-    // siapkan numeric type berdasarkan PL
+    // 2) Ambil detail SO untuk map warna
+    let soColorByWarnaId = new Map();
+    try {
+      const soResp = await getSalesOrders(pl.so_id, user?.token);
+      const soDetail = soResp?.order || soResp;
+      soColorByWarnaId = buildSoColorMapByWarnaId(soDetail);
+    } catch (e) {
+      // kalau gagal, biarkan map kosong (akan fallback ke data PL)
+    }
+
+    // 3) Tipe (D/E)
     const typeLetter = pl?.no_pl?.split("/")?.[1] || "";
     const typeValue = typeLetter === "E" ? "Ekspor" : "Domestik";
     const typeNumeric = typeLetter === "E" ? 2 : 1;
 
-    // ambil SO detail → peta warna
-    let soMaps = { byColCode: new Map(), byColDesc: new Map(), bySoIdCode: new Map(), bySoIdDesc: new Map() };
-    try {
-      const soDetailResp = await getSalesOrders(pl.so_id, user?.token);
-      const soDetail = soDetailResp?.order || soDetailResp;
-      soMaps = buildSoColorMaps(soDetail);
-    } catch (_) {}
-
     const allRolls = [];
 
     (pl?.items || []).forEach((item) => {
-      // warna final utk item ini (dipakai oleh semua roll item tsb)
-      const fixed = pickColorsForPlItem(item, soMaps);
+      // --- WARNA DARI SO: kunci pakai PL.items[].col (== warna_id) ---
+      const warnaKey = String(item.col ?? "");
+      const soColor = warnaKey ? soColorByWarnaId.get(warnaKey) : null;
+      const finalKode = soColor?.code ?? item.kode_warna ?? "";
+      const finalDesk = soColor?.desc ?? item.deskripsi_warna ?? "";
 
       (item.rolls || []).forEach((roll) => {
         const meterVal = parseFloat(roll.meter ?? 0);
         const yardVal = parseFloat(roll.yard ?? 0);
         if ((isNaN(meterVal) || meterVal === 0) && (isNaN(yardVal) || yardVal === 0)) return;
 
-        const pliRollId   = Number(roll.id);
+        const pliRollId = Number(roll.id);
         const wasInThisSJ = sjRollIdByPliRollId.has(pliRollId);
         const isSelectableNow = roll.selected_status === 0;
         const shouldShow = isEdit ? true : isSelectableNow;
@@ -389,9 +351,9 @@ export default function DeliveryNoteForm() {
           packing_list_roll_id: pliRollId,
           packing_list_item_id: Number(item.id),
 
-          // ✨ warna sudah dipisah (kode & deskripsi)
-          kode_warna: fixed.code,
-          deskripsi_warna: fixed.desc,
+          // 👉 pakai warna dari SO (fallback PL)
+          kode_warna: finalKode,
+          deskripsi_warna: finalDesk,
 
           no_bal: roll.no_bal,
           lot: roll.lot,
@@ -795,7 +757,7 @@ export default function DeliveryNoteForm() {
                                   <td class="border px-2 py-1 text-center">{rollIndex() + 1}</td>
                                   <td class="border px-2 py-1 text-center">{roll.no_bal}</td>
                                   <td class="border px-2 py-1">
-                                    {(roll.kode_warna || "-") + " | " + (roll.deskripsi_warna || "-")}
+                                    {(roll.kode_warna || "") + " | " + (roll.deskripsi_warna || "")}
                                   </td>
                                   <td class="border px-2 py-1">{roll.corak_kain}</td>
                                   <td class="border px-2 py-1 text-center">{roll.lot}</td>
