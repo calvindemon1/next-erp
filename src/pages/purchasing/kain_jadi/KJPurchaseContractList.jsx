@@ -72,7 +72,7 @@ export default function KJPurchaseContractList() {
   const handleGetAllBeliGreiges = async (tok) => {
     const result = await getAllKainJadis(tok);
 
-    console.log("All PC KJ: ", JSON.stringify(result, null, 2));
+    //console.log("All PC KJ: ", JSON.stringify(result, null, 2));
 
     if (result.status === 200) {
       const sortedData = result.contracts.sort((a, b) => a.id - b.id);
