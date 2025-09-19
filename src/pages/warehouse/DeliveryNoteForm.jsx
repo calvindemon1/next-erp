@@ -18,6 +18,181 @@ import PackingListDropdownSearch from "../../components/PackingListDropdownSearc
 import IndeterminateCheckbox from "../../components/Indeterminate";
 import { Printer, Trash2 } from "lucide-solid";
 
+/* ============================================================
+   Helpers
+============================================================ */
+const norm = (v) => (v == null ? "" : String(v).trim());
+
+function buildSoColorMapByWarnaId(soDetail) {
+  const map = new Map();
+  const items =
+    soDetail?.items ||
+    soDetail?.sales_order_items ||
+    soDetail?.detail_items ||
+    soDetail?.details ||
+    [];
+  for (const it of items) {
+    const wid = it?.warna_id != null ? String(it.warna_id) : "";
+    if (!wid) continue;
+    map.set(wid, {
+      code: norm(it.kode_warna) || "-",
+      desc: norm(it.deskripsi_warna) || "-",
+      so_item_id: it.id ?? it.so_item_id,
+    });
+  }
+  return map;
+}
+
+/**
+ * Resolver warna yang robust:
+ * 1) Cocokkan pakai warna_id (paling akurat)
+ * 2) Kalau gagal, coba cocokan pakai kode_warna
+ * 3) Kalau gagal, coba cocokan pakai deskripsi_warna
+ * 4) Fallback: pakai nilai dari PL
+ */
+function resolveColorFromSO(plItem, soDetail) {
+  const soItems =
+    soDetail?.items ||
+    soDetail?.sales_order_items ||
+    soDetail?.detail_items ||
+    soDetail?.details ||
+    [];
+
+  // 1) by warna_id (pakai field yang pasti berupa id – JANGAN pakai item.col)
+  const warnaIdCandidate =
+    plItem?.warna_id ?? plItem?.pl_item_col ?? plItem?.so_warna_id ?? null;
+  if (warnaIdCandidate != null) {
+    const hit = soItems.find(
+      (it) => String(it.warna_id) === String(warnaIdCandidate)
+    );
+    if (hit) {
+      return {
+        code: norm(hit.kode_warna),
+        desc: norm(hit.deskripsi_warna),
+      };
+    }
+  }
+
+  // 2) by kode_warna
+  if (plItem?.kode_warna) {
+    const hit = soItems.find(
+      (it) => norm(it.kode_warna) === norm(plItem.kode_warna)
+    );
+    if (hit) {
+      return {
+        code: norm(hit.kode_warna),
+        desc: norm(hit.deskripsi_warna),
+      };
+    }
+  }
+
+  // 3) by deskripsi_warna
+  if (plItem?.deskripsi_warna) {
+    const hit = soItems.find(
+      (it) => norm(it.deskripsi_warna) === norm(plItem.deskripsi_warna)
+    );
+    if (hit) {
+      return {
+        code: norm(hit.kode_warna),
+        desc: norm(hit.deskripsi_warna),
+      };
+    }
+  }
+
+  // 4) fallback ke PL
+  return {
+    code: norm(plItem?.kode_warna),
+    desc: norm(plItem?.deskripsi_warna),
+  };
+}
+
+/**
+ * Kumpulkan map bal/lot dari data yang sudah ada di form (UI)
+ */
+function buildRollMapsFromForm(itemGroups) {
+  const balByRollId = new Map();       // pli_roll_id -> no_bal
+  const lotByRollId = new Map();       // pli_roll_id -> lot
+  const balSetByPlItemId = new Map();  // pl_item_id  -> Set(no_bal)
+  const lotSetByPlItemId = new Map();  // pl_item_id  -> Set(lot)
+
+  for (const g of itemGroups || []) {
+    for (const r of g.items || []) {
+      const pliRollId = Number(r.packing_list_roll_id);
+      const plItemId  = Number(r.packing_list_item_id);
+      const nb = norm(r.no_bal);
+      const lt = norm(r.lot);
+
+      if (pliRollId && nb) balByRollId.set(pliRollId, nb);
+      if (pliRollId && lt) lotByRollId.set(pliRollId, lt);
+
+      if (plItemId) {
+        if (!balSetByPlItemId.has(plItemId)) balSetByPlItemId.set(plItemId, new Set());
+        if (!lotSetByPlItemId.has(plItemId)) lotSetByPlItemId.set(plItemId, new Set());
+        if (nb) balSetByPlItemId.get(plItemId).add(nb);
+        if (lt) lotSetByPlItemId.get(plItemId).add(lt);
+      }
+    }
+  }
+  return { balByRollId, lotByRollId, balSetByPlItemId, lotSetByPlItemId };
+}
+
+/**
+ * Enrich deliveryNote untuk kebutuhan cetak:
+ * - Perbaiki no_bal & lot (dari map form)
+ * - Isi warna dari SO dengan resolver (tanpa mengandalkan item.col)
+ */
+function enrichDeliveryNote(deliveryNote, maps, soDetail) {
+  const { balByRollId, lotByRollId, balSetByPlItemId, lotSetByPlItemId } = maps;
+  const clone = JSON.parse(JSON.stringify(deliveryNote));
+
+  for (const pl of clone.packing_lists || []) {
+    for (const it of pl.items || []) {
+      // bal/lot per roll
+      for (const rr of it.rolls || []) {
+        const rid = Number(rr.pli_roll_id);
+        const nb = balByRollId.get(rid);
+        const lt = lotByRollId.get(rid);
+        if (nb && !norm(rr.no_bal)) rr.no_bal = nb;
+        if (lt && !norm(rr.lot))     rr.lot    = lt;
+      }
+
+      // no_bal agregat di level item
+      if (!norm(it.no_bal)) {
+        const s = balSetByPlItemId.get(Number(it.pl_item_id));
+        if (s && s.size) {
+          it.no_bal = Array.from(s).sort((a,b)=>Number(a)-Number(b)).join(", ");
+        } else {
+          const set = new Set((it.rolls||[]).map(r=>norm(r.no_bal)).filter(Boolean));
+          it.no_bal = set.size ? Array.from(set).sort((a,b)=>Number(a)-Number(b)).join(", ") : "-";
+        }
+      }
+
+      // lot agregat di level item
+      {
+        const set = new Set((it.rolls||[]).map(r=>norm(r.lot)).filter(Boolean));
+        if (set.size) it.lot = Array.from(set).join(", ");
+        else if (!norm(it.lot)) it.lot = "-";
+      }
+
+      // warna dari SO (pakai resolver; jangan pakai it.col)
+      const resolved = resolveColorFromSO(
+        {
+          warna_id: it.warna_id ?? it.pl_item_col ?? null,
+          kode_warna: it.kode_warna,
+          deskripsi_warna: it.deskripsi_warna,
+        },
+        soDetail
+      );
+      if (resolved.code) it.kode_warna = resolved.code;
+      if (resolved.desc) it.deskripsi_warna = resolved.desc;
+    }
+  }
+  return clone;
+}
+
+/* ============================================================
+   Component
+============================================================ */
 export default function DeliveryNoteForm() {
   const [params] = useSearchParams();
   const isEdit = !!params.id;
@@ -65,13 +240,10 @@ export default function DeliveryNoteForm() {
       setDeliveryNoteData(res.order);
       const deliveryNote = res.order;
 
-      // siapkan map sj_item_id & sj_roll_id agar bisa dipakai saat rebuild PL
+      // map sj ids untuk mode edit
       sjItemIdByPlItemId = new Map();
       sjRollIdByPliRollId = new Map();
 
-      // struktur: deliveryNote.packing_lists[].items[].rolls[]
-      // item di SJ biasanya punya pl_item_id, id (sj_item_id)
-      // roll di SJ biasanya punya pli_roll_id, id (sj_roll_id)
       (deliveryNote.packing_lists || []).forEach((pl) => {
         (pl.items || []).forEach((it) => {
           if (it.pl_item_id && it.id) {
@@ -85,13 +257,12 @@ export default function DeliveryNoteForm() {
         });
       });
 
-      const selectedSO = dataSalesOrders.orders?.find((so) => so.no_so === deliveryNote.no_so);
+      const selectedSO =
+        dataSalesOrders.orders?.find((so) => so.no_so === deliveryNote.no_so) || null;
       if (selectedSO) {
         const relatedPackingLists = pls?.packing_lists?.filter((pl) => pl.so_id === selectedSO.id);
         setPackingLists(relatedPackingLists || []);
       }
-
-      const soColorByWarnaIdSel = buildSoColorMapByWarnaId(selectedSO);
 
       // set roll yang ada di SJ ini (by pli_roll_id)
       const deliveredRollsSet = new Set();
@@ -101,7 +272,7 @@ export default function DeliveryNoteForm() {
         });
       });
 
-      // bangun itemGroups dari data SJ (mengambil data PL penuh agar semua roll tampil)
+      // bangun itemGroups dari PL full + warna dari SO
       const itemGroups = await Promise.all(
         (deliveryNote.packing_lists || []).map(async (pl) => {
           const plDetail = await getPackingLists(pl.id, user?.token);
@@ -118,20 +289,25 @@ export default function DeliveryNoteForm() {
               const pliRollId = Number(roll.id);
               const isInThisSJ = deliveredRollsSet.has(pliRollId);
 
-              // === ambil warna dari Sales Order ===
-              const warnaKey = String(item.col ?? item.pl_item_col ?? item.warna_id ?? "");
-              const soCol = warnaKey ? soColorByWarnaIdSel.get(warnaKey) : null;
-              const finalKode = soCol?.code ?? item.kode_warna ?? "";
-              const finalDesk = soCol?.desc ?? item.deskripsi_warna ?? "";
+              const color = resolveColorFromSO(
+                {
+                  warna_id: item.warna_id ?? item.pl_item_col ?? null,
+                  kode_warna: item.kode_warna,
+                  deskripsi_warna: item.deskripsi_warna,
+                },
+                selectedSO
+              );
 
               return [{
+                // identitas PL roll
                 packing_list_roll_id: pliRollId,
                 packing_list_item_id: Number(item.id),
 
-                // tampilkan warna dari SO
-                kode_warna: finalKode,
-                deskripsi_warna: finalDesk,
+                // warna dari SO (robust)
+                kode_warna: color.code,
+                deskripsi_warna: color.desc,
 
+                // info display lain
                 no_bal: roll.no_bal,
                 lot: roll.lot,
                 corak_kain: item.corak_kain,
@@ -142,7 +318,10 @@ export default function DeliveryNoteForm() {
                 yard: roll.yard,
                 kilogram: roll.kilogram,
 
+                // FLAG UI
                 checked: isInThisSJ,
+
+                // kunci untuk EDIT diff:
                 sj_item_id: sjItemIdByPlItemId.get(Number(item.id)) || null,
                 sj_roll_id: isInThisSJ ? (sjRollIdByPliRollId.get(pliRollId) || null) : null,
               }];
@@ -179,16 +358,14 @@ export default function DeliveryNoteForm() {
         delivered_status: deliveryNote.delivered_status,
       });
 
-      const soColorByWarnaId = buildSoColorMapByWarnaId(selectedSO);
+      // data untuk print (enrich)
       const maps = buildRollMapsFromForm(itemGroups);
-      const enriched = enrichDeliveryNote(deliveryNote, maps, soColorByWarnaId);
+      const enriched = enrichDeliveryNote(deliveryNote, maps, selectedSO);
       setDeliveryNoteData(enriched);
     } else {
       setPackingLists(pls?.packing_lists || []);
     }
   });
-
-  /* ---------------- helpers ---------------- */
 
   const groupSOItems = (group) => {
     const map = new Map();
@@ -202,118 +379,15 @@ export default function DeliveryNoteForm() {
           kode_warna: r.kode_warna || "",
           deskripsi_warna: r.deskripsi_warna || "",
           rolls: [],
-          // untuk payload EDIT: simpan sj_item_id bila ada
           sj_item_id: r.sj_item_id || null,
         };
         map.set(k, g);
       }
-      // jika salah satu roll punya sj_item_id, simpan di group
       if (r.sj_item_id && !g.sj_item_id) g.sj_item_id = r.sj_item_id;
       g.rolls.push(r);
     });
     return Array.from(map.values());
   };
-
-  const norm = (v) => (v == null ? "" : String(v).trim());
-
-  function buildSoColorMapByWarnaId(soDetail) {
-    const map = new Map();
-    const items =
-      soDetail?.items ||
-      soDetail?.sales_order_items ||
-      soDetail?.detail_items ||
-      soDetail?.details ||
-      [];
-    for (const it of items) {
-      const wid = it?.warna_id != null ? String(it.warna_id) : "";
-      if (!wid) continue;
-      map.set(wid, {
-        code: norm(it.kode_warna) || "-",
-        desc: norm(it.deskripsi_warna) || "-",
-        so_item_id: it.id ?? it.so_item_id,
-      });
-    }
-    return map;
-  }
-
-  // Ambil no_bal & lot dari form().itemGroups (sumber paling lengkap di UI)
-  function buildRollMapsFromForm(itemGroups) {
-    const balByRollId = new Map();       // pli_roll_id -> no_bal
-    const lotByRollId = new Map();       // pli_roll_id -> lot
-    const balSetByPlItemId = new Map();  // pl_item_id  -> Set(no_bal)
-    const lotSetByPlItemId = new Map();  // pl_item_id  -> Set(lot)
-
-    for (const g of itemGroups || []) {
-      for (const r of g.items || []) {
-        const pliRollId = Number(r.packing_list_roll_id);
-        const plItemId  = Number(r.packing_list_item_id);
-        const nb = norm(r.no_bal);
-        const lt = norm(r.lot);
-
-        if (pliRollId && nb) balByRollId.set(pliRollId, nb);
-        if (pliRollId && lt) lotByRollId.set(pliRollId, lt);
-
-        if (plItemId) {
-          if (!balSetByPlItemId.has(plItemId)) balSetByPlItemId.set(plItemId, new Set());
-          if (!lotSetByPlItemId.has(plItemId)) lotSetByPlItemId.set(plItemId, new Set());
-          if (nb) balSetByPlItemId.get(plItemId).add(nb);
-          if (lt) lotSetByPlItemId.get(plItemId).add(lt);
-        }
-      }
-    }
-    return { balByRollId, lotByRollId, balSetByPlItemId, lotSetByPlItemId };
-  }
-
-  // Enrich: isi no_bal, lot, dan warna dari SO
-  function enrichDeliveryNote(deliveryNote, maps, soColorByWarnaId) {
-    const { balByRollId, lotByRollId, balSetByPlItemId, lotSetByPlItemId } = maps;
-    const clone = JSON.parse(JSON.stringify(deliveryNote)); // deep clone aman
-
-    for (const pl of clone.packing_lists || []) {
-      for (const it of pl.items || []) {
-        // 1) Per-ROLL: no_bal & lot
-        for (const rr of it.rolls || []) {
-          const rid = Number(rr.pli_roll_id);
-          const nb = balByRollId.get(rid);
-          const lt = lotByRollId.get(rid);
-          if (nb && !norm(rr.no_bal)) rr.no_bal = nb;
-          if (lt && !norm(rr.lot))     rr.lot    = lt;
-        }
-
-        // 2) Level ITEM: gabungan unik no_bal & lot dari form/rolls
-        if (!norm(it.no_bal)) {
-          const s = balSetByPlItemId.get(Number(it.pl_item_id));
-          if (s && s.size) {
-            it.no_bal = Array.from(s).sort((a,b)=>Number(a)-Number(b)).join(", ");
-          } else {
-            // fallback: kumpulkan dari rolls
-            const set = new Set((it.rolls||[]).map(r=>norm(r.no_bal)).filter(Boolean));
-            it.no_bal = set.size ? Array.from(set).sort((a,b)=>Number(a)-Number(b)).join(", ") : "-";
-          }
-        }
-
-        // lot: selalu jadikan agregat unik dari rolls (lebih akurat)
-        {
-          const set = new Set((it.rolls||[]).map(r=>norm(r.lot)).filter(Boolean));
-          if (set.size) it.lot = Array.from(set).join(", ");
-          else if (!norm(it.lot)) it.lot = "-";
-        }
-
-        // 3) Warna dari SO: pakai pl_item_col (warna_id)
-        const warnaKey =
-          it.pl_item_col != null ? String(it.pl_item_col)
-          : it.col != null        ? String(it.col)
-          : it.warna_id != null   ? String(it.warna_id)
-          : "";
-        if (warnaKey && soColorByWarnaId?.has(warnaKey)) {
-          const s = soColorByWarnaId.get(warnaKey);
-          it.kode_warna = s.code;
-          it.deskripsi_warna = s.desc;
-        }
-      }
-    }
-    return clone;
-  }
 
   const addPackingListGroup = () => {
     setForm((prev) => ({
@@ -395,19 +469,16 @@ export default function DeliveryNoteForm() {
   const handlePackingListChange = async (groupIndex, plId) => {
     if (!plId) return;
 
-    // 1) Ambil detail PL
+    // 1) Detail PL
     const plDetail = await getPackingLists(plId, user?.token);
     const pl = plDetail?.order;
 
-    // 2) Ambil detail SO untuk map warna
-    let soColorByWarnaId = new Map();
+    // 2) Detail SO untuk mapping warna
+    let soDetail = null;
     try {
       const soResp = await getSalesOrders(pl.so_id, user?.token);
-      const soDetail = soResp?.order || soResp;
-      soColorByWarnaId = buildSoColorMapByWarnaId(soDetail);
-    } catch (e) {
-      // kalau gagal, biarkan map kosong (akan fallback ke data PL)
-    }
+      soDetail = soResp?.order || soResp || null;
+    } catch {}
 
     // 3) Tipe (D/E)
     const typeLetter = pl?.no_pl?.split("/")?.[1] || "";
@@ -417,12 +488,6 @@ export default function DeliveryNoteForm() {
     const allRolls = [];
 
     (pl?.items || []).forEach((item) => {
-      // --- WARNA DARI SO: kunci pakai PL.items[].col (== warna_id) ---
-      const warnaKey = String(item.col ?? "");
-      const soColor = warnaKey ? soColorByWarnaId.get(warnaKey) : null;
-      const finalKode = soColor?.code ?? item.kode_warna ?? "";
-      const finalDesk = soColor?.desc ?? item.deskripsi_warna ?? "";
-
       (item.rolls || []).forEach((roll) => {
         const meterVal = parseFloat(roll.meter ?? 0);
         const yardVal = parseFloat(roll.yard ?? 0);
@@ -436,13 +501,22 @@ export default function DeliveryNoteForm() {
 
         const sjItemIdGuess = sjItemIdByPlItemId.get(Number(item.id)) || null;
 
+        const color = resolveColorFromSO(
+          {
+            warna_id: item.warna_id ?? item.pl_item_col ?? null,
+            kode_warna: item.kode_warna,
+            deskripsi_warna: item.deskripsi_warna,
+          },
+          soDetail
+        );
+
         allRolls.push({
           packing_list_roll_id: pliRollId,
           packing_list_item_id: Number(item.id),
 
-          // 👉 pakai warna dari SO (fallback PL)
-          kode_warna: finalKode,
-          deskripsi_warna: finalDesk,
+          // warna dari SO (robust)
+          kode_warna: color.code,
+          deskripsi_warna: color.desc,
 
           no_bal: roll.no_bal,
           lot: roll.lot,
@@ -488,19 +562,19 @@ export default function DeliveryNoteForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Roll tercentang => isi SJ
+    // Kumpulkan roll terpilih
     const selectedRolls = form().itemGroups.flatMap((group) =>
       (group.items || []).filter((it) => it.checked)
     );
 
-    // Grouping per pl_item_id + siapkan id item SJ bila ada
+    // Grouping per pl_item_id
     const grouped = {}; // pl_item_id -> group
 
     for (const roll of selectedRolls) {
       const gid = roll.packing_list_item_id;
       if (!grouped[gid]) {
         grouped[gid] = {
-          id: roll.sj_item_id || undefined,  // <-- penting untuk EDIT (biar update, bukan insert baru)
+          id: roll.sj_item_id || undefined,
           pl_item_id: gid,
           meter_total: 0,
           yard_total: 0,
@@ -511,7 +585,7 @@ export default function DeliveryNoteForm() {
       }
 
       grouped[gid].rolls.push({
-        id: roll.sj_roll_id || undefined,    // <-- penting untuk EDIT (roll lama tetap dipertahankan)
+        id: roll.sj_roll_id || undefined,
         pli_roll_id: roll.packing_list_roll_id,
         row_num: roll.row_num,
         col_num: roll.col_num,
@@ -559,10 +633,8 @@ export default function DeliveryNoteForm() {
 
     try {
       if (isEdit) {
-        //console.log("UPDATE SJ payload:", JSON.stringify(payload, null, 2));
         await updateDataDeliveryNote(user?.token, params.id, payload);
       } else {
-        //console.log("CREATE SJ payload:", JSON.stringify(payload, null, 2));
         await createDeliveryNote(user?.token, payload);
       }
 
@@ -592,15 +664,11 @@ export default function DeliveryNoteForm() {
       return;
     }
     const dataToPrint = { ...deliveryNoteData() };
-
-    //console.log("Data print SJ: ", JSON.stringify(dataToPrint, null, 2));
-
     const encodedData = encodeURIComponent(JSON.stringify(dataToPrint));
     window.open(`/print/suratjalan#${encodedData}`, "_blank");
   }
 
   /* ---------------- UI ---------------- */
-
   return (
     <MainLayout>
       <h1 class="text-2xl font-bold mb-4">
@@ -747,7 +815,27 @@ export default function DeliveryNoteForm() {
         <For each={form().itemGroups}>
           {(_, groupIndex) => {
             const currentGroup = () => form().itemGroups[groupIndex()];
-            const soGroups = () => groupSOItems(currentGroup());
+            const soGroups = () => {
+              const map = new Map();
+              (currentGroup()?.items || []).forEach((r) => {
+                const k = r.packing_list_item_id;
+                let g = map.get(k);
+                if (!g) {
+                  g = {
+                    pl_item_id: k,
+                    corak_kain: r.corak_kain || "",
+                    kode_warna: r.kode_warna || "",
+                    deskripsi_warna: r.deskripsi_warna || "",
+                    rolls: [],
+                    sj_item_id: r.sj_item_id || null,
+                  };
+                  map.set(k, g);
+                }
+                if (r.sj_item_id && !g.sj_item_id) g.sj_item_id = r.sj_item_id;
+                g.rolls.push(r);
+              });
+              return Array.from(map.values());
+            };
 
             const allCheckedInPL = () => {
               const g = currentGroup();
