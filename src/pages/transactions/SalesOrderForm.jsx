@@ -1012,7 +1012,7 @@ export default function SalesOrderForm() {
               <th class="border p-2 w-[4%]">Grade Kain</th>
               <th class="border p-2 w-[7%]">Lebar Finish</th>
               <th class="border p-2 w-[12%]">Warna</th>
-              <th class="border p-2 w-[18%]">Keterangan</th>
+              <th class="border p-2 w-[18%]">Keterangan Warna</th>
               <th class="border p-2 w-[7%]">Gramasi</th>
               <th class="border p-2 w-[10%]">
                 <Show when={parseInt(form().satuan_unit_id) === 1}>Meter</Show>
