@@ -41,6 +41,8 @@ import JualBeliDeliveryNoteList from "./pages/purchasing/jual_beli/JBDeliveryNot
 import JualBeliDeliveryNoteForm from "./pages/purchasing/jual_beli/JBDeliveryNoteForm";
 import JualBeliDeliveryNoteFormV2 from "./pages/purchasing/jual_beli/JBDeliveryNoteFormV2";
 // TRANSACTIONS
+import ExporSalesContractList from "./pages/transactions/ExporSalesContractList";
+import ExporSalesContractForm from "./pages/transactions/ExporSalesContractForm";
 import SalesContractForm from "./pages/transactions/SalesContractForm";
 import SalesContractList from "./pages/transactions/SalesContractList";
 // MASTER DATA
@@ -72,6 +74,7 @@ import PackingListForm from "./pages/warehouse/PackingListForm";
 // PRINT
 // SELL
 import SalesContractPrint from "./utils/sell/SalesContractDummyPrint";
+import ExporSalesContractPrint from "./utils/sell/ExporSalesContractDummyPrint";
 import SalesOrderPrint from "./utils/sell/SalesOrderDummyPrint";
 import PackingListPrint from "./utils/sell/PackingListDummyPrint";
 import SuratJalanPrint from "./utils/sell/SuratJalanDummyPrint";
@@ -106,8 +109,6 @@ import JenisPotonganList from "./finance_pages/master_data/jenis_potongan/JenisP
 import JenisPotonganForm from "./finance_pages/master_data/jenis_potongan/JenisPotonganForm";
 import JenisHutangList from "./finance_pages/master_data/jenis_hutang/JenisHutangList";
 import JenisHutangForm from "./finance_pages/master_data/jenis_hutang/JenisHutangForm";
-import ExporSalesContractList from "./pages/transactions/ExporSalesContractList";
-import ExporSalesContractForm from "./pages/transactions/ExporSalesContractForm";
 
 function App() {
   return (
@@ -268,6 +269,10 @@ function App() {
 
       {/* SELL */}
       <Route path="/print/salescontract" component={SalesContractPrint} />
+      <Route
+        path="/print/expor/salescontract"
+        component={ExporSalesContractPrint}
+      />
       <Route path="/print/salesorder" component={SalesOrderPrint} />
       <Route path="/print/packinglist" component={PackingListPrint} />
       <Route path="/print/suratjalan" component={SuratJalanPrint} />
