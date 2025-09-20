@@ -106,6 +106,8 @@ import JenisPotonganList from "./finance_pages/master_data/jenis_potongan/JenisP
 import JenisPotonganForm from "./finance_pages/master_data/jenis_potongan/JenisPotonganForm";
 import JenisHutangList from "./finance_pages/master_data/jenis_hutang/JenisHutangList";
 import JenisHutangForm from "./finance_pages/master_data/jenis_hutang/JenisHutangForm";
+import ExporSalesContractList from "./pages/transactions/ExporSalesContractList";
+import ExporSalesContractForm from "./pages/transactions/ExporSalesContractForm";
 
 function App() {
   return (
@@ -114,9 +116,12 @@ function App() {
       <Route path="/test" component={FinanceMainLayout} />
       <Route path="/users" component={UsersList} />
       <Route path="/users/form" component={UserForm} />
-      
+
       <Route path="/manage-permissions" component={ManagePermissionsList} />
-      <Route path="/manage-permissions/form" component={ManagePermissionsForm} />
+      <Route
+        path="/manage-permissions/form"
+        component={ManagePermissionsForm}
+      />
 
       <Route path="/dashboard" component={Dashboard} />
 
@@ -129,6 +134,12 @@ function App() {
       {/* TRANSACTIONS */}
       <Route path="/salescontract" component={SalesContractList} />
       <Route path="/salescontract/form" component={SalesContractForm} />
+
+      <Route path="/expor/salescontract" component={ExporSalesContractList} />
+      <Route
+        path="/expor/salescontract/form"
+        component={ExporSalesContractForm}
+      />
 
       <Route path="/salesorder" component={SalesOrderList} />
       <Route path="/salesorder/form" component={SalesOrderForm} />

@@ -12,7 +12,7 @@ import {
 import Swal from "sweetalert2";
 import { Edit, Eye, Trash } from "lucide-solid";
 
-export default function SalesContractList() {
+export default function ExporSalesContractList() {
   const [salesContracts, setSalesContracts] = createSignal([]);
   const navigate = useNavigate();
   const tokUser = getUser();
@@ -64,10 +64,10 @@ export default function SalesContractList() {
             error.message ||
             `Gagal menghapus data sales contract dengan ID ${id}`,
           icon: "error",
-          
- showConfirmButton: false,
-        timer: 1000,
-        timerProgressBar: true,
+
+          showConfirmButton: false,
+          timer: 1000,
+          timerProgressBar: true,
         });
       }
     }
@@ -192,10 +192,10 @@ export default function SalesContractList() {
   return (
     <MainLayout>
       <div class="flex justify-between items-center mb-4">
-        <h1 class="text-2xl font-bold">Daftar Sales Contract (Lokal)</h1>
+        <h1 class="text-2xl font-bold">Daftar Sales Contract (Ekspor)</h1>
         <button
           class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-          onClick={() => navigate("/salescontract/form")}
+          onClick={() => navigate("/expor/salescontract/form")}
         >
           + Tambah Sales Contract
         </button>
@@ -250,7 +250,9 @@ export default function SalesContractList() {
                   <button
                     class="text-yellow-600 hover:underline"
                     onClick={() =>
-                      navigate(`/salescontract/form?id=${sc.id}&view=true`)
+                      navigate(
+                        `/expor/salescontract/form?id=${sc.id}&view=true`
+                      )
                     }
                   >
                     <Eye size={25} />
@@ -258,7 +260,9 @@ export default function SalesContractList() {
                   {hasPermission("edit_sales_contracts") && (
                     <button
                       class="text-blue-600 hover:underline"
-                      onClick={() => navigate(`/salescontract/form?id=${sc.id}`)}
+                      onClick={() =>
+                        navigate(`/expor/salescontract/form?id=${sc.id}`)
+                      }
                     >
                       <Edit size={25} />
                     </button>

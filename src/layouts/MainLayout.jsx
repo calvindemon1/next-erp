@@ -1,5 +1,12 @@
 import { createEffect, createSignal, onCleanup } from "solid-js";
-import { getTokenStatus, getUser, logout, hasPermission, hasAnyPermission, hasAllPermission } from "../utils/auth";
+import {
+  getTokenStatus,
+  getUser,
+  logout,
+  hasPermission,
+  hasAnyPermission,
+  hasAllPermission,
+} from "../utils/auth";
 import { A, useLocation, useNavigate } from "@solidjs/router";
 import { ChevronLeft, ChevronRight, LogOut } from "lucide-solid";
 import Swal from "sweetalert2";
@@ -66,15 +73,9 @@ export default function MainLayout(props) {
   };
 
   const invoiceRoutes = {
-    transaction: [
-      "/deliverynote-invoice",
-      "/deliverynote-invoice/form",
-    ],
-    jualbeli: [
-      "jualbeli-invoice",
-      "jualbeli-invoice/form",
-    ],
-  }
+    transaction: ["/deliverynote-invoice", "/deliverynote-invoice/form"],
+    jualbeli: ["jualbeli-invoice", "jualbeli-invoice/form"],
+  };
 
   createEffect(() => {
     const interval = setInterval(async () => {
@@ -119,6 +120,8 @@ export default function MainLayout(props) {
         [
           "/salescontract",
           "/salescontract/form",
+          "/expor/salescontract",
+          "/expor/salescontract/form",
           "/salesorder",
           "/salesorder/form",
         ].some((p) => pathname.startsWith(p))
@@ -126,11 +129,10 @@ export default function MainLayout(props) {
         return "transaction";
       }
 
-      if(
-        [
-          "/deliverynote-invoice",
-          "/deliverynote-invoice/form",
-        ].some((p) => pathname.startsWith(p))
+      if (
+        ["/deliverynote-invoice", "/deliverynote-invoice/form"].some((p) =>
+          pathname.startsWith(p)
+        )
       ) {
         return "invoice";
       }
@@ -164,9 +166,11 @@ export default function MainLayout(props) {
         return "warehouse";
       }
 
-      if(
-        Object.values(invoiceRoutes).flat().some((p) => pathname.startsWith(p))
-      ){
+      if (
+        Object.values(invoiceRoutes)
+          .flat()
+          .some((p) => pathname.startsWith(p))
+      ) {
         return "invoice";
       }
 
@@ -346,7 +350,6 @@ export default function MainLayout(props) {
                           ? "bg-gray-700 text-white"
                           : ""
                       }`}
-                      
                     >
                       Users
                     </A>
@@ -361,7 +364,6 @@ export default function MainLayout(props) {
                           ? "bg-gray-700 text-white"
                           : ""
                       }`}
-                      
                     >
                       Manage Permissions
                     </A>
@@ -472,7 +474,10 @@ export default function MainLayout(props) {
                         </A>
                       </li>
                     )}
-                    {hasAllPermission(["view_customer_types", "create_customer_types"]) && (
+                    {hasAllPermission([
+                      "view_customer_types",
+                      "create_customer_types",
+                    ]) && (
                       <li>
                         <A
                           href="/customer-type"
@@ -487,7 +492,10 @@ export default function MainLayout(props) {
                         </A>
                       </li>
                     )}
-                    {hasAllPermission(["view_mata_uang", "create_mata_uang"]) && (
+                    {hasAllPermission([
+                      "view_mata_uang",
+                      "create_mata_uang",
+                    ]) && (
                       <li>
                         <A
                           href="/currencies"
@@ -517,7 +525,10 @@ export default function MainLayout(props) {
                         </A>
                       </li>
                     )}
-                    {hasAllPermission(["view_satuan_unit", "create_satuan_unit"]) && (
+                    {hasAllPermission([
+                      "view_satuan_unit",
+                      "create_satuan_unit",
+                    ]) && (
                       <li>
                         <A
                           href="/units"
@@ -557,7 +568,10 @@ export default function MainLayout(props) {
                 >
                   <ul>
                     {/* Submenu Level 2: Pembelian Greige */}
-                    {hasAllPermission(["view_purchase_greige_contract", "view_purchase_greige_order"]) && (
+                    {hasAllPermission([
+                      "view_purchase_greige_contract",
+                      "view_purchase_greige_order",
+                    ]) && (
                       <li>
                         <button
                           class="w-full text-left pl-8 pr-4 py-2 font-semibold text-gray-400 hover:bg-gray-700 flex justify-between items-center"
@@ -572,7 +586,7 @@ export default function MainLayout(props) {
                     )}
 
                     {/* Submenu Items inside Pembelian Greige */}
-                    
+
                     <li
                       class={`transition-all duration-300 ease-in-out overflow-hidden ${
                         isGreigeOpen()
@@ -581,47 +595,54 @@ export default function MainLayout(props) {
                       }`}
                     >
                       <ul>
-                          <li>
-                            <A
-                              href="/beligreige-purchasecontract"
-                              class={`block pl-12 pr-4 py-2 hover:bg-gray-700 ${
-                                location.pathname === "/beligreige-purchasecontract" ||
-                                location.pathname === "/beligreige-purchasecontract/form"
-                                  ? "bg-gray-700 text-white"
-                                  : ""
-                              }`}
-                            >
-                              Purchase Contract
-                            </A>
-                          </li>
-                          <li>
-                            <A
-                              href="/beligreige-purchaseorder"
-                              class={`block pl-12 pr-4 py-2 hover:bg-gray-700 ${
-                                location.pathname ===
-                                  "/beligreige-purchaseorder" ||
-                                location.pathname ===
-                                  "/beligreige-purchaseorder/form"
-                                  ? "bg-gray-700 text-white"
-                                  : ""
-                              }`}
-                            >
-                              Purchase Order
-                            </A>
-                          </li>
+                        <li>
+                          <A
+                            href="/beligreige-purchasecontract"
+                            class={`block pl-12 pr-4 py-2 hover:bg-gray-700 ${
+                              location.pathname ===
+                                "/beligreige-purchasecontract" ||
+                              location.pathname ===
+                                "/beligreige-purchasecontract/form"
+                                ? "bg-gray-700 text-white"
+                                : ""
+                            }`}
+                          >
+                            Purchase Contract
+                          </A>
+                        </li>
+                        <li>
+                          <A
+                            href="/beligreige-purchaseorder"
+                            class={`block pl-12 pr-4 py-2 hover:bg-gray-700 ${
+                              location.pathname ===
+                                "/beligreige-purchaseorder" ||
+                              location.pathname ===
+                                "/beligreige-purchaseorder/form"
+                                ? "bg-gray-700 text-white"
+                                : ""
+                            }`}
+                          >
+                            Purchase Order
+                          </A>
+                        </li>
                       </ul>
                     </li>
                   </ul>
                   <ul>
                     {/* Submenu Level 2: Order Celup */}
-                    {hasAllPermission(["view_purchase_celup_contract", "view_purchase_celup_order"]) && (
+                    {hasAllPermission([
+                      "view_purchase_celup_contract",
+                      "view_purchase_celup_order",
+                    ]) && (
                       <li>
                         <button
                           class="w-full text-left pl-8 pr-4 py-2 font-semibold text-gray-400 hover:bg-gray-700 flex justify-between items-center"
                           onClick={() => setCelupIsOpen(!isCelupOpen())}
                         >
                           Pembelian Order Celup
-                          <span class="text-xs">{isCelupOpen() ? "▲" : "▼"}</span>
+                          <span class="text-xs">
+                            {isCelupOpen() ? "▲" : "▼"}
+                          </span>
                         </button>
                       </li>
                     )}
@@ -635,42 +656,45 @@ export default function MainLayout(props) {
                       }`}
                     >
                       <ul>
-                          <li>
-                            <A
-                              href="/ordercelup-purchasecontract"
-                              class={`block pl-12 pr-4 py-2 hover:bg-gray-700 ${
-                                location.pathname ===
-                                  "/ordercelup-purchasecontract" ||
-                                location.pathname ===
-                                  "/ordercelup-purchasecontract/form"
-                                  ? "bg-gray-700 text-white"
-                                  : ""
-                              }`}
-                            >
-                              Kontrak Proses
-                            </A>
-                          </li>
-                          <li>
-                            <A
-                              href="/ordercelup-purchaseorder"
-                              class={`block pl-12 pr-4 py-2 hover:bg-gray-700 ${
-                                location.pathname ===
-                                  "/ordercelup-purchaseorder" ||
-                                location.pathname ===
-                                  "/ordercelup-purchaseorder/form"
-                                  ? "bg-gray-700 text-white"
-                                  : ""
-                              }`}
-                            >
-                              Order Celup
-                            </A>
-                          </li>
+                        <li>
+                          <A
+                            href="/ordercelup-purchasecontract"
+                            class={`block pl-12 pr-4 py-2 hover:bg-gray-700 ${
+                              location.pathname ===
+                                "/ordercelup-purchasecontract" ||
+                              location.pathname ===
+                                "/ordercelup-purchasecontract/form"
+                                ? "bg-gray-700 text-white"
+                                : ""
+                            }`}
+                          >
+                            Kontrak Proses
+                          </A>
+                        </li>
+                        <li>
+                          <A
+                            href="/ordercelup-purchaseorder"
+                            class={`block pl-12 pr-4 py-2 hover:bg-gray-700 ${
+                              location.pathname ===
+                                "/ordercelup-purchaseorder" ||
+                              location.pathname ===
+                                "/ordercelup-purchaseorder/form"
+                                ? "bg-gray-700 text-white"
+                                : ""
+                            }`}
+                          >
+                            Order Celup
+                          </A>
+                        </li>
                       </ul>
                     </li>
                   </ul>
                   <ul>
                     {/* Submenu Level 2: Kain Jadi */}
-                    {hasAllPermission(["view_purchase_finish_contract", "view_purchase_finish_order"]) && (
+                    {hasAllPermission([
+                      "view_purchase_finish_contract",
+                      "view_purchase_finish_order",
+                    ]) && (
                       <li>
                         <button
                           class="w-full text-left pl-8 pr-4 py-2 font-semibold text-gray-400 hover:bg-gray-700 flex justify-between items-center"
@@ -693,41 +717,44 @@ export default function MainLayout(props) {
                       }`}
                     >
                       <ul>
-                          <li>
-                            <A
-                              href="/kainjadi-purchasecontract"
-                              class={`block pl-12 pr-4 py-2 hover:bg-gray-700 ${
-                                location.pathname ===
-                                  "/kainjadi-purchasecontract" ||
-                                location.pathname ===
-                                  "/kainjadi-purchasecontract/form"
-                                  ? "bg-gray-700 text-white"
-                                  : ""
-                              }`}
-                            >
-                              Purchase Order
-                            </A>
-                          </li>
-                          <li>
-                            <A
-                              href="/kainjadi-purchaseorder"
-                              class={`block pl-12 pr-4 py-2 hover:bg-gray-700 ${
-                                location.pathname === "/kainjadi-purchaseorder" ||
-                                location.pathname ===
-                                  "/kainjadi-purchaseorder/form"
-                                  ? "bg-gray-700 text-white"
-                                  : ""
-                              }`}
-                            >
-                              Order Kain Jadi
-                            </A>
-                          </li>
+                        <li>
+                          <A
+                            href="/kainjadi-purchasecontract"
+                            class={`block pl-12 pr-4 py-2 hover:bg-gray-700 ${
+                              location.pathname ===
+                                "/kainjadi-purchasecontract" ||
+                              location.pathname ===
+                                "/kainjadi-purchasecontract/form"
+                                ? "bg-gray-700 text-white"
+                                : ""
+                            }`}
+                          >
+                            Purchase Order
+                          </A>
+                        </li>
+                        <li>
+                          <A
+                            href="/kainjadi-purchaseorder"
+                            class={`block pl-12 pr-4 py-2 hover:bg-gray-700 ${
+                              location.pathname === "/kainjadi-purchaseorder" ||
+                              location.pathname ===
+                                "/kainjadi-purchaseorder/form"
+                                ? "bg-gray-700 text-white"
+                                : ""
+                            }`}
+                          >
+                            Order Kain Jadi
+                          </A>
+                        </li>
                       </ul>
                     </li>
                   </ul>
                   <ul>
                     {/* Submenu Level 2: Kain Jadi */}
-                    {hasAllPermission(["view_jual_beli", "create_jual_beli"]) && (
+                    {hasAllPermission([
+                      "view_jual_beli",
+                      "create_jual_beli",
+                    ]) && (
                       <li>
                         <button
                           class="w-full text-left pl-8 pr-4 py-2 font-semibold text-gray-400 hover:bg-gray-700 flex justify-between items-center"
@@ -750,27 +777,30 @@ export default function MainLayout(props) {
                       }`}
                     >
                       <ul>
-                          <li>
-                            <A
-                              href="/jualbeli-purchasecontract"
-                              class={`block pl-12 pr-4 py-2 hover:bg-gray-700 ${
-                                location.pathname ===
-                                  "/jualbeli-purchasecontract" ||
-                                location.pathname ===
-                                  "/jualbeli-purchasecontract/form"
-                                  ? "bg-gray-700 text-white"
-                                  : ""
-                              }`}
-                            >
-                              Purchase Order
-                            </A>
-                          </li>
+                        <li>
+                          <A
+                            href="/jualbeli-purchasecontract"
+                            class={`block pl-12 pr-4 py-2 hover:bg-gray-700 ${
+                              location.pathname ===
+                                "/jualbeli-purchasecontract" ||
+                              location.pathname ===
+                                "/jualbeli-purchasecontract/form"
+                                ? "bg-gray-700 text-white"
+                                : ""
+                            }`}
+                          >
+                            Purchase Order
+                          </A>
+                        </li>
                       </ul>
                     </li>
                   </ul>
                 </li>
                 {/* PENJUALAN */}
-                {hasAllPermission(["view_sales_contracts", "view_sales_orders"]) && (
+                {hasAllPermission([
+                  "view_sales_contracts",
+                  "view_sales_orders",
+                ]) && (
                   <li>
                     <button
                       class="w-full text-left p-4 font-semibold text-gray-400 uppercase hover:bg-gray-700 flex justify-between items-center"
@@ -792,32 +822,45 @@ export default function MainLayout(props) {
                   }`}
                 >
                   <ul>
-                      <li>
-                        <A
-                          href="/salescontract"
-                          class={`block pl-8 pr-4 py-2 hover:bg-gray-700 ${
-                            location.pathname === "/salescontract" ||
-                            location.pathname === "/salescontract/form"
-                              ? "bg-gray-700 text-white"
-                              : ""
-                          }`}
-                        >
-                          Sales Contract
-                        </A>
-                      </li>
-                      <li>
-                        <A
-                          href="/salesorder"
-                          class={`block pl-8 pr-4 py-2 hover:bg-gray-700 ${
-                            location.pathname === "/salesorder" ||
-                            location.pathname === "/salesorder/form"
-                              ? "bg-gray-700 text-white"
-                              : ""
-                          }`}
-                        >
-                          Sales Order
-                        </A>
-                      </li>
+                    <li>
+                      <A
+                        href="/salescontract"
+                        class={`block pl-8 pr-4 py-2 hover:bg-gray-700 ${
+                          location.pathname === "/salescontract" ||
+                          location.pathname === "/salescontract/form"
+                            ? "bg-gray-700 text-white"
+                            : ""
+                        }`}
+                      >
+                        Sales Contract (Lokal)
+                      </A>
+                    </li>
+                    <li>
+                      <A
+                        href="/expor/salescontract"
+                        class={`block pl-8 pr-4 py-2 hover:bg-gray-700 ${
+                          location.pathname === "/expor/salescontract" ||
+                          location.pathname === "/expor/salescontract/form"
+                            ? "bg-gray-700 text-white"
+                            : ""
+                        }`}
+                      >
+                        Sales Contract (Ekspor)
+                      </A>
+                    </li>
+                    <li>
+                      <A
+                        href="/salesorder"
+                        class={`block pl-8 pr-4 py-2 hover:bg-gray-700 ${
+                          location.pathname === "/salesorder" ||
+                          location.pathname === "/salesorder/form"
+                            ? "bg-gray-700 text-white"
+                            : ""
+                        }`}
+                      >
+                        Sales Order
+                      </A>
+                    </li>
                   </ul>
                 </li>
 
@@ -843,7 +886,10 @@ export default function MainLayout(props) {
                 >
                   <ul>
                     {/* Submenu Level 2: Penjualan */}
-                    {hasAllPermission(["view_packing_lists", "view_surat_jalan"]) && (
+                    {hasAllPermission([
+                      "view_packing_lists",
+                      "view_surat_jalan",
+                    ]) && (
                       <li>
                         <button
                           class="w-full text-left pl-8 pr-4 py-2 font-semibold text-gray-400 hover:bg-gray-700 flex justify-between items-center"
@@ -892,7 +938,6 @@ export default function MainLayout(props) {
                                 ? "bg-gray-700 text-white"
                                 : ""
                             }`}
-                            
                           >
                             Surat Jalan
                           </A>
@@ -900,9 +945,9 @@ export default function MainLayout(props) {
                       </ul>
                     </li>
                   </ul>
-                  <ul >
+                  <ul>
                     {/* Submenu Level 2: Pembelian Greige */}
-                      {hasPermission("view_purchase_greige_surat_jalan") && (
+                    {hasPermission("view_purchase_greige_surat_jalan") && (
                       <li>
                         <button
                           class="w-full text-left pl-8 pr-4 py-2 font-semibold text-gray-400 hover:bg-gray-700 flex justify-between items-center"
@@ -945,7 +990,7 @@ export default function MainLayout(props) {
                       </ul>
                     </li>
                   </ul>
-                  <ul >
+                  <ul>
                     {/* Submenu Level 2: Order Celup */}
                     {hasPermission("view_purchase_celup_surat_jalan") && (
                       <li>
@@ -990,7 +1035,7 @@ export default function MainLayout(props) {
                       </ul>
                     </li>
                   </ul>
-                  <ul >
+                  <ul>
                     {/* Submenu Level 2: Kain Jadi */}
                     {hasPermission("view_purchase_finish_surat_jalan") && (
                       <li>
@@ -1034,14 +1079,16 @@ export default function MainLayout(props) {
                       </ul>
                     </li>
                   </ul>
-                  <ul >
+                  <ul>
                     {/* Submenu Level 2: Kain Jadi */}
                     {hasPermission("view_jual_beli_surat_jalan") && (
                       <li>
                         <button
                           class="w-full text-left pl-8 pr-4 py-2 font-semibold text-gray-400 hover:bg-gray-700 flex justify-between items-center"
                           onClick={() =>
-                            setWarehouseJualBeliIsOpen(!isWarehouseJualBeliOpen())
+                            setWarehouseJualBeliIsOpen(
+                              !isWarehouseJualBeliOpen()
+                            )
                           }
                           //hidden
                         >
@@ -1082,7 +1129,10 @@ export default function MainLayout(props) {
                 </li>
 
                 {/* INVOICE */}
-                {hasAllPermission(["print_invoice", "print_invoice_jual_beli"]) && (
+                {hasAllPermission([
+                  "print_invoice",
+                  "print_invoice_jual_beli",
+                ]) && (
                   <li>
                     <button
                       class="w-full text-left p-4 font-semibold text-gray-400 uppercase hover:bg-gray-700 flex justify-between items-center"
@@ -1095,39 +1145,42 @@ export default function MainLayout(props) {
                 )}
 
                 {/* SUB MENU INVOICE */}
-                  <li
-                    class={`transition-all duration-300 ease-in-out overflow-hidden ${
-                      isInvoiceOpen() ? "max-h-fit opacity-100" : "max-h-0 opacity-0"
-                    }`}>
-                    <ul>
-                      <li>
-                        <A
-                          href="/deliverynote-invoice"
-                          class={`block pl-8 pr-4 py-2 hover:bg-gray-700 ${
-                            location.pathname === "/deliverynote-invoice" ||
-                            location.pathname === "/deliverynote-invoice/form"
-                              ? "bg-gray-700 text-white"
-                              : ""
-                          }`}
-                        >
-                          Invoice Penjualan
-                        </A>
-                      </li>
-                      <li>
-                        <A
-                          href="/jualbeli-invoice"
-                          class={`block pl-8 pr-4 py-2 hover:bg-gray-700 ${
-                            location.pathname === "/jualbeli-invoice" ||
-                            location.pathname === "/jualbeli-invoice/form"
-                              ? "bg-gray-700 text-white"
-                              : ""
-                          }`}
-                        >
-                          Invoice Jual Beli
-                        </A>
-                      </li>
-                    </ul>
-                  </li>
+                <li
+                  class={`transition-all duration-300 ease-in-out overflow-hidden ${
+                    isInvoiceOpen()
+                      ? "max-h-fit opacity-100"
+                      : "max-h-0 opacity-0"
+                  }`}
+                >
+                  <ul>
+                    <li>
+                      <A
+                        href="/deliverynote-invoice"
+                        class={`block pl-8 pr-4 py-2 hover:bg-gray-700 ${
+                          location.pathname === "/deliverynote-invoice" ||
+                          location.pathname === "/deliverynote-invoice/form"
+                            ? "bg-gray-700 text-white"
+                            : ""
+                        }`}
+                      >
+                        Invoice Penjualan
+                      </A>
+                    </li>
+                    <li>
+                      <A
+                        href="/jualbeli-invoice"
+                        class={`block pl-8 pr-4 py-2 hover:bg-gray-700 ${
+                          location.pathname === "/jualbeli-invoice" ||
+                          location.pathname === "/jualbeli-invoice/form"
+                            ? "bg-gray-700 text-white"
+                            : ""
+                        }`}
+                      >
+                        Invoice Jual Beli
+                      </A>
+                    </li>
+                  </ul>
+                </li>
               </ul>
             </nav>
 
