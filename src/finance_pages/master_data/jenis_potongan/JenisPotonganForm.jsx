@@ -1,10 +1,10 @@
 import { createSignal, onMount } from "solid-js";
 import { useNavigate, useSearchParams } from "@solidjs/router";
-import { Banks, User } from "../../../utils/financeAuth";
+import { JenisPotongan, User } from "../../../utils/financeAuth";
 import Swal from "sweetalert2";
 import FinanceMainLayout from "../../../layouts/FinanceMainLayout";
 
-export default function BanksForm() {
+export default function JenisPotonganForm() {
   const [form, setForm] = createSignal({
     id: "",
     name: "",
@@ -15,10 +15,10 @@ export default function BanksForm() {
 
   onMount(async () => {
     if (isEdit) {
-      const bankData = await Banks.getById(params.id);
+      const jenisPotonganData = await JenisPotongan.getById(params.id);
       setForm({
         id: params.id,
-        name: bankData.data.name,
+        name: jenisPotonganData.data.name,
       });
     }
   });
@@ -28,28 +28,28 @@ export default function BanksForm() {
 
     try {
       if (!isEdit) {
-        await Banks.create({ name: form().name });
+        await JenisPotongan.create({ name: form().name });
       } else {
-        await Banks.update(params.id, { name: form().name });
+        await JenisPotongan.update(params.id, { name: form().name });
       }
 
       Swal.fire({
         icon: "success",
         title: "Berhasil",
         text: isEdit
-          ? "Berhasil mengubah data bank"
-          : "Berhasil membuat bank baru",
+          ? "Berhasil mengubah data jenis potongan"
+          : "Berhasil membuat jenis potongan baru",
         showConfirmButton: false,
         timer: 1000,
         timerProgressBar: true,
-      }).then(() => navigate("/banks"));
+      }).then(() => navigate("/jenis-potongan"));
     } catch (error) {
       Swal.fire({
         icon: "error",
         title: "Gagal",
         text: isEdit
-          ? "Gagal mengubah data bank"
-          : "Gagal membuat data bank baru",
+          ? "Gagal mengubah data jenis potongan"
+          : "Gagal membuat data jenis potongan baru",
         showConfirmButton: false,
         timer: 1000,
         timerProgressBar: true,
@@ -59,11 +59,13 @@ export default function BanksForm() {
 
   return (
     <FinanceMainLayout>
-      <h1 class="text-2xl font-bold mb-4">{isEdit ? "Edit" : "Tambah"} Bank</h1>
+      <h1 class="text-2xl font-bold mb-4">
+        {isEdit ? "Edit" : "Tambah"} Jenis Potongan
+      </h1>
       <form class="space-y-4" onSubmit={handleSubmit}>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label class="block mb-1 font-medium">Nama Bank</label>
+            <label class="block mb-1 font-medium">Nama Jenis Potongan</label>
             <input
               type="text"
               class="w-full border p-2 rounded"

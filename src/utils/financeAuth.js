@@ -13,7 +13,8 @@ const api = axios.create({
 // ============ Interceptors ============
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("token");
+    const user = JSON.parse(localStorage.getItem("user")); //
+    const token = user?.token;
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -30,11 +31,40 @@ api.interceptors.response.use(
   }
 );
 
+// ============ PAYMENT METHODS ============
+const PaymentMethods = {
+  create: async (payload) => {
+    console.log("Banks.create response:", payload);
+    const res = await api.post("/create-payment-method", payload);
+    return res.data;
+  },
+  getAll: async () => {
+    const res = await api.get("/payment-methods");
+    // console.log("Banks.getAll response:", res);
+    return res.data;
+  },
+  getById: async (id) => {
+    const res = await api.get(`/payment-methods/${id}`);
+    // console.log("Banks.getById response:", res);
+    return res.data;
+  },
+  update: async (id, payload) => {
+    const res = await api.put(`/update-payment-method/${id}`, payload);
+    // console.log("Banks.update response:", res);
+    return res.data;
+  },
+  delete: async (id) => {
+    const res = await api.delete(`/delete-payment-method/${id}`);
+    // console.log("Banks.delete response:", res);
+    return res.data;
+  },
+};
+
 // ============ BANKS ============
 const Banks = {
   create: async (payload) => {
+    console.log("Banks.create response:", payload);
     const res = await api.post("/create-bank", payload);
-    // console.log("Banks.create response:", res);
     return res.data;
   },
   getAll: async () => {
@@ -154,4 +184,11 @@ const User = {
 };
 
 // Export bareng
-export { Banks, JenisPotongan, JenisHutang, PurchaseAksesorisEkspedisi, User };
+export {
+  PaymentMethods,
+  Banks,
+  JenisPotongan,
+  JenisHutang,
+  PurchaseAksesorisEkspedisi,
+  User,
+};

@@ -100,6 +100,12 @@ import JBInvoicePrint from "./utils/buy/jual_beli/JBInvoiceDummyPrint";
 import FinanceMainLayout from "./layouts/FinanceMainLayout";
 import BanksList from "./finance_pages/master_data/banks/BanksList";
 import BanksForm from "./finance_pages/master_data/banks/BanksForm";
+import PaymentMethodsList from "./finance_pages/master_data/payment_methods/PaymentMethodsList";
+import PaymentMethodsForm from "./finance_pages/master_data/payment_methods/PaymentMethodsForm";
+import JenisPotonganList from "./finance_pages/master_data/jenis_potongan/JenisPotonganList";
+import JenisPotonganForm from "./finance_pages/master_data/jenis_potongan/JenisPotonganForm";
+import JenisHutangList from "./finance_pages/master_data/jenis_hutang/JenisHutangList";
+import JenisHutangForm from "./finance_pages/master_data/jenis_hutang/JenisHutangForm";
 
 function App() {
   return (
@@ -327,6 +333,18 @@ function App() {
       <Route path="/banks" component={BanksList} />
       <Route path="/banks/form" component={BanksForm} />
       {/* BANKS */}
+      {/* PAYMENT METHODS */}
+      <Route path="/payment-methods" component={PaymentMethodsList} />
+      <Route path="/payment-methods/form" component={PaymentMethodsForm} />
+      {/* PAYMENT METHODS */}
+      {/* JENIS POTONGAN */}
+      <Route path="/jenis-potongan" component={JenisPotonganList} />
+      <Route path="/jenis-potongan/form" component={JenisPotonganForm} />
+      {/* JENIS POTONGAN */}
+      {/* JENIS HUTANG */}
+      <Route path="/jenis-hutang" component={JenisHutangList} />
+      <Route path="/jenis-hutang/form" component={JenisHutangForm} />
+      {/* JENIS HUTANG */}
       {/* MASTER DATA */}
       {/* FINANCE MODULE */}
     </Router>

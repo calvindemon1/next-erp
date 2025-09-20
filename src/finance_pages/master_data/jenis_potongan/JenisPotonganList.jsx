@@ -1,30 +1,30 @@
 import { createEffect, createMemo, createSignal } from "solid-js";
 import { useNavigate } from "@solidjs/router";
-import { Banks, User } from "../../../utils/financeAuth";
+import { JenisPotongan, User } from "../../../utils/financeAuth";
 import Swal from "sweetalert2";
 import { Edit, Trash } from "lucide-solid";
 import FinanceMainLayout from "../../../layouts/FinanceMainLayout";
 
-export default function BanksList() {
-  const [banks, setBanks] = createSignal([]);
+export default function JenisPotonganList() {
+  const [jenisPotongan, setJenisPotongan] = createSignal([]);
   const navigate = useNavigate();
   const tokUser = User.getUser();
   const [currentPage, setCurrentPage] = createSignal(1);
   const pageSize = 20;
 
   const totalPages = createMemo(() =>
-    Math.max(1, Math.ceil(banks().length / pageSize))
+    Math.max(1, Math.ceil(jenisPotongan().length / pageSize))
   );
 
   const paginatedData = () => {
     const startIndex = (currentPage() - 1) * pageSize;
-    return banks().slice(startIndex, startIndex + pageSize);
+    return jenisPotongan().slice(startIndex, startIndex + pageSize);
   };
 
   const handleDelete = async (id) => {
     const result = await Swal.fire({
-      title: "Hapus bank?",
-      text: `Apakah kamu yakin ingin menghapus bank dengan ID ${id}?`,
+      title: "Hapus jenis potongan?",
+      text: `Apakah kamu yakin ingin menghapus jenis potongan dengan ID ${id}?`,
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#d33",
@@ -35,21 +35,23 @@ export default function BanksList() {
 
     if (result.isConfirmed) {
       try {
-        await Banks.delete(id);
+        await JenisPotongan.delete(id);
 
         await Swal.fire({
           title: "Terhapus!",
-          text: `Data bank dengan ID ${id} berhasil dihapus.`,
+          text: `Data jenis potongan dengan ID ${id} berhasil dihapus.`,
           icon: "success",
           confirmButtonColor: "#6496df",
         });
 
-        setBanks(banks().filter((s) => s.id !== id));
+        setJenisPotongan(jenisPotongan().filter((s) => s.id !== id));
       } catch (error) {
         console.error(error);
         Swal.fire({
           title: "Gagal",
-          text: error.message || `Gagal menghapus data bank dengan ID ${id}`,
+          text:
+            error.message ||
+            `Gagal menghapus data jenis potongan dengan ID ${id}`,
           icon: "error",
           showConfirmButton: false,
           timer: 1000,
@@ -59,30 +61,30 @@ export default function BanksList() {
     }
   };
 
-  const handleGetAllBanks = async () => {
-    const getDataBanks = await Banks.getAll();
+  const handleGetAllJenisPotongan = async () => {
+    const getDataJenisPotongan = await JenisPotongan.getAll();
 
-    if (getDataBanks.status === 200) {
-      const sortedData = getDataBanks.data.sort((a, b) => a.id - b.id);
-      setBanks(sortedData);
+    if (getDataJenisPotongan.status === 200) {
+      const sortedData = getDataJenisPotongan.data.sort((a, b) => a.id - b.id);
+      setJenisPotongan(sortedData);
     }
   };
 
   createEffect(() => {
     if (tokUser?.token) {
-      handleGetAllBanks();
+      handleGetAllJenisPotongan();
     }
   });
 
   return (
     <FinanceMainLayout>
       <div class="flex justify-between items-center mb-4">
-        <h1 class="text-2xl font-bold">Daftar Bank</h1>
+        <h1 class="text-2xl font-bold">Daftar Jenis Potongan</h1>
         <button
           class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-          onClick={() => navigate("/banks/form")}
+          onClick={() => navigate("/jenis-potongan/form")}
         >
-          + Tambah Bank
+          + Jenis Potongan
         </button>
       </div>
 
@@ -91,27 +93,29 @@ export default function BanksList() {
           <thead>
             <tr class="bg-gray-200 text-left text-sm uppercase text-gray-700">
               <th class="py-2 px-4">No</th>
-              <th class="py-2 px-2">Nama Bank</th>
+              <th class="py-2 px-2">Nama Jenis Potongan</th>
               <th class="py-2 px-2">Aksi</th>
             </tr>
           </thead>
           <tbody>
-            {paginatedData().map((bank, index) => (
-              <tr class="border-b" key={bank.id}>
+            {paginatedData().map((jenispotongan, index) => (
+              <tr class="border-b" key={jenispotongan.id}>
                 <td class="py-2 px-4">
                   {(currentPage() - 1) * pageSize + (index + 1)}
                 </td>
-                <td class="py-2 px-4">{bank.name}</td>
+                <td class="py-2 px-4">{jenispotongan.name}</td>
                 <td class="py-2 px-4 space-x-2">
                   <button
                     class="text-blue-600 hover:underline"
-                    onClick={() => navigate(`/banks/form?id=${bank.id}`)}
+                    onClick={() =>
+                      navigate(`/jenis-potongan/form?id=${jenispotongan.id}`)
+                    }
                   >
                     <Edit size={25} />
                   </button>
                   <button
                     class="text-red-600 hover:underline"
-                    onClick={() => handleDelete(bank.id)}
+                    onClick={() => handleDelete(jenispotongan.id)}
                   >
                     <Trash size={25} />
                   </button>
