@@ -66,6 +66,10 @@ import GradeList from "./pages/master_data/GradeList";
 import GradeForm from "./pages/master_data/GradeForm";
 import UnitsList from "./pages/master_data/UnitsList";
 import UnitsForm from "./pages/master_data/UnitsForm";
+import AgentList from "./pages/master_data/AgentList";
+import AgentForm from "./pages/master_data/AgentForm";
+import BankAccountList from "./pages/master_data/BankAccountList";
+import BankAccountForm from "./pages/master_data/BankAccountForm";
 // WAREHOUSE
 import DeliveryNoteList from "./pages/warehouse/DeliveryNoteList";
 import DeliveryNoteForm from "./pages/warehouse/DeliveryNoteForm";
@@ -100,6 +104,13 @@ import SalesInvoiceList from "./pages/invoice/SalesInvoiceList";
 import SalesInvoicePrint from "./utils/sell/SalesInvoiceDummyPrint";
 import JBInvoiceList from "./pages/invoice/JBInvoiceList";
 import JBInvoicePrint from "./utils/buy/jual_beli/JBInvoiceDummyPrint";
+// RETUR
+import ReturJualBeliList from "./pages/retur/ReturJualBeliList";
+
+// RETUR PRINT
+import ReturJualBeliPrint from "./utils/retur/ReturJualBeliDummyPrint";
+
+// FINANCE
 import FinanceMainLayout from "./layouts/FinanceMainLayout";
 import BanksList from "./finance_pages/master_data/banks/BanksList";
 import BanksForm from "./finance_pages/master_data/banks/BanksForm";
@@ -314,6 +325,14 @@ function App() {
       <Route path="/print/jualbeli-invoice" component={JBInvoicePrint} />
       {/* Invoice */}
 
+      {/* RETUR */}
+      <Route path="/retur-jualbeli" component={ReturJualBeliList}/>
+      {/* RETUR */}
+
+      {/* PRINT RETUR */}
+      <Route path="/print/retur-jualbeli" component={ReturJualBeliPrint}/>
+      {/* PRINT RETUR */}
+
       {/* MASTER DATA */}
       <Route path="/suppliers" component={SuppliersList} />
       <Route path="/suppliers/form" component={SuppliersListForm} />
@@ -341,6 +360,13 @@ function App() {
 
       <Route path="/units" component={UnitsList} />
       <Route path="/units/form" component={UnitsForm} />
+
+      <Route path="/agent" component={AgentList} />
+      <Route path="/agent/form" component={AgentForm} />
+
+      <Route path="/bank-account" component={BankAccountList} />
+      <Route path="/bank-account/form" component={BankAccountForm} />
+
       {/* MASTER DATA */}
       {/* ================================================================================================================================================================================================================= */}
       {/* FINANCE MODULE */}
