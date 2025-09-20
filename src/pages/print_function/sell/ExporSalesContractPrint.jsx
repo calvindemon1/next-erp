@@ -18,33 +18,45 @@ export default function ExporSalesContractPrint(props) {
     return `${dd}-${mm}-${yy}`;
   }
 
-  function formatRupiah(v, decimals = 2) {
-    if (typeof v !== "number") v = parseFloat(v) || 0;
-    if (v === 0) return "Rp 0,00";
+  function formatAngka(v, decimals = 2) {
+    const n = typeof v === "number" ? v : parseFloat(v) || 0;
+    return new Intl.NumberFormat("id-ID", {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    }).format(n);
+  }
+
+  function formatAngkaNonDecimal(v) {
+    const n = typeof v === "number" ? v : parseFloat(v) || 0;
+    return new Intl.NumberFormat("id-ID", {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(n);
+  }
+
+  // ===== Currency helpers =====
+  const currencyName = createMemo(() => (data().currency_name || "IDR").toUpperCase());
+
+  const formatUSD = (v, decimals = 2) => {
+    const n = typeof v === "number" ? v : parseFloat(v) || 0;
+    return `USD ${new Intl.NumberFormat("en-US", {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    }).format(n)}`;
+  };
+
+  const formatIDR = (v, decimals = 2) => {
+    const n = typeof v === "number" ? v : parseFloat(v) || 0;
     return new Intl.NumberFormat("id-ID", {
       style: "currency",
       currency: "IDR",
       minimumFractionDigits: decimals,
       maximumFractionDigits: decimals,
-    }).format(v);
-  }
+    }).format(n);
+  };
 
-  function formatAngka(v, decimals = 2) {
-    if (typeof v !== "number") v = parseFloat(v) || 0;
-    if (v === 0) return "0,00";
-    return new Intl.NumberFormat("id-ID", {
-      minimumFractionDigits: decimals,
-      maximumFractionDigits: decimals,
-    }).format(v);
-  }
-
-  function formatAngkaNonDecimal(v) {
-    if (typeof v !== "number") v = parseFloat(v) || 0;
-    return new Intl.NumberFormat("id-ID", {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(v);
-  }
+  const money = (v, decimals = 2) =>
+    currencyName() === "USD" ? formatUSD(v, decimals) : formatIDR(v, decimals);
 
   // ===== Totals =====
   const isPPN = createMemo(() => parseFloat(data().ppn_percent) > 0);
@@ -54,7 +66,27 @@ export default function ExporSalesContractPrint(props) {
   const totalYard = createMemo(() =>
     parseFloat(data().summary?.total_yard || 0)
   );
-  const subTotal = createMemo(() => Number(data().summary?.subtotal) || 0);
+
+  const subTotal = createMemo(() => {
+    if (!data().items || data().items.length === 0) {
+      return 0;
+    }
+    
+    // Gunakan .reduce() untuk menjumlahkan total dari setiap item
+    return data().items.reduce((accumulator, currentItem) => {
+      const qty =
+        data().satuan_unit_name === "Meter"
+          ? parseFloat(currentItem.meter_total || 0)
+          : parseFloat(currentItem.yard_total || 0);
+      
+      const harga = parseFloat(currentItem.harga || 0);
+      const itemTotal = qty * harga;
+      
+      return accumulator + itemTotal;
+    }, 0); // Nilai awal accumulator adalah 0
+  });
+
+  //const subTotal = createMemo(() => Number(data().summary?.subtotal) || 0);
   const dpp = createMemo(() => subTotal() / 1.11);
   const nilaiLain = createMemo(() => dpp() * (11 / 12));
   const ppn = createMemo(() => (isPPN() ? nilaiLain() * 0.12 : 0));
@@ -145,7 +177,7 @@ export default function ExporSalesContractPrint(props) {
               totals={totals()}
               formatters={{
                 formatTanggal,
-                formatRupiah,
+                money,
                 formatAngka,
                 formatAngkaNonDecimal,
               }}
@@ -172,7 +204,7 @@ function PrintPage(props) {
     formatters,
     logoNavel,
   } = props;
-  const { formatTanggal, formatRupiah, formatAngka, formatAngkaNonDecimal } =
+  const { formatTanggal, money, formatAngka, formatAngkaNonDecimal } =
     formatters;
 
   // Inisialisasi stretch lebih dulu, baru effect-nya
@@ -285,36 +317,31 @@ function PrintPage(props) {
           >
             <thead ref={bind("theadRef")} className="bg-gray-200">
               <tr>
-                <th className="border border-black p-1 w-[6%]" rowSpan={2}>
-                  No
-                </th>
-                <th className="border border-black p-1 w-[13%]" rowSpan={2}>
-                  Art No.
-                </th>
-                <th className="border border-black p-1 w-[13%]" rowSpan={2}>
-                  Design
-                </th>
-                <th className="border border-black p-1 w-[35%]" rowSpan={2}>
-                  Description of Goods
-                </th>
-                <th className="border border-black p-1 w-[16%]" rowSpan={2}>
-                  Quantity
-                </th>
-                <th className="border border-black p-1 w-[16%]" rowSpan={2}>
-                  Price
-                </th>
-                <th
-                  className="border border-black p-1 w-[16%] text-center"
-                  colSpan={1}
-                >
-                  Amount
-                </th>
+                <th className="border border-black p-1 w-[6%]" rowSpan={2}>No</th>
+                <th className="border border-black p-1 w-[13%]" rowSpan={2}>Art No.</th>
+                <th className="border border-black p-1 w-[13%]" rowSpan={2}>Design</th>
+                <th className="border border-black p-1 w-[30%]" rowSpan={2}>Description of Goods</th>
+                <th className="border border-black p-1 w-[16%]" colSpan={1}>Quantity</th>
+                <th className="border border-black p-1 w-[20%]" rowSpan={2}>Price</th>
+                <th className="border border-black p-1 w-[20%] text-center" rowSpan={2}>Amount</th>
               </tr>
+              <tr>
+              <th className="border border-black p-1 w-[24%]">
+                Yard
+              </th>
+            </tr>
             </thead>
 
             <tbody ref={bind("tbodyRef")}>
               <For each={items}>
-                {(item, i) => (
+                {(item, i) => {
+                  const qty = (data.satuan_unit_name || "").toLowerCase() === "meter"
+                    ? parseFloat(item.meter_total || 0)
+                    : parseFloat(item.yard_total || 0);
+                  const price = parseFloat(item.harga || 0);
+                  const amount = qty * price;
+
+                  return (
                   <tr>
                     {/* nomor lanjut: startIndex + nomor di halaman + 1 */}
                     <td className="p-1 text-center break-words">
@@ -323,17 +350,11 @@ function PrintPage(props) {
                     <td className="p-1 text-center break-words">
                       {item.corak_kain || "-"}
                     </td>
-                    <td hidden className="p-1 break-words">
-                      {item.konstruksi_kain}
+                    <td className="p-1 break-words">
+                      {item.design}
                     </td>
                     <td className="p-1 break-words text-center">
-                      {item.grade_name}
-                    </td>
-                    <td className="p-1 text-center break-words">
-                      {formatAngkaNonDecimal(item.lebar)}"
-                    </td>
-                    <td className="p-1 text-center break-words">
-                      {formatAngka(item.gramasi)}
+                      {item.description_of_goods}
                     </td>
                     <td className="p-1 text-center break-words">
                       {data.satuan_unit_name === "Meter"
@@ -341,20 +362,12 @@ function PrintPage(props) {
                         : formatAngka(item.yard_total)}
                     </td>
                     <td className="p-1 text-center break-words">
-                      {formatRupiah(item.harga)}
+                      {money(item.harga)}
                     </td>
-                    <td className="p-1 text-right break-words">
-                      {(() => {
-                        const qty =
-                          data.satuan_unit_name === "Meter"
-                            ? parseFloat(item.meter_total || 0)
-                            : parseFloat(item.yard_total || 0);
-                        const harga = parseFloat(item.harga || 0);
-                        return harga && qty ? formatRupiah(harga * qty) : "-";
-                      })()}
-                    </td>
+                    <td className="p-1 text-right break-words">{amount ? money(amount) : "-"}</td>
                   </tr>
-                )}
+                  );
+                }}
               </For>
 
               {/* ROW KOSONG DINAMIS */}
@@ -381,13 +394,13 @@ function PrintPage(props) {
                 <tr>
                   <td
                     colSpan={3}
-                    className="border border-black font-bold px-2 py-1"
+                    className="border border-black font-bold px-2 py-1 text-center"
                   >
                     TOTAL
                   </td>
                   <td
                     colSpan={1}
-                    className="border border-black font-bold px-2 py-1"
+                    className="border border-black font-bold px-2 py-1 text-center"
                   >
                     About
                   </td>
@@ -398,7 +411,7 @@ function PrintPage(props) {
                   </td>
                   <td className="border border-black px-2 py-1 text-right font-bold"></td>
                   <td className="border border-black px-2 py-1 text-right">
-                    {formatRupiah(totals.subTotal)}
+                    {money(totals.subTotal)}
                   </td>
                 </tr>
                 <tr>
@@ -409,7 +422,7 @@ function PrintPage(props) {
                     <div className="flex items-start gap-2">
                       <div className="font-bold">Percentage Tolerance:</div>
                       <div className="whitespace-pre-wrap break-words italic flex-1">
-                        {data.keterangan ?? "-"}
+                        {data.percentage_tolerance ?? "-"}
                       </div>
                     </div>
                   </td>
@@ -422,7 +435,7 @@ function PrintPage(props) {
                     <div className="flex items-start gap-2">
                       <div className="font-bold">Piece Length:</div>
                       <div className="whitespace-pre-wrap break-words italic flex-1">
-                        {data.keterangan ?? "-"}
+                        {data.piece_length ?? "-"}
                       </div>
                     </div>
                   </td>
@@ -457,7 +470,7 @@ function PrintPage(props) {
                     <div className="flex items-start gap-2">
                       <div className="font-bold">Total Amount:</div>
                       <div className="whitespace-pre-wrap break-words italic flex-1 font-bold">
-                        {data.keterangan ?? "-"}
+                        {money(totals.subTotal) ?? "-"}
                       </div>
                     </div>
                   </td>
@@ -470,7 +483,7 @@ function PrintPage(props) {
                     <div className="flex items-start gap-2">
                       <div className="font-bold">Payment Terms:</div>
                       <div className="whitespace-pre-wrap break-words italic flex-1">
-                        {data.keterangan ?? "-"}
+                        {data.payment_terms ?? "-"}
                       </div>
                     </div>
                   </td>
@@ -483,7 +496,7 @@ function PrintPage(props) {
                     <div className="flex items-start gap-2">
                       <div className="font-bold">Negotiation:</div>
                       <div className="whitespace-pre-wrap break-words italic flex-1">
-                        {data.keterangan ?? "-"}
+                        {data.negotiation ?? "-"}
                       </div>
                     </div>
                   </td>
@@ -496,7 +509,8 @@ function PrintPage(props) {
                     <div className="flex items-start gap-2">
                       <div className="font-bold">Account:</div>
                       <div className="whitespace-pre-wrap break-words italic flex-1">
-                        {data.keterangan ?? "-"}
+                        {/* Hapus enter dan gabungkan dalam satu baris, tambahkan koma sebagai pemisah */}
+                        {`${data.bank_account_name ?? "-"}, A/C No: ${data.bank_account_number ?? "-"}`}
                       </div>
                     </div>
                   </td>
