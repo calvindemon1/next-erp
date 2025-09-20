@@ -19,13 +19,19 @@ export default function ExporSalesContractList() {
   const [currentPage, setCurrentPage] = createSignal(1);
   const pageSize = 20;
 
+  const transactionType = createMemo(() =>
+    salesContracts().filter(
+      (c) => (c.transaction_type || "").toLowerCase() === "ekspor"
+    )
+  );
+
   const totalPages = createMemo(() => {
     return Math.max(1, Math.ceil(salesContracts().length / pageSize));
   });
-
+  
   const paginatedData = () => {
-    const startIndex = (currentPage() - 1) * pageSize;
-    return salesContracts().slice(startIndex, startIndex + pageSize);
+    const start = (currentPage() - 1) * pageSize;
+    return transactionType().slice(start, start + pageSize);
   };
 
   const handleDelete = async (id) => {
