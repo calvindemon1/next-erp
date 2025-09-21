@@ -229,6 +229,12 @@ export default function PackingListPrint(props) {
           text-align: right; 
           white-space: nowrap; 
         }
+        .stretch-row td {
+          border: 0 !important;            /* tak ada garis di dalam area kosong */
+          /* biar tetap rapi */
+          padding: 1px 2px; 
+          height: 20px; /* atau pakai h-5 seperti sebelumnya */
+        }
         @media print {
           .page { page-break-after: always; }
           .page:last-child { page-break-after: auto; }
@@ -429,13 +435,15 @@ function PrintPage(props) {
             {/* ROW KOSONG DINAMIS */}
             <For each={Array.from({ length: extraRows() })}>
               {() => (
-            <tr>
+                <tr className="stretch-row">
                   <td className="p-1 text-center h-5"></td>
                   <td className="p-1 text-center"></td>
                   <td className="p-1 text-center"></td>
                   <td className="p-1"></td>
                   <td className="p-1 text-center"></td>
-                  <For each={Array.from({ length: maxCol })}>{() => <td className="p-1 text-right"></td>}</For>
+                  <For each={Array.from({ length: maxCol })}>
+                    {() => <td className="p-1 text-right"></td>}
+                  </For>
                   <td className="p-1 text-right"></td>
                   <td className="p-1 text-right"></td>
                   <td className="p-1 text-right"></td>
