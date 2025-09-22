@@ -2,6 +2,8 @@ import MainLayout from "../layouts/MainLayout";
 import { onMount, createSignal, For, Show } from "solid-js";
 import ApexChart from "../components/ApexChart";
 import { Printer } from "lucide-solid";
+import Litepicker from "litepicker";
+import Swal from "sweetalert2";      
 import {
   hasPermission,
   getAllBGDeliveryNotes,
@@ -21,32 +23,15 @@ export default function Dashboard() {
   const user = getUser();
 
   // ==== FORMATTER ====
-
-  function formatTanggalIndo(tanggalString) {
+  const formatTanggalIndo = (tanggalString) => {
     const tanggal = new Date(tanggalString);
-    const bulanIndo = [
-      "Januari",
-      "Februari",
-      "Maret",
-      "April",
-      "Mei",
-      "Juni",
-      "Juli",
-      "Agustus",
-      "September",
-      "Oktober",
-      "November",
-      "Desember",
-    ];
-
+    const bulanIndo = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
     const tanggalNum = tanggal.getDate();
     const bulan = bulanIndo[tanggal.getMonth()];
     const tahun = tanggal.getFullYear();
-
     return `${tanggalNum} ${bulan} ${tahun}`;
-  }
+  };
 
-  // helper parse tanggal aman (drop time)
   const normalizeDate = (d) => {
     if (!d) return null;
     const x = new Date(d);
@@ -54,82 +39,45 @@ export default function Dashboard() {
     return new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
   };
 
-  // ==== Helpers ====
   const refLabelFor = (mode, blockKey) => {
     if (mode === "penjualan") return "No SO";
     if (blockKey === "jual_beli") return "No PC";
     return "No PO";
   };
-
-  // ambil nilai No.Ref per baris (untuk print)
   const refValueFor = (row, mode, blockKey) => {
     if (mode === "penjualan") return row.no_so ?? "-";
     if (blockKey === "jual_beli") return row.no_jb ?? row.no_pc ?? "-";
     return row.no_po ?? row.no_pc ?? "-";
   };
-
   const uniqueJoin = (arr, sep = ", ") => {
     const s = Array.from(new Set(arr.filter(Boolean)));
     return s.length ? s.join(sep) : "";
   };
-
-  // ==== FORMAT ANGKA ===
-
   const fmt2 = (val) => {
     if (val === undefined || val === null || val === "") return "-";
-    // pastikan bisa di-parse walau datang sebagai string
     const n = Number(String(val).replace(/,/g, ""));
     if (!Number.isFinite(n)) return "-";
-    return new Intl.NumberFormat("id-ID", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(n);
+    return new Intl.NumberFormat("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
   };
-
   const pick = (...vals) => vals.find(v => v !== undefined && v !== null && v !== "");
 
-  // ==== Config section + Datasource ====
+  // ==== Config + datasource ====
   const SECTIONS = [
     {
       key: "pembelian",
       title: "Laporan Pembelian",
       blocks: [
-        { 
-          key: "greige",    
-          label: "Pembelian Greige",      
-          perm: "view_purchase_greige_surat_jalan",  
-          fetcher: getAllBGDeliveryNotes 
-        },
-        { 
-          key: "oc",        
-          label: "Pembelian Order Celup",  
-          perm: "view_purchase_celup_surat_jalan",   
-          fetcher: getAllOCDeliveryNotes 
-        },
-        { 
-          key: "kain_jadi", 
-          label: "Pembelian Kain Jadi",   
-          perm: "view_purchase_finish_surat_jalan",  
-          fetcher: getAllKJDeliveryNotes 
-        },
-        { 
-          key: "jual_beli", 
-          label: "Jual Beli",    
-          perm: "view_jual_beli_surat_jalan",        
-          fetcher: getAllJBDeliveryNotes 
-        },
+        { key: "greige",    label: "Pembelian Greige",      perm: "view_purchase_greige_surat_jalan",  fetcher: getAllBGDeliveryNotes },
+        { key: "oc",        label: "Pembelian Order Celup",  perm: "view_purchase_celup_surat_jalan",   fetcher: getAllOCDeliveryNotes },
+        { key: "kain_jadi", label: "Pembelian Kain Jadi",    perm: "view_purchase_finish_surat_jalan",  fetcher: getAllKJDeliveryNotes },
+        { key: "jual_beli", label: "Jual Beli",              perm: "view_jual_beli_surat_jalan",        fetcher: getAllJBDeliveryNotes },
       ],
     },
     {
       key: "penjualan",
       title: "Laporan Penjualan",
       blocks: [
-        { 
-          key: "sales",     
-          label: "Surat Jalan",             
-          perm: "view_surat_jalan",                  
-          fetcher: getAllDeliveryNotes 
-        },
+        { key: "sales", label: "Surat Jalan", perm: "view_surat_jalan", fetcher: getAllDeliveryNotes },
       ],
     },
   ];
@@ -138,26 +86,26 @@ export default function Dashboard() {
   const [sectionsData, setSectionsData] = createSignal([]);
   const [loading, setLoading] = createSignal(true);
 
-  // filter tanggal (range created_at)
+  // filter tanggal (range created_at). Kosong = semua.
   const [startDate, setStartDate] = createSignal("");
   const [endDate, setEndDate] = createSignal("");
+
+  // label ringkas filter aktif
+  const currentFilterLabel = () => {
+    if (!startDate() && !endDate()) return "Semua tanggal";
+    return `${startDate()} s/d ${endDate()}`;
+    };
 
   // ---- helpers
   const rowsFromResponse = (res) =>
     res?.suratJalans ?? res?.surat_jalan_list ?? res?.data ?? [];
 
-  const HARD_DONE = 35;     // hardcode sementara
-  const HARD_NOTDONE = 15;  // hardcode sementara
+  const HARD_DONE = 35;
+  const HARD_NOTDONE = 15;
 
-  const buildChart = () => ({
-    series: [HARD_DONE, HARD_NOTDONE],
-    categories: ["Selesai", "Belum Selesai"],
-  });
+  const buildChart = () => ({ series: [HARD_DONE, HARD_NOTDONE], categories: ["Selesai", "Belum Selesai"] });
+  const totalCardLabel = (mode) => (mode === "penjualan" ? "Total Surat Jalan" : "Total Surat Penerimaan");
 
-  const totalCardLabel = (mode) =>
-    mode === "penjualan" ? "Total Surat Jalan" : "Total Surat Penerimaan";
-
-  // filter berdasarkan created_at (inklusif)
   const filterByDate = (rows) => {
     const s = normalizeDate(startDate());
     const e = normalizeDate(endDate());
@@ -171,131 +119,61 @@ export default function Dashboard() {
     });
   };
 
-  // map block.key -> detail fetcher
   const getDetailFetcher = (blockKey) => {
     switch (blockKey) {
       case "greige": return getBGDeliveryNotes;
       case "oc": return getOCDeliveryNotes;
       case "kain_jadi": return getKJDeliveryNotes;
       case "jual_beli": return getJBDeliveryNotes;
-      default: return null; // sales belum diperdalam (sesuai catatanmu)
+      default: return null;
     }
   };
 
-  // panggil detail API dgn urutan argumen fleksibel (id, token) ATAU (token, id)
   const safeDetailCall = async (fn, id, token) => {
-    try {
-      return await fn(id, token);
-    } catch {
-      try {
-        return await fn(token, id);
-      } catch {
-        return null;
-      }
-    }
+    try { return await fn(id, token); } catch { try { return await fn(token, id); } catch { return null; } }
   };
 
   const openPrintWindow = (title, rows, mode, showGrade, blockKey) => {
-    const sorted = [...rows].sort((a,b) => {
-      const da = normalizeDate(a.created_at) ?? 0;
-      const db = normalizeDate(b.created_at) ?? 0;
-      return da - db;
-    });
-
+    const sorted = [...rows].sort((a,b) => (normalizeDate(a.created_at) ?? 0) - (normalizeDate(b.created_at) ?? 0));
     const w = window.open("", "", "height=700,width=980");
     const style = `
       <style>
-        @page { 
-          size: A4; 
-          margin: 8mm; 
-        }
-        @media print { 
-          html, body { 
-            width: 210mm; 
-          } 
-        }
-
-        body{ 
-          font-family:ui-sans-serif,system-ui,Segoe UI,Helvetica,Arial; 
-          margin:0;
-          display: flex;
-          justify-content: center; 
-        }
-
-        .paper{
-          width: 100%;
-          max-width: calc(210mm - 8mm);
-        }
-
-        h1{
-          margin:0 0 8mm 0 
-        }
-
-        table{
-          border-collapse: collapse;
-          width: 100%;              /* isi penuh area .paper */
-          table-layout: fixed;
-          margin: 0 auto;           /* jaga-jaga kalau width < 100% */
-        }
-          
-        th,td{ 
-          border:1px solid #000000ff; 
-          padding:3px 4px; 
-          font-size:10px; 
-          word-wrap:break-word; 
-        }
-        th{ 
-          background:#DADBDD; 
-          text-align:left 
-        }
-        .muted{ 
-          color:#6b7280; 
-          font-size:10px; 
-        }
-
-        thead th:nth-child(1){width:3%; text-align:center}    /* No */
-        thead th:nth-child(2){width:9%; text-align:center}    /* Tgl */
-        thead th:nth-child(3){width:13%; text-align:center}   /* No SJ */
-        thead th:nth-child(4){width:14%; text-align:center}   /* No Ref */
-        thead th:nth-child(5){width:15%; text-align:center}   /* Supplier/Customer */
-        thead th:nth-child(6){width:9%; text-align:center}    /* Warna */
+        @page { size: A4; margin: 8mm; }
+        @media print { html, body { width: 210mm; } }
+        body{ font-family:ui-sans-serif,system-ui,Segoe UI,Helvetica,Arial; margin:0; display:flex; justify-content:center; }
+        .paper{ width:100%; max-width:calc(210mm - 8mm); }
+        h1{ margin:0 0 8mm 0 }
+        table{ border-collapse:collapse; width:100%; table-layout:fixed; margin:0 auto; }
+        th,td{ border:1px solid #000; padding:3px 4px; font-size:10px; word-wrap:break-word; }
+        th{ background:#DADBDD; text-align:left }
+        thead th:nth-child(1){width:3%; text-align:center}
+        thead th:nth-child(2){width:9%; text-align:center}
+        thead th:nth-child(3){width:13%; text-align:center}
+        thead th:nth-child(4){width:14%; text-align:center}
+        thead th:nth-child(5){width:15%; text-align:center}
+        thead th:nth-child(6){width:9%; text-align:center}
         ${showGrade ? `thead th:nth-child(7){width:6%; text-align:center}` : ""}
-        thead th:nth-child(${showGrade ? 8 : 7}){width:15%; text-align:center} /* Kain */
-        thead th:nth-child(${showGrade ? 9 : 8}){width:12%; text-align:center} /* Total Meter */
-        thead th:nth-child(${showGrade ? 10 : 9}){width:12%; text-align:center}/* Total Yard */
-        thead th:nth-child(${showGrade ? 11 : 10}){width:12%; text-align:center}/* Total Kg */
-
-        /* center warna & kain */
+        thead th:nth-child(${showGrade ? 8 : 7}){width:15%; text-align:center}
+        thead th:nth-child(${showGrade ? 9 : 8}){width:12%; text-align:center}
+        thead th:nth-child(${showGrade ? 10 : 9}){width:12%; text-align:center}
+        thead th:nth-child(${showGrade ? 11 : 10}){width:12%; text-align:center}
         thead th:nth-child(6), tbody td:nth-child(6){ text-align:center; }
         ${showGrade ? `thead th:nth-child(7), tbody td:nth-child(7){ text-align:center; }` : ``}
-        ${showGrade
-          ? `thead th:nth-child(8), tbody td:nth-child(8){ text-align:center; }`
-          : `thead th:nth-child(7), tbody td:nth-child(7){ text-align:center; }`
-        }
-
+        ${showGrade ? `thead th:nth-child(8), tbody td:nth-child(8){ text-align:center; }`
+                    : `thead th:nth-child(7), tbody td:nth-child(7){ text-align:center; }`}
         tbody td:nth-child(${showGrade ? 9 : 8}),
         tbody td:nth-child(${showGrade ? 10 : 9}),
         tbody td:nth-child(${showGrade ? 11 : 10}){ text-align:center; }
       </style>`;
-    const header = `<h1>${title}</h1><div>Tanggal cetak: ${new Date().toLocaleString()}</div><br/>`;
+    const header = `<h1>${title}</h1>
+      <div>Filter: ${currentFilterLabel()}</div>
+      <div>Tanggal cetak: ${new Date().toLocaleString()}</div><br/>`;
     const relasiHeader = mode === "penjualan" ? "Customer" : "Supplier";
     const refLabel = refLabelFor(mode, blockKey);
-
-    const thead =
-      `<tr>
-        <th>No</th>
-        <th>Tgl</th>
-        <th>No SJ</th>
-        <th>${refLabel}</th>
-        <th>${relasiHeader}</th>
-        <th>Warna</th>` +
-      (showGrade ? `<th>Grade</th>` : ``) +
-      `<th>Kain</th>
-        <th>Total Meter</th>
-        <th>Total Yard</th>
-        <th>Total Kg</th>
-      </tr>`;
-
+    const thead = `<tr>
+        <th>No</th><th>Tgl</th><th>No SJ</th><th>${refLabel}</th><th>${relasiHeader}</th><th>Warna</th>
+        ${showGrade ? `<th>Grade</th>` : ``}
+        <th>Kain</th><th>Total Meter</th><th>Total Yard</th><th>Total Kg</th></tr>`;
     const tbody = sorted.map((r,i)=>`
       <tr>
         <td>${i+1}</td>
@@ -310,40 +188,30 @@ export default function Dashboard() {
         <td>${fmt2(pick(r.yard_total,   r.summary?.total_yard))}</td>
         <td>${fmt2(pick(r.total_kilogram, r.summary?.total_kilogram))}</td>
       </tr>`).join("");
-
     const table = `<table><thead>${thead}</thead><tbody>${tbody}</tbody></table>`;
     const bodyHtml = `<div class="paper">${header}${table}</div>`;
-
-    w.document.write(
-      `<html><head><title>${title}</title>${style}</head><body>${bodyHtml}</body></html>`
-    );
+    w.document.write(`<html><head><title>${title}</title>${style}</head><body>${bodyHtml}</body></html>`);
     w.document.close(); w.focus(); w.print();
   };
 
   const handlePrint = async (block) => {
     const res = await block.rawFetcher(user?.token);
     const baseRows = filterByDate(rowsFromResponse(res));
-
-    // ===== Pembelian (gunakan detail BG/OC/KJ/JB untuk melengkapi kolom) =====
     const detailFn = getDetailFetcher(block.key);
+
     if (detailFn) {
       const MAX_CONC = 5;
       const queue = [...baseRows];
       const enriched = [];
-
       const worker = async () => {
         const row = queue.shift();
         if (!row) return;
-
         try {
           const det = await safeDetailCall(detailFn, row.id, user?.token);
           const sj = det?.suratJalan;
           const items = sj?.items ?? [];
-
-          // ambil dari items (kalau list getAll kamu sudah punya items seperti BG, ini akan terisi)
           const warna = uniqueJoin(items.map(it => it.kode_warna ?? it.warna_kode ?? it.warna ?? null));
           const kain  = uniqueJoin(items.map(it => it.corak_kain ?? null));
-
           enriched.push({
             ...row,
             supplier_name: sj?.supplier_name ?? row.supplier_name,
@@ -351,45 +219,35 @@ export default function Dashboard() {
             no_po: sj?.no_po ?? row.no_po,
             no_pc: sj?.no_pc ?? row.no_pc,
             no_jb: sj?.no_jb ?? row.no_jb,
-            // PAKAI hasil agregasi, jangan sj?.corak_kain (itu memang undefined)
             kode_warna: warna || row.kode_warna || row.warna_kode || row.warna || "-",
             corak_kain: kain  || row.corak_kain || "-",
-            // grade pembelian disembunyikan di print (showGrade = false)
           });
         } catch {
           enriched.push(row);
         }
-
         return worker();
       };
-
       await Promise.all(Array.from({ length: Math.min(MAX_CONC, queue.length) }, worker));
-      openPrintWindow(`Laporan - ${block.label}`, enriched, block.mode, /*showGrade*/ false, block.key);
+      openPrintWindow(`Laporan - ${block.label}`, enriched, block.mode, false, block.key);
       return;
     }
 
-    // ===== Penjualan (gunakan SO by id untuk lengkapi warna/grade/kain) =====
     if (block.mode === "penjualan") {
       const MAX_CONC = 5;
       const queue = [...baseRows];
       const enriched = [];
-
       const worker = async () => {
         const row = queue.shift();
         if (!row) return;
-
         const soId = row.so_id ?? row.soId ?? null;
         if (!soId) { enriched.push(row); return worker(); }
-
         try {
           const soRes = await safeDetailCall(getSalesOrders, soId, user?.token);
           const so = soRes?.order;
           const items = so?.items ?? [];
-
           const warna = uniqueJoin(items.map((it) => it.kode_warna ?? null));
           const grade = uniqueJoin(items.map((it) => it.grade_name ?? null));
           const kain  = uniqueJoin(items.map((it) => it.corak_kain ?? null));
-
           enriched.push({
             ...row,
             no_so: so?.no_so ?? row.no_so,
@@ -401,25 +259,20 @@ export default function Dashboard() {
         } catch {
           enriched.push(row);
         }
-
         return worker();
       };
-
       await Promise.all(Array.from({ length: Math.min(MAX_CONC, queue.length) }, worker));
-      openPrintWindow(`Laporan - ${block.label}`, enriched, block.mode, /*showGrade*/ true, block.key);
+      openPrintWindow(`Laporan - ${block.label}`, enriched, block.mode, true, block.key);
       return;
     }
 
-    // ===== Fallback =====
     openPrintWindow(`Laporan - ${block.label}`, baseRows, block.mode, true, block.key);
   };
 
-
-  // memuat & menghitung sesuai filter tanggal
+  // ===== Memuat & menghitung dengan filter aktif =====
   const reloadData = async () => {
     setLoading(true);
     const assembled = [];
-
     for (const sec of SECTIONS) {
       const blocks = [];
       for (const b of sec.blocks) {
@@ -428,33 +281,98 @@ export default function Dashboard() {
           const res = await b.fetcher(user?.token);
           const list = filterByDate(rowsFromResponse(res));
           blocks.push({
-            key: b.key,
-            label: b.label,
+            key: b.key, label: b.label,
             count: Array.isArray(list) ? list.length : 0,
             chart: buildChart(),
             rawFetcher: b.fetcher,
             mode: sec.key,
           });
         } catch {
-          blocks.push({ 
-            key: b.key, 
-            label: b.label, 
-            count: 0, 
-            chart: buildChart(), 
-            rawFetcher: b.fetcher,
-            mode: sec.key,
+          blocks.push({
+            key: b.key, label: b.label, count: 0,
+            chart: buildChart(), rawFetcher: b.fetcher, mode: sec.key,
           });
         }
       }
       if (blocks.length) assembled.push({ key: sec.key, title: sec.title, blocks });
     }
-
     setSectionsData(assembled);
     setLoading(false);
   };
 
-  // ===== LOAD DATA ====
+  // ===== Dialog pilih mode (Semua / Rentang) =====
+  const askFilterMode = async () => {
+    const { value: choice } = await Swal.fire({
+      title: "Tampilkan Data",
+      input: "radio",
+      inputOptions: {
+        all: "Semua tanggal",
+        range: "Rentang tanggal…",
+      },
+      inputValue: "all", // default → semua
+      confirmButtonText: "Lanjut",
+      showCancelButton: false,
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+    });
+
+    if (choice === "range") {
+      // minta rentang pakai Litepicker
+      const { value: rangeVal } = await Swal.fire({
+        title: "Pilih Rentang Tanggal",
+        html: `<input type="text" id="date-range" class="swal2-input" placeholder="Klik untuk pilih rentang">`,
+        didOpen: () => {
+          new Litepicker({
+            element: document.getElementById("date-range"),
+            singleMode: false,
+            format: "YYYY-MM-DD",
+            autoApply: true,
+            numberOfMonths: 2,
+            numberOfColumns: 2,
+          });
+        },
+        preConfirm: () => {
+          const val = document.getElementById("date-range").value;
+          if (!val) {
+            Swal.showValidationMessage("Rentang tanggal wajib dipilih!");
+            return null;
+          }
+          const [start, end] = val.split(" - ");
+          return { start, end };
+        },
+        showCancelButton: true,
+        confirmButtonText: "Terapkan",
+        cancelButtonText: "Batal",
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+      });
+
+      if (rangeVal) {
+        setStartDate(rangeVal.start);
+        setEndDate(rangeVal.end);
+      } else {
+        // jika batal, kembali ke mode all agar tetap bisa lihat data
+        setStartDate("");
+        setEndDate("");
+      }
+    } else {
+      // mode "Semua"
+      setStartDate("");
+      setEndDate("");
+    }
+  };
+
+  // ===== Flow awal: pilih dulu, baru load =====
+  // const chooseRangeThenLoad = async () => {
+  //   await askFilterMode();
+  //   await reloadData();
+  // };
+
+  // ==== LOAD DATA ====
   onMount(async () => {
+    //await chooseRangeThenLoad();
+    setStartDate("");
+    setEndDate("");
     await reloadData();
   });
 
@@ -463,38 +381,27 @@ export default function Dashboard() {
     <MainLayout>
       <h1 class="text-2xl font-bold mb-6">Dashboard</h1>
 
-      {/* Filter tanggal (created_at) */}
-      <div class="bg-white rounded shadow p-4 mb-6 flex flex-wrap items-end gap-3">
-        <div>
-          <label class="block text-xs text-gray-500 mb-1">Dari Tanggal</label>
-          <input
-            type="date"
-            class="border rounded px-2 py-1"
-            value={startDate()}
-            onInput={(e) => setStartDate(e.currentTarget.value)}
-          />
+      {/* Bar info filter + aksi ubah */}
+      <div class="bg-white rounded shadow p-4 mb-6 flex flex-wrap items-center justify-between gap-3">
+        <div class="text-sm text-gray-700">
+          <span class="font-semibold">Filter:</span> {currentFilterLabel()}
         </div>
-        <div>
-          <label class="block text-xs text-gray-500 mb-1">Sampai Tanggal</label>
-          <input
-            type="date"
-            class="border rounded px-2 py-1"
-            value={endDate()}
-            onInput={(e) => setEndDate(e.currentTarget.value)}
-          />
+        <div class="flex gap-2">
+          <button
+            class="px-3 py-2 rounded border"
+            onClick={async () => { await askFilterMode(); await reloadData(); }}
+            title="Ubah rentang / mode tanggal"
+          >
+            Ubah Rentang
+          </button>
+          <button
+            class="px-3 py-2 rounded border"
+            onClick={async () => { setStartDate(""); setEndDate(""); await reloadData(); }}
+            title="Reset ke semua tanggal"
+          >
+            Reset ke Semua
+          </button>
         </div>
-        <button
-          class="bg-blue-600 text-white px-3 py-2 rounded hover:bg-blue-700"
-          onClick={reloadData}
-        >
-          Terapkan
-        </button>
-        <button
-          class="px-3 py-2 rounded border"
-          onClick={() => { setStartDate(""); setEndDate(""); reloadData(); }}
-        >
-          Reset
-        </button>
       </div>
 
       <Show when={loading()}>
@@ -506,11 +413,9 @@ export default function Dashboard() {
           <div class="mb-12">
             <h2 class="text-xl font-bold mb-4">{section.title}</h2>
 
-            {/* === per-sub laporan === */}
             <For each={section.blocks}>
               {(block) => (
                 <div class="bg-white rounded shadow mb-8">
-                  {/* Chart per block */}
                   <div class="p-6 border-b">
                     <h3 class="text-lg font-semibold mb-4">{block.label}</h3>
                     <ApexChart
@@ -525,9 +430,7 @@ export default function Dashboard() {
                     />
                   </div>
 
-                  {/* 3 kartu di bawah chart */}
                   <div class="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {/* Total Surat */}
                     <div class="bg-white p-6 rounded shadow relative border">
                       <p class="text-sm text-gray-500">{totalCardLabel(block.mode)}</p>
                       <p class="text-3xl font-bold text-blue-600">{block.count}</p>
@@ -540,28 +443,18 @@ export default function Dashboard() {
                       </button>
                     </div>
 
-                    {/* Selesai (hardcode) */}
-                    <div hidden class="bg-white p-6 rounded shadow relative border">
+                    <div class="bg-white p-6 rounded shadow relative border">
                       <p class="text-sm text-gray-500">Total Pesanan Selesai</p>
                       <p class="text-3xl font-bold text-blue-600">{HARD_DONE}</p>
-                      <button
-                        class="absolute top-4 right-4 text-gray-400 cursor-not-allowed"
-                        title="Print hanya untuk Total Surat"
-                        disabled
-                      >
+                      <button class="absolute top-4 right-4 text-gray-400 cursor-not-allowed" disabled>
                         <Printer size={20} />
                       </button>
                     </div>
 
-                    {/* Belum selesai (hardcode) */}
-                    <div hidden class="bg-white p-6 rounded shadow relative border">
+                    <div class="bg-white p-6 rounded shadow relative border">
                       <p class="text-sm text-gray-500">Total Pesanan Belum Selesai</p>
                       <p class="text-3xl font-bold text-blue-600">{HARD_NOTDONE}</p>
-                      <button
-                        class="absolute top-4 right-4 text-gray-400 cursor-not-allowed"
-                        title="Print hanya untuk Total Surat"
-                        disabled
-                      >
+                      <button class="absolute top-4 right-4 text-gray-400 cursor-not-allowed" disabled>
                         <Printer size={20} />
                       </button>
                     </div>
