@@ -279,7 +279,7 @@ function PrintPage(props) {
                 <th className="border border-black p-1 w-[8%]" rowSpan={2}>Grade</th>
                 <th className="border border-black p-1 w-[12%]" rowSpan={2}>Warna</th>
                 <th className="border border-black p-1 w-[15%]" rowSpan={2}>Keterangan Warna</th>
-                <th className="border border-black p-1 w-[10%]" rowSpan={2}>Lebar Finish</th>
+                <th className="border border-black p-1 w-[10%]" rowSpan={2}>Lebar</th>
                 <th className="border border-black p-1 w-[10%]" rowSpan={2}>Gramasi</th>
                 <th className="border border-black p-1 w-[18%] text-center" colSpan={2}>
                   Quantity
