@@ -9,13 +9,17 @@ import {
 } from "../../../utils/auth";
 import Swal from "sweetalert2";
 import { Edit, Eye, Trash } from "lucide-solid";
+import { jwtDecode } from "jwt-decode";
 
 export default function OCPurchaseOrderList() {
   const [orderCelups, setOrderCelups] = createSignal([]);
+  const [me, setMe] = createSignal(null);
   const navigate = useNavigate();
   const tokUser = getUser();
   const [currentPage, setCurrentPage] = createSignal(1);
   const pageSize = 20;
+
+  const u = getUser();
 
   const totalPages = createMemo(() => {
     return Math.max(1, Math.ceil(orderCelups().length / pageSize));
@@ -63,7 +67,7 @@ export default function OCPurchaseOrderList() {
             `Gagal menghapus data packing order dengan ID ${id}`,
           icon: "error",
           
- showConfirmButton: false,
+        showConfirmButton: false,
         timer: 1000,
         timerProgressBar: true,
         });
@@ -218,12 +222,7 @@ export default function OCPurchaseOrderList() {
                     <Eye size={25} />
                   </button>
                   {hasPermission("edit_purchase_celup_order") && (
-                    <button
-                      class="text-blue-600 hover:underline"
-                      onClick={() =>
-                        navigate(`/ordercelup-purchaseorder/form?id=${po.id}`)
-                      }
-                    >
+                    <button class="text-blue-600" onClick={() => navigate(`/ordercelup-purchaseorder/form?id=${po.id}`)}>
                       <Edit size={25} />
                     </button>
                   )}

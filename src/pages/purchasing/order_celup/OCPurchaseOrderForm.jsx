@@ -8,19 +8,20 @@ import {
   getAllSuppliers,
   getAllSatuanUnits,
   getAllFabrics,
-  getUser,
   getOrderCelupOrders,
   getAllOrderCelups,
   updateDataOrderCelupOrder,
   createOrderCelupOrder,
   getAllColors,
   getOrderCelups,
+  getUser,
 } from "../../../utils/auth";
 import SupplierDropdownSearch from "../../../components/SupplierDropdownSearch";
 import FabricDropdownSearch from "../../../components/FabricDropdownSearch";
 import PurchasingContractDropdownSearch from "../../../components/PurchasingContractDropdownSearch";
 import { Printer, Trash2 } from "lucide-solid";
 import ColorDropdownSearch from "../../../components/ColorDropdownSearch";
+import { jwtDecode } from "jwt-decode";
 
 export default function OCPurchaseOrderForm() {
   const navigate = useNavigate();
@@ -44,9 +45,27 @@ export default function OCPurchaseOrderForm() {
       (u) => u.satuan.toLowerCase() !== "kilogram"
     );
   const [purchaseContractData, setPurchaseContractData] = createSignal(null);
-
-  // State untuk menyimpan item asli dari kontrak sebagai template
   const [contractItems, setContractItems] = createSignal([]);
+
+  const payload = (() => {
+    try { return user?.token ? jwtDecode(user.token) : null; }
+    catch { return null; }
+  })();
+
+  const [me, setMe] = createSignal(payload);
+  const strictFromParam = (params.strict || "").toLowerCase() === "warna";
+
+  // role 12 / "staff marketing 2" → strict
+  const isStrictColorEdit = () => {
+    const u = me();
+    const rid = Number(u?.role?.id ?? u?.role_id ?? 0);
+    const rname = String(u?.role?.name ?? u?.role_name ?? "").toLowerCase();
+    const byRole = rid === 12 || rname === "staff marketing 2";
+    return strictFromParam || byRole;
+  };
+
+  const canEditAll = () => !isView && !isStrictColorEdit();
+  const canEditColorOnly = () => !isView && isStrictColorEdit();
 
   const [form, setForm] = createSignal({
     jenis_po_id: "",
@@ -168,6 +187,7 @@ export default function OCPurchaseOrderForm() {
 
           pc_item_id: item.pc_item_id,
           fabric_id: item.kain_id,
+          kain_id: item.kain_id,
           lebar_greige: item.lebar_greige,
           lebar_finish: item.lebar_finish,
           warna_id: item.warna_id,
@@ -259,39 +279,46 @@ export default function OCPurchaseOrderForm() {
 
     // 4) Map aman → semua angka/string ada default
     const mappedItems = sourceItems.map((ci0) => {
-      // jika overrideItems dipakai (mode edit), struktur item sedikit beda
-      const ci = overrideItems ? ci0 : {
-        ...ci0,
-        pc_item_id: ci0.id,
-      };
+      // kalau override (data dari PO), cari item kontrak aslinya pakai pc_item_id
+      const base = overrideItems
+        ? (selectedContract.items || []).find(it => String(it.id) === String(ci0.pc_item_id))
+        : null;
 
+      const ci = overrideItems ? ci0 : { ...ci0, pc_item_id: ci0.id };
+
+      // pastikan dapat kain_id dari base (kontrak)
       const fabricId =
-        ci.kain_id ?? ci.fabric_id ?? ci.kain?.id ?? null;
+        ci.kain_id ??
+        ci.fabric_id ??
+        base?.kain_id ??
+        base?.fabric_id ??
+        base?.kain?.id ??
+        ci.kain?.id ??
+        null;
 
       const meterNum = parseFloat(ci.meter_total ?? ci.meter ?? 0) || 0;
       const yardNum  = parseFloat(ci.yard_total  ?? ci.yard  ?? 0) || 0;
-      const hargaNum = parseFloat(ci.harga ?? 0) || 0;
-
-      const qty = String(satuan_unit_id) === "2" ? yardNum : meterNum;
-      const subtotal = qty * hargaNum;
+      const hargaNum = parseFloat(ci.harga ?? base?.harga ?? 0) || 0;
 
       return {
-        // untuk panel "Quantity Kain"
-        meter_total:        parseFloat(ci.meter_total ?? ci.meter ?? 0) || 0,
-        yard_total:         parseFloat(ci.yard_total  ?? ci.yard  ?? 0) || 0,
+        // panel quantity
+        meter_total:        parseFloat(ci.meter_total ?? base?.meter_total ?? 0) || 0,
+        yard_total:         parseFloat(ci.yard_total  ?? base?.yard_total  ?? 0) || 0,
         meter_dalam_proses: parseFloat(ci.meter_dalam_proses ?? 0) || 0,
         yard_dalam_proses:  parseFloat(ci.yard_dalam_proses  ?? 0) || 0,
-        corak_kain:         (ci.corak_kain ?? ci.kain?.corak_kain ?? "-"),
-        konstruksi_kain:    (ci.konstruksi_kain ?? ci.kain?.konstruksi_kain ?? "-"),
+        corak_kain:         ci.corak_kain ?? base?.corak_kain ?? ci.kain?.corak_kain ?? "-",
+        konstruksi_kain:    ci.konstruksi_kain ?? base?.konstruksi_kain ?? ci.kain?.konstruksi_kain ?? "-",
 
         id: ci.id ?? null,
         pc_item_id: ci.pc_item_id ?? ci.id ?? null,
+
+        // <-- kunci: kedua field diisi supaya dropdown bisa “lock” value
         fabric_id: fabricId,
+        kain_id:   fabricId,
+
         warna_id: ci.warna_id ?? null,
-
-        lebar_greige: String(ci.lebar_greige ?? ""),
-        lebar_finish: String(ci.lebar_finish ?? ""),
-
+        lebar_greige: String(ci.lebar_greige ?? base?.lebar_greige ?? ""),
+        lebar_finish: String(ci.lebar_finish ?? base?.lebar_finish ?? ""),
         keterangan_warna: ci.keterangan_warna ?? "",
 
         std_susutValue: ci.std_susut != null ? parseFloat(ci.std_susut) : 0,
@@ -302,12 +329,12 @@ export default function OCPurchaseOrderForm() {
         yard:       formatNumber(yardNum,  { decimals: 2 }),
         yardValue:  yardNum,
 
-        harga:           hargaNum,                    // nilai mentah
-        hargaValue:      hargaNum,
-        hargaFormatted:  formatIDR(hargaNum),        // tampilan
+        harga:          hargaNum,
+        hargaValue:     hargaNum,
+        hargaFormatted: formatIDR(hargaNum),
 
-        subtotal,
-        subtotalFormatted: formatIDR(subtotal),
+        subtotal: (String(satuan_unit_id) === "2" ? yardNum : meterNum) * hargaNum,
+        subtotalFormatted: formatIDR((String(satuan_unit_id) === "2" ? yardNum : meterNum) * hargaNum),
 
         readOnly: false,
       };
@@ -372,6 +399,7 @@ export default function OCPurchaseOrderForm() {
       id: null,
       pc_item_id: ci.id,
       fabric_id: fabricId,
+      kain_id: fabricId,
       warna_id: ci.warna_id ?? null,        // biar bisa dipilih ulang
       // Field Keterangan untuk warna
       keterangan_warna: "",
@@ -557,20 +585,36 @@ const handleItemChange = (index, field, value) => {
     }
     try {
       if (isEdit) {
-        const payload = {
-          no_po: form().sequence_number,
-          pc_id: Number(form().pc_id),
-          keterangan: form().keterangan,
-          items: form().items.map((i) => ({
-            pc_item_id: i.pc_item_id,
-            warna_id: i.warna_id,
-            std_susut: i.std_susutValue || 0,
-            // Field Keterangan untuk warna
-            keterangan_warna: i.keterangan_warna,
-            meter_total: i.meterValue || 0,
-            yard_total: i.yardValue || 0,
-          })),
-        };
+        const payload = isStrictColorEdit()
+          ? {
+              no_po: form().sequence_number,
+              pc_id: Number(form().pc_id),
+              keterangan: form().keterangan,
+              items: form().items.map((i) => ({
+                pc_item_id: i.pc_item_id,
+                warna_id: i.warna_id,
+                std_susut: i.std_susutValue || 0,
+                keterangan_warna: i.keterangan_warna,
+                meter_total: i.meterValue || 0,
+                yard_total: i.yardValue || 0,
+              })),
+            }
+          : {
+              no_po: form().sequence_number,
+              pc_id: Number(form().pc_id),
+              keterangan: form().keterangan,
+              items: form().items.map((i) => ({
+                pc_item_id: i.pc_item_id,
+                warna_id: i.warna_id,
+                std_susut: i.std_susutValue || 0,
+                keterangan_warna: i.keterangan_warna,
+                meter_total: i.meterValue || 0,
+                yard_total: i.yardValue || 0,
+              })),
+            };
+        
+        //console.log("Update Data PO OC:", JSON.stringify(payload, null, 2));
+
         await updateDataOrderCelupOrder(user?.token, params.id, payload);
       } else {
         const payload = {
@@ -768,8 +812,8 @@ const handleItemChange = (index, field, value) => {
             class="w-full border p-2 rounded"
             value={form().keterangan}
             onInput={(e) => setForm({ ...form(), keterangan: e.target.value })}
-            disabled={isView}
-            classList={{ "bg-gray-200" : isView }}
+            disabled={!canEditAll()}
+            classList={{ "bg-gray-200": !canEditAll() }}
           ></textarea>
         </div>
 
@@ -812,7 +856,7 @@ const handleItemChange = (index, field, value) => {
           type="button"
           class="bg-green-600 text-white px-3 py-2 rounded hover:bg-green-700 mb-4"
           onClick={addItem}
-          hidden={ isView }
+          hidden={ isView || isStrictColorEdit() }
         >
           + Tambah Item
         </button>
@@ -884,7 +928,7 @@ const handleItemChange = (index, field, value) => {
                       item={item}
                       onChange={(val) => handleItemChange(i(), "warna_id", val)}
                       disabled={isView}
-                    />
+                  />
                   </td>
                   <td class="border p-2">  {/* kolom Keterangan warna */}
                     <input
@@ -892,8 +936,8 @@ const handleItemChange = (index, field, value) => {
                       class="border p-1 rounded w-full"
                       value={item.keterangan_warna ?? ""}
                       onBlur={(e) => handleItemChange(i(), "keterangan_warna", e.target.value)}
-                      disabled={isView}
-                      classList={{ "bg-gray-200 " : isView}}
+                      disabled={!canEditAll()}
+                      classList={{ "bg-gray-200": !canEditAll() }}
                       placeholder="Keterangan warna..."
                     />
                   </td>
@@ -903,14 +947,12 @@ const handleItemChange = (index, field, value) => {
                         type="text"
                         inputmode="decimal"
                         class="border p-1 rounded w-48"
-                        classList={{
-                          "bg-gray-200": isView || parseInt(form().satuan_unit_id) === 2,
-                        }}
-                        readOnly={isView || parseInt(form().satuan_unit_id) === 2}
+                        readOnly={isView || isStrictColorEdit() || parseInt(form().satuan_unit_id) === 2}
+                        classList={{ "bg-gray-200": isView || isStrictColorEdit() || parseInt(form().satuan_unit_id) === 2 }}
                         value={item.meter}
                         onBlur={(e) => {
-                          if (parseInt(form().satuan_unit_id) === 1) {
-                              handleItemChange(i(), "meter", e.target.value);
+                          if (parseInt(form().satuan_unit_id) === 1 && !isStrictColorEdit()) {
+                            handleItemChange(i(), "meter", e.target.value);
                           }
                         }}
                       />
@@ -922,14 +964,12 @@ const handleItemChange = (index, field, value) => {
                         type="text"
                         inputmode="decimal"
                         class="border p-1 rounded w-48"
-                        classList={{
-                          "bg-gray-200": isView || parseInt(form().satuan_unit_id) === 1,
-                        }}
-                        readOnly={isView || parseInt(form().satuan_unit_id) === 1}
+                        readOnly={isView || isStrictColorEdit() || parseInt(form().satuan_unit_id) === 1}
+                        classList={{ "bg-gray-200": isView || isStrictColorEdit() || parseInt(form().satuan_unit_id) === 1 }}
                         value={item.yard}
                         onBlur={(e) => {
-                          if (parseInt(form().satuan_unit_id) === 2) {
-                              handleItemChange(i(), "yard", e.target.value);
+                          if (parseInt(form().satuan_unit_id) === 2 && !isStrictColorEdit()) {
+                            handleItemChange(i(), "yard", e.target.value);
                           }
                         }}
                       />
@@ -957,7 +997,7 @@ const handleItemChange = (index, field, value) => {
                     />
                   </td>
                   <td class="border p-2 text-center">
-                    {!item.readOnly && (
+                    {!item.readOnly && !isStrictColorEdit() && (
                       <button
                         type="button"
                         class="text-red-600 hover:text-red-800 text-xs"
