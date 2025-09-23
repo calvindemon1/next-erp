@@ -188,7 +188,7 @@ function PrintPage(props) {
         />
 
         <h1 className="text-xl uppercase font-bold">
-          Beli Greige Surat Jalan
+          Surat Penerimaan Beli Greige
         </h1>
 
         <div className="w-full flex gap-2 text-sm">

@@ -186,7 +186,7 @@ function PrintPage(props) {
         />
 
         <h1 className="text-xl uppercase font-bold">
-          Jual Beli Surat Jalan
+          Surat Penerimaan Jual Beli
         </h1>
 
         <div className="w-full flex gap-2 text-sm">
