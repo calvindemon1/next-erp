@@ -266,22 +266,20 @@ function PrintPage(props) {
         <table ref={bind("tableRef")} className="w-full table-fixed border border-black text-[12px] border-collapse mt-3">
           <thead ref={bind("theadRef")} className="bg-gray-200">
             <tr>
-                <th className="border border-black p-1 w-[4%]" rowSpan={2}>No</th>
-                <th className="border border-black p-1 w-[8%]" rowSpan={2}>Jenis Kain</th>
-                <th hidden className="border border-black p-1 w-[15%]" rowSpan={2}>Jenis Kain</th>
-                <th className="border border-black p-1 w-[10%]" rowSpan={2}>Warna</th>
-                <th className="border border-black p-1 w-[10%]" rowSpan={2}>Lebar Finish</th>
-                <th className="border border-black p-1 w-[10%]" rowSpan={2}>Grade</th>
-                <th className="border border-black p-1 w-[18%] text-center" colSpan={2}>
-                Quantity
-                </th>
-                <th className="border border-black p-1 w-[18%]" rowSpan={2}>Harga</th>
-                <th className="border border-black p-1 w-[18%]" rowSpan={2}>Jumlah</th>
+              <th className="border border-black p-1 w-[4%]"  rowSpan={2}>No</th>
+              <th className="border border-black p-1 w-[10%]" rowSpan={2}>Jenis Kain</th>
+              <th hidden className="border border-black p-1 w-[10%]" rowSpan={2}>Jenis Kain</th>
+              <th className="border border-black p-1 w-[10%]" rowSpan={2}>Warna</th>
+              <th className="border border-black p-1 w-[10%]" rowSpan={2}>Lebar</th>
+              <th className="border border-black p-1 w-[8%]"  rowSpan={2}>Grade</th>
+              <th className="border border-black p-1 w-[24%] text-center" colSpan={3}>Quantity</th>
+              <th className="border border-black p-1 w-[12%]" rowSpan={2}>Harga</th>
+              <th className="border border-black p-1 w-[16%]" rowSpan={2}>Jumlah</th>
             </tr>
             <tr>
-              <th colSpan={2} className="border border-black p-1 w-[24%]">
-                {`(Roll / ${data.satuan_unit || 'Meter'})`}
-              </th>
+              <th className="border border-black p-1 w-[5%]">Roll</th>
+              <th className="border border-black p-1 w-[8%]">Meter</th>
+              <th className="border border-black p-1 w-[8%]">Yard</th>
             </tr>
           </thead>
 
@@ -289,30 +287,27 @@ function PrintPage(props) {
             <For each={items}>
               {(item, i) => (
                 <tr>
-                  {/* nomor lanjut: startIndex + nomor di halaman + 1 */}
                   <td className="p-1 text-center break-words">{startIndex + i() + 1}</td>
                   <td className="p-1 text-center break-words">{item.corak_kain || "-"}</td>
                   <td hidden className="p-1 break-words">{item.konstruksi_kain}</td>
                   <td className="p-1 text-center break-words">{item.deskripsi_warna || "-"}</td>
-                  <td className="p-1 text-center break-words">
-                  {formatAngkaNonDecimal(item.lebar)}"
-                  </td>
+                  <td className="p-1 text-center break-words">{formatAngkaNonDecimal(item.lebar)}"</td>
                   <td className="p-1 text-center break-words">{item.grade_name}</td>
-                  <td colSpan={2} className="p-1 text-center break-words">
-                  {data.satuan_unit === "Meter"
-                      ? `${(item.rolls || []).length} / ${formatAngka(item.meter_total)}`
-                      : `${(item.rolls || []).length} / ${formatAngka(item.yard_total)}`}
-                  </td>
+
+                  {/* Quantity: tampil 3 kolom */}
+                  <td className="p-1 text-center break-words">{(item.rolls || []).length}</td>
+                  <td className="p-1 text-center break-words">{formatAngka(parseFloat(item.meter_total || 0))}</td>
+                  <td className="p-1 text-center break-words">{formatAngka(parseFloat(item.yard_total  || 0))}</td>
+
                   <td className="p-1 text-center break-words">{formatRupiah(item.harga)}</td>
-                  <td className="p-1 text-center break-words">
-                      {(() => {
-                          const qty =
-                          data.satuan_unit === "Meter"
-                              ? parseFloat(item.meter_total || 0)
-                              : parseFloat(item.yard_total || 0);
-                          const harga = parseFloat(item.harga || 0);
-                          return harga && qty ? formatRupiah(harga * qty) : "-";
-                      })()}
+                  <td className="p-1 text-right break-words">
+                    {(() => {
+                      // Tetap pakai satuan bisnis bawaan untuk kalkulasi jumlah (agar kompatibel backend)
+                      const useMeter = (data.satuan_unit || "Meter") === "Meter";
+                      const qty   = useMeter ? parseFloat(item.meter_total || 0) : parseFloat(item.yard_total || 0);
+                      const harga = parseFloat(item.harga || 0);
+                      return harga && qty ? formatRupiah(harga * qty) : "-";
+                    })()}
                   </td>
                 </tr>
               )}
@@ -339,86 +334,63 @@ function PrintPage(props) {
             {/* Total lengkap hanya di halaman terakhir */}
             <Show when={isLast}>
               <tr>
+                {/* Kolom sebelum Quantity = 6 */}
                 <td colSpan={5} className="border border-black font-bold text-right px-2 py-1">Total:</td>
-                <td colSpan={2} className="border border-black px-2 py-1 text-center font-bold">
-                    {data.satuan_unit === 'Meter' 
-                      ? formatAngka(totals.totalMeter)
-                      : formatAngka(totals.totalYard)
-                    }
-                </td>
-                <td className="border border-black px-2 py-1 text-right font-bold">
-                  Sub Total
-                </td>
-                <td className="border border-black px-2 py-1 text-right">
-                  {formatRupiah(totals.subTotal)}
-                </td>
+                {/* Total Rolls / Meter / Yard */}
+                <td className="border border-black px-2 py-1 text-center font-bold">{totals.totalRolls}</td>
+                <td className="border border-black px-2 py-1 text-center font-bold">{formatAngka(totals.totalMeter)}</td>
+                <td className="border border-black px-2 py-1 text-center font-bold">{formatAngka(totals.totalYard)}</td>
+                {/* Subtotal uang */}
+                <td className="border border-black px-2 py-1 text-right font-bold">Sub Total</td>
+                <td className="border border-black px-2 py-1 text-right">{formatRupiah(totals.subTotal)}</td>
               </tr>
               <tr>
-                <td colSpan={7} className="px-2 py-1"/>
+                <td colSpan={8} className="px-2 py-1"/>
                 <td className="px-2 py-1 text-right font-bold">DPP</td>
-                <td className="px-2 py-1 text-right">
-                  {formatRupiah(totals.dpp)}
-                </td>
+                <td className="px-2 py-1 text-right">{formatRupiah(totals.dpp)}</td>
               </tr>
               <tr>
-                <td colSpan={7} className="px-2 py-1"/>
+                <td colSpan={8} className="px-2 py-1"/>
                 <td className="px-2 py-1 text-right font-bold">Nilai Lain</td>
-                <td className="px-2 py-1 text-right">
-                  {formatRupiah(totals.nilaiLain)}
-                </td>
+                <td className="px-2 py-1 text-right">{formatRupiah(totals.nilaiLain)}</td>
               </tr>
               <tr>
-                <td colSpan={7} className="px-2 py-1"/>
+                <td colSpan={8} className="px-2 py-1"/>
                 <td className="px-2 py-1 text-right font-bold">PPN</td>
-                <td className="px-2 py-1 text-right">
-                  {formatRupiah(totals.ppn)}
-                </td>
+                <td className="px-2 py-1 text-right">{formatRupiah(totals.ppn)}</td>
               </tr>
               <tr>
-                <td colSpan={7} className="px-2 py-1"/>
+                <td colSpan={8} className="px-2 py-1"/>
                 <td className="px-2 py-1 text-right font-bold">Jumlah Total</td>
-                <td className="px-2 py-1 text-right">
-                  {formatRupiah(totals.grand)}
-                </td>
+                <td className="px-2 py-1 text-right">{formatRupiah(totals.grand)}</td>
               </tr>
               <tr>
-                <td colSpan={9} className="border border-black p-2 align-top">
+                <td colSpan={10} className="border border-black p-2 align-top">
                   <div className="font-bold mb-1">NOTE:</div>
-                  <div className="whitespace-pre-wrap break-words italic">
-                    {data.keterangan ?? "-"}
-                  </div>
+                  <div className="whitespace-pre-wrap break-words italic">{data.keterangan ?? "-"}</div>
                 </td>
               </tr>
               <tr>
-                <td colSpan={9} className="border border-black">
+                <td colSpan={10} className="border border-black">
                   <div className="w-full flex justify-between text-[12px] py-5 px-2">
                     <div className="text-center w-1/3 pb-3">
                       Yang Menerima
-                      <br />
-                      <br />
-                      <br />
-                      <br />( ...................... )
+                      <br /><br /><br /><br />( ...................... )
                     </div>
                     <div className="text-center w-1/3">
                       Mengetahui
-                      <br />
-                      <br />
-                      <br />
-                      <br />( ...................... )
+                      <br /><br /><br /><br />( ...................... )
                     </div>
                     <div className="text-center w-1/3">
                       Dibuat Oleh
-                      <br />
-                      <br />
-                      <br />
-                      <br />( ...................... )
+                      <br /><br /><br /><br />( ...................... )
                     </div>
                   </div>
                 </td>
               </tr>
             </Show>
             <tr>
-              <td colSpan={9} className="border border-black px-2 py-1 text-right italic">
+              <td colSpan={10} className="border border-black px-2 py-1 text-right italic">
                 Halaman {pageNo} dari {pageCount}
               </td>
             </tr>

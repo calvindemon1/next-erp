@@ -287,9 +287,9 @@ function PrintPage(props) {
               </th>
             </tr>
             <tr>
-              <th colSpan={2} className="border border-black p-1 w-[24%]">
-                {data.satuan_unit_name || 'Meter'}
-              </th>
+              {/* Selalu dua kolom: Meter & Yard */}
+              <th className="border border-black p-1 w-[7%]">Meter</th>
+              <th className="border border-black p-1 w-[7%]">Yard</th>
             </tr>
           </thead>
 
@@ -305,11 +305,12 @@ function PrintPage(props) {
                   <td className="p-1 break-words">{item.keterangan_warna}</td>
                   <td className="p-1 text-center break-words">{formatAngkaNonDecimal(item.lebar_greige)}"</td>
                   <td className="p-1 text-center break-words">{formatAngkaNonDecimal(item.lebar_finish)}"</td>
-                  <td colSpan={2} className="p-1 text-center break-words">
-                    {data.satuan_unit_name === 'Meter' 
-                      ? formatAngka(item.meter_total)
-                      : formatAngka(item.yard_total)
-                    }
+                  {/* ALWAYS show both Meter & Yard */}
+                  <td className="p-1 text-center break-words">
+                    {formatAngka(parseFloat(item.meter_total || 0))}
+                  </td>
+                  <td className="p-1 text-center break-words">
+                    {formatAngka(parseFloat(item.yard_total || 0))}
                   </td>
                   <td hidden className="p-1 text-center break-words">{formatRupiah(item.harga)}</td>
                   <td hidden className="p-1 text-right break-words">
@@ -345,14 +346,17 @@ function PrintPage(props) {
             {/* Total lengkap hanya di halaman terakhir */}
             <Show when={isLast}>
               <tr>
+                {/* kolom sebelum qty = 6 */}
                 <td colSpan={6} className="border border-black font-bold px-2 py-1">
                   Total:
                 </td>
-                <td colSpan={2} className="border border-black px-2 py-1 text-center font-bold">
-                    {data.satuan_unit_name === 'Meter' 
-                      ? formatAngka(totals.totalMeter)
-                      : formatAngka(totals.totalYard)
-                    }
+                {/* total meter */}
+                <td className="border border-black px-2 py-1 text-center font-bold">
+                  {formatAngka(totals.totalMeter)}
+                </td>
+                {/* total yard */}
+                <td className="border border-black px-2 py-1 text-center font-bold">
+                  {formatAngka(totals.totalYard)}
                 </td>
                 <td hidden className="border border-black px-2 py-1 text-right font-bold">
                   Sub Total

@@ -422,18 +422,22 @@ function PrintPage(props) {
         <table ref={bind("tableRef")} className="w-full table-fixed border border-black text-[11px] border-collapse mt-1">
           <thead ref={bind("theadRef")} className="bg-gray-200">
             <tr>
-              <th className="border border-black p-1 w-[6%]" rowSpan={2}>No</th>
-              <th className="border border-black p-1 w-[9%]" rowSpan={2}>Bal</th>
-              <th className="border border-black p-1 w-[18%]" rowSpan={2}>Jenis Kain</th>
-              <th className="border border-black p-1 w-[12%]" rowSpan={2}>Lot</th>
-              <th className="border border-black p-1 w-[15%]" rowSpan={2}>Warna</th>
+              <th className="border border-black p-1 w-[5%]" rowSpan={2}>No</th>
+              <th className="border border-black p-1 w-[7%]" rowSpan={2}>Bal</th>
+              <th className="border border-black p-1 w-[10%]" rowSpan={2}>Jenis Kain</th>
+              <th className="border border-black p-1 w-[7%]" rowSpan={2}>Lot</th>
+              <th className="border border-black p-1 w-[10%]" rowSpan={2}>Warna</th>
               <th className="border border-black p-1 w-[8%]"  rowSpan={2}>Lebar</th>
               <th className="border border-black p-1 w-[8%]"  rowSpan={2}>Grade</th>
-              <th className="border border-black p-1 w-[12%]" rowSpan={2}>TTL/PCS</th>
-              <th className="border border-black p-1 w-[12%] text-center" colSpan={2}>Quantity</th>
+              <th className="border border-black p-1 w-[8%]" rowSpan={2}>TTL/PCS</th>
+              <th className="border border-black p-1 w-[20%] text-center" colSpan={2}>Quantity</th>
             </tr>
-            <tr>
-              <th className="border border-black p-1 text-center" colSpan={2}><span>({unit})</span></th>
+              <tr>
+              {/* spacer untuk kolom sebelum quantity */}
+              
+              {/* sub header quantity */}
+              <th className="border border-black p-1 w-[10%]">Meter</th>
+              <th className="border border-black p-1 w-[10%]">Yard</th>
             </tr>
           </thead>
 
@@ -448,10 +452,9 @@ function PrintPage(props) {
                   <td className="p-1 break-words text-center">{it.warna}</td>
                   <td className="p-1 text-center break-words"><span>{it.lebar}"</span></td>
                   <td className="p-1 text-center break-words">{it.grade}</td>
-                  <td className="p-1 text-center break-words">{it.rolls_count}</td>
-                  <td colSpan={2} className="p-1 text-center break-words">
-                    {unit === "Yard" ? formatAngka(it.yard_total) : formatAngka(it.meter_total)}
-                  </td>
+                  <td className="p-1 text-center break-words">{it.rolls_count}</td> 
+                  <td className="p-1 text-center break-words">{formatAngka(it.meter_total)}</td>
+                  <td className="p-1 text-center break-words">{formatAngka(it.yard_total)}</td>
                 </tr>
               )}
             </For>
@@ -478,9 +481,14 @@ function PrintPage(props) {
             <Show when={isLast}>
               <tr>
                 <td colSpan={7} className="border border-black text-right font-bold px-2 py-1">TOTAL</td>
-                <td className="border border-black px-2 py-1 text-center font-bold">{formatAngka(totals.totalPCS, 0)}</td>
-                <td className="border border-black px-2 py-1 text-center font-bold" colSpan={2}>
-                  {unit === "Yard" ? formatAngka(totals.totalYard) : formatAngka(totals.totalMeter)}
+                <td className="border border-black px-2 py-1 text-center font-bold">
+                  {formatAngka(totals.totalPCS, 0)}
+                </td>
+                <td className="border border-black px-2 py-1 text-center font-bold">
+                  {formatAngka(totals.totalMeter)}
+                </td>
+                <td className="border border-black px-2 py-1 text-center font-bold">
+                  {formatAngka(totals.totalYard)}
                 </td>
               </tr>
               <tr>
