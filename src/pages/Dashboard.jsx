@@ -67,17 +67,17 @@ export default function Dashboard() {
       key: "pembelian",
       title: "Laporan Pembelian",
       blocks: [
-        { key: "greige",    label: "Pembelian Greige",      perm: "edit_purchase_greige_surat_jalan",  fetcher: getAllBGDeliveryNotes },
-        { key: "oc",        label: "Pembelian Order Celup",  perm: "edit_purchase_celup_surat_jalan",   fetcher: getAllOCDeliveryNotes },
-        { key: "kain_jadi", label: "Pembelian Kain Jadi",    perm: "edit_purchase_finish_surat_jalan",  fetcher: getAllKJDeliveryNotes },
-        { key: "jual_beli", label: "Jual Beli",              perm: "edit_jual_beli_surat_jalan",        fetcher: getAllJBDeliveryNotes },
+        { key: "greige",    label: "Pembelian Greige",      perm: "view_purchase_greige_surat_jalan",  fetcher: getAllBGDeliveryNotes },
+        { key: "oc",        label: "Pembelian Order Celup",  perm: "view_purchase_celup_surat_jalan",   fetcher: getAllOCDeliveryNotes },
+        { key: "kain_jadi", label: "Pembelian Kain Jadi",    perm: "view_purchase_finish_surat_jalan",  fetcher: getAllKJDeliveryNotes },
+        { key: "jual_beli", label: "Jual Beli",              perm: "view_jual_beli_surat_jalan",        fetcher: getAllJBDeliveryNotes },
       ],
     },
     {
       key: "penjualan",
       title: "Laporan Penjualan",
       blocks: [
-        { key: "sales", label: "Surat Jalan", perm: "edit_surat_jalan", fetcher: getAllDeliveryNotes },
+        { key: "sales", label: "Surat Jalan", perm: "view_surat_jalan", fetcher: getAllDeliveryNotes },
       ],
     },
   ];
@@ -443,7 +443,7 @@ export default function Dashboard() {
                       </button>
                     </div>
 
-                    <div class="bg-white p-6 rounded shadow relative border">
+                    <div hidden class="bg-white p-6 rounded shadow relative border">
                       <p class="text-sm text-gray-500">Total Pesanan Selesai</p>
                       <p class="text-3xl font-bold text-blue-600">{HARD_DONE}</p>
                       <button class="absolute top-4 right-4 text-gray-400 cursor-not-allowed" disabled>
@@ -451,7 +451,7 @@ export default function Dashboard() {
                       </button>
                     </div>
 
-                    <div class="bg-white p-6 rounded shadow relative border">
+                    <div hidden class="bg-white p-6 rounded shadow relative border">
                       <p class="text-sm text-gray-500">Total Pesanan Belum Selesai</p>
                       <p class="text-3xl font-bold text-blue-600">{HARD_NOTDONE}</p>
                       <button class="absolute top-4 right-4 text-gray-400 cursor-not-allowed" disabled>
