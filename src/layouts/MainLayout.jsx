@@ -39,6 +39,15 @@ export default function MainLayout(props) {
   
   // RETUR
   const [isReturOpen, setReturOpen] = createSignal(false);
+  const [isReturPurchaseOpen, setReturPurchaseOpen] = createSignal(false);
+  const [isReturSalesOpen, setReturSalesOpen] = createSignal(false);
+
+  const canAccessFinance = hasAnyPermission([,
+    "view_bank",
+    "view_payment_methods",
+    "view_jenis_potongan",
+    "view_jenis_hutang",
+  ]);
 
   const purchasingRoutes = {
     greige: [
@@ -80,15 +89,22 @@ export default function MainLayout(props) {
     jualbeli: ["jualbeli-invoice", "jualbeli-invoice/form"],
   };
 
-  const returRoutes = {
-    retur: [
-      "/retur-greige",
-      "/retur-ordercelup",
-      "/retur-kainjadi",
-      "/retur-jualbeli",
-      "/retur-suratjalan",
-    ]
-  }
+    // ==== RETUR ROUTES (dipisah agar auto-expand submenu tepat) ====
+  const returPurchaseRoutes = [
+    "/retur-greige",
+    "/retur-greige/form",
+    "/retur-ordercelup",
+    "/retur-ordercelup/form",
+    "/retur-kainjadi",
+    "/retur-kainjadi/form",
+    "/retur-jualbeli",
+    "/retur-jualbeli/form",
+  ];
+  const returSalesRoutes = [
+    "/retur-sales",
+    "/retur-sales/form",
+  ];
+  const returRoutes = { retur: [...returPurchaseRoutes, ...returSalesRoutes] };
 
 
   createEffect(() => {
@@ -276,6 +292,11 @@ export default function MainLayout(props) {
 
       case "retur":
         setReturOpen(true);
+        // auto-expand sub-sub sesuai path
+        if (returPurchaseRoutes.some((p) => location.pathname.startsWith(p)))
+          setReturPurchaseOpen(true);
+        if (returSalesRoutes.some((p) => location.pathname.startsWith(p)))
+          setReturSalesOpen(true);
         break;
     }
 
@@ -1242,8 +1263,14 @@ export default function MainLayout(props) {
                   </ul>
                 </li>
 
-                {/* RETUR */}
-                {hasAllPermission(["return_jual_beli"]) && (
+                {/* RETUR (Nested) */}
+                {hasAllPermission([
+                  "return_purchase_greige",
+                  "return_purchase_celup",
+                  "return_purchase_finish",
+                  "return_jual_beli",
+                  "return_sales",
+                ]) && (
                   <>
                     <li>
                       <button
@@ -1255,27 +1282,126 @@ export default function MainLayout(props) {
                       </button>
                     </li>
 
-                    {/* SUB MENU RETUR */}
                     <li
                       class={`transition-all duration-300 ease-in-out overflow-hidden ${
-                        isReturOpen()
-                          ? "max-h-fit opacity-100"
-                          : "max-h-0 opacity-0"
+                        isReturOpen() ? "max-h-fit opacity-100" : "max-h-0 opacity-0"
                       }`}
                     >
+                      {/* Submenu: Retur Pembelian */}
                       <ul>
-                        <li>
-                          <A
-                            href="/retur-jualbeli"
-                            class={`block pl-8 pr-4 py-2 hover:bg-gray-700 ${
-                              location.pathname === "/retur-jualbeli" ||
-                              location.pathname === "/retur-jualbeli/form"
-                                ? "bg-gray-700 text-white"
-                                : ""
-                            }`}
-                          >
-                            Retur Jual Beli
-                          </A>
+                        {hasAllPermission([
+                          "return_purchase_greige",
+                          "return_purchase_celup",
+                          "return_purchase_finish",
+                          "return_jual_beli",
+                        ]) && (
+                          <li>
+                            <button
+                              class="w-full text-left pl-8 pr-4 py-2 font-semibold text-gray-400 hover:bg-gray-700 flex justify-between items-center"
+                              onClick={() => setReturPurchaseOpen(!isReturPurchaseOpen())}
+                            >
+                              Retur Pembelian
+                              <span class="text-xs">{isReturPurchaseOpen() ? "▲" : "▼"}</span>
+                            </button>
+                          </li>
+                        )}
+
+                        <li
+                          class={`transition-all duration-300 ease-in-out overflow-hidden ${
+                            isReturPurchaseOpen() ? "max-h-fit opacity-100" : "max-h-0 opacity-0"
+                          }`}
+                        >
+                          <ul>
+                            <li>
+                              <A
+                                href="/retur-greige"
+                                class={`block pl-12 pr-4 py-2 hover:bg-gray-700 ${
+                                  location.pathname === "/retur-greige" ||
+                                  location.pathname === "/retur-greige/form"
+                                    ? "bg-gray-700 text-white"
+                                    : ""
+                                }`}
+                              >
+                                Retur Pembelian Greige
+                              </A>
+                            </li>
+                            <li>
+                              <A
+                                href="/retur-ordercelup"
+                                class={`block pl-12 pr-4 py-2 hover:bg-gray-700 ${
+                                  location.pathname === "/retur-ordercelup" ||
+                                  location.pathname === "/retur-ordercelup/form"
+                                    ? "bg-gray-700 text-white"
+                                    : ""
+                                }`}
+                              >
+                                Retur Pembelian Order Celup
+                              </A>
+                            </li>
+                            <li>
+                              <A
+                                href="/retur-kainjadi"
+                                class={`block pl-12 pr-4 py-2 hover:bg-gray-700 ${
+                                  location.pathname === "/retur-kainjadi" ||
+                                  location.pathname === "/retur-kainjadi/form"
+                                    ? "bg-gray-700 text-white"
+                                    : ""
+                                }`}
+                              >
+                                Retur Pembelian Kain Jadi
+                              </A>
+                            </li>
+                            <li>
+                              <A
+                                href="/retur-jualbeli"
+                                class={`block pl-12 pr-4 py-2 hover:bg-gray-700 ${
+                                  location.pathname === "/retur-jualbeli" ||
+                                  location.pathname === "/retur-jualbeli/form"
+                                    ? "bg-gray-700 text-white"
+                                    : ""
+                                }`}
+                              >
+                                Retur Jual Beli
+                              </A>
+                            </li>
+                          </ul>
+                        </li>
+                      </ul>
+
+                      {/* Submenu: Retur Penjualan */}
+                      <ul>
+                        {hasPermission("return_sales") && (
+                          <li>
+                            <button
+                              class="w-full text-left pl-8 pr-4 py-2 font-semibold text-gray-400 hover:bg-gray-700 flex justify-between items-center"
+                              onClick={() => setReturSalesOpen(!isReturSalesOpen())}
+                            >
+                              Retur Penjualan
+                              <span class="text-xs">{isReturSalesOpen() ? "▲" : "▼"}</span>
+                            </button>
+                          </li>
+                        )}
+
+                        <li
+                          class={`transition-all duration-300 ease-in-out overflow-hidden ${
+                            isReturSalesOpen() ? "max-h-fit opacity-100" : "max-h-0 opacity-0"
+                          }`}
+                        >
+                          <ul>
+                            <li>
+                              <A
+                                href="/retur-sales"
+                                class={`block pl-12 pr-4 py-2 hover:bg-gray-700 ${
+                                  location.pathname === "/retur-sales" ||
+                                  location.pathname === "/retur-sales/form"
+                                    ? "bg-gray-700 text-white"
+                                    : ""
+                                }`}
+                              >
+                                Retur Penjualan (Sales)
+                              </A>
+                            </li>
+                          </ul>
                         </li>
                       </ul>
                     </li>
@@ -1299,9 +1425,22 @@ export default function MainLayout(props) {
 
       {/* Main Content */}
       <div class="flex-1 flex flex-col">
-        <header class="bg-white shadow p-4 flex justify-between">
+        <header class="bg-white shadow p-4 flex items-center justify-between">
           <div>
             Selamat datang, {user?.name} ({user?.username.toUpperCase()})
+          </div>
+
+          <div class="flex items-center gap-3">
+            {/* Tampilkan link hanya jika user punya akses finance */}
+            {canAccessFinance && (
+              <A
+                href="/test"   // <-- sesuai route FinanceMainLayout di App.jsx kamu
+                class="inline-flex items-center gap-2 rounded px-3 py-2 border border-blue-600 text-blue-700 hover:bg-blue-50"
+                title="Masuk ke modul Finance"
+              >
+                Goes to Finance
+              </A>
+            )}
           </div>
         </header>
 

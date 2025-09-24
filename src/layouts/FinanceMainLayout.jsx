@@ -1,7 +1,7 @@
 // FinanceMainLayout.jsx
 import { createEffect, createSignal, onCleanup } from "solid-js";
 import { A, useLocation } from "@solidjs/router";
-import { ChevronLeft, ChevronRight, LogOut } from "lucide-solid";
+import { ChevronLeft, ChevronRight, LogOut, ArrowLeft } from "lucide-solid";
 import logoNavel from "../assets/img/navelLogo.png";
 import { User } from "../utils/financeAuth";
 
@@ -15,6 +15,8 @@ export default function FinanceMainLayout(props) {
   const [isPaymentOpen, setPaymentOpen] = createSignal(false);
 
   const location = useLocation();
+
+  const canBackToERP = true; 
 
   const financeRoutes = {
     master: [
@@ -272,11 +274,24 @@ export default function FinanceMainLayout(props) {
 
       {/* Main Content */}
       <div class="flex-1 flex flex-col">
-        <header class="bg-green-900 text-white shadow p-4 flex justify-between">
+        <header class="bg-green-900 text-white shadow p-4 flex items-center justify-between">
           <div>
             Selamat datang, {user?.name} ({user?.username.toUpperCase()}) - Finance
           </div>
+
+          {/* Tombol balik ke ERP/Main */}
+          {canBackToERP && (
+            <A
+              href="/dashboard"
+              class="inline-flex items-center gap-2 rounded px-3 py-2 border border-white/60 text-white hover:bg-white/10"
+              title="Kembali ke modul ERP"
+            >
+              <ArrowLeft class="w-4 h-4" />
+              Back to ERP
+            </A>
+          )}
         </header>
+
         <main class="p-6 bg-gray-100 flex-1 overflow-y-auto">
           {props.children}
         </main>
