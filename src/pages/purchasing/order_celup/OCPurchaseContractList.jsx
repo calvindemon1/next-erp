@@ -9,6 +9,7 @@ import {
 } from "../../../utils/auth";
 import Swal from "sweetalert2";
 import { Edit, Eye, Trash } from "lucide-solid";
+import { formatCorak } from "../../../components/CorakKainList";
 
 export default function OCPurchaseContractList() {
   const [beliGreiges, setOrderCelups] = createSignal([]);
@@ -218,6 +219,7 @@ export default function OCPurchaseContractList() {
               <th class="py-2 px-4">ID</th>
               <th class="py-2 px-2">No Pembelian</th>
               <th class="py-2 px-2">Supplier</th>
+              <th class="py-2 px-2">Corak Kain</th>
               <th class="py-2 px-2 text-center">
                 <div>Qty Faktual</div>
                 <span class="text-xs text-gray-500">
@@ -242,6 +244,19 @@ export default function OCPurchaseContractList() {
                 </td>
                 <td class="py-2 px-4">{oc.no_pc}</td>
                 <td class="py-2 px-4">{oc.supplier_name}</td>
+                <td class="py-2 px-4">
+                  {(() => {
+                    const { display, full } = formatCorak(oc.items, { maxShow: 3 });
+                    return (
+                      <span
+                        class="inline-block max-w-[260px] truncate align-middle"
+                        title={full}
+                      >
+                        {display}
+                      </span>
+                    );
+                  })()}
+                </td>
                 <td
                   class={`py-2 px-4 text-center ${
                     qtyCounterReal(oc, oc.satuan_unit_id) === "SELESAI"
