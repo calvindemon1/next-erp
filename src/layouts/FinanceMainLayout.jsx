@@ -7,7 +7,7 @@ import { User } from "../utils/financeAuth";
 
 export default function FinanceMainLayout(props) {
   const [sidebarOpen, setSidebarOpen] = createSignal(true);
-    const user = User.getUser();
+  const user = User.getUser();
 
   // state buat toggle menu group
   const [isMasterOpen, setMasterOpen] = createSignal(false);
@@ -16,7 +16,7 @@ export default function FinanceMainLayout(props) {
 
   const location = useLocation();
 
-  const canBackToERP = true; 
+  const canBackToERP = true;
 
   const financeRoutes = {
     master: [
@@ -29,14 +29,8 @@ export default function FinanceMainLayout(props) {
       "/jenis-hutang",
       "/jenis-hutang/form",
     ],
-    purchase: [
-      "/purchase-aksesoris-ekspedisi",
-      "/purchase-aksesoris-ekspedisi/form",
-    ],
-    payment: [
-      "/pembayaran-hutang-purchase-greige",
-      "/pembayaran-hutang-purchase-greige/form",
-    ],
+    purchase: ["/expedition-accessories", "/expedition-accessories/form"],
+    payment: ["/hutang-purchase-greige", "/hutang-purchase-greige/form"],
   };
 
   function getFinanceRouteType(pathname) {
@@ -120,6 +114,20 @@ export default function FinanceMainLayout(props) {
         {/* Navigation */}
         {sidebarOpen() && (
           <nav class="flex-1 overflow-y-auto">
+            {" "}
+            {/* Main Menu */}
+            <li>
+              <A
+                href="/dashboard"
+                class={`block p-4 hover:bg-gray-700 ${
+                  location.pathname === "/dashboard"
+                    ? "bg-gray-700 text-white"
+                    : ""
+                }`}
+              >
+                Dashboard
+              </A>
+            </li>
             <ul>
               {/* Master Data */}
               <li>
@@ -208,16 +216,14 @@ export default function FinanceMainLayout(props) {
                 <ul>
                   <li>
                     <A
-                      href="/purchase-aksesoris-ekspedisi"
+                      href="/expedition-accessories"
                       class={`block pl-8 pr-4 py-2 hover:bg-green-800 ${
-                        location.pathname.startsWith(
-                          "/purchase-aksesoris-ekspedisi"
-                        )
+                        location.pathname.startsWith("/expedition-accessories")
                           ? "bg-green-800 text-white"
                           : ""
                       }`}
                     >
-                      Purchase Accessories Ekspedisi
+                      Purchase Aksesoris Ekspedisi
                     </A>
                   </li>
                 </ul>
@@ -243,11 +249,9 @@ export default function FinanceMainLayout(props) {
                 <ul>
                   <li>
                     <A
-                      href="/pembayaran-hutang-purchase-greige"
+                      href="/hutang-purchase-greige"
                       class={`block pl-8 pr-4 py-2 hover:bg-green-800 ${
-                        location.pathname.startsWith(
-                          "/pembayaran-hutang-purchase-greige"
-                        )
+                        location.pathname.startsWith("/hutang-purchase-greige")
                           ? "bg-green-800 text-white"
                           : ""
                       }`}
@@ -276,7 +280,8 @@ export default function FinanceMainLayout(props) {
       <div class="flex-1 flex flex-col">
         <header class="bg-green-900 text-white shadow p-4 flex items-center justify-between">
           <div>
-            Selamat datang, {user?.name} ({user?.username.toUpperCase()}) - Finance
+            Selamat datang, {user?.name} ({user?.username.toUpperCase()}) -
+            Finance
           </div>
 
           {/* Tombol balik ke ERP/Main */}

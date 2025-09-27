@@ -36,13 +36,14 @@ export default function MainLayout(props) {
 
   // INVOICE
   const [isInvoiceOpen, setInvoiceIsOpen] = createSignal(false);
-  
+
   // RETUR
   const [isReturOpen, setReturOpen] = createSignal(false);
   const [isReturPurchaseOpen, setReturPurchaseOpen] = createSignal(false);
   const [isReturSalesOpen, setReturSalesOpen] = createSignal(false);
 
-  const canAccessFinance = hasAnyPermission([,
+  const canAccessFinance = hasAnyPermission([
+    ,
     "view_bank",
     "view_payment_methods",
     "view_jenis_potongan",
@@ -89,7 +90,7 @@ export default function MainLayout(props) {
     jualbeli: ["jualbeli-invoice", "jualbeli-invoice/form"],
   };
 
-    // ==== RETUR ROUTES (dipisah agar auto-expand submenu tepat) ====
+  // ==== RETUR ROUTES (dipisah agar auto-expand submenu tepat) ====
   const returPurchaseRoutes = [
     "/retur-greige",
     "/retur-greige/form",
@@ -100,12 +101,8 @@ export default function MainLayout(props) {
     "/retur-jualbeli",
     "/retur-jualbeli/form",
   ];
-  const returSalesRoutes = [
-    "/retur-sales",
-    "/retur-sales/form",
-  ];
+  const returSalesRoutes = ["/retur-sales", "/retur-sales/form"];
   const returRoutes = { retur: [...returPurchaseRoutes, ...returSalesRoutes] };
-
 
   createEffect(() => {
     const interval = setInterval(async () => {
@@ -1267,12 +1264,13 @@ export default function MainLayout(props) {
                 {(() => {
                   // --- permissions
                   const canGreige = hasPermission("return_purchase_greige");
-                  const canCelup  = hasPermission("return_purchase_celup");
+                  const canCelup = hasPermission("return_purchase_celup");
                   const canFinish = hasPermission("return_purchase_finish");
-                  const canJB     = hasPermission("return_jual_beli");
-                  const canSales  = hasPermission("return_sales");
+                  const canJB = hasPermission("return_jual_beli");
+                  const canSales = hasPermission("return_sales");
 
-                  const showReturPurchase = canGreige || canCelup || canFinish || canJB;
+                  const showReturPurchase =
+                    canGreige || canCelup || canFinish || canJB;
                   const showGroup = showReturPurchase || canSales;
 
                   if (!showGroup) return null;
@@ -1286,13 +1284,17 @@ export default function MainLayout(props) {
                           onClick={() => setReturOpen(!isReturOpen())}
                         >
                           Retur
-                          <span class="text-xs">{isReturOpen() ? "▲" : "▼"}</span>
+                          <span class="text-xs">
+                            {isReturOpen() ? "▲" : "▼"}
+                          </span>
                         </button>
                       </li>
 
                       <li
                         class={`transition-all duration-300 ease-in-out overflow-hidden ${
-                          isReturOpen() ? "max-h-fit opacity-100" : "max-h-0 opacity-0"
+                          isReturOpen()
+                            ? "max-h-fit opacity-100"
+                            : "max-h-0 opacity-0"
                         }`}
                       >
                         {/* Submenu: Retur Pembelian (any of 4 perms) */}
@@ -1301,16 +1303,22 @@ export default function MainLayout(props) {
                             <li>
                               <button
                                 class="w-full text-left pl-8 pr-4 py-2 font-semibold text-gray-400 hover:bg-gray-700 flex justify-between items-center"
-                                onClick={() => setReturPurchaseOpen(!isReturPurchaseOpen())}
+                                onClick={() =>
+                                  setReturPurchaseOpen(!isReturPurchaseOpen())
+                                }
                               >
                                 Retur Pembelian
-                                <span class="text-xs">{isReturPurchaseOpen() ? "▲" : "▼"}</span>
+                                <span class="text-xs">
+                                  {isReturPurchaseOpen() ? "▲" : "▼"}
+                                </span>
                               </button>
                             </li>
 
                             <li
                               class={`transition-all duration-300 ease-in-out overflow-hidden ${
-                                isReturPurchaseOpen() ? "max-h-fit opacity-100" : "max-h-0 opacity-0"
+                                isReturPurchaseOpen()
+                                  ? "max-h-fit opacity-100"
+                                  : "max-h-0 opacity-0"
                               }`}
                             >
                               <ul>
@@ -1320,7 +1328,8 @@ export default function MainLayout(props) {
                                       href="/retur-greige"
                                       class={`block pl-12 pr-4 py-2 hover:bg-gray-700 ${
                                         location.pathname === "/retur-greige" ||
-                                        location.pathname === "/retur-greige/form"
+                                        location.pathname ===
+                                          "/retur-greige/form"
                                           ? "bg-gray-700 text-white"
                                           : ""
                                       }`}
@@ -1334,8 +1343,10 @@ export default function MainLayout(props) {
                                     <A
                                       href="/retur-ordercelup"
                                       class={`block pl-12 pr-4 py-2 hover:bg-gray-700 ${
-                                        location.pathname === "/retur-ordercelup" ||
-                                        location.pathname === "/retur-ordercelup/form"
+                                        location.pathname ===
+                                          "/retur-ordercelup" ||
+                                        location.pathname ===
+                                          "/retur-ordercelup/form"
                                           ? "bg-gray-700 text-white"
                                           : ""
                                       }`}
@@ -1349,8 +1360,10 @@ export default function MainLayout(props) {
                                     <A
                                       href="/retur-kainjadi"
                                       class={`block pl-12 pr-4 py-2 hover:bg-gray-700 ${
-                                        location.pathname === "/retur-kainjadi" ||
-                                        location.pathname === "/retur-kainjadi/form"
+                                        location.pathname ===
+                                          "/retur-kainjadi" ||
+                                        location.pathname ===
+                                          "/retur-kainjadi/form"
                                           ? "bg-gray-700 text-white"
                                           : ""
                                       }`}
@@ -1364,8 +1377,10 @@ export default function MainLayout(props) {
                                     <A
                                       href="/retur-jualbeli"
                                       class={`block pl-12 pr-4 py-2 hover:bg-gray-700 ${
-                                        location.pathname === "/retur-jualbeli" ||
-                                        location.pathname === "/retur-jualbeli/form"
+                                        location.pathname ===
+                                          "/retur-jualbeli" ||
+                                        location.pathname ===
+                                          "/retur-jualbeli/form"
                                           ? "bg-gray-700 text-white"
                                           : ""
                                       }`}
@@ -1385,16 +1400,22 @@ export default function MainLayout(props) {
                             <li>
                               <button
                                 class="w-full text-left pl-8 pr-4 py-2 font-semibold text-gray-400 hover:bg-gray-700 flex justify-between items-center"
-                                onClick={() => setReturSalesOpen(!isReturSalesOpen())}
+                                onClick={() =>
+                                  setReturSalesOpen(!isReturSalesOpen())
+                                }
                               >
                                 Retur Penjualan
-                                <span class="text-xs">{isReturSalesOpen() ? "▲" : "▼"}</span>
+                                <span class="text-xs">
+                                  {isReturSalesOpen() ? "▲" : "▼"}
+                                </span>
                               </button>
                             </li>
 
                             <li
                               class={`transition-all duration-300 ease-in-out overflow-hidden ${
-                                isReturSalesOpen() ? "max-h-fit opacity-100" : "max-h-0 opacity-0"
+                                isReturSalesOpen()
+                                  ? "max-h-fit opacity-100"
+                                  : "max-h-0 opacity-0"
                               }`}
                             >
                               <ul>
@@ -1446,7 +1467,7 @@ export default function MainLayout(props) {
             {/* Tampilkan link hanya jika user punya akses finance */}
             {canAccessFinance && (
               <A
-                href="/test"   // <-- sesuai route FinanceMainLayout di App.jsx kamu
+                href="/dashboard-finance" // <-- sesuai route FinanceMainLayout di App.jsx kamu
                 class="inline-flex items-center gap-2 rounded px-3 py-2 border border-blue-600 text-blue-700 hover:bg-blue-50"
                 title="Masuk ke modul Finance"
               >

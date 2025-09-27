@@ -128,12 +128,16 @@ import JenisPotonganList from "./finance_pages/master_data/jenis_potongan/JenisP
 import JenisPotonganForm from "./finance_pages/master_data/jenis_potongan/JenisPotonganForm";
 import JenisHutangList from "./finance_pages/master_data/jenis_hutang/JenisHutangList";
 import JenisHutangForm from "./finance_pages/master_data/jenis_hutang/JenisHutangForm";
+import ExpeditionAccessoriesList from "./finance_pages/purchase/expedition_accessories/ExpeditionAccessoriesList";
+import ExpeditionAccessoriesForm from "./finance_pages/purchase/expedition_accessories/ExpeditionAccessoriesForm";
+import HutangPurchaseGreigeList from "./finance_pages/payment/hutang_purchase_greige/HutangPurchaseGreigeList";
+import HutangPurchaseGreigeForm from "./finance_pages/payment/hutang_purchase_greige/HutangPurchaseGreigeForm";
 
 function App() {
   return (
     <Router>
       <Route path="/" component={LoginPage} />
-      <Route path="/test" component={FinanceMainLayout} />
+      <Route path="/dashboard-finance" component={FinanceMainLayout} />
       <Route path="/users" component={UsersList} />
       <Route path="/users/form" component={UserForm} />
 
@@ -334,19 +338,19 @@ function App() {
       {/* Invoice */}
 
       {/* RETUR */}
-      <Route path="/retur-greige" component={ReturGreigeList}/>
-      <Route path="/retur-ordercelup" component={ReturOrderCelupList}/>
-      <Route path="/retur-kainjadi" component={ReturKainJadiList}/>
-      <Route path="/retur-jualbeli" component={ReturJualBeliList}/>
-      <Route path="/retur-sales" component={ReturSalesList}/>
+      <Route path="/retur-greige" component={ReturGreigeList} />
+      <Route path="/retur-ordercelup" component={ReturOrderCelupList} />
+      <Route path="/retur-kainjadi" component={ReturKainJadiList} />
+      <Route path="/retur-jualbeli" component={ReturJualBeliList} />
+      <Route path="/retur-sales" component={ReturSalesList} />
       {/* RETUR */}
 
       {/* PRINT RETUR */}
-      <Route path="/print/retur-greige" component={ReturGreigePrint}/>
-      <Route path="/print/retur-ordercelup" component={ReturOrderCelupPrint}/>
-      <Route path="/print/retur-kainjadi" component={ReturKainJadiPrint}/>
-      <Route path="/print/retur-jualbeli" component={ReturJualBeliPrint}/>
-      <Route path="/print/retur-sales" component={ReturSalesPrint}/>
+      <Route path="/print/retur-greige" component={ReturGreigePrint} />
+      <Route path="/print/retur-ordercelup" component={ReturOrderCelupPrint} />
+      <Route path="/print/retur-kainjadi" component={ReturKainJadiPrint} />
+      <Route path="/print/retur-jualbeli" component={ReturJualBeliPrint} />
+      <Route path="/print/retur-sales" component={ReturSalesPrint} />
       {/* PRINT RETUR */}
 
       {/* MASTER DATA */}
@@ -404,6 +408,26 @@ function App() {
       <Route path="/jenis-hutang/form" component={JenisHutangForm} />
       {/* JENIS HUTANG */}
       {/* MASTER DATA */}
+      {/* PURCHASE */}
+      <Route
+        path="/expedition-accessories"
+        component={ExpeditionAccessoriesList}
+      />
+      <Route
+        path="/expedition-accessories/form"
+        component={ExpeditionAccessoriesForm}
+      />
+      {/* PURCHASE */}
+      {/* PAYMENT */}
+      <Route
+        path="/hutang-purchase-greige"
+        component={HutangPurchaseGreigeList}
+      />
+      <Route
+        path="/hutang-purchase-greige/form"
+        component={HutangPurchaseGreigeForm}
+      />
+      {/* PAYMENT */}
       {/* FINANCE MODULE */}
     </Router>
   );

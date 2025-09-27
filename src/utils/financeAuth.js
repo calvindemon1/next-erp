@@ -179,6 +179,39 @@ const PurchaseAksesorisEkspedisi = {
   },
 };
 
+// ============ PURCHASE AKSESORIS EKSPEDISI ============
+
+const PembayaranHutangPurchaseGreige = {
+  create: async (payload) => {
+    const res = await api.post("/create-purchase-aksesoris-ekspedisi", payload);
+    // console.log("PurchaseAksesorisEkspedisi.create response:", res);
+    return res.data;
+  },
+  getAll: async () => {
+    const res = await api.get("/purchase-aksesoris-ekspedisi");
+    // console.log("PurchaseAksesorisEkspedisi.getAll response:", res);
+    return res.data;
+  },
+  getById: async (id) => {
+    const res = await api.get(`/purchase-aksesoris-ekspedisi/${id}`);
+    // console.log("PurchaseAksesorisEkspedisi.getById response:", res);
+    return res.data;
+  },
+  update: async (id, payload) => {
+    const res = await api.put(
+      `/update-purchase-aksesoris-ekspedisi/${id}`,
+      payload
+    );
+    // console.log("PurchaseAksesorisEkspedisi.update response:", res);
+    return res.data;
+  },
+  delete: async (id) => {
+    const res = await api.delete(`/delete-purchase-aksesoris-ekspedisi/${id}`);
+    // console.log("PurchaseAksesorisEkspedisi.delete response:", res);
+    return res.data;
+  },
+};
+
 const User = {
   getUser: () => JSON.parse(localStorage.getItem("user")),
 };
@@ -190,5 +223,6 @@ export {
   JenisPotongan,
   JenisHutang,
   PurchaseAksesorisEkspedisi,
+  PembayaranHutangPurchaseGreige,
   User,
 };
