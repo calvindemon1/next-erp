@@ -623,7 +623,6 @@ export default function JBPurchaseContractForm() {
           class="bg-green-600 text-white px-3 py-2 rounded hover:bg-green-700 mb-4 disabled:opacity-60 disabled:cursor-not-allowed"
           onClick={addItem}
           hidden={isView}
-          disabled={isEdit && isStrictColorEdit()}
         >
           + Tambah Item
         </button>

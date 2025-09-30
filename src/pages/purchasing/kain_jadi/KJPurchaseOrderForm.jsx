@@ -869,7 +869,7 @@ export default function KJPurchaseOrderForm() {
           type="button"
           class="bg-green-600 text-white px-3 py-2 rounded hover:bg-green-700 mb-4"
           onClick={addItem}
-          hidden={ isView || isStrictColorEdit() }
+          hidden={ isView }
         >
           + Tambah Item
         </button>
@@ -933,8 +933,8 @@ export default function KJPurchaseOrderForm() {
                       class="border p-1 rounded w-full"
                       value={item.std_susut ?? ""}
                       onBlur={(e) => handleItemChange(i(), "std_susut", e.target.value)}
-                      disabled={!canEditAll()}
-                      classList={{ "bg-gray-200": !canEditAll() }}
+                      disabled={isView}
+                      classList={{ "bg-gray-200": isView }}
                       // placeholder="0,00 %"
                     />
                   </td>

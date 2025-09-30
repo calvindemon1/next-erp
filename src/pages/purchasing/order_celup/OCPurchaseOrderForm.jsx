@@ -893,7 +893,7 @@ export default function OCPurchaseOrderForm() {
           type="button"
           class="bg-green-600 text-white px-3 py-2 rounded hover:bg-green-700 mb-4"
           onClick={addItem}
-          hidden={isView || isStrictColorEdit()}
+          hidden={isView}
         >
           + Tambah Item
         </button>

@@ -80,7 +80,7 @@ export default function JBDeliveryNoteForm() {
 
     if (isEdit) {
       const sjResponse = await getJBDeliveryNotes(params.id, user?.token);
-      console.log("Data SJ JB per id: ", JSON.stringify(sjResponse, null, 2));
+      //console.log("Data SJ JB per id: ", JSON.stringify(sjResponse, null, 2));
       const suratJalanData = sjResponse?.suratJalan;
 
       if (!suratJalanData) {
