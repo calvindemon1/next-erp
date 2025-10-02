@@ -1,14 +1,27 @@
-import { createMemo, createEffect, For, Show } from "solid-js";
+// src/pages/print_function/invoice/SalesInvoicePrint.jsx
+import { createMemo, createEffect, For, Show, onMount } from "solid-js";
 import logoNavel from "../../../assets/img/navelLogo.png";
 import { splitIntoPagesWithOffsets, createStretch } from "../../../components/PrintUtils";
 
 export default function SalesInvoicePrint(props) {
-  const data = props.data?.order || { items: [], summary: {} };
+  // Normalisasi: data bisa di {order} ATAU di root
+  const data = createMemo(() => props.data?.order ?? props.data ?? { items: [], summary: {} });
 
+  // ===== Items: dari packing_lists[*].items ATAU itemsWithRolls =====
   const invoiceItems = createMemo(() => {
-    const pls = data?.packing_lists ?? [];
-    // gabungkan semua items dari semua packing list
-    return pls.flatMap(pl => pl?.items ?? []);
+    const root = data();
+    const fromPL = (root?.packing_lists ?? []).flatMap((pl) => pl?.items ?? []);
+    if (fromPL.length > 0) return fromPL;
+
+    // Fallback: itemsWithRolls pada root payload
+    const fromItemsWithRolls = (props.data?.itemsWithRolls ?? []).map((x) => ({
+      ...x,
+      // Samakan key agar renderer tidak error
+      deskripsi_warna: x?.so_deskripsi_warna ?? x?.pl_deskripsi_warna,
+      keterangan_warna: x?.keterangan_warna,
+    }));
+
+    return fromItemsWithRolls;
   });
 
   // ===== Formatter =====
@@ -22,57 +35,86 @@ export default function SalesInvoicePrint(props) {
   }
 
   function formatRupiah(v, decimals = 2) {
-    if (typeof v !== "number") v = parseFloat(v) || 0;
-    if (v === 0) return "Rp 0,00";
+    const n = typeof v === "number" ? v : parseFloat(v) || 0;
     return new Intl.NumberFormat("id-ID", {
       style: "currency",
       currency: "IDR",
       minimumFractionDigits: decimals,
       maximumFractionDigits: decimals,
-    }).format(v);
+    }).format(n);
   }
 
   function formatAngka(v, decimals = 2) {
-    if (typeof v !== "number") v = parseFloat(v) || 0;
-    if (v === 0) return "0,00";
+    const n = typeof v === "number" ? v : parseFloat(v) || 0;
     return new Intl.NumberFormat("id-ID", {
       minimumFractionDigits: decimals,
       maximumFractionDigits: decimals,
-    }).format(v);
+    }).format(n);
   }
 
   function formatAngkaNonDecimal(v) {
-    if (typeof v !== "number") v = parseFloat(v) || 0;
+    const n = typeof v === "number" ? v : parseFloat(v) || 0;
     return new Intl.NumberFormat("id-ID", {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
-    }).format(v);
+    }).format(n);
   }
 
-  // ===== Totals =====
-  const isPPN       = createMemo(() => parseFloat(data.ppn_percent) > 0);
-  const totalMeter  = createMemo(() => parseFloat(data.summary?.total_meter || 0));
-  const totalYard   = createMemo(() => parseFloat(data.summary?.total_yard  || 0));
-  const subTotal    = createMemo(() => Number(data?.summary?.subtotal) || 0);
-  const dpp         = createMemo(() => subTotal() / 1.11);
-  const nilaiLain   = createMemo(() => dpp() * (11 / 12));
-  const ppn         = createMemo(() => (isPPN() ? nilaiLain() * 0.12 : 0));
-  const jumlahTotal = createMemo(() => dpp() + ppn());
+  // ===== Summary/totals =====
+  const summary = createMemo(() => data()?.summary ?? props.data?.summary ?? {});
+
+  const isPPN = createMemo(
+    () => Number(data()?.ppn_percent ?? props.data?.order?.ppn_percent ?? 0) > 0
+  );
+
+  const subTotal = createMemo(() => Number(summary()?.subtotal ?? 0));
+
+  const dpp = createMemo(() => {
+    const s = summary();
+    if (s?.dpp != null) return Number(s.dpp);
+    return subTotal() / 1.11;
+  });
+
+  const nilaiLain = createMemo(() => {
+    const s = summary();
+    if (s?.nilai_lain != null) return Number(s.nilai_lain);
+    return dpp() * (11 / 12);
+  });
+
+  const ppn = createMemo(() => {
+    const s = summary();
+    if (s?.ppn != null) return Number(s.ppn);
+    return isPPN() ? nilaiLain() * 0.12 : 0;
+  });
+
+  const grand = createMemo(() => {
+    const s = summary();
+    if (s?.total_akhir != null) return Number(s.total_akhir);
+    return dpp() + ppn();
+  });
+
+  const totalMeter = createMemo(() => Number(summary()?.total_meter ?? 0));
+  const totalYard  = createMemo(() => Number(summary()?.total_yard ?? 0));
+  const totalRolls = createMemo(() => {
+    const sum = Number(summary()?.jumlah_kain);
+    if (!Number.isNaN(sum) && sum > 0) return sum;
+    return (invoiceItems() ?? []).reduce((acc, it) => acc + ((it.rolls ?? []).length || 0), 0);
+  });
 
   const totals = createMemo(() => ({
     subTotal: subTotal(),
     dpp: dpp(),
     nilaiLain: nilaiLain(),
     ppn: ppn(),
-    grand: jumlahTotal(),
+    grand: grand(),
     totalMeter: totalMeter(),
     totalYard: totalYard(),
+    totalRolls: totalRolls(),
   }));
 
   // ===== Pagination =====
-  const ROWS_FIRST_PAGE  = 18; // kapasitas item halaman 1
-  const ROWS_OTHER_PAGES = 18; // kapasitas item halaman 2+
-
+  const ROWS_FIRST_PAGE  = 18;
+  const ROWS_OTHER_PAGES = 18;
   const pagesWithOffsets = createMemo(() =>
     splitIntoPagesWithOffsets(invoiceItems() || [], ROWS_FIRST_PAGE, ROWS_OTHER_PAGES)
   );
@@ -80,11 +122,10 @@ export default function SalesInvoicePrint(props) {
   return (
     <>
       <style>{`
-        :root { --safe: 10mm; }                    /* zona aman dari tepi printer */
-
+        :root { --safe: 10mm; }
         @page { size: A4 portrait; margin: 0; }
         html, body {
-          margin: 0; /* <-- Ubah ke 0 */
+          margin: 0;
           padding: 0;
           height: 100%;
           width: 100%;
@@ -96,7 +137,7 @@ export default function SalesInvoicePrint(props) {
         }
         .page {
           width: 210mm;
-          height: 285mm;                           /* sedikit < 297mm agar tidak mepet */
+          height: 285mm;
           padding: 0;
           box-sizing: border-box;
           position: relative;
@@ -107,16 +148,15 @@ export default function SalesInvoicePrint(props) {
         .safe {
           width: 100%;
           height: 100%;
-          padding: var(--safe);                    /* semua konten di dalam zona aman */
+          padding: var(--safe);
           box-sizing: border-box;
           display: flex;
           flex-direction: column;
           gap: 8px;
           align-items: center;
         }
-
         table { page-break-inside: auto; border-collapse: collapse; }
-        tr     { page-break-inside: avoid; }
+        tr { page-break-inside: avoid; }
         @media print {
           .page { page-break-after: always; }
           .page:last-child { page-break-after: auto; }
@@ -130,9 +170,9 @@ export default function SalesInvoicePrint(props) {
           const isLast    = pageIndex === count - 1;
           return (
             <PrintPage
-              data={data}
+              data={data()}
               items={p.items}
-              startIndex={p.offset}  // Penomoran lanjut saat new page
+              startIndex={p.offset}
               pageNo={pageIndex + 1}
               pageCount={count}
               isPPN={isPPN()}
@@ -152,117 +192,106 @@ function PrintPage(props) {
   const { data, items, startIndex, pageNo, pageCount, isPPN, isLast, totals, formatters, logoNavel } = props;
   const { formatTanggal, formatRupiah, formatAngka, formatAngkaNonDecimal } = formatters;
 
-  // Inisialisasi stretch lebih dulu, baru effect-nya
-  const { extraRows, bind, recalc } = createStretch({ fudge: 40 }); // fudge diperbesar
+  const { extraRows, bind, recalc } = createStretch({ fudge: 40 });
 
+  // Recalc saat item/page berubah (double rAF biar layout settle)
   createEffect(() => {
-    // trigger ulang kalkulasi saat items/isLast berubah
-    (items?.length ?? 0);
-    isLast;
-    requestAnimationFrame(recalc);
+    void (items?.length ?? 0);
+    void isLast;
+    requestAnimationFrame(() => requestAnimationFrame(recalc));
   });
+
+  onMount(() => {
+    // 1) setelah mount
+    setTimeout(recalc, 0);
+
+    // 2) ketika masuk/keluar print preview
+    const onBefore = () => setTimeout(recalc, 0);
+    const onAfter  = () => setTimeout(recalc, 0);
+    window.addEventListener("beforeprint", onBefore);
+    window.addEventListener("afterprint", onAfter);
+
+    // 3) jika font/asset selesai load
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(() => setTimeout(recalc, 0));
+    }
+    window.addEventListener("load", onAfter);
+    window.addEventListener("resize", onAfter);
+
+    // cleanup
+    return () => {
+      window.removeEventListener("beforeprint", onBefore);
+      window.removeEventListener("afterprint", onAfter);
+      window.removeEventListener("load", onAfter);
+      window.removeEventListener("resize", onAfter);
+    };
+  });
+
+// tetap pertahankan effect yang sudah ada
+createEffect(() => {
+  void (items?.length ?? 0);
+  void isLast;
+  requestAnimationFrame(() => requestAnimationFrame(recalc));
+});
+
+  // Header data
+  const customerName = data?.customer_name ?? "-";
+  const customerAddr = data?.alamat ?? data?.customer_alamat ?? "-";
+  const customerTelp = data?.telepon ?? data?.no_telp ?? data?.no_hp ?? "-";
+  const paymentDays  = data?.termin ?? data?.payment_terms ?? data?.customer_termin;
+  const paymentText  =
+    Number(paymentDays) === 0 || paymentDays === "0" ? "Cash" : `${paymentDays ?? "-"} Hari`;
 
   return (
     <div ref={bind("pageRef")} className="page">
       <div className="safe">
-      {/* row measurer khusus halaman ini */}
-        <table style="position:absolute; top:-10000px; left:-10000px; visibility:hidden;">
+        {/* Row measurer (11 kolom) */}
+        <table aria-hidden="true" style="position:absolute; top:-10000px; left:-10000px; visibility:hidden;">
           <tbody>
             <tr ref={bind("measureRowRef")}>
               <td class="p-1 text-center h-5"></td>
               <td class="p-1 text-center"></td>
-              <td class="p-1"></td>
+              <td class="p-1 hidden"></td>
               <td class="p-1 text-center"></td>
               <td class="p-1 text-center"></td>
-              <td class="p-1 text-right"></td>
-              <td class="p-1 text-right"></td>
+              <td class="p-1 text-center"></td>
+              <td class="p-1 text-center"></td>
+              <td class="p-1 text-center"></td>
+              <td class="p-1 text-center"></td>
               <td class="p-1 text-right"></td>
               <td class="p-1 text-right"></td>
             </tr>
           </tbody>
         </table>
 
-        {/* HEADER (ditampilkan di semua halaman) */}
-        <img
-          className="w-24"
-          src={logoNavel}
-          alt=""
-          onLoad={recalc}
-          hidden={!isPPN}
-        />
-
-        <h1 className="text-xl uppercase font-bold">
-          Invoice Penjualan
-        </h1>
+        {/* HEADER */}
+        <img className="w-24" src={logoNavel} alt="" onLoad={recalc} hidden={!isPPN} />
+        <h1 className="text-xl uppercase font-bold">Invoice Penjualan</h1>
 
         <div className="w-full flex gap-2 text-sm">
-          {/* LEFT TABLE */}
+          {/* LEFT */}
           <table className="w-[55%] border-2 border-black text-[13px] table-fixed">
             <tbody>
-              <tr>
-                <td
-                  className="px-2 pt-1 max-w-[300px] break-words whitespace-pre-wrap"
-                  colSpan={2}
-                >
-                  Kepada Yth:
-                </td>
-              </tr>
-              <tr>
-                <td
-                  className="px-2 max-w-[300px] break-words whitespace-pre-wrap"
-                  colSpan={2}
-                >
-                  {data.customer_name}
-                </td>
-              </tr>
-              <tr>
-                <td
-                  className="px-2 max-w-[300px] leading-relaxed break-words whitespace-pre-wrap"
-                  colSpan={2}
-                >
-                  {data.alamat}
-                </td>
-              </tr>
-              <tr>
-                <td className="px-2 py-1 whitespace-nowrap">Telp: {data.telepon || "-"}</td>
-                {/* <td className="px-2 py-1 whitespace-nowrap">Fax:</td> */}
-              </tr>
+              <tr><td className="px-2 pt-1 max-w-[300px] break-words whitespace-pre-wrap" colSpan={2}>Kepada Yth:</td></tr>
+              <tr><td className="px-2 max-w-[300px] break-words whitespace-pre-wrap" colSpan={2}>{customerName}</td></tr>
+              <tr><td className="px-2 max-w-[300px] leading-relaxed break-words whitespace-pre-wrap" colSpan={2}>{customerAddr}</td></tr>
+              <tr><td className="px-2 py-1 whitespace-nowrap">Telp: {customerTelp}</td></tr>
             </tbody>
           </table>
 
-          {/* RIGHT TABLE */}
+          {/* RIGHT */}
           <table className="w-[55%] border-2 border-black table-fixed text-sm">
             <tbody>
-              <tr>
-                  <td className="font-bold px-2 w-[30%] whitespace-nowrap">No. SJ</td>
-                  <td className="w-[5%] text-center">:</td>
-                  <td className="px-2 break-words w-[65%]">{data.no_sj}</td>
-              </tr>
-              <tr>
-                  <td className="font-bold px-2 w-[30%] whitespace-nowrap">Tanggal</td>
-                  <td className="w-[5%] text-center">:</td>
-                  <td className="px-2 break-words w-[65%]">{formatTanggal(data.created_at )}</td>
-              </tr>
-              <tr>
-                  <td className="font-bold px-2 w-[30%] whitespace-nowrap">No. SO</td>
-                  <td className="w-[5%] text-center">:</td>
-                  <td className="px-2 break-words w-[65%]">{data.no_so}</td>
-              </tr>
-              <tr>
-                  <td className="font-bold px-2 w-[30%] whitespace-nowrap">Payment</td>
-                  <td className="w-[5%] text-center">:</td>
-                  <td className="px-2 break-words w-[65%]">{data.termin == 0 ? "Cash" : data.termin + " Hari"}</td>
-              </tr>
-              <tr>
-                  <td className="font-bold px-2 w-[30%] whitespace-nowrap">Jatuh Tempo</td>
-                  <td className="w-[5%] text-center">:</td>
-                  <td className="px-2 break-words w-[65%]">{formatTanggal(data.validity_contract)}</td>
-              </tr>
+              <tr><td className="font-bold px-2 w-[30%] whitespace-nowrap">No. SJ</td><td className="w-[5%] text-center">:</td><td className="px-2 break-words w-[65%]">{data?.no_sj ?? "-"}</td></tr>
+              <tr><td className="font-bold px-2 w-[30%] whitespace-nowrap">Tanggal</td><td className="w-[5%] text-center">:</td><td className="px-2 break-words w-[65%]">{formatTanggal(data?.created_at)}</td></tr>
+              <tr><td className="font-bold px-2 w-[30%] whitespace-nowrap">No. SO</td><td className="w-[5%] text-center">:</td><td className="px-2 break-words w-[65%]">{data?.no_so ?? "-"}</td></tr>
+              <tr><td className="font-bold px-2 w-[30%] whitespace-nowrap">Payment</td><td className="w-[5%] text-center">:</td><td className="px-2 break-words w-[65%]">{paymentText}</td></tr>
+              <tr><td className="font-bold px-2 w-[30%] whitespace-nowrap">Jatuh Tempo</td><td className="w-[5%] text-center">:</td><td className="px-2 break-words w-[65%]">{formatTanggal(data?.validity_contract)}</td></tr>
             </tbody>
           </table>
         </div>
 
-        {/* ITEM TABLE */}
+        {/* ITEM TABLE (11 kolom) */}
         <table ref={bind("tableRef")} className="w-full table-fixed border border-black text-[12px] border-collapse mt-3">
           <thead ref={bind("theadRef")} className="bg-gray-200">
             <tr>
@@ -288,24 +317,24 @@ function PrintPage(props) {
               {(item, i) => (
                 <tr>
                   <td className="p-1 text-center break-words">{startIndex + i() + 1}</td>
-                  <td className="p-1 text-center break-words">{item.corak_kain || "-"}</td>
-                  <td hidden className="p-1 break-words">{item.konstruksi_kain}</td>
-                  <td className="p-1 text-center break-words">{item.deskripsi_warna || "-"}</td>
-                  <td className="p-1 text-center break-words">{formatAngkaNonDecimal(item.lebar)}"</td>
-                  <td className="p-1 text-center break-words">{item.grade_name}</td>
+                  <td className="p-1 text-center break-words">{item?.corak_kain || "-"}</td>
+                  <td hidden className="p-1 break-words">{item?.konstruksi_kain}</td>
+                  <td className="p-1 text-center break-words">
+                    {item?.deskripsi_warna || item?.so_deskripsi_warna || item?.pl_deskripsi_warna || "-"}
+                  </td>
+                  <td className="p-1 text-center break-words">{formatAngkaNonDecimal(item?.lebar)}"</td>
+                  <td className="p-1 text-center break-words">{item?.grade_name}</td>
 
-                  {/* Quantity: tampil 3 kolom */}
-                  <td className="p-1 text-center break-words">{(item.rolls || []).length}</td>
-                  <td className="p-1 text-center break-words">{formatAngka(parseFloat(item.meter_total || 0))}</td>
-                  <td className="p-1 text-center break-words">{formatAngka(parseFloat(item.yard_total  || 0))}</td>
+                  <td className="p-1 text-center break-words">{(item?.rolls || []).length}</td>
+                  <td className="p-1 text-center break-words">{formatAngka(parseFloat(item?.meter_total || 0))}</td>
+                  <td className="p-1 text-center break-words">{formatAngka(parseFloat(item?.yard_total  || 0))}</td>
 
-                  <td className="p-1 text-center break-words">{formatRupiah(item.harga)}</td>
+                  <td className="p-1 text-center break-words">{formatRupiah(item?.harga)}</td>
                   <td className="p-1 text-right break-words">
                     {(() => {
-                      // Tetap pakai satuan bisnis bawaan untuk kalkulasi jumlah (agar kompatibel backend)
-                      const useMeter = (data.satuan_unit || "Meter") === "Meter";
-                      const qty   = useMeter ? parseFloat(item.meter_total || 0) : parseFloat(item.yard_total || 0);
-                      const harga = parseFloat(item.harga || 0);
+                      const useMeter = (data?.satuan_unit || "Meter") === "Meter";
+                      const qty   = useMeter ? parseFloat(item?.meter_total || 0) : parseFloat(item?.yard_total || 0);
+                      const harga = parseFloat(item?.harga || 0);
                       return harga && qty ? formatRupiah(harga * qty) : "-";
                     })()}
                   </td>
@@ -313,16 +342,19 @@ function PrintPage(props) {
               )}
             </For>
 
-            {/* Tambahin row kosong */}
+            {/* Row kosong untuk stretch (11 kolom) */}
             <For each={Array.from({ length: extraRows() })}>
               {() => (
                 <tr>
                   <td className="p-1 text-center h-5"></td>
                   <td className="p-1 text-center"></td>
-                  <td className="p-1"></td>
+                  <td className="p-1 hidden"></td>
                   <td className="p-1 text-center"></td>
                   <td className="p-1 text-center"></td>
-                  <td className="p-1 text-right"></td>
+                  <td className="p-1 text-center"></td>
+                  <td className="p-1 text-center"></td>
+                  <td className="p-1 text-center"></td>
+                  <td className="p-1 text-center"></td>
                   <td className="p-1 text-right"></td>
                   <td className="p-1 text-right"></td>
                 </tr>
@@ -334,40 +366,42 @@ function PrintPage(props) {
             {/* Total lengkap hanya di halaman terakhir */}
             <Show when={isLast}>
               <tr>
-                {/* Kolom sebelum Quantity = 6 */}
+                {/* 6 kolom kiri (No, Jenis, Hidden, Warna, Lebar, Grade) */}
                 <td colSpan={5} className="border border-black font-bold text-right px-2 py-1">Total:</td>
-                {/* Total Rolls / Meter / Yard */}
+                {/* 3 kolom quantity */}
                 <td className="border border-black px-2 py-1 text-center font-bold">{totals.totalRolls}</td>
                 <td className="border border-black px-2 py-1 text-center font-bold">{formatAngka(totals.totalMeter)}</td>
                 <td className="border border-black px-2 py-1 text-center font-bold">{formatAngka(totals.totalYard)}</td>
-                {/* Subtotal uang */}
+                {/* 2 kolom nominal */}
                 <td className="border border-black px-2 py-1 text-right font-bold">Sub Total</td>
                 <td className="border border-black px-2 py-1 text-right">{formatRupiah(totals.subTotal)}</td>
               </tr>
+
+              {/* Baris label+nilai: kosongkan 9 kolom di kiri (11 - 2) */}
               <tr>
-                <td colSpan={8} className="px-2 py-1"/>
+                <td colSpan={8} className="px-2 py-1" />
                 <td className="px-2 py-1 text-right font-bold">DPP</td>
                 <td className="px-2 py-1 text-right">{formatRupiah(totals.dpp)}</td>
               </tr>
               <tr>
-                <td colSpan={8} className="px-2 py-1"/>
+                <td colSpan={8} className="px-2 py-1" />
                 <td className="px-2 py-1 text-right font-bold">Nilai Lain</td>
                 <td className="px-2 py-1 text-right">{formatRupiah(totals.nilaiLain)}</td>
               </tr>
               <tr>
-                <td colSpan={8} className="px-2 py-1"/>
+                <td colSpan={8} className="px-2 py-1" />
                 <td className="px-2 py-1 text-right font-bold">PPN</td>
                 <td className="px-2 py-1 text-right">{formatRupiah(totals.ppn)}</td>
               </tr>
               <tr>
-                <td colSpan={8} className="px-2 py-1"/>
+                <td colSpan={8} className="px-2 py-1" />
                 <td className="px-2 py-1 text-right font-bold">Jumlah Total</td>
                 <td className="px-2 py-1 text-right">{formatRupiah(totals.grand)}</td>
               </tr>
               <tr>
                 <td colSpan={10} className="border border-black p-2 align-top">
                   <div className="font-bold mb-1">NOTE:</div>
-                  <div className="whitespace-pre-wrap break-words italic">{data.keterangan ?? "-"}</div>
+                  <div className="whitespace-pre-wrap break-words italic">{data?.keterangan ?? "-"}</div>
                 </td>
               </tr>
               <tr>
@@ -389,6 +423,7 @@ function PrintPage(props) {
                 </td>
               </tr>
             </Show>
+
             <tr>
               <td colSpan={10} className="border border-black px-2 py-1 text-right italic">
                 Halaman {pageNo} dari {pageCount}

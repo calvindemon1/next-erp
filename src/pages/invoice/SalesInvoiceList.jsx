@@ -156,36 +156,30 @@ export default function SalesInvoiceList() {
     try {
       let updatedSc = { ...sc };
 
-      // Update delivered staus
+      // set delivered_status jika belum
       if (!sc.delivered_status) {
         await setInvoiceSales(tokUser?.token, sc.id, { delivered_status: 1 });
         updatedSc = { ...sc, delivered_status: 1 };
-
-        setSuratJalan((prev) =>
-          prev.map((item) => (item.id === sc.id ? updatedSc : item))
-        );
+        setSuratJalan((prev) => prev.map((item) => (item.id === sc.id ? updatedSc : item)));
       }
 
-      // Get data surat jalan
+      // Ambil detail untuk dicetak
       const detail = await getDeliveryNotes(sc.id, tokUser?.token);
-
       if (!detail) {
         Swal.fire("Error", "Data cetak tidak ditemukan.", "error");
         return;
       }
 
-      // Kirim data ke print
-      //console.log("Data print: ", JSON.stringify(detail, null, 2));
-      const encodedData = encodeURIComponent(JSON.stringify(detail));
-      window.open(`/print/deliverynote-invoice?data=${encodedData}`, "_blank");
-
+      // ⬇️ Kirim via HASH agar tidak kena limit header/query (HTTP 431)
+      const encoded = encodeURIComponent(JSON.stringify(detail));
+      window.open(`/print/deliverynote-invoice#${encoded}`, "_blank");
     } catch (err) {
       console.error(err);
       Swal.fire("Error", err.message || "Gagal memproses print", "error");
     }
   }
 
-async function handleUnsetInvoice(sc) {
+  async function handleUnsetInvoice(sc) {
     try {
       const result = await Swal.fire({
         title: "Batalkan Invoice?",
@@ -280,7 +274,7 @@ async function handleUnsetInvoice(sc) {
                 </td>
                 <td class="py-2 px-4">{sc.no_sj}</td>
                 <td class="py-2 px-4">{formatTanggalIndo(sc.created_at)}</td>
-                <td class="py-2 px-4">{sc.first_no_pl}</td>
+                <td class="py-2 px-4">{sc.no_pl}</td>
                 <td class="py-2 px-4">{sc.customer_name}</td>
                 <td class="py-2 px-4">{sc.satuan_unit}</td>
                 <td class="py-2 px-4 text-center">
