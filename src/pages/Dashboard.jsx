@@ -176,7 +176,7 @@ export default function Dashboard() {
         {
           key: "summary",
           label: "Summary Invoice",
-          anyPerm: ["view_surat_jalan", "view_jual_beli_surat_jalan"],
+          anyPerm: ["view_surat_jalan", "view_jual_beli_surat_jalan", "print_invoice"],
         },
       ],
     },
