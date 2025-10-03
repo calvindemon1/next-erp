@@ -164,7 +164,7 @@ export default function Dashboard() {
         {
           key: "sales",
           label: "Surat Jalan (Penjualan)",
-          perm: "create_surat_jalan",
+          perm: "view_surat_jalan",
         },
       ],
     },
@@ -176,7 +176,7 @@ export default function Dashboard() {
         {
           key: "summary",
           label: "Summary Invoice",
-          anyPerm: ["print_invoice"],
+          anyPerm: ["view_surat_jalan", "view_jual_beli_surat_jalan", "print_invoice"],
         },
       ],
     },
