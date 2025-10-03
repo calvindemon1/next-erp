@@ -1159,7 +1159,7 @@ export default function MainLayout(props) {
                   </ul>
                   <ul>
                     {/* Submenu Level 2: Kain Jadi */}
-                    {hasPermission("view_jual_beli_surat_jalan") && (
+                    {hasAllPermission(["view_jual_beli_surat_jalan", "create_jual_beli_surat_jalan"]) && (
                       <li>
                         <button
                           class="w-full text-left pl-8 pr-4 py-2 font-semibold text-gray-400 hover:bg-gray-700 flex justify-between items-center"
@@ -1263,11 +1263,12 @@ export default function MainLayout(props) {
                 {/* RETUR (Nested) */}
                 {(() => {
                   // --- permissions
-                  const canGreige = hasPermission("return_purchase_greige");
-                  const canCelup = hasPermission("return_purchase_celup");
-                  const canFinish = hasPermission("return_purchase_finish");
-                  const canJB = hasPermission("return_jual_beli");
-                  const canSales = hasPermission("return_sales");
+                  const canGreige = hasPermission("view_purchase_greige_retur");
+                  const canCelup = hasPermission("view_purchase_celup_retur");
+                  const canFinish = hasPermission("view_purchase_finish_retur");
+                  const canJB = hasPermission("view_jual_beli_retur");
+                  const canSales = hasPermission("view_sales_retur");
+
 
                   const showReturPurchase =
                     canGreige || canCelup || canFinish || canJB;
