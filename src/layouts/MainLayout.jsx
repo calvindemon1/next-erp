@@ -967,6 +967,8 @@ export default function MainLayout(props) {
                     {hasAllPermission([
                       "view_packing_lists",
                       "view_surat_jalan",
+                      "create_packing_lists",
+                      "create_surat_jalan",
                     ]) && (
                       <li>
                         <button
@@ -1025,7 +1027,7 @@ export default function MainLayout(props) {
                   </ul>
                   <ul>
                     {/* Submenu Level 2: Pembelian Greige */}
-                    {hasPermission("view_purchase_greige_surat_jalan") && (
+                    {hasAllPermission(["view_purchase_greige_surat_jalan", "create_purchase_greige_surat_jalan"]) && (
                       <li>
                         <button
                           class="w-full text-left pl-8 pr-4 py-2 font-semibold text-gray-400 hover:bg-gray-700 flex justify-between items-center"
@@ -1070,7 +1072,7 @@ export default function MainLayout(props) {
                   </ul>
                   <ul>
                     {/* Submenu Level 2: Order Celup */}
-                    {hasPermission("view_purchase_celup_surat_jalan") && (
+                    {hasAllPermission(["view_purchase_celup_surat_jalan", "create_purchase_celup_surat_jalan"]) && (
                       <li>
                         <button
                           class="w-full text-left pl-8 pr-4 py-2 font-semibold text-gray-400 hover:bg-gray-700 flex justify-between items-center"
@@ -1115,7 +1117,7 @@ export default function MainLayout(props) {
                   </ul>
                   <ul>
                     {/* Submenu Level 2: Kain Jadi */}
-                    {hasPermission("view_purchase_finish_surat_jalan") && (
+                    {hasAllPermission(["view_purchase_finish_surat_jalan", "create_purchase_finish_surat_jalan"]) && (
                       <li>
                         <button
                           class="w-full text-left pl-8 pr-4 py-2 font-semibold text-gray-400 hover:bg-gray-700 flex justify-between items-center"
@@ -1268,7 +1270,6 @@ export default function MainLayout(props) {
                   const canFinish = hasPermission("view_purchase_finish_retur");
                   const canJB = hasPermission("view_jual_beli_retur");
                   const canSales = hasPermission("view_sales_retur");
-
 
                   const showReturPurchase =
                     canGreige || canCelup || canFinish || canJB;
