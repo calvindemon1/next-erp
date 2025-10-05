@@ -228,19 +228,19 @@ function PrintPage(props) {
           <table className="w-[55%] border-2 border-black table-fixed text-sm">
             <tbody>
               <tr>
-                  <td className="font-bold px-2 w-[30%] whitespace-nowrap">No. SJ</td>
+                  <td className="font-bold px-2 w-[30%] whitespace-nowrap">No. Retur</td>
                   <td className="w-[5%] text-center">:</td>
-                  <td className="px-2 break-words w-[65%]">{data.no_sj}</td>
+                  <td className="px-2 break-words w-[65%]">{data.no_retur}</td>
               </tr>
               <tr>
-                  <td className="font-bold px-2 w-[30%] whitespace-nowrap">Tanggal SJ</td>
+                  <td className="font-bold px-2 w-[30%] whitespace-nowrap">Tanggal</td>
                   <td className="w-[5%] text-center">:</td>
                   <td className="px-2 break-words w-[65%]">{formatTanggal(data.created_at )}</td>
               </tr>
               <tr>
-                  <td className="font-bold px-2 w-[30%] whitespace-nowrap">No. SJ Supplier</td>
+                  <td className="font-bold px-2 w-[30%] whitespace-nowrap">No. SJ</td>
                   <td className="w-[5%] text-center">:</td>
-                  <td className="px-2 break-words w-[65%]">{data.no_sj_supplier}</td>
+                  <td className="px-2 break-words w-[65%]">{data.no_sj}</td>
               </tr>
               <tr>
                   <td className="font-bold px-2 w-[30%] whitespace-nowrap">Alamat Kirim</td>
@@ -248,7 +248,7 @@ function PrintPage(props) {
                   {/* <td className="px-2 break-words w-[65%]">{data.supplier_alamat}</td> */}
                   <td className="px-2 break-words w-[65%]">{data.supplier_kirim_alamat}</td>
               </tr>
-              <tr>
+              {/* <tr>
                   <td className="font-bold px-2 w-[30%] whitespace-nowrap">Tanggal Kirim</td>
                   <td className="w-[5%] text-center">:</td>
                   <td className="px-2 break-words w-[65%]">{formatTanggal(data.tanggal_kirim || "-")}</td>
@@ -257,7 +257,7 @@ function PrintPage(props) {
                   <td className="font-bold px-2 w-[30%] whitespace-nowrap">No. PO</td>
                   <td className="w-[5%] text-center">:</td>
                   <td className="px-2 break-words w-[65%]">{data.no_po}</td>
-              </tr>
+              </tr> */}
             </tbody>
           </table>
         </div>
@@ -419,7 +419,7 @@ function PrintPage(props) {
                 <td colSpan={6} className="border border-black p-2 align-top">
                   <div className="font-bold mb-1">NOTE:</div>
                   <div className="whitespace-pre-wrap break-words italic">
-                    {data.keterangan ?? "-"}
+                    {data.keterangan_retur ?? "-"}
                   </div>
                 </td>
               </tr>
