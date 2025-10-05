@@ -5018,7 +5018,7 @@ export async function unsetInvoiceJB(token, id, payload = {}) {
 
 // #endregion INVOICE
 
-// #startregion RETUR
+// #region RETUR SKEMA 'PUT' / UPDATE
 
 // Set retur untuk Surat Penerimaan Greige
 export async function setReturGreige(token, sjId, itemIds = []) {
@@ -5315,6 +5315,677 @@ export async function undoReturSales(token, sjId, rollIds = []) {
 }
 
 // #endregion RETUR
+
+// #region RETUR CRUD FUNCTION
+
+export async function createGreigeRetur(token, payload) {
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_API_URL}/create-purchase-greige-retur`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          "ngrok-skip-browser-warning": "any-value",
+        },
+        body: JSON.stringify(payload),
+      }
+    );
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data?.message || "Gagal membuat Retur Greige");
+    }
+    return data;
+  } catch (error) {
+    throw error;
+  }
+}
+
+// GET ALL – GET /purchase-greige-retur
+export async function getAllGreigeReturs(token) {
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_API_URL}/purchase-greige-retur`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          "ngrok-skip-browser-warning": "any-value",
+        },
+      }
+    );
+
+    const data = await response.json();
+    return {
+      status: response.status,
+      ...data,
+    };
+  } catch (error) {
+    return {
+      status: 500,
+      message: error.message || "Gagal mengambil data Retur Greige",
+    };
+  }
+}
+
+// GET by ID – GET /purchase-greige-retur/:id
+export async function getGreigeRetur(id, token) {
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_API_URL}/purchase-greige-retur/${id}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          "ngrok-skip-browser-warning": "any-value",
+        },
+      }
+    );
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(
+        data?.message || `Gagal mengambil Retur Greige dengan id: ${id}`
+      );
+    }
+    return data;
+  } catch (error) {
+    throw error;
+  }
+}
+
+// UPDATE – PUT /update-purchase-finish-retur/:id
+export async function updateDataGreigeRetur(token, id, payload) {
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_API_URL}/update-purchase-greige-retur/${id}`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          "ngrok-skip-browser-warning": "any-value",
+        },
+        body: JSON.stringify(payload),
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data?.message || "Gagal mengubah Retur Greige");
+    }
+
+    return data;
+  } catch (error) {
+    throw error;
+  }
+}
+
+// DELETE – DELETE /delete-purchase-greige-retur/:id
+export async function softDeleteGreigeRetur(token, id) {
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_API_URL}/delete-purchase-greige-retur/${id}`,
+      {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          "ngrok-skip-browser-warning": "any-value",
+        },
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data?.message || `Gagal menghapus Retur Greige dengan id: ${id}`
+      );
+    }
+
+    return data;
+  } catch (error) {
+    throw error;
+  }
+}
+
+export async function createCelupRetur(token, payload) {
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_API_URL}/create-purchase-celup-retur`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          "ngrok-skip-browser-warning": "any-value",
+        },
+        body: JSON.stringify(payload),
+      }
+    );
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data?.message || "Gagal membuat Retur Order Celup");
+    }
+    return data;
+  } catch (error) {
+    throw error;
+  }
+}
+
+// GET ALL – GET /purchase-celup-retur
+export async function getAllCelupReturs(token) {
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_API_URL}/purchase-celup-retur`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          "ngrok-skip-browser-warning": "any-value",
+        },
+      }
+    );
+
+    const data = await response.json();
+    return {
+      status: response.status,
+      ...data,
+    };
+  } catch (error) {
+    return {
+      status: 500,
+      message: error.message || "Gagal mengambil data Retur Order Celup",
+    };
+  }
+}
+
+// GET by ID – GET /purchase-celup-retur/:id
+export async function getCelupRetur(id, token) {
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_API_URL}/purchase-celup-retur/${id}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          "ngrok-skip-browser-warning": "any-value",
+        },
+      }
+    );
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(
+        data?.message || `Gagal mengambil Retur Order Celup dengan id: ${id}`
+      );
+    }
+    return data;
+  } catch (error) {
+    throw error;
+  }
+}
+
+// UPDATE – PUT /update-purchase-celup-retur/:id
+export async function updateDataCelupRetur(token, id, payload) {
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_API_URL}/update-purchase-celup-retur/${id}`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          "ngrok-skip-browser-warning": "any-value",
+        },
+        body: JSON.stringify(payload),
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data?.message || "Gagal mengubah Retur Order Celup");
+    }
+
+    return data;
+  } catch (error) {
+    throw error;
+  }
+}
+
+// DELETE – DELETE /delete-purchase-finish-retur/:id
+export async function softDeleteCelupRetur(token, id) {
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_API_URL}/delete-purchase-celup-retur/${id}`,
+      {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          "ngrok-skip-browser-warning": "any-value",
+        },
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data?.message || `Gagal menghapus Retur Order Celup dengan id: ${id}`
+      );
+    }
+
+    return data;
+  } catch (error) {
+    throw error;
+  }
+}
+
+export async function createFinishRetur(token, payload) {
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_API_URL}/create-purchase-finish-retur`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          "ngrok-skip-browser-warning": "any-value",
+        },
+        body: JSON.stringify(payload),
+      }
+    );
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data?.message || "Gagal membuat Retur Kain Jadi");
+    }
+    return data;
+  } catch (error) {
+    throw error;
+  }
+}
+
+// GET ALL – GET /purchase-finish-retur
+export async function getAllFinishReturs(token) {
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_API_URL}/purchase-finish-retur`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          "ngrok-skip-browser-warning": "any-value",
+        },
+      }
+    );
+
+    const data = await response.json();
+    return {
+      status: response.status,
+      ...data,
+    };
+  } catch (error) {
+    return {
+      status: 500,
+      message: error.message || "Gagal mengambil data Retur Kain Jadi",
+    };
+  }
+}
+
+// GET by ID – GET /purchase-finish-retur/:id
+export async function getFinishRetur(id, token) {
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_API_URL}/purchase-finish-retur/${id}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          "ngrok-skip-browser-warning": "any-value",
+        },
+      }
+    );
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(
+        data?.message || `Gagal mengambil Retur Kain Jadi dengan id: ${id}`
+      );
+    }
+    return data;
+  } catch (error) {
+    throw error;
+  }
+}
+
+// UPDATE – PUT /update-purchase-finish-retur/:id
+export async function updateDataFinishRetur(token, id, payload) {
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_API_URL}/update-purchase-finish-retur/${id}`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          "ngrok-skip-browser-warning": "any-value",
+        },
+        body: JSON.stringify(payload),
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data?.message || "Gagal mengubah Retur Kain Jadi");
+    }
+
+    return data;
+  } catch (error) {
+    throw error;
+  }
+}
+
+// DELETE – DELETE /delete-purchase-finish-retur/:id
+export async function softDeleteFinishRetur(token, id) {
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_API_URL}/delete-purchase-finish-retur/${id}`,
+      {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          "ngrok-skip-browser-warning": "any-value",
+        },
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data?.message || `Gagal menghapus Retur Kain Jadi dengan id: ${id}`
+      );
+    }
+
+    return data;
+  } catch (error) {
+    throw error;
+  }
+}
+
+export async function createJualBeliRetur(token, payload) {
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_API_URL}/create-jual-beli-retur`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          "ngrok-skip-browser-warning": "any-value",
+        },
+        body: JSON.stringify(payload),
+      }
+    );
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data?.message || "Gagal membuat Retur Jual Beli");
+    }
+    return data;
+  } catch (error) {
+    throw error;
+  }
+}
+
+// GET ALL – GET /purchase-jual-beli-retur
+export async function getAllJualBeliReturs(token) {
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_API_URL}/jual-beli-retur`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          "ngrok-skip-browser-warning": "any-value",
+        },
+      }
+    );
+
+    const data = await response.json();
+    return {
+      status: response.status,
+      ...data,
+    };
+  } catch (error) {
+    return {
+      status: 500,
+      message: error.message || "Gagal mengambil data Retur Jual Beli",
+    };
+  }
+}
+
+// GET by ID – GET /jual-beli-retur/:id
+export async function getJualBeliRetur(id, token) {
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_API_URL}/jual-beli-retur/${id}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          "ngrok-skip-browser-warning": "any-value",
+        },
+      }
+    );
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(
+        data?.message || `Gagal mengambil Retur Jual Beli dengan id: ${id}`
+      );
+    }
+    return data;
+  } catch (error) {
+    throw error;
+  }
+}
+
+// UPDATE – PUT /update-jual-beli-retur/:id
+export async function updateDataJualBeliRetur(token, id, payload) {
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_API_URL}/update-jual-beli-retur/${id}`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          "ngrok-skip-browser-warning": "any-value",
+        },
+        body: JSON.stringify(payload),
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data?.message || "Gagal mengubah Retur Jual Beli");
+    }
+
+    return data;
+  } catch (error) {
+    throw error;
+  }
+}
+
+// DELETE – DELETE /delete-jual-beli-retur/:id
+export async function softDeleteJualBeliRetur(token, id) {
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_API_URL}/delete-jual-beli-retur/${id}`,
+      {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          "ngrok-skip-browser-warning": "any-value",
+        },
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data?.message || `Gagal menghapus Retur Jual Beli dengan id: ${id}`
+      );
+    }
+
+    return data;
+  } catch (error) {
+    throw error;
+  }
+}
+
+// CREATE – POST /create-sales-retur
+export async function createSalesRetur(token, payload) {
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_API_URL}/create-sales-retur`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          "ngrok-skip-browser-warning": "any-value",
+        },
+        body: JSON.stringify(payload),
+      }
+    );
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data?.message || "Gagal membuat Retur Sales");
+    }
+    return data;
+  } catch (error) {
+    throw error;
+  }
+}
+
+// GET ALL – GET /sales-retur
+export async function getAllSalesReturs(token) {
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_API_URL}/sales-retur`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          "ngrok-skip-browser-warning": "any-value",
+        },
+      }
+    );
+    const data = await response.json();
+    return { status: response.status, ...data };
+  } catch (error) {
+    return { status: 500, message: error.message || "Gagal mengambil data Retur Sales" };
+  }
+}
+
+// GET by ID – GET /sales-retur/:id
+export async function getSalesRetur(id, token) {
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_API_URL}/sales-retur/${id}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          "ngrok-skip-browser-warning": "any-value",
+        },
+      }
+    );
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data?.message || `Gagal mengambil Retur Sales dengan id: ${id}`);
+    }
+    return data;
+  } catch (error) {
+    throw error;
+  }
+}
+
+// UPDATE – PUT /update-sales-retur/:id
+export async function updateDataSalesRetur(token, id, payload) {
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_API_URL}/update-sales-retur/${id}`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          "ngrok-skip-browser-warning": "any-value",
+        },
+        body: JSON.stringify(payload),
+      }
+    );
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data?.message || "Gagal mengubah Retur Sales");
+    }
+    return data;
+  } catch (error) {
+    throw error;
+  }
+}
+
+// DELETE – DELETE /delete-sales-retur/:id
+export async function softDeleteSalesRetur(token, id) {
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_API_URL}/delete-sales-retur/${id}`,
+      {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          "ngrok-skip-browser-warning": "any-value",
+        },
+      }
+    );
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data?.message || `Gagal menghapus Retur Sales dengan id: ${id}`);
+    }
+    return data;
+  } catch (error) {
+    throw error;
+  }
+}
+
+// #endregion
 
 export function logout() {
   localStorage.removeItem("user");
