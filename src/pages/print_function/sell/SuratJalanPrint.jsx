@@ -15,6 +15,13 @@ export default function PackingOrderPrint(props) {
     return paper === "CONTINUOUS95" || dm === "1" || dm === "true";
   });
 
+  // Tinggi form continuous: ?formh=5.5 (inch)
+  const formHeightIn = createMemo(() => {
+    const q = new URLSearchParams(window.location.search);
+    const h = parseFloat(q.get("formh") || "5.5");
+    return Number.isFinite(h) && h > 0 ? h : 5.5;
+  });
+
   /* ========= Helpers ========= */
   function formatTanggal(s) {
     if (!s) return "-";
@@ -39,11 +46,15 @@ export default function PackingOrderPrint(props) {
     const getBal = (r) => r?.no_bal ?? r?.bal ?? r?.Bal ?? r?.noBal ?? r?.noBAL ?? null;
 
     const pickLotsFromRolls = (rolls) => {
-      const set = new Set((rolls || []).map(getLot).filter((v) => v !== undefined && v !== null && String(v).trim() !== ""));
+      const set = new Set(
+        (rolls || []).map(getLot).filter((v) => v !== undefined && v !== null && String(v).trim() !== "")
+      );
       return set.size ? Array.from(set).join(", ") : "-";
     };
     const pickBalsFromRolls = (rolls) => {
-      const set = new Set((rolls || []).map(getBal).filter((v) => v !== undefined && v !== null && String(v).trim() !== ""));
+      const set = new Set(
+        (rolls || []).map(getBal).filter((v) => v !== undefined && v !== null && String(v).trim() !== "")
+      );
       return set.size ? Array.from(set).sort((a, b) => Number(a) - Number(b)).join(", ") : "-";
     };
 
@@ -51,8 +62,8 @@ export default function PackingOrderPrint(props) {
       return root().packing_lists.flatMap((pl) =>
         (pl.items || []).map((it) => {
           const validRolls = (it.rolls || []).filter((r) => hasQty(r.meter, r.yard));
-          const lotDisplay = (it.lot && String(it.lot).trim()) ? String(it.lot) : pickLotsFromRolls(validRolls);
-          const balDisplay = (it.no_bal && String(it.no_bal).trim()) ? String(it.no_bal) : pickBalsFromRolls(validRolls);
+          const lotDisplay = it.lot && String(it.lot).trim() ? String(it.lot) : pickLotsFromRolls(validRolls);
+          const balDisplay = it.no_bal && String(it.no_bal).trim() ? String(it.no_bal) : pickBalsFromRolls(validRolls);
 
           return {
             kode: it.corak_kain ?? "-",
@@ -122,16 +133,58 @@ export default function PackingOrderPrint(props) {
   const ROWS_OTHER_PAGES = 9;
   const pagesWithOffsets = createMemo(() => splitIntoPagesWithOffsets(displayRows(), ROWS_FIRST_PAGE, ROWS_OTHER_PAGES));
 
+  // ==== CSS DINAMIS UNTUK KERTAS ====
+  const dynamicPageCss = createMemo(() => {
+    if (isContinuous()) {
+      const formWidthIn = 9.5;
+      // 1. Definisikan tinggi KERTAS FISIK agar selalu portrait
+      //    Gunakan tinggi standar seperti 11 inch. (11 > 9.5, jadi pasti portrait)
+      const physicalPageHeightIn = 11; 
+
+      // 2. Definisikan tinggi AREA KONTEN LOGIS Anda (setengah dari tinggi form)
+      const logicalContentHeightIn = formHeightIn() / 2;
+
+      return `
+        /*
+         Mendefinisikan ukuran KERTAS FISIK untuk printer.
+         Karena Tinggi (11in) > Lebar (9.5in), orientasi akan menjadi PORTRAIT.
+        */
+        @page { 
+          size: ${formWidthIn}in ${physicalPageHeightIn}in; 
+          margin: 0; 
+        }
+
+        /*
+         Mendefinisikan ukuran BLOK KONTEN di dalam kertas tersebut.
+         Ini adalah area surat jalan Anda yang sebenarnya (setengah halaman).
+        */
+        .page { 
+          width: ${formWidthIn}in; 
+          height: ${logicalContentHeightIn}in; 
+          display: flex;
+          flex-direction: column;
+          box-sizing: border-box;
+        }
+      `;
+    }
+
+    // Untuk A4, gunakan setengah dari tinggi A4 (297mm / 2 = 148.5mm)
+    return `
+      @page { size: A4; margin: 0; }
+      .page { 
+        width: 210mm; 
+        height: 148.5mm;
+        display: flex;
+        flex-direction: column;
+        box-sizing: border-box;
+      }
+    `;
+  });
+  
   return (
     <>
       <style>{`
         :root { --safe: 8mm; }
-
-        /* Portrait Letter */
-        @page {
-          size: 8.5in 11in;
-          margin: 0;
-        }
 
         html, body {
           margin: 0;
@@ -143,16 +196,6 @@ export default function PackingOrderPrint(props) {
           font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, "Helvetica Neue";
           display: flex;
           justify-content: center;
-        }
-
-        .page {
-          width: 8.5in;
-          height: 5.4in;
-          position: relative;
-          box-sizing: border-box;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
         }
 
         .safe {
@@ -171,12 +214,12 @@ export default function PackingOrderPrint(props) {
         td, th { line-height: 1.25; }
         tbody td { min-height: 1.25rem; }
 
-        /* ==== A4 (non-continuous): perkecil teks & perbesar area tanda tangan ==== */
-        .a4 td, .a4 th { font-size: 12px; line-height: 1.2; }         /* turun sedikit */
+        /* ==== A4 (non-continuous) ==== */
+        .a4 td, .a4 th { font-size: 12px; line-height: 1.2; }
         .a4 .a4-info td { font-size: 12px; }
         .a4 .a4-customer td { font-size: 12px; }
         .a4 .a4-label { font-weight: 700; }
-        .a4 .sign-block {                                           /* area tanda tangan lebih tinggi */
+        .a4 .sign-block {
           font-size: 12px;
           padding-top: 28px;
           padding-bottom: 28px;
@@ -185,33 +228,51 @@ export default function PackingOrderPrint(props) {
         /* ====== DOT-MATRIX / CONTINUOUS ====== */
         @media print {
           .dm, .dm * {
-            font-family: "Courier New", monospace !important;
+            font-family: "Arial", monospace !important;
             color: #000 !important;
-            -webkit-font-smoothing: auto;
-            text-rendering: geometricPrecision;
-            font-weight: 600;
-          }
-          .dm td, .dm th {
-            font-size: 12px;
-            padding: 2px 3px;
-            border-color: #000 !important;
-            background: transparent !important;
-          }
-          .dm .info-box td, .dm .info-box th {
-            font-weight: 600 !important;
-            -webkit-text-stroke: 0 !important;
+            font-weight: 400;
             letter-spacing: 0;
           }
-          .dm .items-table tbody td {
-            font-weight: 800 !important;
-            -webkit-text-stroke: 0.25px !important;
-            letter-spacing: -0.05px;
+          .dm td, .dm th{
+            /* pakai satuan INCH agar konsisten ke printer */
+            font-size: 12px;
+            line-height: 0.18in;      /* baris fix (≈4.6mm) */
+            padding: 0.06in 0.04in;   /* padding fix */
+            border-color:#000 !important;
+            background:transparent !important;
           }
           .dm .items-table thead th,
-          .dm .items-table tfoot td {
-            font-weight: 650 !important;
-            -webkit-text-stroke: 0.12px !important;
-          }
+          .dm .items-table tfoot td { font-weight: 600; }
+        }
+
+        .border, .border-black { border-color: #000; }
+        
+        /* ==== FRAME LUAR + HEADER BERGARIS, BODY POLOS ==== */
+        .items-table{
+          border: 0.01in solid #000;
+          border-collapse: collapse;
+        }
+
+        /* HEADER: grid penuh */
+        .items-table thead th{
+          border: 0.01in solid #000 !important;
+        }
+
+        /* BODY: tanpa garis per-sel */
+        .items-table tbody th,
+        .items-table tbody td{
+          border: 0 !important;
+        }
+
+        /* TOTAL: grid penuh seperti header */
+        .items-table tfoot tr.total-row td{
+          border: 0.01in solid #000 !important;
+        }
+
+        /* Baris setelah TOTAL (Keterangan): hanya garis atas */
+        .items-table tfoot tr.total-row + tr td{
+          border: 0 !important;
+          border-top: 0.01in solid #000 !important;
         }
 
         @media print {
@@ -219,6 +280,9 @@ export default function PackingOrderPrint(props) {
           .page:last-child { page-break-after: auto; }
         }
       `}</style>
+
+      {/* CSS ukuran halaman dinamis */}
+      <style>{dynamicPageCss()}</style>
 
       <For each={pagesWithOffsets()}>
         {(p, idx) => {
@@ -262,12 +326,12 @@ function PrintPage(props) {
     if (document.fonts?.ready) document.fonts.ready.then(go); else go();
   });
 
-  // helper: apakah A4?
   const a4Class = !isContinuous ? "a4" : "";
+  const dmClass = isContinuous ? "dm" : "";
 
   return (
     <div ref={bind("pageRef")} className={`page ${a4Class}`}>
-      <div className="safe">
+      <div className="safe" style={{ "flex-grow": 1, display: "flex", "flex-direction": "column" }}>
         {/* Measurer */}
         <table style="position:absolute; top:-10000px; left:-10000px; visibility:hidden;">
           <tbody>
@@ -294,12 +358,12 @@ function PrintPage(props) {
             onLoad={recalc}
             style={{ display: isPPN ? "block" : "none" }}
           />
-          <h1 className={`${isContinuous ? "dm" : ""} text-lg uppercase font-bold`}>Surat Jalan</h1>
+          <h1 className={`${dmClass} text-lg uppercase font-bold`}>Surat Jalan</h1>
         </div>
 
         {/* Header dua kolom */}
         <div className="w-full grid gap-2 grid-cols-[50%_50%]">
-          {/* Kiri: Kepada Yth */}
+          {/* Kiri */}
           <table className={`border-2 border-black table-fixed ${isContinuous ? "dm info-box" : "a4-customer"}`}>
             <tbody>
               <tr>
@@ -315,7 +379,7 @@ function PrintPage(props) {
             </tbody>
           </table>
 
-          {/* Kanan: Info */}
+          {/* Kanan */}
           <table className={`border-2 border-black table-fixed w-full leading-tight ${isContinuous ? "dm info-box" : "a4-info"}`}>
             <colgroup>
               <col style="width:18%" />
@@ -359,23 +423,39 @@ function PrintPage(props) {
         {/* TABEL ITEM */}
         <table
           ref={bind("tableRef")}
-          className={`w-full table-fixed border border-black border-collapse mt-1 ${isContinuous ? "dm items-table" : ""}`}
+          className={`w-full table-fixed border border-black border-collapse mt-1 items-table ${dmClass}`}
+          style={{ "flex-grow": 1 }} 
         >
+          {isContinuous && (
+            <colgroup>
+              <col style="width:5ch" />
+              <col style="width:6ch" />
+              <col style="width:12ch" />
+              <col style="width:7ch" />
+              <col style="width:14ch" />
+              <col style="width:6ch" />
+              <col style="width:6ch" />
+              <col style="width:7ch" />
+              <col style="width:10ch" />
+              <col style="width:10ch" />
+            </colgroup>
+          )}
+
           <thead ref={bind("theadRef")}>
             <tr>
-              <th className="border border-black p-1 w-[5%]" rowSpan={2}>No</th>
-              <th className="border border-black p-1 w-[7%]" rowSpan={2}>Bal</th>
-              <th className="border border-black p-1 w-[10%]" rowSpan={2}>Jenis Kain</th>
-              <th className="border border-black p-1 w-[7%]" rowSpan={2}>Lot</th>
-              <th className="border border-black p-1 w-[10%]" rowSpan={2}>Warna</th>
-              <th className="border border-black p-1 w-[8%]"  rowSpan={2}>Lebar</th>
-              <th className="border border-black p-1 w-[8%]"  rowSpan={2}>Grade</th>
-              <th className="border border-black p-1 w-[8%]" rowSpan={2}>TTL/PCS</th>
-              <th className="border border-black p-1 w-[20%] text-center" colSpan={2}>Quantity</th>
+              <th className="border border-black p-1" rowSpan={2}>No</th>
+              <th className="border border-black p-1" rowSpan={2}>Bal</th>
+              <th className="border border-black p-1" rowSpan={2}>Jenis Kain</th>
+              <th className="border border-black p-1" rowSpan={2}>Lot</th>
+              <th className="border border-black p-1" rowSpan={2}>Warna</th>
+              <th className="border border-black p-1" rowSpan={2}>Lebar</th>
+              <th className="border border-black p-1" rowSpan={2}>Grade</th>
+              <th className="border border-black p-1" rowSpan={2}>TTL/PCS</th>
+              <th className="border border-black p-1 text-center" colSpan={2}>Quantity</th>
             </tr>
             <tr>
-              <th className="border border-black p-1 w-[10%]">Meter</th>
-              <th className="border border-black p-1 w-[10%]">Yard</th>
+              <th className="border border-black p-1">Meter</th>
+              <th className="border border-black p-1">Yard</th>
             </tr>
           </thead>
 

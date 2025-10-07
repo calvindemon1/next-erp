@@ -32,7 +32,7 @@ export default function PackingListPrint(props) {
   // mm untuk halaman & lebar konten aman (antara lubang traktor)
   const PAGE_MM = createMemo(() =>
     paperType() === "CONTINUOUS95"
-      ? { w: 241, h: 279, safeL: 12, safeR: 12, safeT: 8, safeB: 10, contentW: 205 }
+      ? { w: 241, h: 279, safeL: 12, safeR: 12, safeT: 8, safeB: 10, contentW: 217 }
       : { w: 210, h: 297, safeL: 10, safeR: 10, safeT: 10, safeB: 10, contentW: 190 }
   );
 
@@ -188,7 +188,7 @@ export default function PackingListPrint(props) {
           margin: 0; padding: 0; height: 100%; width: 100%;
           -webkit-print-color-adjust: exact !important;
           print-color-adjust: exact !important;
-          font-family: ${paperType() === 'CONTINUOUS95' ? "'Courier New', monospace" : "Arial, sans-serif"};
+          font-family: ${paperType() === 'CONTINUOUS95' ? "'Arial', monospace" : "Arial, sans-serif"};
         }
 
         .page { width: var(--page-w); height: var(--page-h); display:flex; }
@@ -252,8 +252,8 @@ export default function PackingListPrint(props) {
         /* CONTINUOUS: lebih pekat & rapat */
         body[data-paper="CONTINUOUS95"] .num,
         body[data-paper="CONTINUOUS95"] .roll-cell {
-          font-family: 'Courier New', monospace;
-          font-weight: 700;
+          font-family: 'Arial', monospace;
+          font-weight: 500;
           -webkit-text-stroke: 0.18px;   /* pekat di print */
           letter-spacing: 0;
           padding: 0 1px;
@@ -334,8 +334,8 @@ function PrintPage(props) {
     if (maxCol === 10) {
       if (isContinuous) {
         // Continuous 10 kolom (rangkap 3) — ini yang tadi sudah OK
-        W_NO = 2.8; W_BAL = 4.0; W_COL = 6.5; W_ITEM = 8; W_LOT = 4;
-        W_TTL = 7.5;              // TTL cukup
+        W_NO = 2.8; W_BAL = 4.0; W_COL = 6.8; W_ITEM = 8; W_LOT = 4;
+        W_TTL = 8.5;              // TTL cukup
       } else {
         // A4 10 kolom — TTL dibikin lebar, non-roll dikompres moderat
         W_NO = 3; W_BAL = 4.5; W_COL = 7; W_ITEM = 8; W_LOT = 4;
