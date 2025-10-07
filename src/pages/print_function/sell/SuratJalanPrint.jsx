@@ -67,7 +67,7 @@ export default function PackingOrderPrint(props) {
 
           return {
             kode: it.corak_kain ?? "-",
-            warna: it.deskripsi_warna ?? "-",
+            warna: it.so_deskripsi_warna ?? "-",
             lebar: it.lebar ?? "-",
             grade: it.grade_name ?? "-",
             lot: lotDisplay || "-",
@@ -93,7 +93,7 @@ export default function PackingOrderPrint(props) {
           if (!acc) {
             acc = {
               kode: r.corak_kain ?? "-",
-              warna: r.deskripsi_warna ?? "-",
+              warna: r.so_deskripsi_warna ?? "-",
               lebar: r.lebar ?? "-",
               grade: r.grade_name ?? "-",
               lot_set: new Set(),
