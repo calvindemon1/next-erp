@@ -43,7 +43,6 @@ export default function MainLayout(props) {
   const [isReturSalesOpen, setReturSalesOpen] = createSignal(false);
 
   const canAccessFinance = hasAnyPermission([
-    ,
     "view_bank",
     "view_payment_methods",
     "view_jenis_potongan",
@@ -87,7 +86,7 @@ export default function MainLayout(props) {
 
   const invoiceRoutes = {
     transaction: ["/deliverynote-invoice", "/deliverynote-invoice/form"],
-    jualbeli: ["jualbeli-invoice", "jualbeli-invoice/form"],
+    jualbeli: ["/jualbeli-invoice", "/jualbeli-invoice/form"],
   };
 
   // ==== RETUR ROUTES (dipisah agar auto-expand submenu tepat) ====
@@ -140,6 +139,8 @@ export default function MainLayout(props) {
           "/units/form",
           "/agent",
           "/agent/form",
+          "/bank-account",
+          "/bank-account/form"
         ].some((p) => pathname.startsWith(p))
       ) {
         return "master";
