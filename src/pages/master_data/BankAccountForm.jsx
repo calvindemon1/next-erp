@@ -14,11 +14,20 @@ export default function BankAccountForm() {
     id: "",
     bank_account_name: "",
     bank_account_number: "",
+    bank_account_address: "",
+    swift_code: "",
   });
   const [params] = useSearchParams();
   const isEdit = !!params.id;
   const navigate = useNavigate();
   const user = getUser();
+
+  // Helpers untuk SWIFT CODE - UNUSED FOR NOW
+  const normalizeSwift = (v) => (v || "").replace(/\s+/g, "").toUpperCase();
+  const isValidSwift = (v) =>
+    /^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?$/.test(v) &&
+    v.length >= 8 &&
+    v.length <= 11;
 
   onMount(async () => {
     if (isEdit) {
@@ -28,6 +37,8 @@ export default function BankAccountForm() {
         id: params.id,
         bank_account_name: bankAccount.data.bank_account_name,
         bank_account_number: bankAccount.data.bank_account_number,
+        bank_account_address: bankAccount.data.bank_account_address,
+        swift_code: bankAccount.data.swift_code,
       });
     }
   });
@@ -35,11 +46,27 @@ export default function BankAccountForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // validasi & normalisasi SWIFT sebelum submit
+    const swift = form().swift_code;
+
     try {
       if (isEdit) {
-        await updateBankAccounts(user?.token, params.id, form().bank_account_name, form().bank_account_number);
+        await updateBankAccounts(
+          user?.token,
+          params.id,
+          form().bank_account_name,
+          form().bank_account_number,
+          form().bank_account_address,
+          swift
+        );
       } else {
-        await createBankAccount(user?.token, form().bank_account_name, form().bank_account_number);
+        await createBankAccount(
+          user?.token,
+          form().bank_account_name,
+          form().bank_account_number,
+          form().bank_account_address,
+          swift
+        );
       }
 
       Swal.fire({
@@ -53,7 +80,6 @@ export default function BankAccountForm() {
         timerProgressBar: true,
       }).then(() => navigate("/bank-account"));
     } catch (error) {
-      //console.log(error);
       Swal.fire({
         icon: "error",
         title: "Gagal",
@@ -98,6 +124,38 @@ export default function BankAccountForm() {
               onInput={(e) => {
                 const onlyDigits = e.currentTarget.value.replace(/\D/g, "");
                 setForm({ ...form(), bank_account_number: onlyDigits });
+              }}
+              required
+            />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-6">
+          <div class="col-span-1">
+            <label class="block mb-1 font-medium">Alamat</label>
+            <input
+              type="text"
+              class="w-full border p-2 rounded"
+              value={form().bank_account_address}
+              onInput={(e) =>
+                setForm({ ...form(), bank_account_address: e.currentTarget.value })
+              }
+              required
+            />
+          </div>
+
+          <div class="col-span-1">
+            <label class="block mb-1 font-medium">
+              Swift Code
+            </label>
+            <input
+              type="text"
+              inputmode="text"
+              autocomplete="off"
+              class="w-full border p-2 rounded tracking-widest"
+              value={form().swift_code}
+              onInput={(e) => {
+                setForm({ ...form(), swift_code: e.currentTarget.value });
               }}
               required
             />
