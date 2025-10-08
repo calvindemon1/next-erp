@@ -117,6 +117,7 @@ export default function BankAccountList() {
               <th class="py-2 px-4">ID</th>
               <th class="py-2 px-2">Nama Bank Account</th>
               <th class="py-2 px-2">Nomor Bank Account</th>
+              <th class="py-2 px-2">Beneficiary Name</th>
               <th class="py-2 px-2">Alamat</th>
               <th class="py-2 px-2">Swift Code</th>
               {hasAllPermission(["edit_bank_account", "delete_bank_account"]) && (
@@ -132,6 +133,7 @@ export default function BankAccountList() {
                 </td>
                 <td class="py-2 px-4">{bankAccount.bank_account_name}</td>
                 <td class="py-2 px-4">{bankAccount.bank_account_number}</td>
+                <td class="py-2 px-4">{bankAccount.beneficiary_name}</td>
                 <td class="py-2 px-4">{bankAccount.bank_account_address}</td>
                 <td class="py-2 px-4">{bankAccount.swift_code}</td>
                 {hasAllPermission(["edit_bank_account", "delete_bank_account"]) && (

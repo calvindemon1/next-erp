@@ -14,6 +14,7 @@ export default function BankAccountForm() {
     id: "",
     bank_account_name: "",
     bank_account_number: "",
+    beneficiary_name: "",
     bank_account_address: "",
     swift_code: "",
   });
@@ -37,6 +38,7 @@ export default function BankAccountForm() {
         id: params.id,
         bank_account_name: bankAccount.data.bank_account_name,
         bank_account_number: bankAccount.data.bank_account_number,
+        beneficiary_name: bankAccount.data.beneficiary_name,
         bank_account_address: bankAccount.data.bank_account_address,
         swift_code: bankAccount.data.swift_code,
       });
@@ -56,6 +58,7 @@ export default function BankAccountForm() {
           params.id,
           form().bank_account_name,
           form().bank_account_number,
+          form().beneficiary_name,
           form().bank_account_address,
           swift
         );
@@ -64,6 +67,7 @@ export default function BankAccountForm() {
           user?.token,
           form().bank_account_name,
           form().bank_account_number,
+          form().beneficiary_name,
           form().bank_account_address,
           swift
         );
@@ -99,7 +103,7 @@ export default function BankAccountForm() {
         {isEdit ? "Edit" : "Tambah"} Bank Account
       </h1>
       <form class="w-full space-y-6" onSubmit={handleSubmit}>
-        <div class="grid grid-cols-2 gap-6">
+        <div class="grid grid-cols-3 gap-6">
           <div class="col-span-1">
             <label class="block mb-1 font-medium">Nama Bank Account</label>
             <input
@@ -128,9 +132,22 @@ export default function BankAccountForm() {
               required
             />
           </div>
+
+          <div class="col-span-1">
+            <label class="block mb-1 font-medium">Beneficiary Name</label>
+            <input
+              type="text"
+              class="w-full border p-2 rounded"
+              value={form().beneficiary_name}
+              onInput={(e) =>
+                setForm({ ...form(), beneficiary_name: e.currentTarget.value })
+              }
+              required
+            />
+          </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-6">
+        <div class="grid grid-cols-3 gap-6">
           <div class="col-span-1">
             <label class="block mb-1 font-medium">Alamat</label>
             <input

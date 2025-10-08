@@ -959,7 +959,7 @@ export async function softDeleteAgents(id, token) {
 
 // #startregion BANK ACCOUNT FUNCTION
 
-export async function createBankAccount(token, bank_account_name, bank_account_number, bank_account_address, swift_code) {
+export async function createBankAccount(token, bank_account_name, bank_account_number, beneficiary_name ,bank_account_address, swift_code) {
   try {
     const response = await fetch(
         `${import.meta.env.VITE_API_URL}/create-bank-account`,
@@ -973,6 +973,7 @@ export async function createBankAccount(token, bank_account_name, bank_account_n
         body: JSON.stringify({ 
           bank_account_name: bank_account_name,
           bank_account_number: bank_account_number,
+          beneficiary_name: beneficiary_name,
           bank_account_address: bank_account_address,
           swift_code: swift_code,
         }),
@@ -1047,7 +1048,7 @@ export async function getBankAccounts(id, token) {
   }
 }
 
-export async function updateBankAccounts(token, id, bank_account_name, bank_account_number, bank_account_address, swift_code) {
+export async function updateBankAccounts(token, id, bank_account_name, bank_account_number, beneficiary_name, bank_account_address, swift_code) {
   try {
     const response = await fetch(
         `${import.meta.env.VITE_API_URL}/update-bank-account/${id}`,
@@ -1061,6 +1062,7 @@ export async function updateBankAccounts(token, id, bank_account_name, bank_acco
         body: JSON.stringify({ 
           bank_account_name: bank_account_name,
           bank_account_number: bank_account_number,
+          beneficiary_name: beneficiary_name,
           bank_account_address: bank_account_address,
           swift_code: swift_code,
         }),
