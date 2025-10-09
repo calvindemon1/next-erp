@@ -478,7 +478,7 @@ function PrintPage(props) {
             </For>
 
             {/* Stretcher */}
-            <For each={Array.from({ length: extraRows() })}>
+            {/* <For each={Array.from({ length: extraRows() })}>
               {() => (
                 <tr>
                   <td className="p-1 text-center h-5"></td>
@@ -492,7 +492,7 @@ function PrintPage(props) {
                   <td className="p-1 text-right" colSpan={2}></td>
                 </tr>
               )}
-            </For>
+            </For> */}
           </tbody>
 
           <tfoot ref={bind("tfootRef")}>

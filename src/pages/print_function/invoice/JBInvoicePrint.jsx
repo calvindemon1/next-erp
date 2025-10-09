@@ -263,7 +263,8 @@ function PrintPage(props) {
 
         {/* ITEM TABLE */}
         <table ref={bind("tableRef")} className="w-full table-fixed border border-black text-[12px] border-collapse mt-3">
-          <thead ref={bind("theadRef")} className="bg-gray-200">
+          <thead ref={bind("theadRef")}>
+            {/* thead pakai className="bg-gray-200" kalau mau berwarna */}
             <tr>
                 <th className="border border-black p-1 w-[4%]" rowSpan={2}>No</th>
                 <th className="border border-black p-1 w-[10%]" rowSpan={2}>Jenis Kain</th>
@@ -320,7 +321,7 @@ function PrintPage(props) {
             </For>
 
             {/* Tambahin row kosong */}
-            <For each={Array.from({ length: extraRows() })}>
+            {/* <For each={Array.from({ length: extraRows() })}>
               {() => (
                 <tr>
                   <td className="p-1 text-center h-5"></td>
@@ -333,7 +334,7 @@ function PrintPage(props) {
                   <td className="p-1 text-right"></td>
                 </tr>
               )}
-            </For>
+            </For> */}
           </tbody>
 
           <tfoot ref={bind("tfootRef")}>
@@ -348,12 +349,13 @@ function PrintPage(props) {
                     }
                 </td>
                 <td className="border border-black px-2 py-1 text-right font-bold">
-                  Sub Total
+                  {isPPN ? 'Sub Total' : 'Grand Total'}
                 </td>
                 <td className="border border-black px-2 py-1 text-right">
                   {formatRupiah(totals.subTotal)}
                 </td>
               </tr>
+            <Show when={isPPN}>
               <tr>
                 <td colSpan={6} className="px-2 py-1"/>
                 <td className="px-2 py-1 text-right font-bold">DPP</td>
@@ -382,6 +384,7 @@ function PrintPage(props) {
                   {formatRupiah(totals.grand)}
                 </td>
               </tr>
+            </Show>
               <tr>
                 <td colSpan={8} className="border border-black p-2 align-top">
                   <div className="font-bold mb-1">NOTE:</div>
