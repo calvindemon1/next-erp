@@ -129,8 +129,8 @@ export default function PackingOrderPrint(props) {
   const totalYard  = createMemo(() => displayRows().reduce((s, it) => s + (parseFloat(String(it.yard_total ?? "0")) || 0), 0));
 
   /* ========= Pagination ========= */
-  const ROWS_FIRST_PAGE = 9;
-  const ROWS_OTHER_PAGES = 9;
+  const ROWS_FIRST_PAGE = 15;
+  const ROWS_OTHER_PAGES = 15;
   const pagesWithOffsets = createMemo(() => splitIntoPagesWithOffsets(displayRows(), ROWS_FIRST_PAGE, ROWS_OTHER_PAGES));
 
   // ==== CSS DINAMIS UNTUK KERTAS ====
