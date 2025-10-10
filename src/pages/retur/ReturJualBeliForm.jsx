@@ -303,7 +303,7 @@ export default function ReturJualBeliForm() {
       },
       meter_total: toNum(it.meter_total),
       yard_total: toNum(it.yard_total),
-      gulung: toNum(it.gulung_awal ?? it.gulung),
+      gulung: toNum(it.gulung),
       lot: toNum(it.lot),
     };
   }
@@ -485,6 +485,15 @@ export default function ReturJualBeliForm() {
     });
   };
 
+  const handleLotChange = (index, value) => {
+    const numValue = parseNumber(value);
+    setForm((prev) => {
+      const arr = [...prev.itemGroups];
+      arr[index] = { ...arr[index], lot: numValue };
+      return { ...prev, itemGroups: arr };
+    });
+  };
+
   const removeItem = (index) => {
     setForm((prev) => {
       const arr = [...prev.itemGroups];
@@ -544,6 +553,7 @@ export default function ReturJualBeliForm() {
 
     try {
       if (returId) {
+        //console.log("Update Retur JB: ", JSON.stringify(payload,null,2));
         await updateDataJualBeliRetur(user?.token, returId, payload);
         await Swal.fire({
           icon: "success",
@@ -554,6 +564,7 @@ export default function ReturJualBeliForm() {
           timerProgressBar: true,
         });
       } else {
+        //console.log("Create Retur JB: ", JSON.stringify(payload,null,2));
         await createJualBeliRetur(user?.token, payload);
         await Swal.fire({
           icon: "success",
@@ -636,7 +647,7 @@ export default function ReturJualBeliForm() {
           </div>
 
           <div>
-            <label class="block text-sm mb-1">Surat Penerimaan (Jual Beli)</label>
+            <label class="block text-sm mb-1">Surat Penerimaan Jual Beli</label>
             <SuratPenerimaanJualBeliDropdownSearch
               items={spOptions()}
               value={selectedSJId()}
@@ -835,9 +846,12 @@ export default function ReturJualBeliForm() {
                         <td class="border p-2">
                           <input
                             type="number"
-                            class="w-full border p-2 rounded text-right bg-gray-200"
+                            placeholder="Banyak gulung…"
+                            class="w-full border p-2 rounded text-right"
                             value={group.gulung ?? 0}
-                            disabled
+                            onBlur={(e) => handleGulungChange(i(), e.target.value)}
+                            disabled={isView}
+                            classList={{ "bg-gray-200": isView }}
                           />
                         </td>
 
@@ -845,9 +859,12 @@ export default function ReturJualBeliForm() {
                         <td class="border p-2">
                           <input
                             type="number"
-                            class="w-full border p-2 rounded text-right bg-gray-200"
+                            placeholder="Input lot…"
+                            class="w-full border p-2 rounded text-right"
                             value={group.lot ?? 0}
-                            disabled
+                            onBlur={(e) => handleLotChange(i(), e.target.value)}
+                            disabled={true}
+                            classList={{ "bg-gray-200": true }}
                           />
                         </td>
 

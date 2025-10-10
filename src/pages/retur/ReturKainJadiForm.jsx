@@ -437,6 +437,24 @@ export default function ReturKainJadiForm() {
     });
   };
 
+  const handleLotChange = (index, value) => {
+    const numValue = parseNumber(value);
+    setForm((prev) => {
+      const arr = [...prev.itemGroups];
+      arr[index] = { ...arr[index], lot: numValue };
+      return { ...prev, itemGroups: arr };
+    });
+  };
+
+  const handleGulungChange = (index, value) => {
+    const numValue = parseNumber(value);
+    setForm((prev) => {
+      const arr = [...prev.itemGroups];
+      arr[index] = { ...arr[index], gulung: numValue };
+      return { ...prev, itemGroups: arr };
+    });
+  };
+
   const buildItemsPayload = () =>
     form().itemGroups.map((g) => {
       const base = {
@@ -698,10 +716,26 @@ export default function ReturKainJadiForm() {
                           />
                         </td>
                         <td class="border p-2">
-                          <input type="number" class="w-full border p-2 rounded text-right bg-gray-200" value={group.gulung ?? 0} disabled />
+                          <input
+                            type="number"
+                            placeholder="Banyak gulung…"
+                            class="w-full border p-2 rounded text-right"
+                            value={group.gulung ?? 0}
+                            onBlur={(e) => handleGulungChange(i(), e.target.value)}
+                            disabled={isView}
+                            classList={{ "bg-gray-200": isView }}
+                          />
                         </td>
                         <td class="border p-2">
-                          <input type="number" class="w-full border p-2 rounded text-right bg-gray-200" value={group.lot ?? 0} disabled />
+                          <input
+                            type="number"
+                            placeholder="Input lot…"
+                            class="w-full border p-2 rounded text-right"
+                            value={group.lot ?? 0}
+                            onBlur={(e) => handleLotChange(i(), e.target.value)}
+                            disabled={true}
+                            classList={{ "bg-gray-200": true }}
+                          />
                         </td>
                         <td hidden class="border p-2 text-right">
                           <input class="w-full border p-2 rounded text-right" value={formatHarga(group.item_details?.harga_greige)} disabled />

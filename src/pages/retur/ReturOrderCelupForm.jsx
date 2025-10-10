@@ -823,8 +823,8 @@ export default function ReturOrderCelupForm() {
                             class="w-full border p-2 rounded text-right"
                             value={group.gulung ?? 0}
                             onBlur={(e) => handleGulungChange(i(), e.target.value)}
-                            disabled={true}
-                            classList={{ "bg-gray-200": true }}
+                            disabled={isView}
+                            classList={{ "bg-gray-200": isView }}
                           />
                         </td>
 
