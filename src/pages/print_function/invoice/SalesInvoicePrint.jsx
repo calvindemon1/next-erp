@@ -312,8 +312,8 @@ createEffect(() => {
               <th className="border border-black p-1 w-[4%]"  rowSpan={2}>No</th>
               <th className="border border-black p-1 w-[10%]" rowSpan={2}>Jenis Kain</th>
               <th hidden className="border border-black p-1 w-[10%]" rowSpan={2}>Jenis Kain</th>
-              <th className="border border-black p-1 w-[8%]" rowSpan={2}>Warna</th>
-              <th className="border border-black p-1 w-[10%]" rowSpan={2}>Lebar</th>
+              <th className="border border-black p-1 w-[10%]" rowSpan={2}>Warna</th>
+              <th className="border border-black p-1 w-[9%]" rowSpan={2}>Lebar</th>
               <th className="border border-black p-1 w-[7%]"  rowSpan={2}>Grade</th>
               <th className="border border-black p-1 w-[28%] text-center" colSpan={3}>Quantity</th>
               <th className="border border-black p-1 w-[15%]">Harga</th>
