@@ -159,10 +159,17 @@ export default function SalesInvoicePrint(props) {
         table { page-break-inside: auto; border-collapse: collapse; }
         tr { page-break-inside: avoid; }
         @media print {
+          * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            text-rendering: optimizeSpeed !important; // Penting untuk dot matrix
+            font-smooth: never !important;
+            -webkit-font-smoothing: none !important;
+          }
           html, body {
               font-family: "Arial", monospace !important;
               font-weight: 400 !important;
-              font-size: 11pt !important;
+              font-size: 13pt !important;
             }
           .page { page-break-after: always; }
           .page:last-child { page-break-after: auto; }
@@ -276,7 +283,7 @@ createEffect(() => {
 
         <div className="w-full flex gap-2 text-sm">
           {/* LEFT */}
-          <table className="w-[55%] border-2 border-black text-[13px] table-fixed">
+          <table className="w-[55%] border-2 border-black text-[15px] table-fixed">
             <tbody>
               <tr><td className="px-2 pt-1 max-w-[300px] break-words whitespace-pre-wrap" colSpan={2}>Kepada Yth:</td></tr>
               <tr><td className="px-2 max-w-[300px] break-words whitespace-pre-wrap" colSpan={2}>{customerName}</td></tr>
@@ -288,17 +295,17 @@ createEffect(() => {
           {/* RIGHT */}
           <table className="w-[55%] border-2 border-black table-fixed text-sm">
             <tbody>
-              <tr><td className="font-bold px-2 w-[30%] whitespace-nowrap">No. SJ</td><td className="w-[5%] text-center">:</td><td className="px-2 break-words w-[65%]">{data?.no_sj ?? "-"}</td></tr>
-              <tr><td className="font-bold px-2 w-[30%] whitespace-nowrap">Tanggal</td><td className="w-[5%] text-center">:</td><td className="px-2 break-words w-[65%]">{formatTanggal(data?.created_at)}</td></tr>
-              <tr><td className="font-bold px-2 w-[30%] whitespace-nowrap">No. SO</td><td className="w-[5%] text-center">:</td><td className="px-2 break-words w-[65%]">{data?.no_so ?? "-"}</td></tr>
-              <tr><td className="font-bold px-2 w-[30%] whitespace-nowrap">Payment</td><td className="w-[5%] text-center">:</td><td className="px-2 break-words w-[65%]">{paymentText}</td></tr>
-              <tr><td className="font-bold px-2 w-[30%] whitespace-nowrap">Jatuh Tempo</td><td className="w-[5%] text-center">:</td><td className="px-2 break-words w-[65%]">{formatTanggal(data?.validity_contract)}</td></tr>
+              <tr><td className="font-bold px-2 py-1 w-[30%] whitespace-nowrap">No. SJ</td><td className="w-[5%] py-1 text-center">:</td><td className="px-2 py-1 break-words w-[65%]">{data?.no_sj ?? "-"}</td></tr>
+              <tr><td className="font-bold px-2 py-1 w-[30%] whitespace-nowrap">Tanggal</td><td className="w-[5%] py-1 text-center">:</td><td className="px-2 py-1 break-words w-[65%]">{formatTanggal(data?.created_at)}</td></tr>
+              <tr><td className="font-bold px-2 py-1 w-[30%] whitespace-nowrap">No. SO</td><td className="w-[5%] py-1 text-center">:</td><td className="px-2 py-1 break-words w-[65%]">{data?.no_so ?? "-"}</td></tr>
+              <tr><td className="font-bold px-2 py-1 w-[30%] whitespace-nowrap">Payment</td><td className="w-[5%] py-1 text-center">:</td><td className="px-2 py-1 break-words w-[65%]">{paymentText}</td></tr>
+              <tr><td className="font-bold px-2 py-1 w-[30%] whitespace-nowrap">Jatuh Tempo</td><td className="w-[5%] py-1 text-center">:</td><td className="px-2 py-1 break-words w-[65%]">{formatTanggal(data?.validity_contract)}</td></tr>
             </tbody>
           </table>
         </div>
 
         {/* ITEM TABLE (11 kolom) */}
-        <table ref={bind("tableRef")} className="w-full table-fixed border border-black text-[12px] border-collapse mt-3">
+        <table ref={bind("tableRef")} className="w-full table-fixed border border-black text-[14px] border-collapse mt-3">
           <thead ref={bind("theadRef")}>
             {/* thead pakai className="bg-gray-200" kalau mau berwarna */}
             <tr>
@@ -307,10 +314,10 @@ createEffect(() => {
               <th hidden className="border border-black p-1 w-[10%]" rowSpan={2}>Jenis Kain</th>
               <th className="border border-black p-1 w-[8%]" rowSpan={2}>Warna</th>
               <th className="border border-black p-1 w-[10%]" rowSpan={2}>Lebar</th>
-              <th className="border border-black p-1 w-[6%]"  rowSpan={2}>Grade</th>
+              <th className="border border-black p-1 w-[7%]"  rowSpan={2}>Grade</th>
               <th className="border border-black p-1 w-[28%] text-center" colSpan={3}>Quantity</th>
-              <th className="border border-black p-1 w-[13%]">Harga</th>
-              <th className="border border-black p-1 w-[16%]" rowSpan={2}>Jumlah</th>
+              <th className="border border-black p-1 w-[15%]">Harga</th>
+              <th className="border border-black p-1 w-[18%]" rowSpan={2}>Jumlah</th>
             </tr>
             <tr>
               <th className="border border-black p-1 w-[5%]">Roll</th>
