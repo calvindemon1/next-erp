@@ -131,7 +131,7 @@ export default function SalesInvoicePrint(props) {
           width: 100%;
           -webkit-print-color-adjust: exact !important;
           print-color-adjust: exact !important;
-          font-family: "Epson Roman", monospace !important;
+          font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, "Helvetica Neue";
           font-weight: 600;
           display: flex;
           justify-content: center;
@@ -160,7 +160,7 @@ export default function SalesInvoicePrint(props) {
         tr { page-break-inside: avoid; }
         @media print {
           html, body {
-              font-family: "Epson Roman"; monospace !important;
+              font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, "Helvetica Neue";
               font-weight: 600 !important;
               font-size: 11pt !important;
             }
