@@ -84,8 +84,8 @@ export default function JBInvoicePrint(props) {
           width: 100%;
           -webkit-print-color-adjust: exact !important;
           print-color-adjust: exact !important;
-          font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, "Helvetica Neue";
-          font-weight: 600;
+          font-family: "Arial", monospace !important;
+          font-weight: 400;
           display: flex;
           justify-content: center;
         }
@@ -114,8 +114,8 @@ export default function JBInvoicePrint(props) {
         tr     { page-break-inside: avoid; }
         @media print {
           html, body {
-            font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, "Helvetica Neue";
-            font-weight: 600 !important;
+            font-family: "Arial", monospace !important;
+            font-weight: 400 !important;
             font-size: 11pt !important;
           }
           .page { page-break-after: always; }
