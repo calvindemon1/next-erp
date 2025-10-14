@@ -184,7 +184,7 @@ export default function SalesInvoicePrint(props) {
           }
           
           .font-semibold {
-            font-weight: 700 !important;
+            font-weight: 600 !important;
           }
         }
       `}</style>
