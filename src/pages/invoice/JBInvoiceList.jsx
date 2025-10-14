@@ -11,7 +11,7 @@ import {
   hasPermission,
 } from "../../utils/auth";
 import Swal from "sweetalert2";
-import { Printer, CheckCircle, XCircle, X } from "lucide-solid";
+import { Eye, Printer, CheckCircle, XCircle, X } from "lucide-solid";
 
 export default function JBInvoiceList() {
   const [packingOrders, setPackingOrders] = createSignal([]);
@@ -112,6 +112,24 @@ export default function JBInvoiceList() {
       setPackingOrders([]);
     }
   };
+
+  async function handlePreview(sc) {
+    try {
+      const detail = await getJBDeliveryNotes(sc.id, tokUser?.token);
+      if (!detail) {
+        Swal.fire("Error", "Data untuk preview tidak ditemukan.", "error");
+        return;
+      }
+      
+      const detailForPreview = { ...detail, _previewMode: true };
+      const encoded = encodeURIComponent(JSON.stringify(detailForPreview));
+      
+      window.open(`/print/jualbeli-invoice#${encoded}`, "_blank");
+    } catch (err) {
+      console.error(err);
+      Swal.fire("Error", err.message || "Gagal memproses preview", "error");
+    }
+  }
 
   async function handlePrint(sc) {
     try {
@@ -257,6 +275,7 @@ export default function JBInvoiceList() {
               </th>
               <th class="py-2 px-2">Satuan Unit</th>
               <th class="py-2 px-4">Status Invoice</th>
+              <th class="py-2 px-4 text-center">Preview</th>
               <th class="py-2 px-4">Print Invoice</th>
               <th class="py-2 px-4">Batal Invoice</th>
             </tr>
@@ -293,6 +312,12 @@ export default function JBInvoiceList() {
                       Belum Print
                     </span>
                   )}
+                </td>
+
+                <td class="py-2 px-4 text-center">
+                    <button class="text-blue-600 hover:underline" onClick={() => handlePreview(sj)} title="Preview Invoice">
+                        <Eye size={25} />
+                    </button>
                 </td>
 
                 {/* Print Invoice */}

@@ -11,11 +11,11 @@ import {
   hasPermission
 } from "../../utils/auth";
 import Swal from "sweetalert2";
-import { Edit, Trash, Eye, Printer, CheckCircle, XCircle, X } from "lucide-solid";
+import { Edit, Trash, Eye, Printer, FileDown, X } from "lucide-solid";
+import html2pdf from "html2pdf.js";
 
 export default function SalesInvoiceList() {
   const [suratJalan, setSuratJalan] = createSignal([]);
-  const [deliveryNoteData, setDeliveryNoteData] = createSignal(null); 
   const navigate = useNavigate();
   const tokUser = getUser();
   const [currentPage, setCurrentPage] = createSignal(1);
@@ -99,20 +99,6 @@ export default function SalesInvoiceList() {
     }
   };
 
-  // const handleGetAllDeliveryNotes = async (tok) => {
-  //   const getDataDeliveryNotes = await getAllDeliveryNotes(tok);
-  //   //console.log("Respons dari getAllDeliveryNotes:", JSON.stringify(getDataDeliveryNotes, null, 2));
-
-  //   if (getDataDeliveryNotes.status === 200) {
-  //       const suratJalanList = getDataDeliveryNotes.surat_jalan_list || [];
-      
-  //     const sortedData = suratJalanList.sort(
-  //       (a, b) => a.id - b.id
-  //     );
-  //     setSuratJalan(sortedData);
-  //   }
-  // };
-
   const handleGetAllDeliveryNotes = async (tok) => {
     try {
       const result = await getAllDeliveryNotes(tok);
@@ -151,26 +137,20 @@ export default function SalesInvoiceList() {
       });
     }
   };  
-
+  
   async function handlePrint(sc) {
     try {
       let updatedSc = { ...sc };
-
-      // set delivered_status jika belum
       if (!sc.delivered_status) {
         await setInvoiceSales(tokUser?.token, sc.id, { delivered_status: 1 });
         updatedSc = { ...sc, delivered_status: 1 };
         setSuratJalan((prev) => prev.map((item) => (item.id === sc.id ? updatedSc : item)));
       }
-
-      // Ambil detail untuk dicetak
       const detail = await getDeliveryNotes(sc.id, tokUser?.token);
       if (!detail) {
         Swal.fire("Error", "Data cetak tidak ditemukan.", "error");
         return;
       }
-
-      // ⬇️ Kirim via HASH agar tidak kena limit header/query (HTTP 431)
       const encoded = encodeURIComponent(JSON.stringify(detail));
       window.open(`/print/deliverynote-invoice#${encoded}`, "_blank");
     } catch (err) {
@@ -178,7 +158,102 @@ export default function SalesInvoiceList() {
       Swal.fire("Error", err.message || "Gagal memproses print", "error");
     }
   }
+  
+  async function handlePreview(sc) {
+    try {
+      const detail = await getDeliveryNotes(sc.id, tokUser?.token);
+      if (!detail) {
+        Swal.fire("Error", "Data untuk preview tidak ditemukan.", "error");
+        return;
+      }
+      
+      const detailForPreview = { ...detail, _previewMode: true };
+      const encoded = encodeURIComponent(JSON.stringify(detailForPreview));
+      
+      window.open(`/print/deliverynote-invoice#${encoded}`, "_blank");
+    } catch (err) {
+      console.error(err);
+      Swal.fire("Error", err.message || "Gagal memproses preview", "error");
+    }
+  }
+  
+  async function handleDownloadPDF(sc) {
+    Swal.fire({
+      title: "Mempersiapkan PDF...",
+      text: "Mohon tunggu sebentar, sedang proses file PDF.",
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      },
+    });
 
+    let iframe;
+    try {
+      const detail = await getDeliveryNotes(sc.id, tokUser?.token);
+      if (!detail) {
+        throw new Error("Data untuk PDF tidak ditemukan.");
+      }
+
+      const detailForPdf = { ...detail, _pdfMode: true };
+      const encoded = encodeURIComponent(JSON.stringify(detailForPdf));
+      
+      iframe = document.createElement('iframe');
+      iframe.style.position = 'absolute';
+      iframe.style.left = '-9999px';
+      iframe.style.width = '210mm'; 
+      iframe.style.height = '297mm';
+      
+      document.body.appendChild(iframe);
+
+      iframe.src = `/print/deliverynote-invoice#${encoded}`;
+
+      iframe.onload = () => {
+        const maxAttempts = 20;
+        let attempts = 0;
+
+        const checkInterval = setInterval(() => {
+          const element = iframe.contentWindow.document.getElementById('printable-area');
+
+          if (element) {
+            clearInterval(checkInterval);
+            
+            const opt = {
+              margin:       [0, 0, 0, 0],
+              filename:     `Invoice Penjualan-${sc.no_sj}-${sc.customer_name}.pdf`,
+              image:        { type: 'png', quality: 1.0 },
+              html2canvas:  { 
+                scale: 3,
+                useCORS: true, 
+                logging: false 
+              },
+              jsPDF:        { 
+                unit: 'mm', 
+                format: 'a4', 
+                orientation: 'portrait' 
+              }
+            };
+
+            html2pdf().from(element).set(opt).save().then(() => {
+              document.body.removeChild(iframe);
+              Swal.close();
+            });
+          } else {
+            attempts++;
+            if (attempts > maxAttempts) {
+              clearInterval(checkInterval);
+              document.body.removeChild(iframe);
+              Swal.fire("Error", "Gagal memuat konten invoice untuk PDF.", "error");
+            }
+          }
+        }, 250);
+      };
+    } catch (err) {
+      console.error(err);
+      if (iframe) document.body.removeChild(iframe);
+      Swal.fire("Error", err.message || "Gagal memproses PDF", "error");
+    }
+  }
+  
   async function handleUnsetInvoice(sc) {
     try {
       const result = await Swal.fire({
@@ -191,15 +266,11 @@ export default function SalesInvoiceList() {
         confirmButtonText: "Ya, batalkan",
         cancelButtonText: "Batal",
       });
-
       if (!result.isConfirmed) return;
-
       if (sc.delivered_status) {
         await unsetInvoiceSales(tokUser?.token, sc.id, { delivered_status: 0 });
       }
-
       await handleGetAllDeliveryNotes(tokUser?.token);
-
       Swal.fire("Berhasil", "Status invoice berhasil dibatalkan.", "success");
     } catch (err) {
       console.error(err);
@@ -210,24 +281,12 @@ export default function SalesInvoiceList() {
   function formatTanggalIndo(tanggalString) {
     const tanggal = new Date(tanggalString);
     const bulanIndo = [
-      "Januari",
-      "Februari",
-      "Maret",
-      "April",
-      "Mei",
-      "Juni",
-      "Juli",
-      "Agustus",
-      "September",
-      "Oktober",
-      "November",
-      "Desember",
+      "Januari", "Februari", "Maret", "April", "Mei", "Juni", 
+      "Juli", "Agustus", "September", "Oktober", "November", "Desember"
     ];
-
     const tanggalNum = tanggal.getDate();
     const bulan = bulanIndo[tanggal.getMonth()];
     const tahun = tanggal.getFullYear();
-
     return `${tanggalNum} ${bulan} ${tahun}`;
   }
 
@@ -241,13 +300,6 @@ export default function SalesInvoiceList() {
     <MainLayout>
       <div class="flex justify-between items-center mb-4">
         <h1 class="text-2xl font-bold">Invoice Penjualan</h1>
-        <button
-          class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-          onClick={() => navigate("/deliverynote/form")}
-          hidden
-        >
-          + Tambah Surat Jalan
-        </button>
       </div>
 
       <div class="w-full overflow-x-auto">
@@ -262,16 +314,16 @@ export default function SalesInvoiceList() {
               <th class="py-2 px-2">Satuan Unit</th>
               <th class="py-2 px-2 text-center">Total</th>
               <th class="py-2 px-2 text-center">Status Invoice</th>
-              <th class="py-2 px-4 text-center">Print Invoice</th>
-              <th class="py-2 px-4 text-center">Batal Invoice</th>
+              <th class="py-2 px-4 text-center">Preview</th>
+              <th hidden class="py-2 px-4 text-center">Download PDF</th>
+              <th class="py-2 px-4 text-center">Print</th>
+              <th class="py-2 px-4 text-center">Batal</th>
             </tr>
           </thead>
           <tbody>
             {paginatedData().map((sc, index) => (
               <tr class="border-b" key={sc.id}>
-                <td class="py-2 px-4">
-                  {(currentPage() - 1) * pageSize + (index + 1)}
-                </td>
+                <td class="py-2 px-4">{(currentPage() - 1) * pageSize + (index + 1)}</td>
                 <td class="py-2 px-4">{sc.no_sj}</td>
                 <td class="py-2 px-4">{formatTanggalIndo(sc.created_at)}</td>
                 <td class="py-2 px-4">{sc.no_pl}</td>
@@ -284,85 +336,59 @@ export default function SalesInvoiceList() {
                     ? `${formatNumber(sc.summary.total_yard)} yd`
                     : `${formatNumber(sc.summary.total_kilogram)} kg`}
                 </td>
-                {/* Status Invoice: tampilkan badge "Belum Print" / "Sudah Print" */}
                 <td class="py-2 px-4 text-center">
                   {sc.delivered_status ? (
-                    <span class="inline-block px-3 py-1 text-sm rounded-full bg-purple-100 text-purple-700 font-semibold">
-                      Sudah Print
-                    </span>
+                    <span class="inline-block px-3 py-1 text-sm rounded-full bg-purple-100 text-purple-700 font-semibold">Sudah Print</span>
                   ) : (
-                    <span class="inline-block px-3 py-1 text-sm rounded-full bg-red-100 text-red-700 font-semibold">
-                      Belum Print
-                    </span>
+                    <span class="inline-block px-3 py-1 text-sm rounded-full bg-red-100 text-red-700 font-semibold">Belum Print</span>
                   )}
                 </td>
-                
-                {/* Print Invoice */}
-                <td class="py-2 px-4 space-x-2 text-center">
-                  <button
-                    class={sc.delivered_status ? "text-yellow-600 hover:underline" : "text-green-600 hover:underline"}
-                    onClick={() => handlePrint(sc)}
-                    title="Cetak / tandai sudah print"
-                  >
+                <td class="py-2 px-4 text-center">
+                    <button class="text-blue-600 hover:underline" onClick={() => handlePreview(sc)} title="Preview Invoice">
+                        <Eye size={25} />
+                    </button>
+                </td>
+                <td hidden class="py-2 px-4 text-center">
+                  <button class="text-teal-600 hover:underline" onClick={() => handleDownloadPDF(sc)} title="Download Invoice sebagai PDF">
+                    <FileDown size={25} />
+                  </button>
+                </td>
+                <td class="py-2 px-4 text-center">
+                  <button class={sc.delivered_status ? 
+                    "text-yellow-600 hover:underline" : 
+                    "text-green-600 hover:underline"
+                    } 
+                    onClick={() => handlePrint(sc)} title="Cetak / tandai sudah print">
                     <Printer size={25} />
                   </button>
                 </td>
-                {/* Batal Invoice (misah) */}
                 <td class="py-2 px-4 text-center">
                   <button
                     class={
-                      hasPermission("unprint_invoice") && sc.delivered_status
-                        ? "px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700"
-                        : "px-2 py-1 bg-gray-300 text-gray-600 rounded cursor-not-allowed"
+                      hasPermission("unprint_invoice") && sc.delivered_status ? 
+                      "px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700" : 
+                      "px-2 py-1 bg-gray-300 text-gray-600 rounded cursor-not-allowed"
                     }
-                    // Tombol nonaktif jika TIDAK punya izin ATAU belum di-print
                     disabled={!hasPermission("unprint_invoice") || !sc.delivered_status}
                     onClick={() => handleUnsetInvoice(sc)}
-                    title={
-                      !hasPermission("unprint_invoice")
-                        ? "Anda tidak memiliki izin"
-                        : sc.delivered_status
-                        ? "Batalkan invoice"
-                        : "Tidak bisa batalkan sebelum dicetak"
-                    }
+                    title={!hasPermission("unprint_invoice") ? "Anda tidak memiliki izin" : sc.delivered_status ? "Batalkan invoice" : "Tidak bisa batalkan sebelum dicetak"}
                   >
                     <X size={16} />
                   </button>
                 </td>
-                  {/* <button
-                    class="text-blue-600 hover:underline"
-                    onClick={() => navigate(`/deliverynote/form?id=${sc.id}`)}
-                    hidden
-                  >
-                    <Edit size={25} />
-                  </button>
-                  <button
-                    class="text-red-600 hover:underline"
-                    onClick={() => handleDelete(sc.id)}
-                    hidden
-                  >
-                    <Trash size={25} />
-                  </button> */}
               </tr>
             ))}
           </tbody>
         </table>
+        
         <div class="w-full mt-8 flex justify-between space-x-2">
-          <button
-            class="px-3 py-1 bg-gray-200 rounded min-w-[80px]"
-            onClick={() => setCurrentPage(currentPage() - 1)}
-            disabled={currentPage() === 1}
-          >
+          <button class="px-3 py-1 bg-gray-200 rounded min-w-[80px]" onClick={() => setCurrentPage(currentPage() - 1)} disabled={currentPage() === 1}>
             Prev
           </button>
           <span>
             Page {currentPage()} of {totalPages()}
           </span>
-          <button
-            class="px-3 py-1 bg-gray-200 rounded min-w-[80px]"
-            onClick={() => setCurrentPage(currentPage() + 1)}
-            disabled={currentPage() === totalPages()}
-          >
+          <button class="px-3 py-1 bg-gray-200 rounded min-w-[80px]" onClick={() => setCurrentPage(currentPage() + 1)} disabled={currentPage() === totalPages()}>
             Next
           </button>
         </div>
