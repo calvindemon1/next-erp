@@ -169,7 +169,7 @@ export default function SalesInvoicePrint(props) {
           html, body, * {
             font-family: sans-serif !important;
             font-weight: 500 !important;
-            font-size: 12pt !important;
+            font-size: 10pt !important;
             letter-spacing: normal !important;
             line-height: 1.5 !important;
           }
@@ -302,10 +302,10 @@ createEffect(() => {
           {/* LEFT */}
           <table className="w-[55%] border-2 border-black text-[15px] table-fixed">
             <tbody>
-              <tr><td className="px-2 pt-1 py-1 max-w-[300px] break-words whitespace-pre-wrap" colSpan={2}>Kepada Yth:</td></tr>
-              <tr><td className="px-2 py-1 max-w-[300px] break-words whitespace-pre-wrap" colSpan={2}>{customerName}</td></tr>
-              <tr><td className="px-2 py-1 max-w-[300px] leading-relaxed break-words whitespace-pre-wrap" colSpan={2}>{customerAddr}</td></tr>
-              <tr><td className="px-2 py-1 whitespace-nowrap">Telp: {customerTelp}</td></tr>
+              <tr><td className="px-2 pt-1 max-w-[300px] break-words whitespace-pre-wrap" colSpan={2}>Kepada Yth:</td></tr>
+              <tr><td className="px-2 max-w-[300px] break-words whitespace-pre-wrap" colSpan={2}>{customerName}</td></tr>
+              <tr><td className="px-2 max-w-[300px] leading-relaxed break-words whitespace-pre-wrap" colSpan={2}>{customerAddr}</td></tr>
+              <tr><td className="px-2 whitespace-nowrap">Telp: {customerTelp}</td></tr>
             </tbody>
           </table>
 
@@ -313,29 +313,29 @@ createEffect(() => {
           <table className="w-[55%] border-2 border-black table-fixed text-sm">
             <tbody>
               <tr>
-                <td className="font-semibold px-2 py-1 w-[30%] whitespace-nowrap">No. SJ</td>
-                <td className="w-[5%] py-1 text-center">:
-                </td><td className="px-2 py-1 break-words w-[65%]">{data?.no_sj ?? "-"}</td>
+                <td className="font-semibold px-2 w-[30%] whitespace-nowrap">No. SJ</td>
+                <td className="w-[5%] text-center">:
+                </td><td className="px-2 break-words w-[65%]">{data?.no_sj ?? "-"}</td>
               </tr>
               <tr>
-                <td className="font-semibold px-2 py-1 w-[30%] whitespace-nowrap">Tanggal</td>
-                <td className="w-[5%] py-1 text-center">:</td>
-                <td className="px-2 py-1 break-words w-[65%]">{formatTanggal(data?.created_at)}</td>
+                <td className="font-semibold px-2  w-[30%] whitespace-nowrap">Tanggal</td>
+                <td className="w-[5%]  text-center">:</td>
+                <td className="px-2  break-words w-[65%]">{formatTanggal(data?.created_at)}</td>
               </tr>
               <tr>
-                <td className="font-semibold px-2 py-1 w-[30%] whitespace-nowrap">No. SO</td>
-                <td className="w-[5%] py-1 text-center">:</td>
-                <td className="px-2 py-1 break-words w-[65%]">{data?.no_so ?? "-"}</td>
+                <td className="font-semibold px-2  w-[30%] whitespace-nowrap">No. SO</td>
+                <td className="w-[5%]  text-center">:</td>
+                <td className="px-2  break-words w-[65%]">{data?.no_so ?? "-"}</td>
               </tr>
               <tr>
-                <td className="font-semibold px-2 py-1 w-[30%] whitespace-nowrap">Payment</td>
-                <td className="w-[5%] py-1 text-center">:</td>
-                <td className="px-2 py-1 break-words w-[65%]">{paymentText}</td>
+                <td className="font-semibold px-2  w-[30%] whitespace-nowrap">Payment</td>
+                <td className="w-[5%]  text-center">:</td>
+                <td className="px-2  break-words w-[65%]">{paymentText}</td>
               </tr>
               <tr>
-                <td className="font-semibold px-2 py-1 w-[30%] whitespace-nowrap">Jatuh Tempo</td>
-                <td className="w-[5%] py-1 text-center">:</td>
-                <td className="px-2 py-1 break-words w-[65%]">{formatTanggal(data?.validity_contract)}</td>
+                <td className="font-semibold px-2  w-[30%] whitespace-nowrap">Jatuh Tempo</td>
+                <td className="w-[5%]  text-center">:</td>
+                <td className="px-2  break-words w-[65%]">{formatTanggal(data?.validity_contract)}</td>
               </tr>
             </tbody>
           </table>

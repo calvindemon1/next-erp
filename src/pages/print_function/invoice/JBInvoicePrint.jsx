@@ -112,25 +112,33 @@ export default function JBInvoicePrint(props) {
 
         table { page-break-inside: auto; border-collapse: collapse; }
         tr     { page-break-inside: avoid; }
+
         @media print {
           * {
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
-            text-rendering: optimizeSpeed !important; 
-            font-smooth: never !important;
-            -webkit-font-smoothing: none !important;
+            text-rendering: optimizeLegibility !important;
           }
-          html, body, .invoice-print-text {
-            font-family: "Arial", monospace !important;
-            font-weight: 400 !important;
-            font-size: 12pt !important;
+          
+          html, body, * {
+            font-family: sans-serif !important;
+            font-weight: 500 !important;
+            font-size: 10pt !important;
+            letter-spacing: normal !important;
+            line-height: 1.5 !important;
           }
-          .page { page-break-after: always; }
-          .page:last-child { page-break-after: auto; }
-
+          
           .items-table td, .items-table th {
-              padding: 4px 6px !important;
-              line-height: 1.2 !important;
+            padding: 4px 6px !important;
+            line-height: 1.5 !important;
+          }
+          
+          .font-bold, h1, th {
+            font-weight: 700 !important;
+          }
+          
+          .font-semibold {
+            font-weight: 600 !important;
           }
         }
       `}</style>
@@ -246,34 +254,34 @@ function PrintPage(props) {
           <table className="w-[55%] border-2 border-black table-fixed text-sm">
             <tbody>
               <tr>
-                  <td className="font-semibold px-2 py-1 w-[30%] whitespace-nowrap">No. SJ</td>
-                  <td className="w-[5%] py-1 text-center">:</td>
-                  <td className="px-2 py-1 break-words w-[65%]">{data.no_sj}</td>
+                  <td className="font-semibold px-2  w-[30%] whitespace-nowrap">No. SJ</td>
+                  <td className="w-[5%]  text-center">:</td>
+                  <td className="px-2  break-words w-[65%]">{data.no_sj}</td>
               </tr>
               <tr>
-                  <td className="font-semibold px-2 py-1 w-[30%] whitespace-nowrap">Tanggal</td>
-                  <td className="w-[5%] py-1 text-center">:</td>
-                  <td className="px-2 py-1 break-words w-[65%]">{formatTanggal(data.created_at )}</td>
+                  <td className="font-semibold px-2  w-[30%] whitespace-nowrap">Tanggal</td>
+                  <td className="w-[5%]  text-center">:</td>
+                  <td className="px-2  break-words w-[65%]">{formatTanggal(data.created_at )}</td>
               </tr>
               <tr>
-                  <td className="font-semibold px-2 py-1 w-[30%] whitespace-nowrap">No. JB</td>
-                  <td className="w-[5%] py-1 text-center">:</td>
-                  <td className="px-2 py-1 break-words w-[65%]">{data.no_jb}</td>
+                  <td className="font-semibold px-2  w-[30%] whitespace-nowrap">No. JB</td>
+                  <td className="w-[5%]  text-center">:</td>
+                  <td className="px-2  break-words w-[65%]">{data.no_jb}</td>
               </tr>
               <tr>
-                  <td className="font-semibold px-2 py-1 w-[30%] whitespace-nowrap">Jenis JB</td>
-                  <td className="w-[5%] py-1 text-center">:</td>
-                  <td className="px-2 py-1 break-words w-[65%] capitalize">{data.jenis_jb}</td>
+                  <td className="font-semibold px-2  w-[30%] whitespace-nowrap">Jenis JB</td>
+                  <td className="w-[5%]  text-center">:</td>
+                  <td className="px-2  break-words w-[65%] capitalize">{data.jenis_jb}</td>
               </tr>
               <tr>
-                  <td className="font-semibold px-2 py-1 w-[30%] whitespace-nowrap">Payment</td>
-                  <td className="w-[5%] py-1 text-center">:</td>
-                  <td className="px-2 py-1 break-words w-[65%]">{data.termin == 0 ? "Cash" : data.termin + " Hari"}</td>
+                  <td className="font-semibold px-2  w-[30%] whitespace-nowrap">Payment</td>
+                  <td className="w-[5%]  text-center">:</td>
+                  <td className="px-2  break-words w-[65%]">{data.termin == 0 ? "Cash" : data.termin + " Hari"}</td>
               </tr>
               <tr>
-                  <td className="font-semibold px-2 py-1 w-[30%] whitespace-nowrap">Jatuh Tempo</td>
-                  <td className="w-[5%] py-1 text-center">:</td>
-                  <td className="px-2 py-1 break-words w-[65%]">{formatTanggal(data.validity_contract)}</td>
+                  <td className="font-semibold px-2  w-[30%] whitespace-nowrap">Jatuh Tempo</td>
+                  <td className="w-[5%]  text-center">:</td>
+                  <td className="px-2  break-words w-[65%]">{formatTanggal(data.validity_contract)}</td>
               </tr>
             </tbody>
           </table>
