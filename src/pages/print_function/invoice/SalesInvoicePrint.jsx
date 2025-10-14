@@ -158,48 +158,33 @@ export default function SalesInvoicePrint(props) {
         }
         table { page-break-inside: auto; border-collapse: collapse; }
         tr { page-break-inside: avoid; }
+
         @media print {
           * {
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
-            /* Optimasi rendering untuk kecepatan, matikan penghalusan font */
-            text-rendering: optimizeSpeed !important; 
-            font-smooth: never !important;
-            -webkit-font-smoothing: none !important;
-            color: #000 !important; /* Pastikan warna hitam pekat */
+            text-rendering: optimizeLegibility !important;
           }
-          html, body, .invoice-print-text {
-            /* Gunakan font monospace yang umum dan tebal seperti Consolas atau Courier New */
-            font-family: "Consolas", "Courier New", "Courier", monospace !important;
-            
-            /* KUNCI UTAMA UNTUK HSD:
-              Gunakan font-weight 700 (bold) atau bahkan 900 (black) agar garis
-              font menjadi sangat tebal. Ini memberi "target" yang lebih besar
-              untuk pin printer di mode HSD.
-            */
-            font-weight: 900 !important;
-            
-            /* Sedikit perbesar ukuran font agar lebih mudah dibaca */
+          
+          html, body, * {
+            font-family: Arial, "Helvetica Neue", Helvetica, sans-serif !important;
+            font-weight: 400 !important;
             font-size: 11pt !important;
-            
-            /* Normalisasi spasi antar huruf */
             letter-spacing: normal !important;
+            line-height: 1.5 !important;
           }
-          .page { 
-            page-break-after: always; 
-          }
-          .page:last-child { 
-            page-break-after: auto; 
-          }
-
-          /* Atur padding agar tidak terlalu renggang di mode cetak */
+          
           .items-table td, .items-table th {
-              padding: 3px 4px !important;
-              line-height: 1.3 !important;
+            padding: 4px 6px !important;
+            line-height: 1.5 !important;
           }
-          /* Pastikan elemen yang sengaja di-bold tetap sangat tebal */
-          .font-bold {
-              font-weight: 900 !important;
+          
+          .font-bold, h1, th {
+            font-weight: 700 !important;
+          }
+          
+          .font-semibold {
+            font-weight: 600 !important;
           }
         }
       `}</style>
@@ -366,13 +351,13 @@ createEffect(() => {
               <th hidden className="border border-black p-1 w-[10%]" rowSpan={2}>Jenis Kain</th>
               <th className="border border-black p-1 w-[10%]" rowSpan={2}>Warna</th>
               <th className="border border-black p-1 w-[9%]" rowSpan={2}>Lebar</th>
-              <th className="border border-black p-1 w-[7%]" rowSpan={2}>Grade</th>
-              <th className="border border-black p-1 w-[28%] text-center" colSpan={2}>Quantity</th>
+              <th className="border border-black p-1 w-[8%]" rowSpan={2}>Grade</th>
+              <th className="border border-black p-1 w-[20%] text-center" colSpan={2}>Quantity</th>
               <th className="border border-black p-1 w-[15%]" rowSpan={2}>Harga</th>
-              <th className="border border-black p-1 w-[18%]" rowSpan={2}>Jumlah</th>
+              <th className="border border-black p-1 w-[20%]" rowSpan={2}>Jumlah</th>
             </tr>
             <tr>
-              <th className="border border-black p-1 w-[7%]">Roll</th>
+              <th className="border border-black p-1 w-[5%]">Roll</th>
               <th className="border border-black p-1 w-[14%]">{quantityUnitName()}</th>
             </tr>
           </thead>
@@ -496,7 +481,7 @@ createEffect(() => {
             </Show>
 
             <tr>
-              <td colSpan={10} className="border border-black px-2 py-1 text-right italic">
+              <td colSpan={9} className="border border-black px-2 py-1 text-right italic">
                 Halaman {pageNo} dari {pageCount}
               </td>
             </tr>
