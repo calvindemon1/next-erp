@@ -84,7 +84,7 @@ export default function JBInvoicePrint(props) {
           width: 100%;
           -webkit-print-color-adjust: exact !important;
           print-color-adjust: exact !important;
-          font-family: "Arial", monospace !important;
+           font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, "Helvetica Neue";
           font-weight: 400;
           display: flex;
           justify-content: center;
@@ -116,17 +116,22 @@ export default function JBInvoicePrint(props) {
           * {
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
-            text-rendering: optimizeSpeed !important; // Penting untuk dot matrix
+            text-rendering: optimizeSpeed !important; 
             font-smooth: never !important;
             -webkit-font-smoothing: none !important;
           }
-          html, body {
+          html, body, .invoice-print-text {
             font-family: "Arial", monospace !important;
             font-weight: 400 !important;
-            font-size: 13pt !important;
+            font-size: 12pt !important;
           }
           .page { page-break-after: always; }
           .page:last-child { page-break-after: auto; }
+
+          .items-table td, .items-table th {
+              padding: 4px 6px !important;
+              line-height: 1.2 !important;
+          }
         }
       `}</style>
 
@@ -275,7 +280,7 @@ function PrintPage(props) {
         </div>
 
         {/* ITEM TABLE */}
-        <table ref={bind("tableRef")} className="w-full table-fixed border border-black text-[12px] border-collapse mt-3">
+        <table ref={bind("tableRef")} className="w-full table-fixed border border-black text-[12px] border-collapse mt-3 items-table">
           <thead ref={bind("theadRef")}>
             {/* thead pakai className="bg-gray-200" kalau mau berwarna */}
             <tr>
