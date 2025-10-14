@@ -75,7 +75,7 @@ export default function OCPurchaseOrderForm() {
   const canEditKeteranganWarna = () =>
     !isView && (!isEdit || !isStrictColorEdit());
   const canEditKeterangan = () => !isView && (!isEdit || !isStrictColorEdit());
-  const canEditInstruksiKain = () => !isView && (!isEdit || isStrictColorEdit());
+  const canEditInstruksiKain = () => !isView && (!isEdit || !isStrictColorEdit());
   const canEditQty = () => !isView && (!isEdit || !isStrictColorEdit());
 
   const [form, setForm] = createSignal({
@@ -180,6 +180,7 @@ export default function OCPurchaseOrderForm() {
 
       const normalizedItems = (dataItems || []).map((item) => {
         return {
+          id: item.id,
           meter_total: item.meter_total,
           yard_total: item.yard_total,
           meter_dalam_proses: item.meter_dalam_proses,
@@ -642,6 +643,7 @@ export default function OCPurchaseOrderForm() {
           keterangan: form().keterangan,
           instruksi_kain: form().instruksi_kain,
           items: form().items.map((i) => ({
+            //id: i.id,
             pc_item_id: i.pc_item_id,
             warna_id: i.warna_id,
             std_susut: i.std_susutValue || 0,
@@ -650,6 +652,8 @@ export default function OCPurchaseOrderForm() {
             yard_total: i.yardValue || 0,
           })),
         };
+        //console.log("Update OC Payload:", JSON.stringify(payload, null, 2));
+
         await updateDataOrderCelupOrder(user?.token, params.id, payload);
       } else {
         const payload = {
@@ -664,6 +668,7 @@ export default function OCPurchaseOrderForm() {
           sequence_number: Number(form().no_seq),
           no_po: form().sequence_number,
           items: form().items.map((i) => ({
+            // id: i.id,
             pc_item_id: i.pc_item_id,
             warna_id: i.warna_id,
             std_susut: i.std_susutValue || 0,
@@ -672,6 +677,8 @@ export default function OCPurchaseOrderForm() {
             yard_total: i.yardValue || 0,
           })),
         };
+        //console.log("Create OC Payload:", JSON.stringify(payload, null, 2));
+
         await createOrderCelupOrder(user?.token, payload);
       }
       Swal.fire({
