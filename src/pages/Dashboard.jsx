@@ -1,10 +1,12 @@
-// src/pages/Dashboard.jsx
 import MainLayout from "../layouts/MainLayout";
 import { onMount, createSignal, For, Show } from "solid-js";
 import ApexChart from "../components/ApexChart";
-import { Printer } from "lucide-solid";
+import { Printer, FileSpreadsheet } from "lucide-solid";
 import Litepicker from "litepicker";
 import Swal from "sweetalert2";
+import { exportDeliveryNotesToExcel } from "../helpers/export_excel/delivery-notes-excel-export";
+import { exportPOStatusToExcel } from "../helpers/export_excel/po-status-excel-export";
+import { exportSummaryToExcel } from "../helpers/export_excel/summary-excel-export";
 
 // ==== IMPORT ENDPOINTS ====
 import {
@@ -189,6 +191,8 @@ export default function Dashboard() {
   // filter tanggal (range created_at). Kosong = semua.
   const [startDate, setStartDate] = createSignal("");
   const [endDate, setEndDate] = createSignal("");
+
+  const formatAngka = (n) => new Intl.NumberFormat("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
 
   const currentFilterLabel = () => {
     if (!startDate && !endDate) return "Semua tanggal";
@@ -570,20 +574,34 @@ export default function Dashboard() {
                               Belum Invoice: <b>{s.pending}</b>
                             </div>
                           </div>
-                          <button
-                            class="absolute top-4 right-4 text-gray-500 hover:text-blue-600"
-                            title="Print Summary Penjualan"
-                            onClick={() =>
-                              printSummaryReport({
-                                kind: "sales",
-                                token: user?.token,
-                                startDate: startDate(),
-                                endDate: endDate(),
-                              })
-                            }
-                          >
-                            <Printer size={20} />
-                          </button>
+                          <div class="absolute top-4 right-4 flex gap-3">
+                            <button
+                              class="text-gray-500 hover:text-green-600"
+                              title="Export Summary Penjualan ke Excel"
+                              onClick={() => exportSummaryToExcel({
+                                kind: 'sales',
+                                data: block.rowsSales,
+                                filterLabel: currentFilterLabel(),
+                                token: user?.token
+                              })}
+                            >
+                              <FileSpreadsheet size={20} />
+                            </button>
+                            <button
+                              class="text-gray-500 hover:text-blue-600" 
+                              title="Print Summary Penjualan"
+                              onClick={() =>
+                                printSummaryReport({
+                                  kind: "sales",
+                                  token: user?.token,
+                                  startDate: startDate(),
+                                  endDate: endDate(),
+                                })
+                              }
+                            >
+                              <Printer size={20} />
+                            </button>
+                          </div>
                         </div>
 
                         {/* Kartu Jual Beli */}
@@ -600,20 +618,34 @@ export default function Dashboard() {
                               Belum Ada Invoice: <b>{j.pending}</b>
                             </div>
                           </div>
-                          <button
-                            class="absolute top-4 right-4 text-gray-500 hover:text-blue-600"
-                            title="Print Summary Jual Beli"
-                            onClick={() =>
-                              printSummaryReport({
-                                kind: "jual_beli",
-                                token: user?.token,
-                                startDate: startDate(),
-                                endDate: endDate(),
-                              })
-                            }
-                          >
-                            <Printer size={20} />
-                          </button>
+                          <div class="absolute top-4 right-4 flex gap-3">
+                            <button
+                              class="text-gray-500 hover:text-green-600"
+                              title="Export Summary Jual Beli ke Excel"
+                              onClick={() => exportSummaryToExcel({
+                                kind: 'jb',
+                                data: block.rowsJB,
+                                filterLabel: currentFilterLabel(),
+                                token: user?.token
+                              })}
+                            >
+                              <FileSpreadsheet size={20} />
+                            </button>
+                            <button
+                              class="text-gray-500 hover:text-blue-600" 
+                              title="Print Summary Jual Beli"
+                              onClick={() =>
+                                printSummaryReport({
+                                  kind: "jual_beli",
+                                  token: user?.token,
+                                  startDate: startDate(),
+                                  endDate: endDate(),
+                                })
+                              }
+                            >
+                              <Printer size={20} />
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -652,19 +684,22 @@ export default function Dashboard() {
                           {block.sjCount}
                         </p>
 
-                        <button
-                          class="absolute top-4 right-4 text-gray-500 hover:text-blue-600"
-                          title="Cetak laporan"
-                          onClick={() =>
-                            printDeliveryNotes(block, {
-                              token: user?.token,
-                              startDate: startDate(),
-                              endDate: endDate(),
-                            })
-                          }
-                        >
-                          <Printer size={20} />
-                        </button>
+                        <div class="absolute top-4 right-4 flex gap-3">
+                            <button class="text-gray-500 hover:text-green-600" title="Export Laporan ke Excel"
+                                onClick={() => exportDeliveryNotesToExcel({
+                                    block: block,
+                                    token: user?.token,
+                                    startDate: startDate(), // Kirim tanggal
+                                    endDate: endDate(),     // Kirim tanggal
+                                    filterLabel: currentFilterLabel()
+                                })}>
+                                <FileSpreadsheet size={20} />
+                            </button>
+                            <button class="text-gray-500 hover:text-blue-600" title="Cetak laporan"
+                                onClick={() => printDeliveryNotes(block, { token: user?.token, startDate: startDate(), endDate: endDate() })}>
+                                <Printer size={20} />
+                            </button>
+                        </div>
                       </div>
 
                       {/* Kartu 2: Total Pesanan Selesai */}
@@ -673,27 +708,32 @@ export default function Dashboard() {
                           Total Pesanan Selesai
                         </p>
                         <p class="text-3xl font-bold text-blue-600">{done}</p>
-                        <button
-                          class="absolute top-4 right-4 text-gray-500 hover:text-blue-600"
-                          title="Cetak daftar PO/ SO yang selesai"
-                          onClick={() =>
-                            printPOStatus({
-                              blockKey: block.key,
-                              mode: section.key,
+                        <div class="absolute top-4 right-4 flex gap-3">
+                           <button class="text-gray-500 hover:text-green-600" title="Export Laporan ke Excel"
+                            onClick={() => exportPOStatusToExcel({
+                              block: block,
+                              status: 'done',
+                              filterLabel: currentFilterLabel(),
+                              token: user?.token,
+                              poRows: block.poRows,
+                              isGreige: isGreige,
+                              PO_DETAIL_FETCHER: PO_DETAIL_FETCHER
+                            })}>
+                            <FileSpreadsheet size={20} />
+                          </button>
+                          <button class="text-gray-500 hover:text-blue-600" title="Cetak daftar PO/ SO yang selesai"
+                            onClick={() => printPOStatus({
+                              block: block,
                               status: "done",
                               poRows: block.poRows,
                               startDate: startDate(),
                               endDate: endDate(),
-                              userToken: user?.token,
-                              isGreige,
-                              SJ_LIST_FETCHER,
-                              SJ_DETAIL_FETCHER,
-                              PO_DETAIL_FETCHER,
-                            })
-                          }
-                        >
-                          <Printer size={20} />
-                        </button>
+                              token: user?.token,
+                              PO_DETAIL_FETCHER: PO_DETAIL_FETCHER
+                            })}>
+                            <Printer size={20} />
+                          </button>
+                        </div>
                       </div>
 
                       {/* Kartu 3: Total Pesanan Belum Selesai */}
@@ -704,27 +744,32 @@ export default function Dashboard() {
                         <p class="text-3xl font-bold text-blue-600">
                           {notDone}
                         </p>
-                        <button
-                          class="absolute top-4 right-4 text-gray-500 hover:text-blue-600"
-                          title="Cetak daftar PO/ SO yang belum selesai"
-                          onClick={() =>
-                            printPOStatus({
-                              blockKey: block.key,
-                              mode: section.key,
+                        <div class="absolute top-4 right-4 flex gap-3">
+                          <button class="text-gray-500 hover:text-green-600" title="Export Laporan ke Excel"
+                            onClick={() => exportPOStatusToExcel({
+                              block: block,
+                              status: 'not_done',
+                              filterLabel: currentFilterLabel(),
+                              token: user?.token,
+                              poRows: block.poRows,
+                              isGreige: isGreige,
+                              PO_DETAIL_FETCHER: PO_DETAIL_FETCHER,
+                            })}>
+                            <FileSpreadsheet size={20} />
+                          </button>
+                          <button class="text-gray-500 hover:text-blue-600" title="Cetak daftar PO/ SO yang belum selesai"
+                            onClick={() => printPOStatus({
+                              block: block,
                               status: "not_done",
                               poRows: block.poRows,
                               startDate: startDate(),
                               endDate: endDate(),
-                              userToken: user?.token,
-                              isGreige,
-                              SJ_LIST_FETCHER,
-                              SJ_DETAIL_FETCHER,
-                              PO_DETAIL_FETCHER,
-                            })
-                          }
-                        >
-                          <Printer size={20} />
-                        </button>
+                              token: user?.token,
+                              PO_DETAIL_FETCHER: PO_DETAIL_FETCHER
+                            })}>
+                            <Printer size={20} />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
