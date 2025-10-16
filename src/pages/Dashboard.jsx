@@ -23,6 +23,7 @@ import {
   getOCDeliveryNotes,
   getKJDeliveryNotes,
   getJBDeliveryNotes,
+  getDeliveryNotes,
 
   // SO
   getSalesOrders, // detail SO
@@ -112,7 +113,7 @@ export default function Dashboard() {
     oc: getOCDeliveryNotes,
     kain_jadi: getKJDeliveryNotes,
     jual_beli: getJBDeliveryNotes,
-    sales: null, // sales pakai SO detail kalau perlu
+    sales: getDeliveryNotes,
   };
 
   const PO_LIST_FETCHER = {
@@ -195,8 +196,9 @@ export default function Dashboard() {
   const formatAngka = (n) => new Intl.NumberFormat("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
 
   const currentFilterLabel = () => {
-    if (!startDate && !endDate) return "Semua tanggal";
-    return `${startDate()} s/d ${endDate()}`;
+    if (!startDate() && !endDate()) return "Semua Data"; 
+    if (startDate() && endDate()) return `${startDate()} s/d ${endDate()}`;
+    return startDate() || endDate();
   };
 
   // ---- helpers

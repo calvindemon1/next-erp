@@ -23,137 +23,168 @@ const fmt2 = (val) => {
 };
 
 const openPrintWindow = (title, processedData, block, filterLabel) => {
-    processedData.sort((a, b) => new Date(a.mainData.tanggal) - new Date(b.mainData.tanggal));
-    
-    const w = window.open("", "", "height=700,width=980");
+  const normalizeProcessedData = (pd) => {
+    if (!pd || pd.length === 0) return [];
 
-    const isGreige = block.key === 'greige';
-    const isKainJadi = block.key === 'kain_jadi';
-    const isSales = block.mode === 'penjualan';
-    
-    const style = `<style>
-        @page { 
-            size: A4; 
-            margin: 11mm; 
-        }
-        body{ 
-            font-family: Arial, sans-serif; 
-            margin:0; 
-        }
-        .paper{ 
-            width:100%; 
-        } 
-        h1{ 
-            margin:0 0 8mm 0 
-        }
-        table{ 
-            border-collapse:collapse; 
-            width:100%; 
-        }
-        th,td{ 
-            border:1px solid #000; 
-            padding:4px 6px; 
-            font-size:9px; 
-            word-wrap:break-word; 
-        }
-        th{ 
-            background:#DADBDD; 
-            text-align:center; 
-        }
-        thead { 
-            display: table-header-group; 
-        }
-        tfoot { 
-            display: table-row-group; 
-        }
-        .grand-total-row { 
-            page-break-inside: avoid; 
-            font-weight: bold; 
-        }
-    </style>`;
-    
-    const header = `<h1>${title}</h1>
-      <div>Periode: ${filterLabel}</div>
-      <div>Tanggal cetak: ${new Date().toLocaleString('id-ID')}</div><br/>`;
-      
-    const headers = ['No', 'Tgl', 'No. SJ', 'No. Ref', isSales ? 'Customer' : 'Supplier'];
-    if (!isGreige) headers.push('Warna');
-    if (isSales) headers.push('Grade');
-    headers.push('Kain', 'Total Meter', 'Total Yard');
-    if (isKainJadi) {
-        headers.push('Harga Greige', 'Harga Maklun');
-    } else {
-        headers.push('Harga');
+    // Jika sudah berbentuk grouped { mainData, items }
+    const first = pd[0];
+    if (first && first.mainData && Array.isArray(first.items)) {
+      return pd; // sudah siap
     }
-    headers.push('Total');
-    const thead = `<tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>`;
 
-    let grandTotal = 0;
-    const tbody = processedData.map((sj, index) => {
-        if (!sj.items.length) return '';
+    // Jika flat rows: kumpulkan berdasarkan row_id atau no_sj
+    const groups = {};
+    pd.forEach((r, idx) => {
+      // tentukan key group (prioritaskan row_id, lalu no_sj, lalu kombinasi relasi+tanggal)
+      const groupKey = r.row_id ?? r.rowId ?? r.row_id?.toString() ?? r.no_sj ?? `${r.no_sj}_${r.relasi}_${r.tanggal}` ?? `g_${idx}`;
 
-        grandTotal += sj.items.reduce((sum, item) => sum + item.total, 0);
-        
-        const rowCount = sj.items.length;
-        const mainInfoCells = `
-            <td rowspan="${rowCount}" style="text-align:center;">${index + 1}</td>
-            <td rowspan="${rowCount}">${formatTanggalIndo(sj.mainData.tanggal)}</td>
-            <td rowspan="${rowCount}">${sj.mainData.no_sj}</td>
-            <td rowspan="${rowCount}">${sj.mainData.no_ref}</td>
-            <td rowspan="${rowCount}">${sj.mainData.relasi}</td>
-        `;
+      if (!groups[groupKey]) {
+        groups[groupKey] = {
+          mainData: {
+            id: r.row_id ?? null,
+            tanggal: r.tanggal ?? r.created_at ?? null,
+            no_sj: r.no_sj ?? '-',
+            relasi: r.relasi ?? (r.supplier_name ?? r.customer_name) ?? '-',
+            no_ref: r.no_ref ?? '-',
+            unit: r.unit ?? (r.satuan_unit_name ?? 'Meter'),
+          },
+          items: []
+        };
+      }
 
-        const firstItem = sj.items[0];
-        let firstItemRow = `<tr>${mainInfoCells}`;
-        if (!isGreige) firstItemRow += `<td>${firstItem.warna}</td>`;
-        if (isSales) firstItemRow += `<td>${firstItem.grade}</td>`;
-        firstItemRow += `
-            <td>${firstItem.kain}</td>
-            <td style="text-align:right;">${fmt2(firstItem.meter)}</td>
-            <td style="text-align:right;">${fmt2(firstItem.yard)}</td>
-            ${isKainJadi
-                ? `<td style="text-align:right;">${fmtRp(firstItem.harga1)}</td><td style="text-align:right;">${fmtRp(firstItem.harga2)}</td>`
-                : `<td style="text-align:right;">${fmtRp(firstItem.harga1)}</td>`
-            }
-            <td style="text-align:right;">${fmtRp(firstItem.total)}</td>
-        </tr>`;
+      // push item normalized
+      groups[groupKey].items.push({
+        item_id: r.item_id ?? r.so_item_id ?? r.sj_item_id ?? `${groups[groupKey].mainData.no_sj}_${groups[groupKey].items.length}`,
+        kain: r.kain ?? r.corak_kain ?? '-',
+        warna: r.warna ?? r.kode_warna ?? r.warna_kode ?? '-',
+        grade: r.grade ?? r.grade_name ?? '-',
+        meter: Number.isFinite(Number(r.meter)) ? Number(r.meter) : (Number.isFinite(Number(r.meter_total)) ? Number(r.meter_total) : 0),
+        yard: Number.isFinite(Number(r.yard)) ? Number(r.yard) : (Number.isFinite(Number(r.yard_total)) ? Number(r.yard_total) : 0),
+        harga1: Number.isFinite(Number(r.harga1)) ? Number(r.harga1) : (Number.isFinite(Number(r.harga)) ? Number(r.harga) : 0),
+        harga2: Number.isFinite(Number(r.harga2)) ? Number(r.harga2) : (Number.isFinite(Number(r.harga_maklun)) ? Number(r.harga_maklun) : null),
+        total: Number.isFinite(Number(r.total)) ? Number(r.total) : 0,
+        raw_item: r.raw_item ?? null,
+      });
+    });
 
-        const subsequentItemRows = sj.items.slice(1).map(item => {
-            let rowHtml = `<tr>`;
-            if (!isGreige) rowHtml += `<td>${item.warna}</td>`;
-            if (isSales) rowHtml += `<td>${item.grade}</td>`;
-            rowHtml += `
-                <td>${item.kain}</td>
-                <td style="text-align:right;">${fmt2(item.meter)}</td>
-                <td style="text-align:right;">${fmt2(item.yard)}</td>
-                ${isKainJadi
-                    ? `<td style="text-align:right;">${fmtRp(item.harga1)}</td><td style="text-align:right;">${fmtRp(item.harga2)}</td>`
-                    : `<td style="text-align:right;">${fmtRp(item.harga1)}</td>`
-                }
-                <td style="text-align:right;">${fmtRp(item.total)}</td>
-            </tr>`;
-            return rowHtml;
-        }).join('');
+    return Object.values(groups);
+  };
 
-        return firstItemRow + subsequentItemRows;
-    }).join('');
+  // normalize dulu
+  const normalized = normalizeProcessedData(processedData);
 
-    const colspanForLabel = headers.length - 1;
-    const tfoot = `
-      <tfoot>
-        <tr class="grand-total-row">
-          <td colspan="${colspanForLabel}" style="text-align:right;">TOTAL AKHIR</td>
-          <td style="text-align:right;">${fmtRp(grandTotal)}</td>
-        </tr>
-      </tfoot>
+  // sort aman: kalau mainData.tanggal tidak ada, biarkan urutan asli
+  normalized.sort((a, b) => {
+    const ta = a?.mainData?.tanggal ? new Date(a.mainData.tanggal).getTime() : null;
+    const tb = b?.mainData?.tanggal ? new Date(b.mainData.tanggal).getTime() : null;
+    if (ta === null && tb === null) return 0;
+    if (ta === null) return 1;
+    if (tb === null) return -1;
+    return ta - tb;
+  });
+
+  const w = window.open("", "", "height=700,width=980");
+
+  const isGreige = block.key === 'greige';
+  const isKainJadi = block.key === 'kain_jadi';
+  const isSales = block.mode === 'penjualan';
+
+  const style = `<style>
+    @page { size: A4; margin: 11mm; }
+    body{ font-family: Arial, sans-serif; margin:0; }
+    .paper{ width:100%; }
+    h1{ margin:0 0 8mm 0 }
+    table{ border-collapse:collapse; width:100%; }
+    th,td{ border:1px solid #000; padding:4px 6px; font-size:9px; word-wrap:break-word; }
+    th{ background:#DADBDD; text-align:center; }
+    thead { display: table-header-group; }
+    tfoot { display: table-row-group; }
+    .grand-total-row { page-break-inside: avoid; font-weight: bold; }
+  </style>`;
+
+  const header = `<h1>${title}</h1>
+    <div>Periode: ${filterLabel}</div>
+    <div>Tanggal cetak: ${new Date().toLocaleString('id-ID')}</div><br/>`;
+
+  const headers = ['No', 'Tgl', 'No. SJ', 'No. Ref', isSales ? 'Customer' : 'Supplier'];
+  if (!isGreige) headers.push('Warna');
+  if (isSales) headers.push('Grade');
+  headers.push('Kain', 'Total Meter', 'Total Yard');
+  if (isKainJadi) {
+    headers.push('Harga Greige', 'Harga Maklun');
+  } else {
+    headers.push('Harga');
+  }
+  headers.push('Total');
+  const thead = `<tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>`;
+
+  let grandTotal = 0;
+  const tbody = normalized.map((sj, index) => {
+    if (!sj.items || sj.items.length === 0) return '';
+
+    const items = sj.items;
+    grandTotal += items.reduce((s, it) => s + (Number(it.total) || 0), 0);
+
+    const rowCount = items.length;
+    const mainInfoCells = `
+      <td rowspan="${rowCount}" style="text-align:center;">${index + 1}</td>
+      <td rowspan="${rowCount}">${formatTanggalIndo(sj.mainData.tanggal)}</td>
+      <td rowspan="${rowCount}">${sj.mainData.no_sj}</td>
+      <td rowspan="${rowCount}">${sj.mainData.no_ref ?? '-'}</td>
+      <td rowspan="${rowCount}">${sj.mainData.relasi}</td>
     `;
 
-    const table = `<table><thead>${thead}</thead><tbody>${tbody}</tbody>${tfoot}</table>`;
-    const bodyHtml = `<div class="paper">${header}${table}</div>`;
-    w.document.write(`<html><head><title>${title}</title>${style}</head><body>${bodyHtml}</body></html>`);
-    w.document.close();
-    w.focus();
-    w.print();
+    const first = items[0];
+    let firstRow = `<tr>${mainInfoCells}`;
+    if (!isGreige) firstRow += `<td>${first.warna}</td>`;
+    if (isSales) firstRow += `<td>${first.grade}</td>`;
+    firstRow += `
+      <td>${first.kain}</td>
+      <td style="text-align:right;">${fmt2(first.meter)}</td>
+      <td style="text-align:right;">${fmt2(first.yard)}</td>
+      ${isKainJadi
+        ? `<td style="text-align:right;">${fmtRp(first.harga1)}</td><td style="text-align:right;">${fmtRp(first.harga2)}</td>`
+        : `<td style="text-align:right;">${fmtRp(first.harga1)}</td>`
+      }
+      <td style="text-align:right;">${fmtRp(first.total)}</td>
+    </tr>`;
+
+    const restRows = items.slice(1).map(it => {
+      let r = `<tr>`;
+      if (!isGreige) r += `<td>${it.warna}</td>`;
+      if (isSales) r += `<td>${it.grade}</td>`;
+      r += `
+        <td>${it.kain}</td>
+        <td style="text-align:right;">${fmt2(it.meter)}</td>
+        <td style="text-align:right;">${fmt2(it.yard)}</td>
+        ${isKainJadi
+          ? `<td style="text-align:right;">${fmtRp(it.harga1)}</td><td style="text-align:right;">${fmtRp(it.harga2)}</td>`
+          : `<td style="text-align:right;">${fmtRp(it.harga1)}</td>`
+        }
+        <td style="text-align:right;">${fmtRp(it.total)}</td>
+      </tr>`;
+      return r;
+    }).join('');
+
+    return firstRow + restRows;
+  }).join('');
+
+  const colspanForLabel = headers.length - 1;
+  const tfoot = `
+    <tfoot>
+      <tr class="grand-total-row">
+        <td colspan="${colspanForLabel}" style="text-align:right;">TOTAL AKHIR</td>
+        <td style="text-align:right;">${fmtRp(grandTotal)}</td>
+      </tr>
+    </tfoot>
+  `;
+
+  const table = `<table><thead>${thead}</thead><tbody>${tbody}</tbody>${tfoot}</table>`;
+  const bodyHtml = `<div class="paper">${header}${table}</div>`;
+  w.document.write(`<html><head><title>${title}</title>${style}</head><body>${bodyHtml}</body></html>`);
+  w.document.close();
+  w.focus();
+  w.print();
 };
 
 export async function printDeliveryNotes(block, { token, startDate = "", endDate = "" } = {}) {
@@ -175,6 +206,8 @@ export async function printDeliveryNotes(block, { token, startDate = "", endDate
     }
     
     const processedData = await processDeliveryNotesData({ baseRows, block, token });
+
+    //console.log('processedData sample:', JSON.stringify(processedData.slice(0,3), null, 2));
     
     if (processedData.length === 0) {
         return alert("Gagal memproses detail data untuk dicetak.");
