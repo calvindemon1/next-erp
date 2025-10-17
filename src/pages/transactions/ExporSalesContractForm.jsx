@@ -1103,7 +1103,7 @@ export default function ExporSalesContractForm() {
           </tbody>
           <tfoot>
             <tr class="font-bold bg-gray-100">
-              <td colSpan="6" class="text-center p-2">
+              <td colSpan="6" class="text-right p-2">
                 TOTAL
               </td>
               <td class="border p-2">{displayMoney(totalAll())}</td>
