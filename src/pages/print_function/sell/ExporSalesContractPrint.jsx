@@ -256,7 +256,7 @@ function PrintPage(props) {
                   className="px-2 py-1 max-w-[300px] break-words whitespace-pre-wrap font-bold"
                   colSpan={2}
                 >
-                  ALI AL SALMAN TEXTILE EST <br></br>{data.customer_name}
+                  {data.customer_name}
                 </td>
               </tr>
               <tr>
@@ -264,7 +264,7 @@ function PrintPage(props) {
                   className="px-2 max-w-[300px] leading-relaxed break-words whitespace-pre-wrap font-bold"
                   colSpan={2}
                 >
-                  DAMMAM - SAUDI ARABIA <br></br>{data.customer_alamat}
+                  {data.customer_alamat}
                 </td>
               </tr>
               <tr class="flex flex-col text-xs mt-5">
