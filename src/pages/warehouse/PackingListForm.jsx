@@ -23,14 +23,17 @@ import { jwtDecode } from "jwt-decode";
 export default function PackingListForm() {
   const [params] = useSearchParams();
   const isEdit = !!params.id;
-  const isView = params.view === 'true';
+  const isView = params.view === "true";
   const navigate = useNavigate();
   const user = getUser();
 
   // --- ROLE / STRICT EDIT (staff gudang) ---
   const payload = (() => {
-    try { return user?.token ? jwtDecode(user.token) : null; }
-    catch { return null; }
+    try {
+      return user?.token ? jwtDecode(user.token) : null;
+    } catch {
+      return null;
+    }
   })();
 
   const [me, setMe] = createSignal(payload);
@@ -43,7 +46,7 @@ export default function PackingListForm() {
     return isEdit && (rid === 13 || rname === "staff gudang");
   };
 
-    // --- STRICT helpers (per-roll / per-row) ---
+  // --- STRICT helpers (per-roll / per-row) ---
   const isExistingRoll = (roll) => !!roll?.roll_id;
 
   // Qty input per roll: lock kalau existing & strict edit
@@ -69,9 +72,9 @@ export default function PackingListForm() {
   // Utility untuk menentukan disabled/hide
   // type: 'roll-qty' | 'add-roll' | 'non-roll'
   const isDisabled = (type) => {
-    if (isView) return true;           // view selalu terkunci
-    if (!isEdit) return false;         // CREATE: bebas edit
-    if (!isStrictWarehouseEdit()) return false;  // EDIT non-strict: bebas edit
+    if (isView) return true; // view selalu terkunci
+    if (!isEdit) return false; // CREATE: bebas edit
+    if (!isStrictWarehouseEdit()) return false; // EDIT non-strict: bebas edit
 
     // EDIT strict (staff gudang): hanya boleh isi qty roll & tambah roll
     return !(type === "roll-qty" || type === "add-roll");
@@ -99,7 +102,8 @@ export default function PackingListForm() {
 
   // ===== Helpers untuk qty =====
   const numVal = (v) => Number(v || 0);
-  const hasQty = (r) => numVal(r.meter) > 0 || numVal(r.yard) > 0 || numVal(r.kilogram) > 0;
+  const hasQty = (r) =>
+    numVal(r.meter) > 0 || numVal(r.yard) > 0 || numVal(r.kilogram) > 0;
 
   // (3) onMount untuk edit atau new
   onMount(async () => {
@@ -138,7 +142,7 @@ export default function PackingListForm() {
             ? 2
             : "",
         keterangan: packingList.keterangan || "",
-        satuan_unit: unitFromPL,  
+        satuan_unit: unitFromPL,
         itemGroups: (packingList.items || []).map((group) => {
           const rolls = (group.rolls || []).map((r, idx) => ({
             roll_id: r.id,
@@ -147,7 +151,7 @@ export default function PackingListForm() {
             col: r.col || group.col || "",
             item: r.so_item_id || group.so_item_id || "",
             meter: r.meter || "",
-            yard: r.yard ?? (r.meter ? (r.meter * 1.093613) : null),
+            yard: r.yard ?? (r.meter ? r.meter * 1.093613 : null),
             //yard: r.yard || ((r.meter || 0) * 1.093613).toFixed(2),
             kilogram: r.kilogram || null,
             // Field Bal & Lot
@@ -156,7 +160,7 @@ export default function PackingListForm() {
           }));
 
           return {
-            id: group.id, 
+            id: group.id,
             item: group.so_item_id || [],
             col: group.col || "",
             meter_total: group.meter_total || 0,
@@ -186,7 +190,7 @@ export default function PackingListForm() {
 
   // Fungsi untuk mengubah string format kembali menjadi angka
   const parseNumber = (str) => {
-    if (typeof str !== 'string' || !str) return 0;
+    if (typeof str !== "string" || !str) return 0;
     const cleaned = str.replace(/[^\d,]/g, "").replace(",", ".");
     return parseFloat(cleaned) || 0;
   };
@@ -212,7 +216,8 @@ export default function PackingListForm() {
     const t = form()?.type;
 
     // normalisasi jadi huruf besar string
-    const s = (t === undefined || t === null) ? "" : String(t).trim().toUpperCase();
+    const s =
+      t === undefined || t === null ? "" : String(t).trim().toUpperCase();
 
     // true untuk 2 (angka/string), 'E', 'EKSPOR'
     if (s === "2" || s === "E" || s === "EKSPOR") return true;
@@ -232,10 +237,10 @@ export default function PackingListForm() {
     if (!selectedSO) return;
 
     // reset semua group & state pendukung SETIAP kali SO berubah
-    setForm(prev => ({ ...prev, itemGroups: [] }));
-    setOpenStates([]);          // tutup semua accordion/row state lama
-    setGroupRollCounts([]);     // reset input jumlah roll per group
-    setSoColors([]);            // akan diisi ulang dari SO baru
+    setForm((prev) => ({ ...prev, itemGroups: [] }));
+    setOpenStates([]); // tutup semua accordion/row state lama
+    setGroupRollCounts([]); // reset input jumlah roll per group
+    setSoColors([]); // akan diisi ulang dari SO baru
 
     let selectedOrder;
 
@@ -244,7 +249,7 @@ export default function PackingListForm() {
       const res = await getSalesOrders(selectedSO, user?.token);
       selectedOrder = res?.order;
 
-      setForm(prev => ({
+      setForm((prev) => ({
         ...prev,
         sales_order_id: selectedSO,
         sales_order_items: selectedOrder,
@@ -256,13 +261,17 @@ export default function PackingListForm() {
       selectedOrder = res?.order;
 
       const soTypeLetter = (selectedSO.no_so || "").split("/")[1];
-      const typeValue = soTypeLetter === "E" ? "E" : soTypeLetter === "D" ? "D" : "";
+      const typeValue =
+        soTypeLetter === "E" ? "E" : soTypeLetter === "D" ? "D" : "";
       const soPpn = (selectedSO.no_so || "").split("/")[2];
       const ppnValue = soPpn === "P" ? 1 : 0;
 
-      const generatedNoPL = await generatePackingListNumber(typeValue, ppnValue);
+      const generatedNoPL = await generatePackingListNumber(
+        typeValue,
+        ppnValue
+      );
 
-      setForm(prev => ({
+      setForm((prev) => ({
         ...prev,
         sales_order_id: selectedSO.id,
         type: typeValue,
@@ -278,9 +287,19 @@ export default function PackingListForm() {
     const colorMap = new Map();
     items.forEach((it) => {
       const id =
-        it.warna_id ?? it.color_id ?? it.warna?.id ?? it.col_id ?? it.col ?? null;
+        it.warna_id ??
+        it.color_id ??
+        it.warna?.id ??
+        it.col_id ??
+        it.col ??
+        null;
       const kode =
-        it.kode_warna ?? it.warna_kode ?? it.warna?.kode ?? it.col_kode ?? it.col ?? "";
+        it.kode_warna ??
+        it.warna_kode ??
+        it.warna?.kode ??
+        it.col_kode ??
+        it.col ??
+        "";
       const deskripsi =
         it.deskripsi_warna ??
         it.warna_deskripsi ??
@@ -289,7 +308,11 @@ export default function PackingListForm() {
         it.warna_kain ??
         "";
       if (id != null) {
-        colorMap.set(String(id), { id, kode: String(kode || ""), deskripsi: String(deskripsi || "") });
+        colorMap.set(String(id), {
+          id,
+          kode: String(kode || ""),
+          deskripsi: String(deskripsi || ""),
+        });
       }
     });
     setSoColors(Array.from(colorMap.values()));
@@ -321,7 +344,7 @@ export default function PackingListForm() {
   // helpers label (untuk tampil read-only)
   const colorLabel = (id) => {
     if (id == null || id === "") return "";
-    const found = (soColors() || []).find(c => String(c.id) === String(id));
+    const found = (soColors() || []).find((c) => String(c.id) === String(id));
     if (!found) return "";
     const code = found.kode ? `${found.kode}` : "";
     const desc = found.deskripsi ? ` | ${found.deskripsi}` : "";
@@ -329,7 +352,9 @@ export default function PackingListForm() {
   };
 
   const itemLabel = (soItemId) => {
-    const it = (form().sales_order_items?.items || []).find(x => String(x.id) === String(soItemId));
+    const it = (form().sales_order_items?.items || []).find(
+      (x) => String(x.id) === String(soItemId)
+    );
     if (!it) return "";
     return `${it.corak_kain} | ${it.konstruksi_kain}`;
   };
@@ -338,10 +363,13 @@ export default function PackingListForm() {
   const soItemToGroup = (soItem) => ({
     sales_order_item_id: soItem.id,
     item: soItem.id,
-    col: (
-      soItem.warna_id ?? soItem.color_id ??
-      soItem.warna?.id ?? soItem.col_id ?? soItem.col ?? ""
-    ),
+    col:
+      soItem.warna_id ??
+      soItem.color_id ??
+      soItem.warna?.id ??
+      soItem.col_id ??
+      soItem.col ??
+      "",
     meter_total: 0,
     yard_total: 0,
     kilogram_total: null,
@@ -349,10 +377,13 @@ export default function PackingListForm() {
       {
         row_num: 1,
         col_num: 1,
-        col: (
-          soItem.warna_id ?? soItem.color_id ??
-          soItem.warna?.id ?? soItem.col_id ?? soItem.col ?? ""
-        ),
+        col:
+          soItem.warna_id ??
+          soItem.color_id ??
+          soItem.warna?.id ??
+          soItem.col_id ??
+          soItem.col ??
+          "",
         item: soItem.id,
         meter: "",
         yard: "",
@@ -368,11 +399,11 @@ export default function PackingListForm() {
     const items = form().sales_order_items?.items || [];
     if (!items.length) return;
 
-    setForm(prev => ({
+    setForm((prev) => ({
       ...prev,
       itemGroups: [
         ...prev.itemGroups,
-        ...items.map(soItem => soItemToGroup(soItem)),
+        ...items.map((soItem) => soItemToGroup(soItem)),
       ],
     }));
   };
@@ -391,7 +422,7 @@ export default function PackingListForm() {
           meter_total: 0,
           yard_total: 0,
           kilogram_total: null,
-          rolls: [  
+          rolls: [
             {
               row_num: 1,
               col_num: 1,
@@ -455,7 +486,8 @@ export default function PackingListForm() {
         0
       );
       copy[groupIndex].yard_total = rolls.reduce(
-        (sum, r) => sum + (hasQty(r) ? Number(r.yard) : 0), 0
+        (sum, r) => sum + (hasQty(r) ? Number(r.yard) : 0),
+        0
       );
       return { ...prev, itemGroups: copy };
     });
@@ -507,10 +539,21 @@ export default function PackingListForm() {
       const updatedRolls = [...group.rolls];
       updatedRolls.splice(rollIndex, 1);
 
-      const meter_total = updatedRolls.reduce((sum, r) => sum + (hasQty(r) ? Number(r.meter || 0) : 0), 0);
-      const yard_total  = updatedRolls.reduce((s, r) => s + (hasQty(r) ? Number(r.yard  || 0) : 0), 0);
+      const meter_total = updatedRolls.reduce(
+        (sum, r) => sum + (hasQty(r) ? Number(r.meter || 0) : 0),
+        0
+      );
+      const yard_total = updatedRolls.reduce(
+        (s, r) => s + (hasQty(r) ? Number(r.yard || 0) : 0),
+        0
+      );
 
-      copy[groupIndex] = { ...group, rolls: reindexRolls(updatedRolls), meter_total, yard_total };
+      copy[groupIndex] = {
+        ...group,
+        rolls: reindexRolls(updatedRolls),
+        meter_total,
+        yard_total,
+      };
       return { ...prev, itemGroups: copy };
     });
   };
@@ -537,27 +580,26 @@ export default function PackingListForm() {
         if (!numeric || numeric <= 0) {
           // kosong / 0 -> tidak dihitung PCS
           r.meter = null;
-          r.yard  = null;
+          r.yard = null;
         } else {
           if (form().satuan_unit === "Yard") {
-            r.yard  = numeric;
+            r.yard = numeric;
             r.meter = numeric * 0.9144;
           } else {
             // default Meter
             r.meter = numeric;
-            r.yard  = numeric * 1.093613;
+            r.yard = numeric * 1.093613;
           }
         }
         rolls[rollIndex] = r;
-
       } else if (field === "kilogram") {
         // KG berdiri sendiri (tanpa konversi m/yd)
         const numeric = parseNumeric(value);
         r.kilogram = numeric > 0 ? numeric : null;
         rolls[rollIndex] = r;
-
       } else if (field === "no_bal") {
-        const rowNum = r.row_num ?? Math.floor(rollIndex / MAX_COL_PER_ROW()) + 1;
+        const rowNum =
+          r.row_num ?? Math.floor(rollIndex / MAX_COL_PER_ROW()) + 1;
         const v = value === "" ? null : Number(value);
         rolls = rolls.map((x, idx) => {
           const rn = x.row_num ?? Math.floor(idx / MAX_COL_PER_ROW()) + 1;
@@ -565,9 +607,9 @@ export default function PackingListForm() {
           if (isEdit && isStrictWarehouseEdit() && x.roll_id) return x; // protect existing
           return { ...x, no_bal: v };
         });
-
       } else if (field === "lot") {
-        const rowNum = r.row_num ?? Math.floor(rollIndex / MAX_COL_PER_ROW()) + 1;
+        const rowNum =
+          r.row_num ?? Math.floor(rollIndex / MAX_COL_PER_ROW()) + 1;
         const v = value === "" ? null : Number(value);
         rolls = rolls.map((x, idx) => {
           const rn = x.row_num ?? Math.floor(idx / MAX_COL_PER_ROW()) + 1;
@@ -575,29 +617,49 @@ export default function PackingListForm() {
           if (isEdit && isStrictWarehouseEdit() && x.roll_id) return x; // protect existing
           return { ...x, lot: v };
         });
-
       } else {
         r[field] = value;
         rolls[rollIndex] = r;
       }
 
       // subtotal (yang dihitung hanya nilai > 0)
-      const meter_total     = rolls.reduce((s, x) => s + ((Number(x?.meter) || 0) > 0 ? Number(x.meter) : 0), 0);
-      const yard_total      = rolls.reduce((s, x) => s + ((Number(x?.yard)  || 0) > 0 ? Number(x.yard)  : 0), 0);
-      const kilogram_total  = rolls.reduce((s, x) => s + (Number(x?.kilogram) || 0), 0) || null;
+      const meter_total = rolls.reduce(
+        (s, x) => s + ((Number(x?.meter) || 0) > 0 ? Number(x.meter) : 0),
+        0
+      );
+      const yard_total = rolls.reduce(
+        (s, x) => s + ((Number(x?.yard) || 0) > 0 ? Number(x.yard) : 0),
+        0
+      );
+      const kilogram_total =
+        rolls.reduce((s, x) => s + (Number(x?.kilogram) || 0), 0) || null;
 
-      g.rolls           = rolls;
-      g.meter_total     = meter_total;
-      g.yard_total      = yard_total;
-      g.kilogram_total  = kilogram_total; // <<— simpan total KG ke group
+      g.rolls = rolls;
+      g.meter_total = meter_total;
+      g.yard_total = yard_total;
+      g.kilogram_total = kilogram_total; // <<— simpan total KG ke group
 
       groups[groupIndex] = g;
       return { ...prev, itemGroups: groups };
     });
   };
 
-  const UNIT_ID = { "Meter": 1, "Yard": 2, "Kilogram": 3 };
+  const UNIT_ID = { Meter: 1, Yard: 2, Kilogram: 3 };
   const unitId = () => UNIT_ID[form().satuan_unit || "Meter"] || 1;
+
+  const handleKeyDown = (e) => {
+    const tag = e.target.tagName;
+    const type = e.target.type;
+
+    if (
+      e.key === "Enter" &&
+      tag !== "TEXTAREA" &&
+      type !== "submit" &&
+      type !== "button"
+    ) {
+      e.preventDefault();
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -616,7 +678,8 @@ export default function PackingListForm() {
               const col_num = (idx % MAX_COL_PER_ROW()) + 1;
 
               const meterVal = Number(r.meter) || 0;
-              const yardVal  = Number(r.yard)  || (meterVal > 0 ? meterVal * 1.093613 : 0);
+              const yardVal =
+                Number(r.yard) || (meterVal > 0 ? meterVal * 1.093613 : 0);
 
               const roll = {
                 row_num,
@@ -625,16 +688,26 @@ export default function PackingListForm() {
                 yard: yardVal,
                 kilogram: r.kilogram ? Number(r.kilogram) : null,
                 lot: r.lot !== undefined && r.lot !== "" ? Number(r.lot) : null,
-                no_bal: r.no_bal !== undefined && r.no_bal !== "" ? Number(r.no_bal) : null,
+                no_bal:
+                  r.no_bal !== undefined && r.no_bal !== ""
+                    ? Number(r.no_bal)
+                    : null,
               };
               if (r.roll_id) roll.id = r.roll_id;
               return roll;
             });
 
-            const meter_total = rollsWithIndex.reduce((sum, r) => sum + (r.meter > 0 ? r.meter : 0), 0);
-            const yard_total  = rollsWithIndex.reduce((sum, r) => sum + (r.yard  > 0 ? r.yard  : 0), 0);
+            const meter_total = rollsWithIndex.reduce(
+              (sum, r) => sum + (r.meter > 0 ? r.meter : 0),
+              0
+            );
+            const yard_total = rollsWithIndex.reduce(
+              (sum, r) => sum + (r.yard > 0 ? r.yard : 0),
+              0
+            );
             const kilogram_total =
-              rollsWithIndex.reduce((sum, r) => sum + (r.kilogram || 0), 0) || null;
+              rollsWithIndex.reduce((sum, r) => sum + (r.kilogram || 0), 0) ||
+              null;
 
             const first = g.rolls[0] || {};
             return {
@@ -652,7 +725,12 @@ export default function PackingListForm() {
       } else {
         // CREATE: juga kirim SEMUA roll, yang kosong -> 0
         const payload = {
-          type: form().type === "D" ? "domestik" : form().type === "E" ? "ekspor" : "",
+          type:
+            form().type === "D"
+              ? "domestik"
+              : form().type === "E"
+              ? "ekspor"
+              : "",
           sequence_number: form().sequence_number || null,
           so_id: Number(form().sales_order_id),
           keterangan: form().keterangan,
@@ -663,7 +741,8 @@ export default function PackingListForm() {
               const col_num = (idx % MAX_COL_PER_ROW()) + 1;
 
               const meterVal = Number(r.meter) || 0;
-              const yardVal  = Number(r.yard)  || (meterVal > 0 ? meterVal * 1.093613 : 0);
+              const yardVal =
+                Number(r.yard) || (meterVal > 0 ? meterVal * 1.093613 : 0);
 
               return {
                 row_num,
@@ -672,14 +751,24 @@ export default function PackingListForm() {
                 yard: yardVal,
                 kilogram: r.kilogram ? Number(r.kilogram) : null,
                 lot: r.lot !== undefined && r.lot !== "" ? Number(r.lot) : null,
-                no_bal: r.no_bal !== undefined && r.no_bal !== "" ? Number(r.no_bal) : null,
+                no_bal:
+                  r.no_bal !== undefined && r.no_bal !== ""
+                    ? Number(r.no_bal)
+                    : null,
               };
             });
 
-            const meter_total = rollsWithIndex.reduce((sum, r) => sum + (r.meter > 0 ? r.meter : 0), 0);
-            const yard_total  = rollsWithIndex.reduce((sum, r) => sum + (r.yard  > 0 ? r.yard  : 0), 0);
+            const meter_total = rollsWithIndex.reduce(
+              (sum, r) => sum + (r.meter > 0 ? r.meter : 0),
+              0
+            );
+            const yard_total = rollsWithIndex.reduce(
+              (sum, r) => sum + (r.yard > 0 ? r.yard : 0),
+              0
+            );
             const kilogram_total =
-              rollsWithIndex.reduce((sum, r) => sum + (r.kilogram || 0), 0) || null;
+              rollsWithIndex.reduce((sum, r) => sum + (r.kilogram || 0), 0) ||
+              null;
 
             const first = g.rolls[0] || {};
             return {
@@ -738,32 +827,30 @@ export default function PackingListForm() {
   }
 
   // ====== KOLOM DINAMIS: colgroup + table-fixed (UPDATED) ======
-  const ROLL_COL_PX = () => (isEkspor() ? 66 : 68);   // kolom 1..N
-  const BAL_PCT     = () => (isEkspor() ? "8%" : "9%");
-  const COL_PCT     = () => (isEkspor() ? "11%" : "12%");
-  const ITEM_PCT    = "15%";                           // tetap
-  const LOT_PCT     = () => (isEkspor() ? "8%" : "9%");
-  const PCS_PX      = () => (isEkspor() ? 80 : 56);    // TTL/PCS lebih lebar saat ekspor
-  const TOTAL_PX    = () => (isEkspor() ? 120 : 96);   // TTL/MTR & TTL/YARD lebih lebar saat ekspor
+  const ROLL_COL_PX = () => (isEkspor() ? 66 : 68); // kolom 1..N
+  const BAL_PCT = () => (isEkspor() ? "8%" : "9%");
+  const COL_PCT = () => (isEkspor() ? "11%" : "12%");
+  const ITEM_PCT = "15%"; // tetap
+  const LOT_PCT = () => (isEkspor() ? "8%" : "9%");
+  const PCS_PX = () => (isEkspor() ? 80 : 56); // TTL/PCS lebih lebar saat ekspor
+  const TOTAL_PX = () => (isEkspor() ? 120 : 96); // TTL/MTR & TTL/YARD lebih lebar saat ekspor
 
   const renderColGroup = () => {
     const widths = [
-      "3%",                 // No
-      BAL_PCT(),            // Bal
-      COL_PCT(),            // Col
-      ITEM_PCT,             // Item
+      "3%", // No
+      BAL_PCT(), // Bal
+      COL_PCT(), // Col
+      ITEM_PCT, // Item
       LOT_PCT(),
       ...Array.from({ length: MAX_COL_PER_ROW() }, () => `${ROLL_COL_PX()}px`),
-      `${PCS_PX()}px`,      // TTL/PCS
-      `${TOTAL_PX()}px`,    // TTL/MTR
-      `${TOTAL_PX()}px`,    // TTL/YARD
+      `${PCS_PX()}px`, // TTL/PCS
+      `${TOTAL_PX()}px`, // TTL/MTR
+      `${TOTAL_PX()}px`, // TTL/YARD
     ];
 
     return (
       <colgroup>
-        <For each={widths}>
-          {(w) => <col style={`width:${w}`} />}
-        </For>
+        <For each={widths}>{(w) => <col style={`width:${w}`} />}</For>
       </colgroup>
     );
   };
@@ -778,7 +865,7 @@ export default function PackingListForm() {
         </div>
       )}
       <h1 class="text-2xl font-bold mb-4">
-        {isView ? "Detail" : (isEdit ? "Edit" : "Tambah")} Packing List
+        {isView ? "Detail" : isEdit ? "Edit" : "Tambah"} Packing List
       </h1>
       <div class="flex gap-2 mb-4" hidden={!isEdit}>
         <button
@@ -795,14 +882,16 @@ export default function PackingListForm() {
           type="button"
           class="flex items-center gap-2 bg-emerald-600 text-white px-3 py-2 rounded hover:bg-emerald-700"
           onClick={handlePrintContinuous}
-          title={'Cetak ke Continuous 9.5" (rangkap 3)'}   /* <- pakai string literal JS */
+          title={
+            'Cetak ke Continuous 9.5" (rangkap 3)'
+          } /* <- pakai string literal JS */
         >
           <Printer size={20} />
-          <span>Print Dot Matrix (Rangkap 3)</span>          
+          <span>Print Dot Matrix (Rangkap 3)</span>
         </button>
       </div>
 
-      <form class="space-y-4" onSubmit={handleSubmit}>
+      <form class="space-y-4" onSubmit={handleSubmit} onkeydown={handleKeyDown}>
         <div class="grid grid-cols-3 gap-4">
           <div>
             <label class="block text-sm mb-1">No Packing List</label>
@@ -848,11 +937,16 @@ export default function PackingListForm() {
             <select
               class="w-full border p-2 rounded"
               value={form().satuan_unit || ""}
-              onChange={(e) => setForm({ ...form(), satuan_unit: e.currentTarget.value })}
-              disabled={isDisabled('non-roll')}
-              classList={{ "bg-gray-200": isDisabled('non-roll') }}
+              onChange={(e) =>
+                setForm({ ...form(), satuan_unit: e.currentTarget.value })
+              }
+              disabled={isDisabled("non-roll")}
+              classList={{ "bg-gray-200": isDisabled("non-roll") }}
             >
-              <option value="" disabled>Pilih Satuan</option>  {/* ← placeholder */}
+              <option value="" disabled>
+                Pilih Satuan
+              </option>{" "}
+              {/* ← placeholder */}
               <option value="Meter">Meter</option>
               <option value="Yard">Yard</option>
               {/* <option value="Kilogram">Kilogram</option> */}
@@ -869,26 +963,31 @@ export default function PackingListForm() {
               onInput={(e) =>
                 setForm({ ...form(), keterangan: e.target.value })
               }
-              disabled={isDisabled('non-roll')}
-              classList={{ "bg-gray-200": isDisabled('non-roll') }}
+              disabled={isDisabled("non-roll")}
+              classList={{ "bg-gray-200": isDisabled("non-roll") }}
             ></textarea>
           </div>
         </div>
 
-        <Show when={form().sales_order_items?.items && form().sales_order_items.items.length > 0}>
+        <Show
+          when={
+            form().sales_order_items?.items &&
+            form().sales_order_items.items.length > 0
+          }
+        >
           <div class="border p-3 rounded my-4 bg-gray-50">
             <h3 class="text-md font-bold mb-2 text-gray-700">Quantity Kain:</h3>
             <ul class="space-y-1 pl-5">
               <For each={form().sales_order_items.items}>
                 {(item) => {
-                  const meterTotal  = Number(item.meter_total ?? 0);
-                  const yardTotal   = Number(item.yard_total  ?? 0);
+                  const meterTotal = Number(item.meter_total ?? 0);
+                  const yardTotal = Number(item.yard_total ?? 0);
                   const meterInProc = Number(item.meter_dalam_proses ?? 0);
-                  const yardInProc  = Number(item.yard_dalam_proses  ?? 0);
+                  const yardInProc = Number(item.yard_dalam_proses ?? 0);
 
                   const sisaMeter = Math.max(meterTotal - meterInProc, 0);
-                  const sisaYard  = Math.max(yardTotal  - yardInProc,  0);
-                  const habis     = sisaMeter === 0 && sisaYard === 0;
+                  const sisaYard = Math.max(yardTotal - yardInProc, 0);
+                  const habis = sisaMeter === 0 && sisaYard === 0;
 
                   return (
                     <li class="text-sm list-disc">
@@ -903,9 +1002,13 @@ export default function PackingListForm() {
                           <span class="font-bold text-red-600">HABIS</span>
                         ) : (
                           <>
-                            <span class="font-bold text-blue-600 tabular-nums">{formatNumberQty(sisaMeter)} m</span>
+                            <span class="font-bold text-blue-600 tabular-nums">
+                              {formatNumberQty(sisaMeter)} m
+                            </span>
                             <span class="text-gray-400">|</span>
-                            <span class="font-bold text-blue-600 tabular-nums">{formatNumberQty(sisaYard)} yd</span>
+                            <span class="font-bold text-blue-600 tabular-nums">
+                              {formatNumberQty(sisaYard)} yd
+                            </span>
                           </>
                         )}
                       </div>
@@ -947,9 +1050,7 @@ export default function PackingListForm() {
           <For each={form().itemGroups}>
             {(group, i) => (
               <div class="border p-4 rounded mb-6">
-                <div
-                  class="flex justify-between items-center mb-2 cursor-pointer"
-                >
+                <div class="flex justify-between items-center mb-2 cursor-pointer">
                   <h3 class="font-semibold">
                     Sales Order Item Group #{i() + 1}
                   </h3>
@@ -965,7 +1066,10 @@ export default function PackingListForm() {
                     </button>
                     <button
                       type="button"
-                      onClick={(e) => { e.stopPropagation(); removeItemGroup(i()); }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeItemGroup(i());
+                      }}
                       class="text-red-600 hover:text-red-800 text-sm"
                       hidden={isView || isStrictWarehouseEdit()}
                       title="Hapus Group Ini"
@@ -991,143 +1095,276 @@ export default function PackingListForm() {
                         <th class="border px-2 py-1">Col</th>
                         <th class="border px-2 py-1">Item</th>
                         <th class="border px-2 py-1">Lot</th>
-                        <For each={Array.from({ length: MAX_COL_PER_ROW() }, (_, i) => i + 1)}>
+                        <For
+                          each={Array.from(
+                            { length: MAX_COL_PER_ROW() },
+                            (_, i) => i + 1
+                          )}
+                        >
                           {(n) => (
                             <th class="border px-2 py-1 text-center">{n}</th>
                           )}
                         </For>
-                        <th class="border px-3 py-1 whitespace-nowrap">TTL/PCS</th>
-                        <th class="border px-3 py-1 whitespace-nowrap" classList={{ "bg-gray-200": form().satuan_unit === "Yard" }}>
+                        <th class="border px-3 py-1 whitespace-nowrap">
+                          TTL/PCS
+                        </th>
+                        <th
+                          class="border px-3 py-1 whitespace-nowrap"
+                          classList={{
+                            "bg-gray-200": form().satuan_unit === "Yard",
+                          }}
+                        >
                           TTL/MTR
                         </th>
-                        <th class="border px-3 py-1 whitespace-nowrap" classList={{ "bg-gray-200": form().satuan_unit === "Meter" }}>
+                        <th
+                          class="border px-3 py-1 whitespace-nowrap"
+                          classList={{
+                            "bg-gray-200": form().satuan_unit === "Meter",
+                          }}
+                        >
                           TTL/YARD
                         </th>
                       </tr>
                     </thead>
                     <tbody>
-                      <For each={chunkArrayWithIndex(group.rolls, MAX_COL_PER_ROW())}>
+                      <For
+                        each={chunkArrayWithIndex(
+                          group.rolls,
+                          MAX_COL_PER_ROW()
+                        )}
+                      >
                         {(rollChunk, chunkIndex) => {
                           // <-- DI SINI taruh const-nya
                           const disabledRow = rowFieldDisabled(rollChunk);
 
-                          return rollChunk.length > 0 && (
-                            <tr>
-                              <td class="border text-center align-top">
-                                {chunkIndex() === 0 ? i() + 1 : ""}
-                              </td>
+                          return (
+                            rollChunk.length > 0 && (
+                              <tr>
+                                <td class="border text-center align-top">
+                                  {chunkIndex() === 0 ? i() + 1 : ""}
+                                </td>
 
-                              {/* BAL */}
-                              <td class="border p-1 align-middle">
-                                <input
-                                  type="number"
-                                  class="border p-1 rounded w-full"
-                                  value={rollChunk[0]?.roll.no_bal ?? ""}
-                                  onBlur={(e) =>
-                                    handleRollChange(i(), rollChunk[0].index, "no_bal", e.currentTarget.value)
+                                {/* BAL */}
+                                <td class="border p-1 align-middle">
+                                  <input
+                                    type="number"
+                                    class="border p-1 rounded w-full"
+                                    value={rollChunk[0]?.roll.no_bal ?? ""}
+                                    onBlur={(e) =>
+                                      handleRollChange(
+                                        i(),
+                                        rollChunk[0].index,
+                                        "no_bal",
+                                        e.currentTarget.value
+                                      )
+                                    }
+                                    disabled={disabledRow}
+                                    classList={{ "bg-gray-200": disabledRow }}
+                                    placeholder="Input Bal..."
+                                  />
+                                </td>
+
+                                {/* Col — read-only label */}
+                                <td class="border p-1 align-middle">
+                                  {chunkIndex() === 0 ? (
+                                    <input
+                                      type="text"
+                                      class="border p-1 rounded w-full bg-gray-200"
+                                      value={
+                                        colorLabel(
+                                          rollChunk[0]?.roll.col ||
+                                            group.col ||
+                                            ""
+                                        ) || "-"
+                                      }
+                                      readOnly
+                                      title={
+                                        colorLabel(
+                                          rollChunk[0]?.roll.col ||
+                                            group.col ||
+                                            ""
+                                        ) || "-"
+                                      }
+                                    />
+                                  ) : (
+                                    ""
+                                  )}
+                                </td>
+
+                                {/* Item — read-only label */}
+                                <td class="border p-1 align-middle">
+                                  {chunkIndex() === 0 ? (
+                                    <input
+                                      type="text"
+                                      class="border p-1 rounded w-full bg-gray-200"
+                                      value={
+                                        itemLabel(
+                                          rollChunk[0]?.roll.item ||
+                                            group.item ||
+                                            ""
+                                        ) || "-"
+                                      }
+                                      readOnly
+                                      title={
+                                        itemLabel(
+                                          rollChunk[0]?.roll.item ||
+                                            group.item ||
+                                            ""
+                                        ) || "-"
+                                      }
+                                    />
+                                  ) : (
+                                    ""
+                                  )}
+                                </td>
+
+                                {/* LOT — berlaku untuk seluruh roll pada baris tsb */}
+                                <td class="border p-1 align-middle">
+                                  <input
+                                    type="number"
+                                    class="border p-1 rounded w-full"
+                                    value={rollChunk[0]?.roll.lot ?? ""}
+                                    onBlur={(e) =>
+                                      handleRollChange(
+                                        i(),
+                                        rollChunk[0].index,
+                                        "lot",
+                                        e.currentTarget.value
+                                      )
+                                    }
+                                    disabled={disabledRow}
+                                    classList={{ "bg-gray-200": disabledRow }}
+                                    placeholder="Input Lot..."
+                                  />
+                                </td>
+
+                                <td
+                                  class="border p-1 align-middle"
+                                  colSpan={MAX_COL_PER_ROW()}
+                                >
+                                  <div
+                                    class={`grid ${
+                                      MAX_COL_PER_ROW() === 10
+                                        ? "grid-cols-10"
+                                        : "grid-cols-5"
+                                    } gap-1`}
+                                  >
+                                    <For each={rollChunk}>
+                                      {(r) => {
+                                        const unit =
+                                          form().satuan_unit || "Meter";
+                                        const { roll } = r;
+
+                                        const value =
+                                          unit === "Yard"
+                                            ? formatRollCellValue(roll.yard)
+                                            : unit === "Kilogram"
+                                            ? formatRollCellValue(roll.kilogram)
+                                            : formatRollCellValue(roll.meter);
+
+                                        const field =
+                                          unit === "Yard"
+                                            ? "yard"
+                                            : unit === "Kilogram"
+                                            ? "kilogram"
+                                            : "meter";
+                                        const placeholder =
+                                          unit === "Yard"
+                                            ? "yd"
+                                            : unit === "Kilogram"
+                                            ? "kg"
+                                            : "m";
+
+                                        return (
+                                          <div class="relative">
+                                            <input
+                                              type="text"
+                                              inputmode="decimal"
+                                              class="border w-full text-right text-[11px] leading-5 px-1 pr-6 rounded-sm"
+                                              value={value}
+                                              placeholder={placeholder}
+                                              onBlur={(e) =>
+                                                handleRollChange(
+                                                  i(),
+                                                  r.index,
+                                                  field,
+                                                  e.currentTarget.value
+                                                )
+                                              }
+                                              disabled={isQtyDisabled(roll)}
+                                              classList={{
+                                                "bg-gray-200":
+                                                  isQtyDisabled(roll),
+                                              }}
+                                            />
+                                            <button
+                                              type="button"
+                                              class="absolute inset-y-0 right-0 px-1 flex items-center justify-center rounded-r-sm bg-red-500 text-white"
+                                              onClick={() =>
+                                                removeRoll(i(), r.index)
+                                              }
+                                              hidden={
+                                                isView ||
+                                                (isEdit &&
+                                                  isStrictWarehouseEdit() &&
+                                                  !!roll.roll_id)
+                                              }
+                                              title="Hapus roll ini"
+                                            >
+                                              <Trash2 size={12} />
+                                            </button>
+                                          </div>
+                                        );
+                                      }}
+                                    </For>
+                                  </div>
+                                </td>
+
+                                <td class="border text-center align-top">
+                                  {
+                                    rollChunk.filter((rc) => hasQty(rc.roll))
+                                      .length
                                   }
-                                  disabled={disabledRow}
-                                  classList={{ "bg-gray-200": disabledRow }}
-                                  placeholder="Input Bal..."
-                                />
-                              </td>
-
-                              {/* Col — read-only label */}
-                              <td class="border p-1 align-middle">
-                                {chunkIndex() === 0 ? (
-                                  <input
-                                    type="text"
-                                    class="border p-1 rounded w-full bg-gray-200"
-                                    value={colorLabel(rollChunk[0]?.roll.col || group.col || "") || "-"}
-                                    readOnly
-                                    title={colorLabel(rollChunk[0]?.roll.col || group.col || "") || "-"}
-                                  />
-                                ) : ("")}
-                              </td>
-
-                              {/* Item — read-only label */}
-                              <td class="border p-1 align-middle">
-                                {chunkIndex() === 0 ? (
-                                  <input
-                                    type="text"
-                                    class="border p-1 rounded w-full bg-gray-200"
-                                    value={itemLabel(rollChunk[0]?.roll.item || group.item || "") || "-"}
-                                    readOnly
-                                    title={itemLabel(rollChunk[0]?.roll.item || group.item || "") || "-"}
-                                  />
-                                ) : ("")}
-                              </td>
-
-                              {/* LOT — berlaku untuk seluruh roll pada baris tsb */}
-                              <td class="border p-1 align-middle">
-                                <input
-                                  type="number"
-                                  class="border p-1 rounded w-full"
-                                  value={rollChunk[0]?.roll.lot ?? ""}
-                                  onBlur={(e) => handleRollChange(i(), rollChunk[0].index, "lot", e.currentTarget.value)}
-                                  disabled={disabledRow}
-                                  classList={{ "bg-gray-200": disabledRow }}
-                                  placeholder="Input Lot..."
-                                />
-                              </td>
-
-                              <td class="border p-1 align-middle" colSpan={MAX_COL_PER_ROW()}>
-                                <div class={`grid ${MAX_COL_PER_ROW() === 10 ? 'grid-cols-10' : 'grid-cols-5'} gap-1`}>
-                                  <For each={rollChunk}>
-                                    {(r) => {
-                                      const unit = form().satuan_unit || "Meter";
-                                      const { roll } = r;
-
-                                      const value = unit === "Yard"
-                                        ? formatRollCellValue(roll.yard)
-                                        : unit === "Kilogram"
-                                          ? formatRollCellValue(roll.kilogram)
-                                          : formatRollCellValue(roll.meter);
-
-                                      const field = unit === "Yard" ? "yard" : unit === "Kilogram" ? "kilogram" : "meter";
-                                      const placeholder = unit === "Yard" ? "yd" : unit === "Kilogram" ? "kg" : "m";
-
-                                      return (
-                                        <div class="relative">
-                                          <input
-                                            type="text"
-                                            inputmode="decimal"
-                                            class="border w-full text-right text-[11px] leading-5 px-1 pr-6 rounded-sm"
-                                            value={value}
-                                            placeholder={placeholder}
-                                            onBlur={(e) =>
-                                              handleRollChange(i(), r.index, field, e.currentTarget.value)
-                                            }
-                                            disabled={isQtyDisabled(roll)}
-                                            classList={{ "bg-gray-200": isQtyDisabled(roll) }}
-                                          />
-                                          <button
-                                            type="button"
-                                            class="absolute inset-y-0 right-0 px-1 flex items-center justify-center rounded-r-sm bg-red-500 text-white"
-                                            onClick={() => removeRoll(i(), r.index)}
-                                            hidden={isView || (isEdit && isStrictWarehouseEdit() && !!roll.roll_id)}
-                                            title="Hapus roll ini"
-                                          >
-                                            <Trash2 size={12} />
-                                          </button>
-                                        </div>
-                                      );
-                                    }}
-                                  </For>
-                                </div>
-                              </td>
-
-                              <td class="border text-center align-top">
-                                {rollChunk.filter((rc) => hasQty(rc.roll)).length}
-                              </td>
-                              <td class="border text-right px-3 align-top" classList={{ "bg-gray-200": form().satuan_unit === "Yard" }}>
-                                {formatNumber(rollChunk.reduce((sum, r) => sum + (hasQty(r.roll) ? Number(r.roll.meter || 0) : 0),0))}
-                              </td>
-                              <td class="border text-right px-3 align-top" classList={{ "bg-gray-200": form().satuan_unit === "Meter" }}>
-                                {formatNumber(rollChunk.reduce((sum, r) => sum + (hasQty(r.roll) ? Number(r.roll.yard  || 0) : 0),0))}
-                              </td>
-                            </tr>
-                          )
+                                </td>
+                                <td
+                                  class="border text-right px-3 align-top"
+                                  classList={{
+                                    "bg-gray-200":
+                                      form().satuan_unit === "Yard",
+                                  }}
+                                >
+                                  {formatNumber(
+                                    rollChunk.reduce(
+                                      (sum, r) =>
+                                        sum +
+                                        (hasQty(r.roll)
+                                          ? Number(r.roll.meter || 0)
+                                          : 0),
+                                      0
+                                    )
+                                  )}
+                                </td>
+                                <td
+                                  class="border text-right px-3 align-top"
+                                  classList={{
+                                    "bg-gray-200":
+                                      form().satuan_unit === "Meter",
+                                  }}
+                                >
+                                  {formatNumber(
+                                    rollChunk.reduce(
+                                      (sum, r) =>
+                                        sum +
+                                        (hasQty(r.roll)
+                                          ? Number(r.roll.yard || 0)
+                                          : 0),
+                                      0
+                                    )
+                                  )}
+                                </td>
+                              </tr>
+                            )
+                          );
                         }}
                       </For>
 
@@ -1141,11 +1378,35 @@ export default function PackingListForm() {
                         <td class="border px-3 py-1 text-right">
                           {group.rolls.filter(hasQty).length}
                         </td>
-                        <td class="border px-3 py-1 text-right" classList={{ "bg-gray-200": form().satuan_unit === "Yard" }}>
-                          {formatNumber(group.rolls.reduce((sum, r) => sum + (hasQty(r) ? Number(r.meter || 0) : 0), 0))} m
+                        <td
+                          class="border px-3 py-1 text-right"
+                          classList={{
+                            "bg-gray-200": form().satuan_unit === "Yard",
+                          }}
+                        >
+                          {formatNumber(
+                            group.rolls.reduce(
+                              (sum, r) =>
+                                sum + (hasQty(r) ? Number(r.meter || 0) : 0),
+                              0
+                            )
+                          )}{" "}
+                          m
                         </td>
-                        <td class="border px-3 py-1 text-right" classList={{ "bg-gray-200": form().satuan_unit === "Meter" }}>
-                          {formatNumber(group.rolls.reduce((sum, r) => sum + (hasQty(r) ? Number(r.yard  || 0) : 0), 0))} yd
+                        <td
+                          class="border px-3 py-1 text-right"
+                          classList={{
+                            "bg-gray-200": form().satuan_unit === "Meter",
+                          }}
+                        >
+                          {formatNumber(
+                            group.rolls.reduce(
+                              (sum, r) =>
+                                sum + (hasQty(r) ? Number(r.yard || 0) : 0),
+                              0
+                            )
+                          )}{" "}
+                          yd
                         </td>
                       </tr>
                     </tbody>
@@ -1163,13 +1424,14 @@ export default function PackingListForm() {
                         const val = raw === "" ? null : Number(raw);
                         setGroupRollCounts((prev) => {
                           const updated = [...prev];
-                          updated[i()] = Number.isFinite(val) && val > 0 ? val : null;
+                          updated[i()] =
+                            Number.isFinite(val) && val > 0 ? val : null;
                           return updated;
                         });
                       }}
                       hidden={isView}
-                      disabled={isDisabled('add-roll')}
-                      classList={{ "bg-gray-200": isDisabled('add-roll') }}
+                      disabled={isDisabled("add-roll")}
+                      classList={{ "bg-gray-200": isDisabled("add-roll") }}
                     />
                     <button
                       type="button"
@@ -1185,7 +1447,7 @@ export default function PackingListForm() {
                       }}
                       class="bg-purple-600 text-white px-2 py-1 rounded hover:bg-purple-700"
                       hidden={isView}
-                      disabled={isDisabled('add-roll')}
+                      disabled={isDisabled("add-roll")}
                     >
                       + Tambah
                     </button>
@@ -1215,10 +1477,28 @@ export default function PackingListForm() {
                     )}
                   </th>
                   <th class="border px-2 py-1 text-right">
-                      {formatNumber(form().itemGroups.flatMap(g => g.rolls).reduce((sum, r) => sum + (hasQty(r) ? Number(r.meter || 0) : 0), 0))} m
+                    {formatNumber(
+                      form()
+                        .itemGroups.flatMap((g) => g.rolls)
+                        .reduce(
+                          (sum, r) =>
+                            sum + (hasQty(r) ? Number(r.meter || 0) : 0),
+                          0
+                        )
+                    )}{" "}
+                    m
                   </th>
                   <th class="border px-2 py-1 text-right">
-                      {formatNumber(form().itemGroups.flatMap(g => g.rolls).reduce((sum, r) => sum + (hasQty(r) ? Number(r.yard  || 0) : 0), 0))} yd
+                    {formatNumber(
+                      form()
+                        .itemGroups.flatMap((g) => g.rolls)
+                        .reduce(
+                          (sum, r) =>
+                            sum + (hasQty(r) ? Number(r.yard || 0) : 0),
+                          0
+                        )
+                    )}{" "}
+                    yd
                   </th>
                 </tr>
               </thead>

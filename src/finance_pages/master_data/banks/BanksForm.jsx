@@ -23,6 +23,20 @@ export default function BanksForm() {
     }
   });
 
+  const handleKeyDown = (e) => {
+    const tag = e.target.tagName;
+    const type = e.target.type;
+
+    if (
+      e.key === "Enter" &&
+      tag !== "TEXTAREA" &&
+      type !== "submit" &&
+      type !== "button"
+    ) {
+      e.preventDefault();
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -60,7 +74,7 @@ export default function BanksForm() {
   return (
     <FinanceMainLayout>
       <h1 class="text-2xl font-bold mb-4">{isEdit ? "Edit" : "Tambah"} Bank</h1>
-      <form class="space-y-4" onSubmit={handleSubmit}>
+      <form class="space-y-4" onSubmit={handleSubmit} onkeydown={handleKeyDown}>
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label class="block mb-1 font-medium">Nama Bank</label>

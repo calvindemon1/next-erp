@@ -36,7 +36,7 @@ export default function SuppliersListForm() {
 
     if (isEdit) {
       const customerData = await getCustomer(params.id, user?.token);
-      console.log(customerData.customers)
+      console.log(customerData.customers);
       setForm({
         id: params.id,
         kode: customerData.customers.kode,
@@ -51,6 +51,20 @@ export default function SuppliersListForm() {
       });
     }
   });
+
+  const handleKeyDown = (e) => {
+    const tag = e.target.tagName;
+    const type = e.target.type;
+
+    if (
+      e.key === "Enter" &&
+      tag !== "TEXTAREA" &&
+      type !== "submit" &&
+      type !== "button"
+    ) {
+      e.preventDefault();
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -114,7 +128,7 @@ export default function SuppliersListForm() {
       <h1 class="text-2xl font-bold mb-4">
         {isEdit ? "Edit" : "Tambah"} Customer
       </h1>
-      <form class="space-y-4" onSubmit={handleSubmit}>
+      <form class="space-y-4" onSubmit={handleSubmit} onkeydown={handleKeyDown}>
         <div className="grid grid-cols-4 gap-4">
           {" "}
           <div>

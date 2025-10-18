@@ -45,6 +45,20 @@ export default function BankAccountForm() {
     }
   });
 
+  const handleKeyDown = (e) => {
+    const tag = e.target.tagName;
+    const type = e.target.type;
+
+    if (
+      e.key === "Enter" &&
+      tag !== "TEXTAREA" &&
+      type !== "submit" &&
+      type !== "button"
+    ) {
+      e.preventDefault();
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -102,7 +116,11 @@ export default function BankAccountForm() {
       <h1 class="text-2xl font-bold mb-4">
         {isEdit ? "Edit" : "Tambah"} Bank Account
       </h1>
-      <form class="w-full space-y-6" onSubmit={handleSubmit}>
+      <form
+        class="w-full space-y-6"
+        onSubmit={handleSubmit}
+        onkeydown={handleKeyDown}
+      >
         <div class="grid grid-cols-3 gap-6">
           <div class="col-span-1">
             <label class="block mb-1 font-medium">Nama Bank Account</label>
@@ -120,9 +138,9 @@ export default function BankAccountForm() {
           <div class="col-span-1">
             <label class="block mb-1 font-medium">Nomor Bank Account</label>
             <input
-              type="text" 
-              inputmode="numeric"        
-              pattern="[0-9]*"           
+              type="text"
+              inputmode="numeric"
+              pattern="[0-9]*"
               class="w-full border p-2 rounded"
               value={form().bank_account_number}
               onInput={(e) => {
@@ -155,16 +173,17 @@ export default function BankAccountForm() {
               class="w-full border p-2 rounded"
               value={form().bank_account_address}
               onInput={(e) =>
-                setForm({ ...form(), bank_account_address: e.currentTarget.value })
+                setForm({
+                  ...form(),
+                  bank_account_address: e.currentTarget.value,
+                })
               }
               required
             />
           </div>
 
           <div class="col-span-1">
-            <label class="block mb-1 font-medium">
-              Swift Code
-            </label>
+            <label class="block mb-1 font-medium">Swift Code</label>
             <input
               type="text"
               inputmode="text"

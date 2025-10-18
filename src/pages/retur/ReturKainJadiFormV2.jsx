@@ -410,6 +410,21 @@ export default function ReturKainJadiForm() {
 
   // ========== EXISTING SUBMIT (tetap) ==========
   // Dipakai saat TAMBAH/EDIT SJ biasa (bukan mode retur via sj_id)
+
+  const handleKeyDown = (e) => {
+    const tag = e.target.tagName;
+    const type = e.target.type;
+
+    if (
+      e.key === "Enter" &&
+      tag !== "TEXTAREA" &&
+      type !== "submit" &&
+      type !== "button"
+    ) {
+      e.preventDefault();
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -567,7 +582,7 @@ export default function ReturKainJadiForm() {
         Print
       </button>
 
-      <form class="space-y-4" onSubmit={handleSubmit}>
+      <form class="space-y-4" onSubmit={handleSubmit} onkeydown={handleKeyDown}>
         <div class="grid grid-cols-3 gap-4">
           <div>
             <label class="block text-sm mb-1">No Surat Penerimaan</label>

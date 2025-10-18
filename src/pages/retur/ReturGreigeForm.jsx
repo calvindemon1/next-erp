@@ -4,13 +4,13 @@ import MainLayout from "../../layouts/MainLayout";
 import Swal from "sweetalert2";
 import {
   getUser,
-  getBGDeliveryNotes,        // detail Surat Penerimaan Greige by id
-  getAllBGDeliveryNotes,     // list SP Greige untuk dropdown
-  getLastSequence,           // generator nomor retur
-  createGreigeRetur,         // POST create
-  getGreigeRetur,            // GET by id (prefill edit/view)
-  updateDataGreigeRetur,     // PUT update
-  getAllGreigeReturs,        // ⬅️ tambahkan di utils seperti OC (dipakai hitung sisa)
+  getBGDeliveryNotes, // detail Surat Penerimaan Greige by id
+  getAllBGDeliveryNotes, // list SP Greige untuk dropdown
+  getLastSequence, // generator nomor retur
+  createGreigeRetur, // POST create
+  getGreigeRetur, // GET by id (prefill edit/view)
+  updateDataGreigeRetur, // PUT update
+  getAllGreigeReturs, // ⬅️ tambahkan di utils seperti OC (dipakai hitung sisa)
 } from "../../utils/auth";
 import SuratPenerimaanDropdownSearch from "../../components/SuratPenerimaanDropdownSearch";
 import { Printer, Trash2 } from "lucide-solid";
@@ -37,7 +37,11 @@ function enrichLeftWithInfo(leftArr = [], referItems = []) {
 
 // Hitung sisa “available” per sj_item_id untuk satu SJ dengan mengakumulasikan semua retur.
 // Saat EDIT, retur yang sedang dibuka TIDAK dihitung (supaya “Available” akurat).
-async function computeAvailableForSJ(sjId, token, { includeCurrent = false, currentReturId = null } = {}) {
+async function computeAvailableForSJ(
+  sjId,
+  token,
+  { includeCurrent = false, currentReturId = null } = {}
+) {
   // 1) Ambil detail SJ → sumber qty awal + label kain
   const sjRes = await getBGDeliveryNotes(sjId, token);
   const sj = sjRes?.suratJalan ?? sjRes?.surat_jalan ?? sjRes?.order ?? sjRes;
@@ -48,7 +52,12 @@ async function computeAvailableForSJ(sjId, token, { includeCurrent = false, curr
   const rows = (all && Array.isArray(all.data) && all.data) || [];
   const sameSJ = rows
     .filter((r) => String(r.sj_id) === String(sjId))
-    .filter((r) => includeCurrent || !currentReturId || String(r.id) !== String(currentReturId));
+    .filter(
+      (r) =>
+        includeCurrent ||
+        !currentReturId ||
+        String(r.id) !== String(currentReturId)
+    );
 
   // 3) Akumulasi qty yang sudah diretur per sj_item_id
   const returned = new Map(); // sj_item_id -> {meter, yard}
@@ -59,7 +68,7 @@ async function computeAvailableForSJ(sjId, token, { includeCurrent = false, curr
       const prev = returned.get(key) || { meter: 0, yard: 0 };
       returned.set(key, {
         meter: prev.meter + toNum(it.meter_total),
-        yard:  prev.yard  + toNum(it.yard_total),
+        yard: prev.yard + toNum(it.yard_total),
       });
     }
   }
@@ -69,13 +78,13 @@ async function computeAvailableForSJ(sjId, token, { includeCurrent = false, curr
     const key = Number(it.id);
     const ret = returned.get(key) || { meter: 0, yard: 0 };
     const meter_awal = toNum(it.meter_total);
-    const yard_awal  = toNum(it.yard_total);
+    const yard_awal = toNum(it.yard_total);
     return {
       sj_item_id: key,
       meter_awal,
       yard_awal,
       available_meter: Math.max(meter_awal - ret.meter, 0),
-      available_yard: Math.max(yard_awal  - ret.yard,  0),
+      available_yard: Math.max(yard_awal - ret.yard, 0),
       // label:
       corak_kain: it.corak_kain ?? "N/A",
       konstruksi_kain: it.konstruksi_kain ?? "",
@@ -90,10 +99,17 @@ async function annotateWithAvailableTotal(list, token) {
   const enriched = await Promise.all(
     (Array.isArray(list) ? list : []).map(async (sj) => {
       try {
-        const left = await computeAvailableForSJ(sj.id, token, { includeCurrent: true });
+        const left = await computeAvailableForSJ(sj.id, token, {
+          includeCurrent: true,
+        });
         const unit = sj.satuan_unit_name || sj.satuan_unit || "Meter";
         const total = (left || []).reduce((sum, r) => {
-          return sum + (unit === "Meter" ? toNum(r.available_meter) : toNum(r.available_yard));
+          return (
+            sum +
+            (unit === "Meter"
+              ? toNum(r.available_meter)
+              : toNum(r.available_yard))
+          );
         }, 0);
         return { ...sj, __available_total__: total };
       } catch {
@@ -153,10 +169,7 @@ export default function ReturGreigeForm() {
       // 1) List semua SP Greige untuk dropdown
       const allSP = await getAllBGDeliveryNotes(user?.token);
       const rawList =
-        allSP?.suratJalans ??
-        allSP?.surat_jalan_list ??
-        allSP?.data ??
-        [];
+        allSP?.suratJalans ?? allSP?.surat_jalan_list ?? allSP?.data ?? [];
       // tambahkan total available agar dropdown bisa hide yang HABIS
       const list = await annotateWithAvailableTotal(rawList, user?.token);
       setSpOptions(Array.isArray(list) ? list : []);
@@ -195,7 +208,8 @@ export default function ReturGreigeForm() {
       id: group.id,
       sj_item_id: group.id,
       retur_item_id: null,
-      purchase_order_item_id: group.po_item_id ?? group.purchase_order_item_id ?? null,
+      purchase_order_item_id:
+        group.po_item_id ?? group.purchase_order_item_id ?? null,
       item_details: {
         corak_kain: group.corak_kain ?? "N/A",
         konstruksi_kain: group.konstruksi_kain ?? "",
@@ -213,7 +227,8 @@ export default function ReturGreigeForm() {
       id: it.sj_item_id ?? it.id,
       sj_item_id: it.sj_item_id ?? it.id,
       retur_item_id: it.id ?? null,
-      purchase_order_item_id: it.po_item_id ?? it.purchase_order_item_id ?? null,
+      purchase_order_item_id:
+        it.po_item_id ?? it.purchase_order_item_id ?? null,
       item_details: {
         corak_kain: it.corak_kain ?? "N/A",
         konstruksi_kain: it.konstruksi_kain ?? "",
@@ -251,11 +266,16 @@ export default function ReturGreigeForm() {
     setDeliveryNoteData({ ...suratJalanData });
 
     // Hitung “available” (sisa) dari retur-retur sebelumnya
-    const left = await computeAvailableForSJ(suratJalanData.id, user?.token, { includeCurrent: false });
+    const left = await computeAvailableForSJ(suratJalanData.id, user?.token, {
+      includeCurrent: false,
+    });
     setAvailableItems(left);
 
     // unit biasanya ikut satuan PO / SP
-    const unitName = suratJalanData?.satuan_unit_name || suratJalanData?.satuan_unit || "Meter";
+    const unitName =
+      suratJalanData?.satuan_unit_name ||
+      suratJalanData?.satuan_unit ||
+      "Meter";
 
     // TABEL: qty tetap dari SP (bukan sisa)
     setForm((prev) => ({
@@ -269,7 +289,9 @@ export default function ReturGreigeForm() {
         ? new Date(suratJalanData.tanggal_kirim).toISOString().split("T")[0]
         : "",
       unit: unitName,
-      itemGroups: (suratJalanData.items || []).map((g) => mapToItemGroupFromSJ(g)),
+      itemGroups: (suratJalanData.items || []).map((g) =>
+        mapToItemGroupFromSJ(g)
+      ),
     }));
   }
 
@@ -311,9 +333,7 @@ export default function ReturGreigeForm() {
       no_retur: detail.no_retur || "",
       no_sj_supplier: detail.no_sj_supplier || detail.no_sj || "",
       supplier_kirim_alamat:
-        detail.supplier_kirim_alamat ||
-        detail.supplier_alamat ||
-        "",
+        detail.supplier_kirim_alamat || detail.supplier_alamat || "",
       tanggal_kirim: detail.tanggal_kirim
         ? new Date(detail.tanggal_kirim).toISOString().split("T")[0]
         : "",
@@ -350,7 +370,12 @@ export default function ReturGreigeForm() {
   const handleGenerateNoRetur = async () => {
     try {
       const ppnValue = Number(deliveryNoteData()?.ppn_percent || 0);
-      const seq = await getLastSequence(user?.token, "bg_r", "domestik", ppnValue);
+      const seq = await getLastSequence(
+        user?.token,
+        "bg_r",
+        "domestik",
+        ppnValue
+      );
       const nextNum = String((seq?.last_sequence || 0) + 1).padStart(5, "0");
 
       const now = new Date();
@@ -376,12 +401,14 @@ export default function ReturGreigeForm() {
   async function addMoreItemsFromSJ() {
     try {
       const sj_id =
-        selectedSJId() ||
-        deliveryNoteData()?.sj_id ||
-        deliveryNoteData()?.id;
+        selectedSJId() || deliveryNoteData()?.sj_id || deliveryNoteData()?.id;
 
       if (!sj_id) {
-        await Swal.fire("Tidak bisa", "Surat Penerimaan belum dipilih.", "warning");
+        await Swal.fire(
+          "Tidak bisa",
+          "Surat Penerimaan belum dipilih.",
+          "warning"
+        );
         return;
       }
 
@@ -391,11 +418,10 @@ export default function ReturGreigeForm() {
       const sjItems = (sj?.items || []).filter((it) => !it?.deleted_at);
 
       // 2) Hitung item yang masih tersedia (exclude retur yang sedang diedit)
-      const available = await computeAvailableForSJ(
-        sj_id,
-        user?.token,
-        { includeCurrent: false, currentReturId: returId }
-      );
+      const available = await computeAvailableForSJ(sj_id, user?.token, {
+        includeCurrent: false,
+        currentReturId: returId,
+      });
 
       // Set sj_item_id yang masih punya sisa > 0
       const unit = sj?.satuan_unit_name || sj?.satuan_unit || "Meter";
@@ -410,15 +436,22 @@ export default function ReturGreigeForm() {
       );
 
       // 3) Hindari duplikasi: kumpulkan sj_item_id yang sudah ada di retur sekarang
-      const existingSet = new Set((form().itemGroups || []).map((g) => Number(g.sj_item_id)));
+      const existingSet = new Set(
+        (form().itemGroups || []).map((g) => Number(g.sj_item_id))
+      );
 
       // 4) Kandidat = item SJ yang masih available & belum ada di tabel
       const candidates = sjItems.filter(
-        (it) => availableSet.has(Number(it.id)) && !existingSet.has(Number(it.id))
+        (it) =>
+          availableSet.has(Number(it.id)) && !existingSet.has(Number(it.id))
       );
 
       if (candidates.length === 0) {
-        await Swal.fire("Info", "Tidak ada item tersedia untuk ditambahkan.", "info");
+        await Swal.fire(
+          "Info",
+          "Tidak ada item tersedia untuk ditambahkan.",
+          "info"
+        );
         return;
       }
 
@@ -439,15 +472,20 @@ export default function ReturGreigeForm() {
       }));
     } catch (err) {
       console.error(err);
-      await Swal.fire("Gagal", err?.message || "Tidak bisa menambahkan item dari SJ.", "error");
+      await Swal.fire(
+        "Gagal",
+        err?.message || "Tidak bisa menambahkan item dari SJ.",
+        "error"
+      );
     }
-  }  
+  }
 
   const removeItem = (index) => {
     setForm((prev) => {
       const arr = [...prev.itemGroups];
       const [removed] = arr.splice(index, 1);
-      if (removed?.retur_item_id) setDeletedItems((d) => [...d, removed.retur_item_id]);
+      if (removed?.retur_item_id)
+        setDeletedItems((d) => [...d, removed.retur_item_id]);
       return { ...prev, itemGroups: arr };
     });
   };
@@ -509,6 +547,20 @@ export default function ReturGreigeForm() {
     });
 
   // ===================== SUBMIT =====================
+
+  const handleKeyDown = (e) => {
+    const tag = e.target.tagName;
+    const type = e.target.type;
+
+    if (
+      e.key === "Enter" &&
+      tag !== "TEXTAREA" &&
+      type !== "submit" &&
+      type !== "button"
+    ) {
+      e.preventDefault();
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -594,7 +646,11 @@ export default function ReturGreigeForm() {
       Swal.fire({
         icon: "error",
         title: "Gagal",
-        text: err?.message || (returId ? "Gagal mengubah Retur Greige." : "Gagal menyimpan Retur Greige."),
+        text:
+          err?.message ||
+          (returId
+            ? "Gagal mengubah Retur Greige."
+            : "Gagal menyimpan Retur Greige."),
         showConfirmButton: false,
         timer: 1500,
         timerProgressBar: true,
@@ -645,7 +701,7 @@ export default function ReturGreigeForm() {
         <Printer size={20} /> Print
       </button>
 
-      <form class="space-y-4" onSubmit={handleSubmit}>
+      <form class="space-y-4" onSubmit={handleSubmit} onkeydown={handleKeyDown}>
         {/* === Row 1 === */}
         <div class="grid grid-cols-3 gap-4">
           <div>
@@ -677,7 +733,7 @@ export default function ReturGreigeForm() {
               disabled={isView || !!returId}
               placeholder="Pilih Surat Penerimaan…"
               //showLots
-              excludeZeroAvailable   // ⬅️ hide SP yang sisa total = 0
+              excludeZeroAvailable // ⬅️ hide SP yang sisa total = 0
             />
           </div>
 
@@ -719,7 +775,9 @@ export default function ReturGreigeForm() {
           <textarea
             class="w-full border p-2 rounded"
             value={form().keterangan_retur}
-            onInput={(e) => setForm({ ...form(), keterangan_retur: e.target.value })}
+            onInput={(e) =>
+              setForm({ ...form(), keterangan_retur: e.target.value })
+            }
             disabled={isView}
             classList={{ "bg-gray-200": isView }}
             placeholder="Tulis catatan retur"
@@ -729,29 +787,34 @@ export default function ReturGreigeForm() {
         {/* === PREVIEW Available === */}
         <Show when={deliveryNoteData()}>
           {() => {
-            const unit = deliveryNoteData()?.satuan_unit_name || form().unit || "Meter";
+            const unit =
+              deliveryNoteData()?.satuan_unit_name || form().unit || "Meter";
             const items = availableItems();
             return (
               <div class="border p-3 rounded my-4 bg-gray-50">
                 <h3 class="text-md font-bold mb-2 text-gray-700">
-                  Quantity Kain pada Surat Penerimaan{returId ? " (Tersedia)" : ""}:
+                  Quantity Kain pada Surat Penerimaan
+                  {returId ? " (Tersedia)" : ""}:
                 </h3>
                 <ul class="space-y-1 pl-5">
                   <For each={items}>
                     {(row) => {
-                      const sisa = unit === "Meter"
-                        ? toNum(row.available_meter ?? row.meter_awal)
-                        : toNum(row.available_yard  ?? row.yard_awal);
-                      const awal = unit === "Meter"
-                        ? toNum(row.meter_awal)
-                        : toNum(row.yard_awal);
+                      const sisa =
+                        unit === "Meter"
+                          ? toNum(row.available_meter ?? row.meter_awal)
+                          : toNum(row.available_yard ?? row.yard_awal);
+                      const awal =
+                        unit === "Meter"
+                          ? toNum(row.meter_awal)
+                          : toNum(row.yard_awal);
                       const satuan = unit === "Meter" ? "m" : "yd";
                       const habis = sisa <= 0;
 
                       return (
                         <li class="text-sm list-disc">
                           <span class="font-semibold">
-                            {(row.corak_kain || "N/A")} | {(row.konstruksi_kain || "")}
+                            {row.corak_kain || "N/A"} |{" "}
+                            {row.konstruksi_kain || ""}
                           </span>{" "}
                           - Quantity:{" "}
                           {habis ? (
@@ -759,7 +822,9 @@ export default function ReturGreigeForm() {
                           ) : (
                             <span class="font-bold text-blue-600">
                               {returId
-                                ? `${formatNumber(sisa)} / ${formatNumber(awal)} ${satuan}`
+                                ? `${formatNumber(sisa)} / ${formatNumber(
+                                    awal
+                                  )} ${satuan}`
                                 : `${formatNumber(sisa)} ${satuan}`}
                             </span>
                           )}
@@ -795,8 +860,12 @@ export default function ReturGreigeForm() {
                 <th class="border p-2 w-100">Jenis Kain</th>
                 <th class="border p-2 w-48">Lebar Greige</th>
                 <th class="border p-2 w-50">{form().unit}</th>
-                <th hidden class="border p-2 w-48">Harga</th>
-                <th hidden class="border p-2 w-48">Subtotal</th>
+                <th hidden class="border p-2 w-48">
+                  Harga
+                </th>
+                <th hidden class="border p-2 w-48">
+                  Subtotal
+                </th>
                 <th class="border p-2 w-48">Aksi</th>
               </tr>
             </thead>
@@ -804,8 +873,13 @@ export default function ReturGreigeForm() {
               <Show when={form().itemGroups.length > 0}>
                 <For each={form().itemGroups}>
                   {(group, i) => {
-                    const qty = form().unit === "Meter" ? group.meter_total : group.yard_total;
-                    const subtotal = (Number(group.item_details?.harga) || 0) * (Number(qty) || 0);
+                    const qty =
+                      form().unit === "Meter"
+                        ? group.meter_total
+                        : group.yard_total;
+                    const subtotal =
+                      (Number(group.item_details?.harga) || 0) *
+                      (Number(qty) || 0);
 
                     return (
                       <tr>
@@ -813,7 +887,9 @@ export default function ReturGreigeForm() {
                         <td class="border w-72 p-2">
                           <input
                             class="border p-1 rounded w-full bg-gray-200"
-                            value={`${group.item_details?.corak_kain || ""} | ${group.item_details?.konstruksi_kain || ""}`}
+                            value={`${group.item_details?.corak_kain || ""} | ${
+                              group.item_details?.konstruksi_kain || ""
+                            }`}
                             disabled
                           />
                         </td>
@@ -830,7 +906,9 @@ export default function ReturGreigeForm() {
                             type="text"
                             class="w-full border p-2 rounded text-right"
                             value={formatNumber(qty)}
-                            onBlur={(e) => handleQuantityChange(i(), e.target.value)}
+                            onBlur={(e) =>
+                              handleQuantityChange(i(), e.target.value)
+                            }
                             disabled={isView}
                             classList={{ "bg-gray-200": isView }}
                           />
@@ -867,9 +945,13 @@ export default function ReturGreigeForm() {
             </tbody>
             <tfoot>
               <tr class="font-bold bg-gray-100">
-                <td colSpan="3" class="text-right p-2 border-t border-gray-300">TOTAL</td>
+                <td colSpan="3" class="text-right p-2 border-t border-gray-300">
+                  TOTAL
+                </td>
                 <td class="border p-2 text-right">
-                  {form().unit === "Meter" ? formatNumber(totalMeter(), 2) : formatNumber(totalYard(), 2)}
+                  {form().unit === "Meter"
+                    ? formatNumber(totalMeter(), 2)
+                    : formatNumber(totalYard(), 2)}
                 </td>
                 <td hidden class="border p-2 text-right"></td>
                 <td hidden class="border-t border-gray-300"></td>
@@ -880,7 +962,11 @@ export default function ReturGreigeForm() {
         </div>
 
         <div class="mt-6">
-          <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700" hidden={isView}>
+          <button
+            type="submit"
+            class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            hidden={isView}
+          >
             {returId ? "Update" : "Simpan"}
           </button>
         </div>

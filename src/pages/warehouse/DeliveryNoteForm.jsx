@@ -29,14 +29,17 @@ export default function DeliveryNoteForm() {
   const [salesOrders, setSalesOrders] = createSignal([]);
   const [deliveryNoteData, setDeliveryNoteData] = createSignal(null);
 
-  const [printMode, setPrintMode] = createSignal(localStorage.getItem("sj_print_mode") || "a4"); // "a4" | "continuous"
+  const [printMode, setPrintMode] = createSignal(
+    localStorage.getItem("sj_print_mode") || "a4"
+  ); // "a4" | "continuous"
   const [dotMatrix, setDotMatrix] = createSignal(
-    localStorage.getItem("sj_print_dm") === "1" || localStorage.getItem("sj_print_mode") === "continuous"
+    localStorage.getItem("sj_print_dm") === "1" ||
+      localStorage.getItem("sj_print_mode") === "continuous"
   );
 
   // maps yang dipakai SAAT EDIT
-  let sjItemIdByPlItemId = new Map();     // pl_item_id -> sj_item_id
-  let sjRollIdByPliRollId = new Map();    // pli_roll_id -> sj_roll_id
+  let sjItemIdByPlItemId = new Map(); // pl_item_id -> sj_item_id
+  let sjRollIdByPliRollId = new Map(); // pli_roll_id -> sj_roll_id
 
   const [form, setForm] = createSignal({
     no_sj: "",
@@ -58,9 +61,13 @@ export default function DeliveryNoteForm() {
     const pls = await getAllPackingLists(user?.token);
     const dataSalesOrders = await getAllSalesOrders(user?.token);
 
-    const soIdsWithPL = new Set((pls?.packing_lists || []).map((pl) => String(pl.so_id)));
+    const soIdsWithPL = new Set(
+      (pls?.packing_lists || []).map((pl) => String(pl.so_id))
+    );
     const onlySOWithPL =
-      (dataSalesOrders.orders || []).filter((so) => soIdsWithPL.has(String(so.id))) || [];
+      (dataSalesOrders.orders || []).filter((so) =>
+        soIdsWithPL.has(String(so.id))
+      ) || [];
     setSalesOrders(onlySOWithPL);
 
     if (isEdit) {
@@ -90,9 +97,13 @@ export default function DeliveryNoteForm() {
         });
       });
 
-      const selectedSO = dataSalesOrders.orders?.find((so) => so.no_so === deliveryNote.no_so);
+      const selectedSO = dataSalesOrders.orders?.find(
+        (so) => so.no_so === deliveryNote.no_so
+      );
       if (selectedSO) {
-        const relatedPackingLists = pls?.packing_lists?.filter((pl) => pl.so_id === selectedSO.id);
+        const relatedPackingLists = pls?.packing_lists?.filter(
+          (pl) => pl.so_id === selectedSO.id
+        );
         setPackingLists(relatedPackingLists || []);
       }
 
@@ -100,7 +111,9 @@ export default function DeliveryNoteForm() {
       const deliveredRollsSet = new Set();
       (deliveryNote.packing_lists || []).forEach((pl) => {
         (pl.items || []).forEach((it) => {
-          (it.rolls || []).forEach((r) => deliveredRollsSet.add(Number(r.pli_roll_id)));
+          (it.rolls || []).forEach((r) =>
+            deliveredRollsSet.add(Number(r.pli_roll_id))
+          );
         });
       });
 
@@ -114,38 +127,45 @@ export default function DeliveryNoteForm() {
             (item.rolls || []).flatMap((roll) => {
               const meterVal = parseFloat(roll.meter ?? 0);
               const yardVal = parseFloat(roll.yard ?? 0);
-              if ((isNaN(meterVal) || meterVal === 0) && (isNaN(yardVal) || yardVal === 0)) {
+              if (
+                (isNaN(meterVal) || meterVal === 0) &&
+                (isNaN(yardVal) || yardVal === 0)
+              ) {
                 return []; // sembunyikan roll qty 0
               }
 
               const pliRollId = Number(roll.id); // id roll di PL
               const isInThisSJ = deliveredRollsSet.has(pliRollId);
 
-              return [{
-                // identitas PL roll
-                packing_list_roll_id: pliRollId,
-                packing_list_item_id: Number(item.id),
+              return [
+                {
+                  // identitas PL roll
+                  packing_list_roll_id: pliRollId,
+                  packing_list_item_id: Number(item.id),
 
-                // info display
-                no_bal: roll.no_bal,
-                lot: roll.lot,
-                kode_warna: item.kode_warna,
-                deskripsi_warna: item.deskripsi_warna,
-                corak_kain: item.corak_kain,
-                konstruksi_kain: item.konstruksi_kain,
-                row_num: roll.row_num,
-                col_num: roll.col_num,
-                meter: roll.meter,
-                yard: roll.yard,
-                kilogram: roll.kilogram,
+                  // info display
+                  no_bal: roll.no_bal,
+                  lot: roll.lot,
+                  kode_warna: item.kode_warna,
+                  deskripsi_warna: item.deskripsi_warna,
+                  corak_kain: item.corak_kain,
+                  konstruksi_kain: item.konstruksi_kain,
+                  row_num: roll.row_num,
+                  col_num: roll.col_num,
+                  meter: roll.meter,
+                  yard: roll.yard,
+                  kilogram: roll.kilogram,
 
-                // FLAG UI
-                checked: isInThisSJ,
+                  // FLAG UI
+                  checked: isInThisSJ,
 
-                // kunci untuk EDIT diff:
-                sj_item_id: sjItemIdByPlItemId.get(Number(item.id)) || null,
-                sj_roll_id: isInThisSJ ? (sjRollIdByPliRollId.get(pliRollId) || null) : null,
-              }];
+                  // kunci untuk EDIT diff:
+                  sj_item_id: sjItemIdByPlItemId.get(Number(item.id)) || null,
+                  sj_roll_id: isInThisSJ
+                    ? sjRollIdByPliRollId.get(pliRollId) || null
+                    : null,
+                },
+              ];
             })
           );
 
@@ -167,13 +187,15 @@ export default function DeliveryNoteForm() {
         no_sj: deliveryNote.no_sj,
         sequence_number: deliveryNote.no_sj,
         no_surat_jalan_supplier: deliveryNote.no_surat_jalan_supplier || "",
-        tanggal_surat_jalan: new Date(deliveryNote.created_at).toISOString().split("T")[0],
+        tanggal_surat_jalan: new Date(deliveryNote.created_at)
+          .toISOString()
+          .split("T")[0],
         keterangan: deliveryNote.keterangan,
         itemGroups,
         ppn: selectedSO?.ppn_percent ?? 0,
         sales_order_id: selectedSO?.id ?? null,
         so_no: selectedSO?.no_so ?? null,
-        type: (String(selectedSO?.no_so || "").split("/")[1] === "E") ? 2 : 1,
+        type: String(selectedSO?.no_so || "").split("/")[1] === "E" ? 2 : 1,
         no_mobil: deliveryNote.no_mobil,
         sopir: deliveryNote.sopir,
         delivered_status: deliveryNote.delivered_status,
@@ -238,15 +260,15 @@ export default function DeliveryNoteForm() {
 
   // Ambil no_bal & lot dari form().itemGroups (sumber paling lengkap di UI)
   function buildRollMapsFromForm(itemGroups) {
-    const balByRollId = new Map();       // pli_roll_id -> no_bal
-    const lotByRollId = new Map();       // pli_roll_id -> lot
-    const balSetByPlItemId = new Map();  // pl_item_id  -> Set(no_bal)
-    const lotSetByPlItemId = new Map();  // pl_item_id  -> Set(lot)
+    const balByRollId = new Map(); // pli_roll_id -> no_bal
+    const lotByRollId = new Map(); // pli_roll_id -> lot
+    const balSetByPlItemId = new Map(); // pl_item_id  -> Set(no_bal)
+    const lotSetByPlItemId = new Map(); // pl_item_id  -> Set(lot)
 
     for (const g of itemGroups || []) {
       for (const r of g.items || []) {
         const pliRollId = Number(r.packing_list_roll_id);
-        const plItemId  = Number(r.packing_list_item_id);
+        const plItemId = Number(r.packing_list_item_id);
         const nb = norm(r.no_bal);
         const lt = norm(r.lot);
 
@@ -254,8 +276,10 @@ export default function DeliveryNoteForm() {
         if (pliRollId && lt) lotByRollId.set(pliRollId, lt);
 
         if (plItemId) {
-          if (!balSetByPlItemId.has(plItemId)) balSetByPlItemId.set(plItemId, new Set());
-          if (!lotSetByPlItemId.has(plItemId)) lotSetByPlItemId.set(plItemId, new Set());
+          if (!balSetByPlItemId.has(plItemId))
+            balSetByPlItemId.set(plItemId, new Set());
+          if (!lotSetByPlItemId.has(plItemId))
+            lotSetByPlItemId.set(plItemId, new Set());
           if (nb) balSetByPlItemId.get(plItemId).add(nb);
           if (lt) lotSetByPlItemId.get(plItemId).add(lt);
         }
@@ -266,7 +290,8 @@ export default function DeliveryNoteForm() {
 
   // Enrich: isi no_bal, lot, dan warna dari SO
   function enrichDeliveryNote(deliveryNote, maps, soColorByWarnaId) {
-    const { balByRollId, lotByRollId, balSetByPlItemId, lotSetByPlItemId } = maps;
+    const { balByRollId, lotByRollId, balSetByPlItemId, lotSetByPlItemId } =
+      maps;
     const clone = JSON.parse(JSON.stringify(deliveryNote)); // deep clone aman
 
     for (const pl of clone.packing_lists || []) {
@@ -277,34 +302,47 @@ export default function DeliveryNoteForm() {
           const nb = balByRollId.get(rid);
           const lt = lotByRollId.get(rid);
           if (nb && !norm(rr.no_bal)) rr.no_bal = nb;
-          if (lt && !norm(rr.lot))     rr.lot    = lt;
+          if (lt && !norm(rr.lot)) rr.lot = lt;
         }
 
         // 2) Level ITEM: gabungan unik no_bal & lot dari form/rolls
         if (!norm(it.no_bal)) {
           const s = balSetByPlItemId.get(Number(it.pl_item_id));
           if (s && s.size) {
-            it.no_bal = Array.from(s).sort((a,b)=>Number(a)-Number(b)).join(", ");
+            it.no_bal = Array.from(s)
+              .sort((a, b) => Number(a) - Number(b))
+              .join(", ");
           } else {
             // fallback: kumpulkan dari rolls
-            const set = new Set((it.rolls||[]).map(r=>norm(r.no_bal)).filter(Boolean));
-            it.no_bal = set.size ? Array.from(set).sort((a,b)=>Number(a)-Number(b)).join(", ") : "-";
+            const set = new Set(
+              (it.rolls || []).map((r) => norm(r.no_bal)).filter(Boolean)
+            );
+            it.no_bal = set.size
+              ? Array.from(set)
+                  .sort((a, b) => Number(a) - Number(b))
+                  .join(", ")
+              : "-";
           }
         }
 
         // lot: selalu jadikan agregat unik dari rolls (lebih akurat)
         {
-          const set = new Set((it.rolls||[]).map(r=>norm(r.lot)).filter(Boolean));
+          const set = new Set(
+            (it.rolls || []).map((r) => norm(r.lot)).filter(Boolean)
+          );
           if (set.size) it.lot = Array.from(set).join(", ");
           else if (!norm(it.lot)) it.lot = "-";
         }
 
         // 3) Warna dari SO: pakai pl_item_col (warna_id)
         const warnaKey =
-          it.pl_item_col != null ? String(it.pl_item_col)
-          : it.col != null        ? String(it.col)
-          : it.warna_id != null   ? String(it.warna_id)
-          : "";
+          it.pl_item_col != null
+            ? String(it.pl_item_col)
+            : it.col != null
+            ? String(it.col)
+            : it.warna_id != null
+            ? String(it.warna_id)
+            : "";
         if (warnaKey && soColorByWarnaId?.has(warnaKey)) {
           const s = soColorByWarnaId.get(warnaKey);
           it.kode_warna = s.code;
@@ -346,7 +384,12 @@ export default function DeliveryNoteForm() {
     const ppnValue = Number(form().ppn ?? 0);
     const ppnType = ppnValue > 0 ? "P" : "N";
 
-    const lastSeq = await getLastSequence(user?.token, "s_sj", jenisStr, ppnValue);
+    const lastSeq = await getLastSequence(
+      user?.token,
+      "s_sj",
+      jenisStr,
+      ppnValue
+    );
     const nextNum = String((lastSeq?.last_sequence || 0) + 1).padStart(5, "0");
     const now = new Date();
     const month = String(now.getMonth() + 1).padStart(2, "0");
@@ -426,7 +469,11 @@ export default function DeliveryNoteForm() {
       (item.rolls || []).forEach((roll) => {
         const meterVal = parseFloat(roll.meter ?? 0);
         const yardVal = parseFloat(roll.yard ?? 0);
-        if ((isNaN(meterVal) || meterVal === 0) && (isNaN(yardVal) || yardVal === 0)) return;
+        if (
+          (isNaN(meterVal) || meterVal === 0) &&
+          (isNaN(yardVal) || yardVal === 0)
+        )
+          return;
 
         const pliRollId = Number(roll.id);
         const wasInThisSJ = sjRollIdByPliRollId.has(pliRollId);
@@ -456,7 +503,9 @@ export default function DeliveryNoteForm() {
 
           checked: wasInThisSJ,
           sj_item_id: sjItemIdGuess,
-          sj_roll_id: wasInThisSJ ? (sjRollIdByPliRollId.get(pliRollId) || null) : null,
+          sj_roll_id: wasInThisSJ
+            ? sjRollIdByPliRollId.get(pliRollId) || null
+            : null,
         });
       });
     });
@@ -485,6 +534,20 @@ export default function DeliveryNoteForm() {
     });
   };
 
+  const handleKeyDown = (e) => {
+    const tag = e.target.tagName;
+    const type = e.target.type;
+
+    if (
+      e.key === "Enter" &&
+      tag !== "TEXTAREA" &&
+      type !== "submit" &&
+      type !== "button"
+    ) {
+      e.preventDefault();
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -500,7 +563,7 @@ export default function DeliveryNoteForm() {
       const gid = roll.packing_list_item_id;
       if (!grouped[gid]) {
         grouped[gid] = {
-          id: roll.sj_item_id || undefined,  // <-- penting untuk EDIT (biar update, bukan insert baru)
+          id: roll.sj_item_id || undefined, // <-- penting untuk EDIT (biar update, bukan insert baru)
           pl_item_id: gid,
           meter_total: 0,
           yard_total: 0,
@@ -511,7 +574,7 @@ export default function DeliveryNoteForm() {
       }
 
       grouped[gid].rolls.push({
-        id: roll.sj_roll_id || undefined,    // <-- penting untuk EDIT (roll lama tetap dipertahankan)
+        id: roll.sj_roll_id || undefined, // <-- penting untuk EDIT (roll lama tetap dipertahankan)
         pli_roll_id: roll.packing_list_roll_id,
         row_num: roll.row_num,
         col_num: roll.col_num,
@@ -588,7 +651,11 @@ export default function DeliveryNoteForm() {
 
   function openPrint({ continuous = false } = {}) {
     if (!deliveryNoteData()) {
-      Swal.fire("Gagal", "Data untuk mencetak tidak tersedia. Pastikan Anda dalam mode Edit/View.", "error");
+      Swal.fire(
+        "Gagal",
+        "Data untuk mencetak tidak tersedia. Pastikan Anda dalam mode Edit/View.",
+        "error"
+      );
       return;
     }
 
@@ -608,14 +675,15 @@ export default function DeliveryNoteForm() {
 
   // versi ringkas yang dipanggil tombol:
   const handlePrintA4 = () => openPrint({ continuous: false });
-  const handlePrintDM  = () => openPrint({ continuous: true });
+  const handlePrintDM = () => openPrint({ continuous: true });
 
   /* ---------------- UI ---------------- */
 
   return (
     <MainLayout>
       <h1 class="text-2xl font-bold mb-4">
-        {isView ? "Detail" : isEdit ? "Edit" : "Tambah"} Surat Jalan Packing List
+        {isView ? "Detail" : isEdit ? "Edit" : "Tambah"} Surat Jalan Packing
+        List
       </h1>
 
       <div class="flex gap-2 mb-4" hidden={!isEdit}>
@@ -640,7 +708,7 @@ export default function DeliveryNoteForm() {
         </button>
       </div>
 
-      <form onSubmit={handleSubmit} class="space-y-4">
+      <form onSubmit={handleSubmit} onkeydown={handleKeyDown} class="space-y-4">
         <SearchableSalesOrderSelect
           salesOrders={salesOrders}
           form={form}
@@ -650,7 +718,8 @@ export default function DeliveryNoteForm() {
           classList={{ "bg-gray-200": isView || isEdit }}
           onChange={(so) => {
             const ppnNum = Number(so.ppn_percent ?? so.ppn ?? 0);
-            const typeLetterFromSO = String(so.no_so || "").split("/")[1] || "D";
+            const typeLetterFromSO =
+              String(so.no_so || "").split("/")[1] || "D";
             const typeNumeric = typeLetterFromSO === "E" ? 2 : 1;
 
             setPackingLists([]);
@@ -670,7 +739,8 @@ export default function DeliveryNoteForm() {
             }));
 
             getAllPackingLists(user?.token).then((pls) => {
-              const filtered = pls?.packing_lists?.filter((pl) => pl.so_id === so.id) ?? [];
+              const filtered =
+                pls?.packing_lists?.filter((pl) => pl.so_id === so.id) ?? [];
               setPackingLists(filtered);
 
               if (filtered.length === 0) {
@@ -695,7 +765,7 @@ export default function DeliveryNoteForm() {
                     value={form().sequence_number || ""}
                     class="w-full border p-2 rounded bg-gray-100"
                     disabled={true}
-                    classList={{ "bg-gray-200" : true}}
+                    classList={{ "bg-gray-200": true }}
                   />
                   <button
                     type="button"
@@ -715,7 +785,7 @@ export default function DeliveryNoteForm() {
                   class="w-full border p-2 rounded bg-gray-100"
                   value={form().tanggal_surat_jalan}
                   disabled={isView}
-                  classList={{ "bg-gray-200" : isView }}
+                  classList={{ "bg-gray-200": isView }}
                 />
               </div>
 
@@ -725,7 +795,9 @@ export default function DeliveryNoteForm() {
                   type="text"
                   class="w-full border p-2 rounded"
                   value={form().no_mobil || ""}
-                  onInput={(e) => setForm({ ...form(), no_mobil: e.target.value })}
+                  onInput={(e) =>
+                    setForm({ ...form(), no_mobil: e.target.value })
+                  }
                   disabled={isView}
                   classList={{ "bg-gray-200": isView }}
                 />
@@ -750,7 +822,9 @@ export default function DeliveryNoteForm() {
                 class="w-full border p-2 rounded"
                 rows="3"
                 value={form().keterangan || ""}
-                onInput={(e) => setForm({ ...form(), keterangan: e.target.value })}
+                onInput={(e) =>
+                  setForm({ ...form(), keterangan: e.target.value })
+                }
                 disabled={isView}
                 classList={{ "bg-gray-200": isView }}
               />
@@ -786,7 +860,8 @@ export default function DeliveryNoteForm() {
               <div class="border p-4 mb-4 rounded">
                 <div class="mb-2 flex justify-between items-center">
                   <h3 class="font-semibold text-lg">
-                    {currentGroup().no_pl || `Packing List #${groupIndex() + 1}`}
+                    {currentGroup().no_pl ||
+                      `Packing List #${groupIndex() + 1}`}
                   </h3>
                   <button
                     type="button"
@@ -804,40 +879,65 @@ export default function DeliveryNoteForm() {
                   salesOrders={salesOrders}
                   value={currentGroup().packing_list_id}
                   disabled={isView}
-                  onChange={(pl) => handlePackingListChange(groupIndex(), pl.id)}
+                  onChange={(pl) =>
+                    handlePackingListChange(groupIndex(), pl.id)
+                  }
                   fetchPLDetail={(plId) => getPackingLists(plId, user?.token)}
                   fetchSODetail={(soId) => getSalesOrders(soId, user?.token)}
                 />
 
                 {!isView && (
                   <div class="flex items-center justify-end mb-2 gap-2">
-                    <span class="text-sm text-gray-600">Pilih Semua Packing List Ini</span>
+                    <span class="text-sm text-gray-600">
+                      Pilih Semua Packing List Ini
+                    </span>
                     <IndeterminateCheckbox
                       checked={allCheckedInPL()}
                       indeterminate={someCheckedInPL()}
-                      onChange={(e) => handleSelectAll(groupIndex(), e.currentTarget.checked)}
+                      onChange={(e) =>
+                        handleSelectAll(groupIndex(), e.currentTarget.checked)
+                      }
                     />
                   </div>
                 )}
 
                 <For each={soGroups()}>
                   {(sg, sgIndex) => {
-                    const allChecked = () => sg.rolls.length > 0 && sg.rolls.every((r) => r.checked);
-                    const someChecked = () => sg.rolls.some((r) => r.checked) && !allChecked();
+                    const allChecked = () =>
+                      sg.rolls.length > 0 && sg.rolls.every((r) => r.checked);
+                    const someChecked = () =>
+                      sg.rolls.some((r) => r.checked) && !allChecked();
 
-                    const subPcs = () => sg.rolls.filter((r) => r.checked).length;
+                    const subPcs = () =>
+                      sg.rolls.filter((r) => r.checked).length;
                     const subMtr = () =>
-                      sg.rolls.reduce((s, r) => s + (r.checked ? parseFloat(r.meter || 0) : 0), 0).toFixed(2);
+                      sg.rolls
+                        .reduce(
+                          (s, r) =>
+                            s + (r.checked ? parseFloat(r.meter || 0) : 0),
+                          0
+                        )
+                        .toFixed(2);
                     const subYard = () =>
-                      sg.rolls.reduce((s, r) => s + (r.checked ? parseFloat(r.yard || 0) : 0), 0).toFixed(2);
+                      sg.rolls
+                        .reduce(
+                          (s, r) =>
+                            s + (r.checked ? parseFloat(r.yard || 0) : 0),
+                          0
+                        )
+                        .toFixed(2);
 
                     return (
                       <div class="border rounded mb-4">
                         <div class="px-3 py-2 bg-gray-50 border-b flex items-center justify-between">
-                          <div class="font-semibold">Sales Order Item Group #{sgIndex() + 1}</div>
+                          <div class="font-semibold">
+                            Sales Order Item Group #{sgIndex() + 1}
+                          </div>
                           {!isView && (
                             <div class="flex items-center gap-2">
-                              <span class="text-sm text-gray-600">Pilih Semua Group Ini</span>
+                              <span class="text-sm text-gray-600">
+                                Pilih Semua Group Ini
+                              </span>
                               <IndeterminateCheckbox
                                 checked={allChecked()}
                                 indeterminate={someChecked()}
@@ -859,26 +959,44 @@ export default function DeliveryNoteForm() {
                               <th class="border px-2 py-1 w-[4%]">#</th>
                               <th class="border px-2 py-1 w-[6%]">Bal</th>
                               <th class="border px-2 py-1 w-[15%]">Col</th>
-                              <th class="border px-2 py-1 w-[15%]">Corak Kain</th>
+                              <th class="border px-2 py-1 w-[15%]">
+                                Corak Kain
+                              </th>
                               <th class="border px-2 py-1 w-[6%]">Lot</th>
                               <th class="border px-2 py-1 w-[8%]">Meter</th>
                               <th class="border px-2 py-1 w-[8%]">Yard</th>
-                              <th class="border px-2 py-1 text-center w-[20%]">{isView ? "Status" : "Pilih"}</th>
+                              <th class="border px-2 py-1 text-center w-[20%]">
+                                {isView ? "Status" : "Pilih"}
+                              </th>
                             </tr>
                           </thead>
                           <tbody>
                             <For each={sg.rolls}>
                               {(roll, rollIndex) => (
                                 <tr>
-                                  <td class="border px-2 py-1 text-center">{rollIndex() + 1}</td>
-                                  <td class="border px-2 py-1 text-center">{roll.no_bal}</td>
-                                  <td class="border px-2 py-1">
-                                    {(roll.kode_warna || "") + " | " + (roll.deskripsi_warna || "")}
+                                  <td class="border px-2 py-1 text-center">
+                                    {rollIndex() + 1}
                                   </td>
-                                  <td class="border px-2 py-1">{roll.corak_kain}</td>
-                                  <td class="border px-2 py-1 text-center">{roll.lot}</td>
-                                  <td class="border px-2 py-1 text-right">{roll.meter}</td>
-                                  <td class="border px-2 py-1 text-right">{roll.yard}</td>
+                                  <td class="border px-2 py-1 text-center">
+                                    {roll.no_bal}
+                                  </td>
+                                  <td class="border px-2 py-1">
+                                    {(roll.kode_warna || "") +
+                                      " | " +
+                                      (roll.deskripsi_warna || "")}
+                                  </td>
+                                  <td class="border px-2 py-1">
+                                    {roll.corak_kain}
+                                  </td>
+                                  <td class="border px-2 py-1 text-center">
+                                    {roll.lot}
+                                  </td>
+                                  <td class="border px-2 py-1 text-right">
+                                    {roll.meter}
+                                  </td>
+                                  <td class="border px-2 py-1 text-right">
+                                    {roll.yard}
+                                  </td>
                                   <td class="border px-2 py-1 text-center">
                                     <Show
                                       when={!isView}
@@ -886,11 +1004,15 @@ export default function DeliveryNoteForm() {
                                         <span
                                           classList={{
                                             "font-semibold": true,
-                                            "text-green-600": form().delivered_status === 1,
-                                            "text-gray-500": form().delivered_status !== 1,
+                                            "text-green-600":
+                                              form().delivered_status === 1,
+                                            "text-gray-500":
+                                              form().delivered_status !== 1,
                                           }}
                                         >
-                                          {form().delivered_status === 1 ? "Terkirim" : "Belum Terkirim"}
+                                          {form().delivered_status === 1
+                                            ? "Terkirim"
+                                            : "Belum Terkirim"}
                                         </span>
                                       }
                                     >
@@ -901,7 +1023,9 @@ export default function DeliveryNoteForm() {
                                           handleRollCheckedChange(
                                             groupIndex(),
                                             currentGroup().items.findIndex(
-                                              (x) => x.packing_list_roll_id === roll.packing_list_roll_id
+                                              (x) =>
+                                                x.packing_list_roll_id ===
+                                                roll.packing_list_roll_id
                                             ),
                                             e.target.checked
                                           )
@@ -914,12 +1038,21 @@ export default function DeliveryNoteForm() {
                             </For>
 
                             <tr class="bg-gray-50 font-semibold">
-                              <td class="border px-2 py-1 text-right" colSpan={5}>
+                              <td
+                                class="border px-2 py-1 text-right"
+                                colSpan={5}
+                              >
                                 Sub Total
                               </td>
-                              <td class="border px-2 py-1 text-right">{subMtr()}</td>
-                              <td class="border px-2 py-1 text-right">{subYard()}</td>
-                              <td class="border px-2 py-1 text-center">TTL/PCS: {subPcs()}</td>
+                              <td class="border px-2 py-1 text-right">
+                                {subMtr()}
+                              </td>
+                              <td class="border px-2 py-1 text-right">
+                                {subYard()}
+                              </td>
+                              <td class="border px-2 py-1 text-center">
+                                TTL/PCS: {subPcs()}
+                              </td>
                             </tr>
                           </tbody>
                         </table>
@@ -929,7 +1062,9 @@ export default function DeliveryNoteForm() {
                 </For>
 
                 <div class="border-t pt-3">
-                  <div class="text-right font-semibold text-sm">Total Keseluruhan:</div>
+                  <div class="text-right font-semibold text-sm">
+                    Total Keseluruhan:
+                  </div>
                   <table class="ml-auto text-sm mt-1 border border-gray-300">
                     <thead class="bg-gray-100">
                       <tr>
@@ -942,7 +1077,8 @@ export default function DeliveryNoteForm() {
                         <td class="px-4 py-2 border text-right">
                           {currentGroup()
                             ?.items?.reduce(
-                              (s, r) => s + (r.checked ? parseFloat(r.meter || 0) : 0),
+                              (s, r) =>
+                                s + (r.checked ? parseFloat(r.meter || 0) : 0),
                               0
                             )
                             ?.toFixed(2)}
@@ -950,7 +1086,8 @@ export default function DeliveryNoteForm() {
                         <td class="px-4 py-2 border text-right">
                           {currentGroup()
                             ?.items?.reduce(
-                              (s, r) => s + (r.checked ? parseFloat(r.yard || 0) : 0),
+                              (s, r) =>
+                                s + (r.checked ? parseFloat(r.yard || 0) : 0),
                               0
                             )
                             ?.toFixed(2)}
@@ -981,7 +1118,9 @@ export default function DeliveryNoteForm() {
                       (sum, group) =>
                         sum +
                         group.items?.reduce(
-                          (s, item) => s + (item.checked ? parseFloat(item.meter || 0) : 0),
+                          (s, item) =>
+                            s +
+                            (item.checked ? parseFloat(item.meter || 0) : 0),
                           0
                         ),
                       0
@@ -994,7 +1133,8 @@ export default function DeliveryNoteForm() {
                       (sum, group) =>
                         sum +
                         group.items?.reduce(
-                          (s, item) => s + (item.checked ? parseFloat(item.yard || 0) : 0),
+                          (s, item) =>
+                            s + (item.checked ? parseFloat(item.yard || 0) : 0),
                           0
                         ),
                       0

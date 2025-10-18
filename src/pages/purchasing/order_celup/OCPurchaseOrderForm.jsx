@@ -75,7 +75,8 @@ export default function OCPurchaseOrderForm() {
   const canEditKeteranganWarna = () =>
     !isView && (!isEdit || !isStrictColorEdit());
   const canEditKeterangan = () => !isView && (!isEdit || !isStrictColorEdit());
-  const canEditInstruksiKain = () => !isView && (!isEdit || !isStrictColorEdit());
+  const canEditInstruksiKain = () =>
+    !isView && (!isEdit || !isStrictColorEdit());
   const canEditQty = () => !isView && (!isEdit || !isStrictColorEdit());
 
   const [form, setForm] = createSignal({
@@ -145,7 +146,8 @@ export default function OCPurchaseOrderForm() {
   };
 
   const formatPercent = (num) => {
-    if (num === "" || num === null || num === undefined || isNaN(num)) return "";
+    if (num === "" || num === null || num === undefined || isNaN(num))
+      return "";
     return `${formatNumber(Number(num), { decimals: 2 })} %`;
   };
 
@@ -203,7 +205,9 @@ export default function OCPurchaseOrderForm() {
               ? formatPercent(parseFloat(item.std_susut))
               : "",
 
-          meter: formatNumber(parseFloat(item.meter_total || 0), { decimals: 2 }),
+          meter: formatNumber(parseFloat(item.meter_total || 0), {
+            decimals: 2,
+          }),
           yard: formatNumber(parseFloat(item.yard_total || 0), { decimals: 2 }),
           meterValue: parseFloat(item.meter_total || 0) || 0,
           yardValue: parseFloat(item.yard_total || 0) || 0,
@@ -297,7 +301,9 @@ export default function OCPurchaseOrderForm() {
     skipSetSeq = false
   ) => {
     // 1) Ambil dari cache
-    let selectedContract = purchaseContracts().find((sc) => sc.id == contractId);
+    let selectedContract = purchaseContracts().find(
+      (sc) => sc.id == contractId
+    );
 
     // 2) SELALU ambil detail supaya dapat qty/lebar/harga lengkap
     try {
@@ -472,12 +478,12 @@ export default function OCPurchaseOrderForm() {
       lebar_greige: ci.lebar_greige ?? "",
       lebar_finish: ci.lebar_finish ?? "",
 
-      corak_kain:      ci.corak_kain ?? ci.kain?.corak_kain ?? "-",
+      corak_kain: ci.corak_kain ?? ci.kain?.corak_kain ?? "-",
       konstruksi_kain: ci.konstruksi_kain ?? ci.kain?.konstruksi_kain ?? "-",
-      meter_total:     meterNum,
-      yard_total:      yardNum,
+      meter_total: meterNum,
+      yard_total: yardNum,
       meter_dalam_proses: parseFloat(ci.meter_dalam_proses ?? 0) || 0,
-      yard_dalam_proses:  parseFloat(ci.yard_dalam_proses  ?? 0) || 0,
+      yard_dalam_proses: parseFloat(ci.yard_dalam_proses ?? 0) || 0,
 
       std_susutValue: ci.std_susut != null ? parseFloat(ci.std_susut) : 0,
       std_susut:
@@ -547,12 +553,18 @@ export default function OCPurchaseOrderForm() {
       const item = { ...items[index] };
       const satuanId = parseInt(prev.satuan_unit_id || "1");
 
-      if (field === "fabric_id" || field === "kain_id" || field === "warna_id") {
+      if (
+        field === "fabric_id" ||
+        field === "kain_id" ||
+        field === "warna_id"
+      ) {
         item[field] = value;
 
         if (field === "fabric_id" || field === "kain_id") {
           item.kain_id = value;
-          const contract = purchaseContracts().find((sc) => sc.id == prev.pc_id);
+          const contract = purchaseContracts().find(
+            (sc) => sc.id == prev.pc_id
+          );
           if (contract && contract.items) {
             const matchedItem = contract.items.find(
               (i) => i.fabric_id == value || i.kain_id == value
@@ -620,6 +632,20 @@ export default function OCPurchaseOrderForm() {
     return form().items.reduce((sum, item) => {
       return sum + (item.subtotal || 0);
     }, 0);
+  };
+
+  const handleKeyDown = (e) => {
+    const tag = e.target.tagName;
+    const type = e.target.type;
+
+    if (
+      e.key === "Enter" &&
+      tag !== "TEXTAREA" &&
+      type !== "submit" &&
+      type !== "button"
+    ) {
+      e.preventDefault();
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -738,7 +764,7 @@ export default function OCPurchaseOrderForm() {
         Print
       </button>
 
-      <form class="space-y-4" onSubmit={handleSubmit}>
+      <form class="space-y-4" onSubmit={handleSubmit} onkeydown={handleKeyDown}>
         <div class="grid grid-cols-3 gap-4">
           <div>
             <label class="block mb-1 font-medium">No Order</label>
@@ -797,13 +823,17 @@ export default function OCPurchaseOrderForm() {
           {/* CHANGED: Satuan Unit selectable & triggers recalc */}
           <div>
             <label class="block mb-1 font-medium">Satuan Unit</label>
-            <input type="hidden" name="satuan_unit_id" value={form().satuan_unit_id} />
+            <input
+              type="hidden"
+              name="satuan_unit_id"
+              value={form().satuan_unit_id}
+            />
             <select
               class="w-full border p-2 rounded"
               value={form().satuan_unit_id}
               onChange={(e) => handleSatuanUnitChange(e.currentTarget.value)}
               disabled={isView || isEdit}
-              classList={{ "bg-gray-200 " : isView || isEdit }}
+              classList={{ "bg-gray-200 ": isView || isEdit }}
             >
               <option value="">Pilih Satuan</option>
               <For each={filteredSatuanOptions()}>
@@ -856,7 +886,9 @@ export default function OCPurchaseOrderForm() {
             <textarea
               class="w-full border p-2 rounded"
               value={form().keterangan}
-              onInput={(e) => setForm({ ...form(), keterangan: e.target.value })}
+              onInput={(e) =>
+                setForm({ ...form(), keterangan: e.target.value })
+              }
               disabled={!canEditKeterangan()}
               classList={{ "bg-gray-200": !canEditKeterangan() }}
             ></textarea>
@@ -867,7 +899,9 @@ export default function OCPurchaseOrderForm() {
             <textarea
               class="w-full border p-2 rounded"
               value={form().instruksi_kain}
-              onInput={(e) => setForm({ ...form(), instruksi_kain: e.target.value })}
+              onInput={(e) =>
+                setForm({ ...form(), instruksi_kain: e.target.value })
+              }
               disabled={!canEditInstruksiKain}
               classList={{ "bg-gray-200": !canEditInstruksiKain() }}
             ></textarea>
@@ -880,14 +914,14 @@ export default function OCPurchaseOrderForm() {
             <ul class="space-y-1 pl-5">
               <For each={form().items}>
                 {(item) => {
-                  const meterTotal  = Number(item.meter_total ?? 0);
-                  const yardTotal   = Number(item.yard_total ?? 0);
+                  const meterTotal = Number(item.meter_total ?? 0);
+                  const yardTotal = Number(item.yard_total ?? 0);
                   const meterInProc = Number(item.meter_dalam_proses ?? 0);
-                  const yardInProc  = Number(item.yard_dalam_proses ?? 0);
+                  const yardInProc = Number(item.yard_dalam_proses ?? 0);
 
                   const sisaMeter = Math.max(meterTotal - meterInProc, 0);
-                  const sisaYard  = Math.max(yardTotal  - yardInProc,  0);
-                  const habis     = sisaMeter === 0 && sisaYard === 0;
+                  const sisaYard = Math.max(yardTotal - yardInProc, 0);
+                  const habis = sisaMeter === 0 && sisaYard === 0;
 
                   return (
                     <li class="text-sm list-disc">
@@ -938,14 +972,20 @@ export default function OCPurchaseOrderForm() {
               <th class="border p-2 w-92">Jenis Kain</th>
               <th class="border p-2 w-30">Lebar Greige</th>
               <th class="border p-2 w-30">Lebar Finish</th>
-              <th hidden class="border p-2 w-30">Std Susut</th>
+              <th hidden class="border p-2 w-30">
+                Std Susut
+              </th>
               <th class="border p-2">Warna</th>
               <th class="border p-2">Keterangan Warna</th>
               {/* CHANGED: selalu tampil dua kolom */}
               <th class="border p-2 w-48">Meter</th>
               <th class="border p-2 w-48">Yard</th>
-              <th class="border p-2" hidden>Harga</th>
-              <th class="border p-2" hidden>Subtotal</th>
+              <th class="border p-2" hidden>
+                Harga
+              </th>
+              <th class="border p-2" hidden>
+                Subtotal
+              </th>
               <th class="border p-2">Aksi</th>
             </tr>
           </thead>
@@ -960,7 +1000,9 @@ export default function OCPurchaseOrderForm() {
                       <FabricDropdownSearch
                         fabrics={fabricOptions}
                         item={item}
-                        onChange={(val) => handleItemChange(i(), "kain_id", val)}
+                        onChange={(val) =>
+                          handleItemChange(i(), "kain_id", val)
+                        }
                         disabled={true}
                       />
                     </td>
@@ -995,7 +1037,9 @@ export default function OCPurchaseOrderForm() {
                       <ColorDropdownSearch
                         colors={colorOptions}
                         item={item}
-                        onChange={(val) => handleItemChange(i(), "warna_id", val)}
+                        onChange={(val) =>
+                          handleItemChange(i(), "warna_id", val)
+                        }
                         disabled={isView}
                       />
                     </td>
@@ -1025,7 +1069,8 @@ export default function OCPurchaseOrderForm() {
                         class="border p-1 rounded w-48"
                         readOnly={isView || !canEditQty() || !unitIsMeter}
                         classList={{
-                          "bg-gray-200": isView || !canEditQty() || !unitIsMeter,
+                          "bg-gray-200":
+                            isView || !canEditQty() || !unitIsMeter,
                         }}
                         value={item.meter}
                         onBlur={(e) => {
@@ -1110,9 +1155,15 @@ export default function OCPurchaseOrderForm() {
               <td colSpan="6" class="text-right p-2">
                 TOTAL
               </td>
-              <td class="border p-2">{formatNumber(totalMeter(), { decimals: 2 })}</td>
-              <td class="border p-2">{formatNumber(totalYard(), { decimals: 2 })}</td>
-              <td class="border p-2" hidden>{formatIDR(totalAll())}</td>
+              <td class="border p-2">
+                {formatNumber(totalMeter(), { decimals: 2 })}
+              </td>
+              <td class="border p-2">
+                {formatNumber(totalYard(), { decimals: 2 })}
+              </td>
+              <td class="border p-2" hidden>
+                {formatIDR(totalAll())}
+              </td>
               <td></td>
             </tr>
           </tfoot>

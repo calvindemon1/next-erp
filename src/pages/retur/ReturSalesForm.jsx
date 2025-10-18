@@ -1,5 +1,12 @@
 // src/pages/retur/ReturSalesForm.jsx
-import { createSignal, createMemo, For, Show, onMount, createEffect } from "solid-js";
+import {
+  createSignal,
+  createMemo,
+  For,
+  Show,
+  onMount,
+  createEffect,
+} from "solid-js";
 import { useSearchParams, useNavigate } from "@solidjs/router";
 import MainLayout from "../../layouts/MainLayout";
 import Swal from "sweetalert2";
@@ -27,8 +34,8 @@ import { Printer } from "lucide-solid";
 export default function ReturSalesForm() {
   const [params] = useSearchParams();
   const isView = params.view === "true";
-  const returId  = Number(params.id);
-  const isEdit   = Number.isFinite(returId) && !isView;
+  const returId = Number(params.id);
+  const isEdit = Number.isFinite(returId) && !isView;
   const navigate = useNavigate();
   const user = getUser();
 
@@ -42,10 +49,16 @@ export default function ReturSalesForm() {
   const [returChecked, setReturChecked] = createSignal(new Map());
 
   // data bantu saat EDIT
-  const [returExistingRollIds, setReturExistingRollIds] = createSignal(new Set());          // Set<number>
-  const [returExistingByItem, setReturExistingByItem]   = createSignal(new Map());          // Map<sj_item_id, Set<roll_id>>
-  const [returItemIdBySjItemId, setReturItemIdBySjItemId] = createSignal(new Map());        // Map<sj_item_id, sr_item_id>
-  const [returSrRollIdBySjiRollId, setReturSrRollIdBySjiRollId] = createSignal(new Map());  // Map<sji_roll_id, sr_roll_id>
+  const [returExistingRollIds, setReturExistingRollIds] = createSignal(
+    new Set()
+  ); // Set<number>
+  const [returExistingByItem, setReturExistingByItem] = createSignal(new Map()); // Map<sj_item_id, Set<roll_id>>
+  const [returItemIdBySjItemId, setReturItemIdBySjItemId] = createSignal(
+    new Map()
+  ); // Map<sj_item_id, sr_item_id>
+  const [returSrRollIdBySjiRollId, setReturSrRollIdBySjiRollId] = createSignal(
+    new Map()
+  ); // Map<sji_roll_id, sr_roll_id>
   const [returnedByOthers, setReturnedByOthers] = createSignal(new Set()); // Set<sji_roll_id>
 
   const [form, setForm] = createSignal({
@@ -58,7 +71,6 @@ export default function ReturSalesForm() {
   });
 
   const hasId = Number.isFinite(returId);
-  
 
   const toNum = (v) => {
     const n = Number(v);
@@ -69,7 +81,10 @@ export default function ReturSalesForm() {
     obj?.no_sj ?? obj?.noSuratJalan ?? obj?.nomor_sj ?? obj?.nomor ?? obj?.no;
 
   const normNo = (v) =>
-    (v == null ? "" : String(v)).replace(/\s+/g, "").replace(/[-–—]/g, "-").toUpperCase();
+    (v == null ? "" : String(v))
+      .replace(/\s+/g, "")
+      .replace(/[-–—]/g, "-")
+      .toUpperCase();
 
   function normalizeReturResponse(resp) {
     if (resp && Array.isArray(resp.data)) return resp.data[0] || null;
@@ -86,13 +101,15 @@ export default function ReturSalesForm() {
       const detail = res?.order || res?.suratJalan || res?.surat_jalan || res;
       if (!detail) return false;
 
-      const pls = Array.isArray(detail.packing_lists) ? detail.packing_lists : [];
+      const pls = Array.isArray(detail.packing_lists)
+        ? detail.packing_lists
+        : [];
       let total = 0;
       let selected = 0;
 
       for (const pl of pls) {
-        for (const it of (pl.items || [])) {
-          for (const r of (it.rolls || [])) {
+        for (const it of pl.items || []) {
+          for (const r of it.rolls || []) {
             const hasId = r?.id != null;
             if (!hasId) continue;
             total += 1;
@@ -102,7 +119,7 @@ export default function ReturSalesForm() {
       }
 
       if (total === 0) return false; // tidak ada roll -> jangan disembunyikan
-      return selected === total;     // semua roll sudah dipilih di retur
+      return selected === total; // semua roll sudah dipilih di retur
     } catch {
       return false;
     }
@@ -126,13 +143,18 @@ export default function ReturSalesForm() {
 
       // 1) Ambil semua SJ (yang delivered saja) untuk dropdown
       const res = await getAllDeliveryNotes(user?.token);
-      const list =
-        Array.isArray(res?.surat_jalan_list) ? res.surat_jalan_list :
-        Array.isArray(res?.suratJalans)      ? res.suratJalans :
-        Array.isArray(res?.data)             ? res.data : [];
+      const list = Array.isArray(res?.surat_jalan_list)
+        ? res.surat_jalan_list
+        : Array.isArray(res?.suratJalans)
+        ? res.suratJalans
+        : Array.isArray(res?.data)
+        ? res.data
+        : [];
 
-      const delivered = list.filter((sj) => Number(sj.delivered_status ?? 0) === 1);
-      const enriched  = await enrichSJOptions(delivered);   // ← hitung full returned via sj_roll_selected_status
+      const delivered = list.filter(
+        (sj) => Number(sj.delivered_status ?? 0) === 1
+      );
+      const enriched = await enrichSJOptions(delivered); // ← hitung full returned via sj_roll_selected_status
       setSjOptions(enriched);
 
       // 2) Jika buka View/Edit (punya ?id=...), load data retur
@@ -157,7 +179,7 @@ export default function ReturSalesForm() {
           const s = mapByItem.get(sjItemId) || new Set();
           (it?.rolls || []).forEach((rr) => {
             const sji = toNum(rr?.sji_roll_id);
-            const sr  = toNum(rr?.id);
+            const sr = toNum(rr?.id);
             if (sji && isSelected(rr)) {
               rollsSet.add(sji);
               s.add(sji);
@@ -198,7 +220,9 @@ export default function ReturSalesForm() {
 
           if (noFromRetur) {
             const target = normNo(noFromRetur);
-            const found = (delivered || []).find((sj) => normNo(getNoSJ(sj)) === target);
+            const found = (delivered || []).find(
+              (sj) => normNo(getNoSJ(sj)) === target
+            );
             sjId = toNum(found?.id);
           }
         }
@@ -208,7 +232,10 @@ export default function ReturSalesForm() {
           await loadSJDetailById(sjId);
 
           if (isEdit && returId && sjDetail()) {
-            const mapChecked = buildCheckedFromSJDetailForThisRetur(sjDetail(), returId);
+            const mapChecked = buildCheckedFromSJDetailForThisRetur(
+              sjDetail(),
+              returId
+            );
             setReturChecked(mapChecked);
           }
         }
@@ -217,8 +244,10 @@ export default function ReturSalesForm() {
         setForm((p) => ({
           ...p,
           no_retur: r?.no_retur || "",
-          tanggal_surat_jalan: r?.tanggal_surat_jalan || r?.tanggal || p.tanggal_surat_jalan || "",
-          customer_name: r?.customer_name || r?.customer || p.customer_name || "",
+          tanggal_surat_jalan:
+            r?.tanggal_surat_jalan || r?.tanggal || p.tanggal_surat_jalan || "",
+          customer_name:
+            r?.customer_name || r?.customer || p.customer_name || "",
           no_mobil: r?.no_mobil || p.no_mobil || "",
           sopir: r?.sopir || p.sopir || "",
           keterangan: r?.keterangan_retur || r?.keterangan || "",
@@ -233,12 +262,14 @@ export default function ReturSalesForm() {
   });
 
   /* ================== Numbering helpers ================== */
-  const getPPNFromSJ = (sj) => Number(sj?.ppn_percent ?? sj?.ppn ?? sj?.ppn_persen ?? 0) || 0;
+  const getPPNFromSJ = (sj) =>
+    Number(sj?.ppn_percent ?? sj?.ppn ?? sj?.ppn_persen ?? 0) || 0;
 
   const deriveFlagsFromNoSJ = (no_sj) => {
     if (!no_sj || typeof no_sj !== "string") return null;
     const parts = no_sj.split("/");
-    let regionFlag = null, pajakFlag = null;
+    let regionFlag = null,
+      pajakFlag = null;
     for (const seg of parts) {
       const s = seg.toUpperCase();
       if (!regionFlag && (s === "D" || s === "E")) regionFlag = s;
@@ -249,23 +280,45 @@ export default function ReturSalesForm() {
   };
 
   const getRegionFromSJ = (sj) => {
-    const raw = sj?.region ?? sj?.jenis ?? sj?.tipe_penjualan ?? sj?.type ?? sj?.sales_type ?? "";
-    const isExp = sj?.is_export ?? sj?.ekspor ?? sj?.isEkspor ?? sj?.is_exported ?? null;
-    const txt = String(raw ?? "").trim().toUpperCase();
-    const yes = (v) => String(v).trim().toLowerCase() === "true" || Number(v) === 1;
+    const raw =
+      sj?.region ??
+      sj?.jenis ??
+      sj?.tipe_penjualan ??
+      sj?.type ??
+      sj?.sales_type ??
+      "";
+    const isExp =
+      sj?.is_export ?? sj?.ekspor ?? sj?.isEkspor ?? sj?.is_exported ?? null;
+    const txt = String(raw ?? "")
+      .trim()
+      .toUpperCase();
+    const yes = (v) =>
+      String(v).trim().toLowerCase() === "true" || Number(v) === 1;
 
     if (isExp !== null && isExp !== undefined) {
-      return yes(isExp) ? { regionFlag: "E", regionName: "ekspor" } : { regionFlag: "D", regionName: "domestik" };
+      return yes(isExp)
+        ? { regionFlag: "E", regionName: "ekspor" }
+        : { regionFlag: "D", regionName: "domestik" };
     }
-    if (["E", "EKSPOR", "EXPORT"].includes(txt)) return { regionFlag: "E", regionName: "ekspor" };
-    if (["D", "DOMESTIK", "DOMESTIC"].includes(txt)) return { regionFlag: "D", regionName: "domestik" };
+    if (["E", "EKSPOR", "EXPORT"].includes(txt))
+      return { regionFlag: "E", regionName: "ekspor" };
+    if (["D", "DOMESTIK", "DOMESTIC"].includes(txt))
+      return { regionFlag: "D", regionName: "domestik" };
     return { regionFlag: "D", regionName: "domestik" };
   };
 
   const getFlagFromNomor = (nomor) => {
     if (!nomor) return { regionFlag: null, pajakFlag: null };
-    const regionFlag = nomor.includes("/E/") ? "E" : nomor.includes("/D/") ? "D" : null;
-    const pajakFlag = nomor.includes("/P/") ? "P" : nomor.includes("/N/") ? "N" : null;
+    const regionFlag = nomor.includes("/E/")
+      ? "E"
+      : nomor.includes("/D/")
+      ? "D"
+      : null;
+    const pajakFlag = nomor.includes("/P/")
+      ? "P"
+      : nomor.includes("/N/")
+      ? "N"
+      : null;
     return { regionFlag, pajakFlag };
   };
 
@@ -286,7 +339,7 @@ export default function ReturSalesForm() {
       } else {
         ({ regionFlag, regionName } = getRegionFromSJ(detail));
       }
-      pajakFlag = (fromNo?.pajakFlag) ? fromNo.pajakFlag : (ppnVal > 0 ? "P" : "N");
+      pajakFlag = fromNo?.pajakFlag ? fromNo.pajakFlag : ppnVal > 0 ? "P" : "N";
 
       const seq = await getLastSequence(user?.token, "s_r", regionName, ppnVal);
       const nextNum = String((seq?.last_sequence || 0) + 1).padStart(5, "0");
@@ -299,7 +352,11 @@ export default function ReturSalesForm() {
       setForm((p) => ({ ...p, no_retur: nomor }));
     } catch (e) {
       console.error(e);
-      Swal.fire("Gagal", e?.message || "Tidak bisa generate No Retur.", "error");
+      Swal.fire(
+        "Gagal",
+        e?.message || "Tidak bisa generate No Retur.",
+        "error"
+      );
     }
   };
 
@@ -317,7 +374,8 @@ export default function ReturSalesForm() {
     }
 
     const cur = form().no_retur || "";
-    const { regionFlag: regionOld, pajakFlag: pajakOld } = getFlagFromNomor(cur);
+    const { regionFlag: regionOld, pajakFlag: pajakOld } =
+      getFlagFromNomor(cur);
     if (!cur || regionOld !== regionNew || pajakOld !== pajakNew) {
       await handleGenerateNoRetur();
     }
@@ -335,7 +393,9 @@ export default function ReturSalesForm() {
     setReturChecked(new Map()); // reset
 
     // Daftar roll yang sudah pernah diretur
-    setReturnedByOthers(collectReturnedRollsFromSJ(detail, isEdit ? returId : null));
+    setReturnedByOthers(
+      collectReturnedRollsFromSJ(detail, isEdit ? returId : null)
+    );
 
     setForm((p) => ({
       ...p,
@@ -364,7 +424,11 @@ export default function ReturSalesForm() {
       await loadSJDetailById(sj.id);
     } catch (err) {
       console.error(err);
-      Swal.fire("Error", err?.message || "Gagal memuat detail Surat Jalan.", "error");
+      Swal.fire(
+        "Error",
+        err?.message || "Gagal memuat detail Surat Jalan.",
+        "error"
+      );
     } finally {
       setLoading(false);
     }
@@ -372,14 +436,21 @@ export default function ReturSalesForm() {
 
   /* ============== UI HELPERS ============== */
   const formatNumber = (num) =>
-    (Number(num) || 0).toLocaleString("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    (Number(num) || 0).toLocaleString("id-ID", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
 
   const COLOR_LIMIT = 4;
   const LOT_LIMIT = 7;
 
   function formatList(values, limit, joiner = ", ") {
     const uniq = Array.from(
-      new Set((values || []).map((v) => (v == null ? "" : String(v).trim())).filter(Boolean))
+      new Set(
+        (values || [])
+          .map((v) => (v == null ? "" : String(v).trim()))
+          .filter(Boolean)
+      )
     );
     const full = uniq.join(joiner);
     const display =
@@ -389,7 +460,8 @@ export default function ReturSalesForm() {
     return { list: uniq, full, display: display || "-" };
   }
 
-  const pickColorCode = (it) => it.so_kode_warna ?? it.kode_warna ?? it.pl_kode_warna ?? "";
+  const pickColorCode = (it) =>
+    it.so_kode_warna ?? it.kode_warna ?? it.pl_kode_warna ?? "";
 
   function getColorCodesOnlyFromPL(pl, limit = COLOR_LIMIT) {
     const codes = [];
@@ -406,11 +478,16 @@ export default function ReturSalesForm() {
       for (const r of it?.rolls || []) {
         const v = r?.lot ?? "";
         if (!v) continue;
-        String(v).split(",").map((s) => s.trim()).filter(Boolean).forEach((x) => lots.push(x));
+        String(v)
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean)
+          .forEach((x) => lots.push(x));
       }
     }
     let uniq = Array.from(new Set(lots));
-    if (uniq.every((v) => /^-?\d+(\.\d+)?$/.test(v))) uniq.sort((a, b) => Number(a) - Number(b));
+    if (uniq.every((v) => /^-?\d+(\.\d+)?$/.test(v)))
+      uniq.sort((a, b) => Number(a) - Number(b));
     return formatList(uniq, limit);
   }
 
@@ -423,7 +500,7 @@ export default function ReturSalesForm() {
     const alreadySelected =
       Number(r?.sj_roll_selected_status ?? r?.selected_status ?? 0) === 1;
 
-    if (!alreadySelected) return false;      // boleh tampil
+    if (!alreadySelected) return false; // boleh tampil
 
     // Saat EDIT: izinkan roll yang memang milik retur ini
     if (isEdit && returExistingRollIds().has(rid)) return false;
@@ -438,7 +515,7 @@ export default function ReturSalesForm() {
 
     const retMap = returExistingByItem();
     for (const [sjId, set] of retMap.entries()) {
-      if ((it?.rolls || []).some(r => set.has(toNum(r?.id)))) return sjId;
+      if ((it?.rolls || []).some((r) => set.has(toNum(r?.id)))) return sjId;
     }
     for (const r of it?.rolls || []) {
       const viaRoll = toNum(r?.sj_item_id ?? r?.sji_item_id ?? r?.sjItemId);
@@ -456,12 +533,14 @@ export default function ReturSalesForm() {
         map.set(key, {
           pl_item_id: key,
           sj_item_id: sjItemIdFromItem(it),
-          kode_warna: it.so_kode_warna ?? it.kode_warna ?? it.pl_kode_warna ?? "",
+          kode_warna:
+            it.so_kode_warna ?? it.kode_warna ?? it.pl_kode_warna ?? "",
           deskripsi_warna:
             it.so_deskripsi_warna ??
             it.deskripsi_warna ??
             it.pl_deskripsi_warna ??
-            it.keterangan_warna ?? "",
+            it.keterangan_warna ??
+            "",
           corak_kain: it.corak_kain ?? "",
           rolls: [],
         });
@@ -499,14 +578,25 @@ export default function ReturSalesForm() {
   // subtotal yang dicentang
   function calcGroupSelected(g) {
     if (isView) {
-      let pcs = g.rolls.length, m = 0, y = 0;
-      for (const r of g.rolls) { m += r.meter; y += r.yard; }
+      let pcs = g.rolls.length,
+        m = 0,
+        y = 0;
+      for (const r of g.rolls) {
+        m += r.meter;
+        y += r.yard;
+      }
       return { pcs, m, y };
     }
     returChecked();
-    let pcs = 0, m = 0, y = 0;
+    let pcs = 0,
+      m = 0,
+      y = 0;
     for (const r of g.rolls) {
-      if (returChecked().get(r.id)) { pcs += 1; m += r.meter; y += r.yard; }
+      if (returChecked().get(r.id)) {
+        pcs += 1;
+        m += r.meter;
+        y += r.yard;
+      }
     }
     return { pcs, m, y };
   }
@@ -516,7 +606,9 @@ export default function ReturSalesForm() {
     return groups.reduce(
       (acc, g) => {
         const t = calcGroupSelected(g);
-        acc.pcs += t.pcs; acc.m += t.m; acc.y += t.y;
+        acc.pcs += t.pcs;
+        acc.m += t.m;
+        acc.y += t.y;
         return acc;
       },
       { pcs: 0, m: 0, y: 0 }
@@ -528,7 +620,9 @@ export default function ReturSalesForm() {
     return pls.reduce(
       (acc, pl) => {
         const t = calcPLSelected(groupBySOItemFiltered(pl));
-        acc.pcs += t.pcs; acc.m += t.m; acc.y += t.y;
+        acc.pcs += t.pcs;
+        acc.m += t.m;
+        acc.y += t.y;
         return acc;
       },
       { pcs: 0, m: 0, y: 0 }
@@ -553,7 +647,9 @@ export default function ReturSalesForm() {
   const togglePL = (pl, val) => {
     setReturChecked((prev) => {
       const m = new Map(prev);
-      (groupBySOItemFiltered(pl) || []).forEach((g) => g.rolls.forEach((r) => m.set(r.id, !!val)));
+      (groupBySOItemFiltered(pl) || []).forEach((g) =>
+        g.rolls.forEach((r) => m.set(r.id, !!val))
+      );
       return m;
     });
   };
@@ -587,10 +683,12 @@ export default function ReturSalesForm() {
           if (!Number.isFinite(rid)) continue;
 
           const selectedFlag = Number(r?.sj_roll_selected_status ?? 0) === 1;
-          const returIdFlag  = Number.isFinite(currentReturId) && Number(r?.retur_id) === Number(currentReturId);
-          const usedByOther  = r?.retur_id && !returIdFlag;
-          const returnedAt   = !!r?.returned_at;
-          const isReturned   = r?.is_returned === true;
+          const returIdFlag =
+            Number.isFinite(currentReturId) &&
+            Number(r?.retur_id) === Number(currentReturId);
+          const usedByOther = r?.retur_id && !returIdFlag;
+          const returnedAt = !!r?.returned_at;
+          const isReturned = r?.is_returned === true;
 
           if (selectedFlag || usedByOther || returnedAt || isReturned) {
             s.add(rid);
@@ -611,19 +709,30 @@ export default function ReturSalesForm() {
         if (!sj_item_id) continue;
 
         const visibleRolls = (it.rolls || []).filter((r) => !isReturnedRoll(r));
-        const selectedRolls = visibleRolls.filter((r) => returChecked().get(r.id));
+        const selectedRolls = visibleRolls.filter((r) =>
+          returChecked().get(r.id)
+        );
         if (selectedRolls.length === 0) continue;
 
-        const meter_total = selectedRolls.reduce((s, r) => s + Number(r.meter || 0), 0);
-        const yard_total  = selectedRolls.reduce((s, r) => s + Number(r.yard  || 0), 0);
-        const kilogram_total = selectedRolls.reduce((s, r) => s + Number(r.kilogram || 0), 0);
+        const meter_total = selectedRolls.reduce(
+          (s, r) => s + Number(r.meter || 0),
+          0
+        );
+        const yard_total = selectedRolls.reduce(
+          (s, r) => s + Number(r.yard || 0),
+          0
+        );
+        const kilogram_total = selectedRolls.reduce(
+          (s, r) => s + Number(r.kilogram || 0),
+          0
+        );
 
         const rolls = selectedRolls.map((r) => ({
           sji_roll_id: Number(r.id),
           row_num: Number(r.row_num ?? 0),
           col_num: Number(r.col_num ?? 0),
           meter_roll: Number(r.meter || 0),
-          yard_roll:  Number(r.yard  || 0),
+          yard_roll: Number(r.yard || 0),
           kilogram_roll: Number(r.kilogram || 0),
           sj_roll_selected_status: 1, // <== penting
         }));
@@ -632,7 +741,7 @@ export default function ReturSalesForm() {
           sj_item_id: Number(sj_item_id),
           gulung: selectedRolls.length,
           meter_total: Number(meter_total.toFixed(2)),
-          yard_total:  Number(yard_total.toFixed(2)),
+          yard_total: Number(yard_total.toFixed(2)),
           kilogram_total: Number(kilogram_total.toFixed(2)),
           rolls,
         });
@@ -668,23 +777,34 @@ export default function ReturSalesForm() {
         if (!sj_item_id) continue;
 
         const visibleRolls = (it.rolls || []).filter((r) => !isReturnedRoll(r));
-        const selectedRolls = visibleRolls.filter((r) => returChecked().get(r.id));
+        const selectedRolls = visibleRolls.filter((r) =>
+          returChecked().get(r.id)
+        );
         if (selectedRolls.length === 0) continue;
 
-        const meter_total = selectedRolls.reduce((s, r) => s + Number(r.meter || 0), 0);
-        const yard_total  = selectedRolls.reduce((s, r) => s + Number(r.yard  || 0), 0);
-        const kilogram_total = selectedRolls.reduce((s, r) => s + Number(r.kilogram || 0), 0);
+        const meter_total = selectedRolls.reduce(
+          (s, r) => s + Number(r.meter || 0),
+          0
+        );
+        const yard_total = selectedRolls.reduce(
+          (s, r) => s + Number(r.yard || 0),
+          0
+        );
+        const kilogram_total = selectedRolls.reduce(
+          (s, r) => s + Number(r.kilogram || 0),
+          0
+        );
 
         const rolls = selectedRolls.map((r) => {
           const sji_roll_id = Number(r.id);
-          const sr_roll_id  = returSrRollIdBySjiRollId().get(sji_roll_id);
+          const sr_roll_id = returSrRollIdBySjiRollId().get(sji_roll_id);
           return stripUndefined({
             ...(sr_roll_id ? { id: Number(sr_roll_id) } : undefined),
             sji_roll_id,
             row_num: Number(r.row_num ?? 0),
             col_num: Number(r.col_num ?? 0),
             meter_roll: Number(r.meter || 0),
-            yard_roll:  Number(r.yard  || 0),
+            yard_roll: Number(r.yard || 0),
             kilogram_roll: Number(r.kilogram || 0),
             sj_roll_selected_status: 1,
           });
@@ -693,7 +813,7 @@ export default function ReturSalesForm() {
         selectedBySj.set(Number(sj_item_id), {
           gulung: selectedRolls.length,
           meter_total: Number(meter_total.toFixed(2)),
-          yard_total:  Number(yard_total.toFixed(2)),
+          yard_total: Number(yard_total.toFixed(2)),
           kilogram_total: Number(kilogram_total.toFixed(2)),
           rolls,
           selectedSet: new Set(selectedRolls.map((r) => Number(r.id))),
@@ -707,7 +827,9 @@ export default function ReturSalesForm() {
     for (const [sj_item_id, val] of selectedBySj.entries()) {
       const sr_item_id = returItemIdBySjItemId().get(sj_item_id);
       const existingSet = returExistingByItem().get(sj_item_id) || new Set();
-      const removedSji = [...existingSet].filter((sji) => !val.selectedSet.has(Number(sji)));
+      const removedSji = [...existingSet].filter(
+        (sji) => !val.selectedSet.has(Number(sji))
+      );
 
       const removedRollStubs = removedSji.map((sji) => {
         const base = rollIndex.get(Number(sji)) || {};
@@ -722,21 +844,24 @@ export default function ReturSalesForm() {
         };
       });
 
-      items.push(stripUndefined({
-        ...(sr_item_id ? { id: Number(sr_item_id) } : undefined),
-        sj_item_id: Number(sj_item_id),
-        gulung: Number(val.gulung),
-        meter_total: Number(val.meter_total),
-        yard_total:  Number(val.yard_total),
-        kilogram_total: Number(val.kilogram_total),
-        rolls: val.rolls,
-      }));
+      items.push(
+        stripUndefined({
+          ...(sr_item_id ? { id: Number(sr_item_id) } : undefined),
+          sj_item_id: Number(sj_item_id),
+          gulung: Number(val.gulung),
+          meter_total: Number(val.meter_total),
+          yard_total: Number(val.yard_total),
+          kilogram_total: Number(val.kilogram_total),
+          rolls: val.rolls,
+        })
+      );
     }
 
     // item yang dulu ada tapi sekarang tidak ada satupun yang dipilih
     for (const [sj_item_id, sr_item_id] of returItemIdBySjItemId().entries()) {
       if (!selectedBySj.has(Number(sj_item_id))) {
-        const existingSet = returExistingByItem().get(Number(sj_item_id)) || new Set();
+        const existingSet =
+          returExistingByItem().get(Number(sj_item_id)) || new Set();
 
         const allRemovedRollStubs = [...existingSet].map((sji) => {
           const base = rollIndex.get(Number(sji)) || {};
@@ -766,7 +891,6 @@ export default function ReturSalesForm() {
     return items;
   }
 
-
   /* ============== Actions ============== */
   async function handlePrint() {
     if (!isEdit && !isView) return;
@@ -781,11 +905,29 @@ export default function ReturSalesForm() {
       window.open(`/print/retur-sales#${encoded}`, "_blank");
     } catch (e) {
       console.error(e);
-      Swal.fire("Gagal", e?.message || "Tidak bisa membuka halaman print.", "error");
+      Swal.fire(
+        "Gagal",
+        e?.message || "Tidak bisa membuka halaman print.",
+        "error"
+      );
     } finally {
       setLoading(false);
     }
   }
+
+  const handleKeyDown = (e) => {
+    const tag = e.target.tagName;
+    const type = e.target.type;
+
+    if (
+      e.key === "Enter" &&
+      tag !== "TEXTAREA" &&
+      type !== "submit" &&
+      type !== "button"
+    ) {
+      e.preventDefault();
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -821,7 +963,13 @@ export default function ReturSalesForm() {
         //console.log("Update RETUR SALES Payload: ", JSON.stringify(payload, null, 2));
 
         await updateDataSalesRetur(user?.token, Number(returId), payload);
-        await Swal.fire({ icon: "success", title: "Berhasil diubah", showConfirmButton: false, timer: 1000, timerProgressBar: true });
+        await Swal.fire({
+          icon: "success",
+          title: "Berhasil diubah",
+          showConfirmButton: false,
+          timer: 1000,
+          timerProgressBar: true,
+        });
         navigate("/retur-sales");
         return;
       }
@@ -829,7 +977,11 @@ export default function ReturSalesForm() {
       // CREATE
       const createItems = buildItemsPayloadCreate(detail);
       if (createItems.length === 0) {
-        await Swal.fire("Gagal", "Belum ada roll yang dipilih untuk diretur.", "error");
+        await Swal.fire(
+          "Gagal",
+          "Belum ada roll yang dipilih untuk diretur.",
+          "error"
+        );
         return;
       }
       const createPayload = stripUndefined({
@@ -842,11 +994,22 @@ export default function ReturSalesForm() {
       //console.log("Create RETUR SALES Payload: ", JSON.stringify(createPayload, null, 2));
 
       await createSalesRetur(user?.token, createPayload);
-      await Swal.fire({ icon: "success", title: "Berhasil disimpan", showConfirmButton: false, timer: 1000, timerProgressBar: true });
+      await Swal.fire({
+        icon: "success",
+        title: "Berhasil disimpan",
+        showConfirmButton: false,
+        timer: 1000,
+        timerProgressBar: true,
+      });
       navigate("/retur-sales");
     } catch (err) {
       console.error(err);
-      await Swal.fire("Gagal", err?.message || (isEdit ? "Gagal mengubah retur." : "Gagal menyimpan retur."), "error");
+      await Swal.fire(
+        "Gagal",
+        err?.message ||
+          (isEdit ? "Gagal mengubah retur." : "Gagal menyimpan retur."),
+        "error"
+      );
     } finally {
       setLoading(false);
     }
@@ -878,13 +1041,17 @@ export default function ReturSalesForm() {
         </button>
       </Show>
 
-      <form class="space-y-4" onSubmit={handleSubmit}>
+      <form class="space-y-4" onSubmit={handleSubmit} onkeydown={handleKeyDown}>
         {/* Header form */}
         <div class="grid grid-cols-3 gap-4">
           <div>
             <label class="block text-sm mb-1">No Retur</label>
             <div class="flex gap-2">
-              <input class="w-full border p-2 rounded bg-gray-200" value={form().no_retur} disabled />
+              <input
+                class="w-full border p-2 rounded bg-gray-200"
+                value={form().no_retur}
+                disabled
+              />
               <Show when={!isView && !isEdit}>
                 <button
                   type="button"
@@ -912,22 +1079,38 @@ export default function ReturSalesForm() {
 
           <div>
             <label class="block text-sm mb-1">Tanggal Surat Jalan</label>
-            <input class="w-full border p-2 rounded bg-gray-200" value={form().tanggal_surat_jalan} disabled />
+            <input
+              class="w-full border p-2 rounded bg-gray-200"
+              value={form().tanggal_surat_jalan}
+              disabled
+            />
           </div>
         </div>
 
         <div class="grid grid-cols-3 gap-4">
           <div>
             <label class="block text-sm mb-1">Customer</label>
-            <input class="w-full border p-2 rounded bg-gray-200" value={form().customer_name} disabled />
+            <input
+              class="w-full border p-2 rounded bg-gray-200"
+              value={form().customer_name}
+              disabled
+            />
           </div>
           <div>
             <label class="block text-sm mb-1">No. Mobil</label>
-            <input class="w-full border p-2 rounded bg-gray-200" value={form().no_mobil} disabled />
+            <input
+              class="w-full border p-2 rounded bg-gray-200"
+              value={form().no_mobil}
+              disabled
+            />
           </div>
           <div>
             <label class="block text-sm mb-1">Sopir</label>
-            <input class="w-full border p-2 rounded bg-gray-200" value={form().sopir} disabled />
+            <input
+              class="w-full border p-2 rounded bg-gray-200"
+              value={form().sopir}
+              disabled
+            />
           </div>
         </div>
 
@@ -938,7 +1121,7 @@ export default function ReturSalesForm() {
             value={form().keterangan}
             onInput={(e) => setForm({ ...form(), keterangan: e.target.value })}
             disabled={isView}
-            classList={{ "bg-gray-200" : isView}}
+            classList={{ "bg-gray-200": isView }}
             placeholder="Tulis catatan retur"
           />
         </div>
@@ -954,22 +1137,28 @@ export default function ReturSalesForm() {
 
               const allRollsInPL = groups.flatMap((g) => g.rolls);
               const plAllChecked = createMemo(
-                () => allRollsInPL.length > 0 && allRollsInPL.every((r) => isRollChecked(r.id))
+                () =>
+                  allRollsInPL.length > 0 &&
+                  allRollsInPL.every((r) => isRollChecked(r.id))
               );
               const plSomeChecked = createMemo(
-                () => allRollsInPL.some((r) => isRollChecked(r.id)) && !plAllChecked()
+                () =>
+                  allRollsInPL.some((r) => isRollChecked(r.id)) &&
+                  !plAllChecked()
               );
               let plCheckboxRef;
               createEffect(() => {
-                if (plCheckboxRef) plCheckboxRef.indeterminate = plSomeChecked();
+                if (plCheckboxRef)
+                  plCheckboxRef.indeterminate = plSomeChecked();
               });
 
               return (
                 <div class="border p-4 mb-4 rounded">
                   <div class="mb-2 flex items-center justify-between">
                     <h3 class="font-semibold text-lg">
-                      {pl.no_pl} | {form().customer_name || sjDetail()?.customer_name || "-"} |{" "}
-                      {colorCodes.display} | Lot {lots.display}
+                      {pl.no_pl} |{" "}
+                      {form().customer_name || sjDetail()?.customer_name || "-"}{" "}
+                      | {colorCodes.display} | Lot {lots.display}
                     </h3>
 
                     <Show when={!isView && allRollsInPL.length > 0}>
@@ -978,7 +1167,9 @@ export default function ReturSalesForm() {
                           ref={plCheckboxRef}
                           type="checkbox"
                           checked={plAllChecked()}
-                          onChange={(e) => togglePL(pl, e.currentTarget.checked)}
+                          onChange={(e) =>
+                            togglePL(pl, e.currentTarget.checked)
+                          }
                         />
                         Pilih semua (PL ini)
                       </label>
@@ -989,10 +1180,14 @@ export default function ReturSalesForm() {
                     {(g, gi) => {
                       const subSel = createMemo(() => calcGroupSelected(g));
                       const groupAll = createMemo(
-                        () => g.rolls.length > 0 && g.rolls.every((r) => isRollChecked(r.id))
+                        () =>
+                          g.rolls.length > 0 &&
+                          g.rolls.every((r) => isRollChecked(r.id))
                       );
                       const groupSome = createMemo(
-                        () => g.rolls.some((r) => isRollChecked(r.id)) && !groupAll()
+                        () =>
+                          g.rolls.some((r) => isRollChecked(r.id)) &&
+                          !groupAll()
                       );
                       let groupCbRef;
                       createEffect(() => {
@@ -1002,14 +1197,18 @@ export default function ReturSalesForm() {
                       return (
                         <div class="border rounded mb-4">
                           <div class="px-3 py-2 bg-gray-50 border-b flex items-center justify-between">
-                            <div class="font-semibold">Sales Order Item Group #{gi() + 1}</div>
+                            <div class="font-semibold">
+                              Sales Order Item Group #{gi() + 1}
+                            </div>
                             <Show when={!isView && g.rolls.length > 0}>
                               <label class="text-sm flex items-center gap-2">
                                 <input
                                   ref={groupCbRef}
                                   type="checkbox"
                                   checked={groupAll()}
-                                  onChange={(e) => toggleGroup(g, e.currentTarget.checked)}
+                                  onChange={(e) =>
+                                    toggleGroup(g, e.currentTarget.checked)
+                                  }
                                 />
                                 Pilih semua (group)
                               </label>
@@ -1022,15 +1221,21 @@ export default function ReturSalesForm() {
                                 <th class="border px-2 py-1 w-[6%]">#</th>
                                 <th class="border px-2 py-1 w-[8%]">Bal</th>
                                 <th class="border px-2 py-1 w-[18%]">Col</th>
-                                <th class="border px-2 py-1 w-[18%]">Corak Kain</th>
+                                <th class="border px-2 py-1 w-[18%]">
+                                  Corak Kain
+                                </th>
                                 <th class="border px-2 py-1 w-[10%]">Lot</th>
                                 <th class="border px-2 py-1 w-[10%]">Meter</th>
                                 <th class="border px-2 py-1 w-[10%]">Yard</th>
                                 <Show when={!isView}>
-                                  <th class="border px-2 py-1 w-[10%]">Retur</th>
+                                  <th class="border px-2 py-1 w-[10%]">
+                                    Retur
+                                  </th>
                                 </Show>
                                 <Show when={isView}>
-                                  <th class="border px-2 py-1 w-[12%]">Status</th>
+                                  <th class="border px-2 py-1 w-[12%]">
+                                    Status
+                                  </th>
                                 </Show>
                               </tr>
                             </thead>
@@ -1038,35 +1243,69 @@ export default function ReturSalesForm() {
                               <For each={g.rolls}>
                                 {(r, i) => (
                                   <tr>
-                                    <td class="border px-2 py-1 text-center">{i() + 1}</td>
-                                    <td class="border px-2 py-1 text-center">{r.no_bal ?? "-"}</td>
-                                    <td class="border px-2 py-1">{(g.kode_warna || "") + " | " + (g.deskripsi_warna || "")}</td>
-                                    <td class="border px-2 py-1">{g.corak_kain || ""}</td>
-                                    <td class="border px-2 py-1 text-center">{r.lot || "-"}</td>
-                                    <td class="border px-2 py-1 text-right">{formatNumber(r.meter)}</td>
-                                    <td class="border px-2 py-1 text-right">{formatNumber(r.yard)}</td>
+                                    <td class="border px-2 py-1 text-center">
+                                      {i() + 1}
+                                    </td>
+                                    <td class="border px-2 py-1 text-center">
+                                      {r.no_bal ?? "-"}
+                                    </td>
+                                    <td class="border px-2 py-1">
+                                      {(g.kode_warna || "") +
+                                        " | " +
+                                        (g.deskripsi_warna || "")}
+                                    </td>
+                                    <td class="border px-2 py-1">
+                                      {g.corak_kain || ""}
+                                    </td>
+                                    <td class="border px-2 py-1 text-center">
+                                      {r.lot || "-"}
+                                    </td>
+                                    <td class="border px-2 py-1 text-right">
+                                      {formatNumber(r.meter)}
+                                    </td>
+                                    <td class="border px-2 py-1 text-right">
+                                      {formatNumber(r.yard)}
+                                    </td>
 
                                     <Show when={!isView}>
                                       <td class="border px-2 py-1 text-center">
                                         <input
                                           type="checkbox"
                                           checked={isRollChecked(r.id)}
-                                          onChange={(e) => setRollChecked(r.id, e.currentTarget.checked)}
+                                          onChange={(e) =>
+                                            setRollChecked(
+                                              r.id,
+                                              e.currentTarget.checked
+                                            )
+                                          }
                                         />
                                       </td>
                                     </Show>
                                     <Show when={isView}>
-                                      <td class="border px-2 py-1 text-center text-gray-500">Retur</td>
+                                      <td class="border px-2 py-1 text-center text-gray-500">
+                                        Retur
+                                      </td>
                                     </Show>
                                   </tr>
                                 )}
                               </For>
 
                               <tr class="bg-gray-50 font-semibold">
-                                <td class="border px-2 py-1 text-right" colSpan={5}>Sub Total</td>
-                                <td class="border px-2 py-1 text-right">{formatNumber(subSel().m)}</td>
-                                <td class="border px-2 py-1 text-right">{formatNumber(subSel().y)}</td>
-                                <td class="border px-2 py-1 text-center">TTL/PCS: {subSel().pcs}</td>
+                                <td
+                                  class="border px-2 py-1 text-right"
+                                  colSpan={5}
+                                >
+                                  Sub Total
+                                </td>
+                                <td class="border px-2 py-1 text-right">
+                                  {formatNumber(subSel().m)}
+                                </td>
+                                <td class="border px-2 py-1 text-right">
+                                  {formatNumber(subSel().y)}
+                                </td>
+                                <td class="border px-2 py-1 text-center">
+                                  TTL/PCS: {subSel().pcs}
+                                </td>
                               </tr>
                             </tbody>
                           </table>
@@ -1080,7 +1319,9 @@ export default function ReturSalesForm() {
           </For>
 
           <div class="border-t pt-4 mt-4">
-            <div class="text-right font-semibold text-sm">Total Keseluruhan:</div>
+            <div class="text-right font-semibold text-sm">
+              Total Keseluruhan:
+            </div>
             <table class="ml-auto text-sm mt-1 border border-gray-300">
               <thead class="bg-gray-100">
                 <tr>
@@ -1094,8 +1335,12 @@ export default function ReturSalesForm() {
                     const t = calcAllSelected(sjDetail());
                     return (
                       <>
-                        <td class="px-4 py-2 border text-right">{formatNumber(t.m)}</td>
-                        <td class="px-4 py-2 border text-right">{formatNumber(t.y)}</td>
+                        <td class="px-4 py-2 border text-right">
+                          {formatNumber(t.m)}
+                        </td>
+                        <td class="px-4 py-2 border text-right">
+                          {formatNumber(t.y)}
+                        </td>
                       </>
                     );
                   })()}
@@ -1106,7 +1351,11 @@ export default function ReturSalesForm() {
         </Show>
 
         <div class="mt-6">
-          <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700" hidden={isView}>
+          <button
+            type="submit"
+            class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            hidden={isView}
+          >
             {isEdit ? "Update" : "Simpan"}
           </button>
         </div>

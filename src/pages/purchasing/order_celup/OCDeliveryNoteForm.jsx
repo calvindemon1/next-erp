@@ -18,7 +18,7 @@ import { Printer, Trash2, XCircle } from "lucide-solid";
 export default function OCDeliveryNoteForm() {
   const [params] = useSearchParams();
   const isEdit = !!params.id;
-  const isView = params.view === 'true';
+  const isView = params.view === "true";
   const navigate = useNavigate();
   const user = getUser();
 
@@ -26,7 +26,7 @@ export default function OCDeliveryNoteForm() {
   const [openStates, setOpenStates] = createSignal([]);
   const [groupRollCounts, setGroupRollCounts] = createSignal([]);
   const [loading, setLoading] = createSignal(true);
-  const [deliveryNoteData, setDeliveryNoteData] = createSignal(null); 
+  const [deliveryNoteData, setDeliveryNoteData] = createSignal(null);
 
   const [form, setForm] = createSignal({
     sequence_number: "",
@@ -37,7 +37,7 @@ export default function OCDeliveryNoteForm() {
     no_sj_supplier: "",
     tanggal_kirim: "",
     alamat_pengiriman: "",
-    unit: "Meter", 
+    unit: "Meter",
     itemGroups: [],
   });
 
@@ -60,14 +60,17 @@ export default function OCDeliveryNoteForm() {
       }
 
       // 3. Ambil juga data DETAIL purchase order yang terkait
-      const poDetailResponse = await getOrderCelupOrders(suratJalanData.po_id, user?.token);
+      const poDetailResponse = await getOrderCelupOrders(
+        suratJalanData.po_id,
+        user?.token
+      );
       const poData = poDetailResponse?.order;
 
       const fullPrintData = {
         ...suratJalanData,
         //purchase_order_detail: poData
       };
-      setDeliveryNoteData(fullPrintData); 
+      setDeliveryNoteData(fullPrintData);
 
       const MAX_COL_PER_ROW = 5;
 
@@ -77,14 +80,18 @@ export default function OCDeliveryNoteForm() {
         po_id: suratJalanData.no_sj,
         no_sj_supplier: suratJalanData.no_sj_supplier,
         alamat_pengiriman: suratJalanData.supplier_alamat || "",
-        tanggal_kirim: suratJalanData.tanggal_kirim ? new Date(suratJalanData.tanggal_kirim).toISOString().split("T")[0] : "",
+        tanggal_kirim: suratJalanData.tanggal_kirim
+          ? new Date(suratJalanData.tanggal_kirim).toISOString().split("T")[0]
+          : "",
         purchase_order_id: suratJalanData.po_id,
         purchase_order_items: poData, // Data PO untuk dropdown item
         sequence_number: suratJalanData.sequence_number,
         keterangan: suratJalanData.keterangan || "",
         unit: poData?.satuan_unit_name || "Meter",
         itemGroups: (suratJalanData.items || []).map((group) => {
-          const poItem = poData?.items.find(item => item.id === group.po_item_id);
+          const poItem = poData?.items.find(
+            (item) => item.id === group.po_item_id
+          );
 
           return {
             purchase_order_item_id: group.po_item_id,
@@ -116,9 +123,9 @@ export default function OCDeliveryNoteForm() {
     if (num === "" || num === null || num === undefined) return "";
 
     const numValue = Number(num);
-    
+
     if (isNaN(numValue)) return "";
-    
+
     if (numValue === 0) return "0";
 
     return new Intl.NumberFormat("id-ID", {
@@ -126,9 +133,9 @@ export default function OCDeliveryNoteForm() {
       maximumFractionDigits: decimals,
     }).format(numValue);
   };
-  
+
   const parseNumber = (str) => {
-    if (typeof str !== 'string' || !str) return 0;
+    if (typeof str !== "string" || !str) return 0;
     const cleaned = str.replace(/[^\d,]/g, "").replace(",", ".");
     return parseFloat(cleaned) || 0;
   };
@@ -136,71 +143,66 @@ export default function OCDeliveryNoteForm() {
   const formatHarga = (val) => {
     if (val === null || val === "") return "";
     return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    maximumFractionDigits: 2,
+      style: "currency",
+      currency: "IDR",
+      maximumFractionDigits: 2,
     }).format(val);
   };
-  
-  const handleSuratJalanChange = async (selectedPO) => {
-      if (!selectedPO) return;
-  
-      // Hanya jalankan logika untuk mode "Tambah Baru"
-      const res = await getOrderCelupOrders(selectedPO.id, user?.token);
-      //console.log("Response Detail PO:", JSON.stringify(res, null, 2));
-      const selectedOCData = res?.order; 
-  
-      const poTypeLetter = selectedPO.no_po.split("/")[1];
-      const poPPN = selectedPO.no_po.split("/")[2];
-      const ppnValue = poPPN === "P" ? 1 : 0;
-  
-      const { newSJNumber, newSequenceNumber } = await generateSJNumber(
-        poTypeLetter,
-        ppnValue
-      );
 
-      const newItemGroups = (selectedOCData.items || []).map(item => ({
-        purchase_order_item_id: item.id,
-        // Simpan detail item untuk ditampilkan di UI
-        item_details: {
-          corak_kain: item.corak_kain,
-          konstruksi_kain: item.konstruksi_kain,
-          deskripsi_warna: item.deskripsi_warna,
-          lebar_greige: item.lebar_greige,
-          lebar_finish: item.lebar_finish,
-          harga: item.harga,
+  const handleSuratJalanChange = async (selectedPO) => {
+    if (!selectedPO) return;
+
+    // Hanya jalankan logika untuk mode "Tambah Baru"
+    const res = await getOrderCelupOrders(selectedPO.id, user?.token);
+    //console.log("Response Detail PO:", JSON.stringify(res, null, 2));
+    const selectedOCData = res?.order;
+
+    const poTypeLetter = selectedPO.no_po.split("/")[1];
+    const poPPN = selectedPO.no_po.split("/")[2];
+    const ppnValue = poPPN === "P" ? 1 : 0;
+
+    const { newSJNumber, newSequenceNumber } = await generateSJNumber(
+      poTypeLetter,
+      ppnValue
+    );
+
+    const newItemGroups = (selectedOCData.items || []).map((item) => ({
+      purchase_order_item_id: item.id,
+      // Simpan detail item untuk ditampilkan di UI
+      item_details: {
+        corak_kain: item.corak_kain,
+        konstruksi_kain: item.konstruksi_kain,
+        deskripsi_warna: item.deskripsi_warna,
+        lebar_greige: item.lebar_greige,
+        lebar_finish: item.lebar_finish,
+        harga: item.harga,
+      },
+      meter_total: 0,
+      yard_total: 0,
+      rolls: [
+        {
+          row_num: 1,
+          col_num: 1,
+          meter: "",
+          yard: "",
         },
-        meter_total: 0,
-        yard_total: 0,
-        rolls: [
-          {
-            row_num: 1,
-            col_num: 1,
-            meter: "",
-            yard: "",
-          },
-        ],
-      }));      
-  
-      setForm({
-        ...form(),
-        purchase_order_id: selectedPO.id,
-        purchase_order_items: selectedOCData,
-        po_id: newSJNumber,
-        sequence_number: newSequenceNumber,
-        alamat_pengiriman: selectedOCData.supplier_alamat,
-        unit: selectedOCData.satuan_unit_name,
-        itemGroups: newItemGroups,  
-      });
-    };
+      ],
+    }));
+
+    setForm({
+      ...form(),
+      purchase_order_id: selectedPO.id,
+      purchase_order_items: selectedOCData,
+      po_id: newSJNumber,
+      sequence_number: newSequenceNumber,
+      alamat_pengiriman: selectedOCData.supplier_alamat,
+      unit: selectedOCData.satuan_unit_name,
+      itemGroups: newItemGroups,
+    });
+  };
 
   const generateSJNumber = async (salesType, ppn) => {
-    const lastSeq = await getLastSequence(
-      user?.token,
-      "oc_sj",
-      salesType,
-      ppn
-    );
+    const lastSeq = await getLastSequence(user?.token, "oc_sj", salesType, ppn);
 
     const nextNum = String((lastSeq?.last_sequence || 0) + 1).padStart(5, "0");
     const now = new Date();
@@ -275,10 +277,7 @@ export default function OCDeliveryNoteForm() {
   const addRoll = (groupIndex) => {
     setForm((prev) => {
       const copy = [...prev.itemGroups];
-      const rolls = [
-        ...copy[groupIndex].rolls,
-        { meter: "", yard: ""},
-      ];
+      const rolls = [...copy[groupIndex].rolls, { meter: "", yard: "" }];
       copy[groupIndex].rolls = reindexRolls(rolls);
       copy[groupIndex].meter_total = rolls.reduce(
         (sum, r) => sum + Number(r.meter || 0),
@@ -307,11 +306,14 @@ export default function OCDeliveryNoteForm() {
         meter: lastRoll.meter || "",
         yard: lastRoll.yard || "",
       }));
-      
+
       const combinedRolls = [...group.rolls, ...newRolls];
 
       group.rolls = reindexRolls(combinedRolls);
-      group.meter_total = group.rolls.reduce((sum, r) => sum + Number(r.meter || 0), 0);
+      group.meter_total = group.rolls.reduce(
+        (sum, r) => sum + Number(r.meter || 0),
+        0
+      );
       group.yard_total = group.meter_total * 1.093613;
 
       copy[groupIndex] = group;
@@ -331,10 +333,13 @@ export default function OCDeliveryNoteForm() {
       updatedRolls.splice(rollIndex, 1);
 
       group.rolls = reindexRolls(updatedRolls);
-      group.meter_total = group.rolls.reduce((sum, r) => sum + Number(r.meter || 0), 0);
+      group.meter_total = group.rolls.reduce(
+        (sum, r) => sum + Number(r.meter || 0),
+        0
+      );
       group.yard_total = group.meter_total * 1.093613;
 
-      copy[groupIndex] = group; 
+      copy[groupIndex] = group;
 
       return { ...prev, itemGroups: copy };
     });
@@ -346,12 +351,12 @@ export default function OCDeliveryNoteForm() {
       const targetGroup = { ...newGroups[groupIndex] };
       const newRolls = [...targetGroup.rolls];
       const updatedRoll = { ...newRolls[rollIndex] };
-      
+
       const inputValue = parseNumber(value);
 
-      if (form().unit === 'Yard') {
+      if (form().unit === "Yard") {
         updatedRoll.yard = inputValue;
-        updatedRoll.meter = inputValue * 0.9144; 
+        updatedRoll.meter = inputValue * 0.9144;
       } else {
         updatedRoll.meter = inputValue;
         updatedRoll.yard = inputValue * 1.093613;
@@ -360,17 +365,20 @@ export default function OCDeliveryNoteForm() {
       newRolls[rollIndex] = updatedRoll;
 
       targetGroup.rolls = newRolls;
-      
+
       // Recalculate totals
-      targetGroup.meter_total = newRolls.reduce((sum, r) => sum + Number(r.meter || 0), 0);
+      targetGroup.meter_total = newRolls.reduce(
+        (sum, r) => sum + Number(r.meter || 0),
+        0
+      );
       // Hitung yard_total dari meter_total untuk akurasi
-      targetGroup.yard_total = targetGroup.meter_total * 1.093613; 
+      targetGroup.yard_total = targetGroup.meter_total * 1.093613;
 
       newGroups[groupIndex] = targetGroup;
 
       return { ...prev, itemGroups: newGroups };
     });
-  }
+  };
 
   const handleRollCheckedChange = (groupIndex, rollIndex, checked) => {
     setForm((prev) => {
@@ -383,11 +391,29 @@ export default function OCDeliveryNoteForm() {
     });
   };
 
+  const handleKeyDown = (e) => {
+    const tag = e.target.tagName;
+    const type = e.target.type;
+
+    if (
+      e.key === "Enter" &&
+      tag !== "TEXTAREA" &&
+      type !== "submit" &&
+      type !== "button"
+    ) {
+      e.preventDefault();
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!form().purchase_order_id) {
-      Swal.fire("Gagal", "Harap pilih Purchase Order terlebih dahulu.", "error");
+      Swal.fire(
+        "Gagal",
+        "Harap pilih Purchase Order terlebih dahulu.",
+        "error"
+      );
       return;
     }
     if (!form().no_sj_supplier.trim()) {
@@ -463,17 +489,20 @@ export default function OCDeliveryNoteForm() {
               yard: parseFloat(r.yard) || (Number(r.meter) || 0) * 1.093613,
             }));
 
-            const meter_total = rollsWithIndex.reduce((sum, r) => sum + r.meter, 0);
+            const meter_total = rollsWithIndex.reduce(
+              (sum, r) => sum + r.meter,
+              0
+            );
             const yard_total = meter_total * 1.093613;
 
             return {
               po_item_id: Number(g.purchase_order_item_id),
               meter_total,
               yard_total,
-              rolls: rollsWithIndex.filter(r => r.meter > 0), // Hanya kirim roll yang terisi
+              rolls: rollsWithIndex.filter((r) => r.meter > 0), // Hanya kirim roll yang terisi
             };
           }),
-        }; 
+        };
         await createOCDeliveryNote(user?.token, payload);
       }
 
@@ -508,10 +537,14 @@ export default function OCDeliveryNoteForm() {
         return chunks;
       }, []);
   };
-  
+
   function handlePrint() {
     if (!deliveryNoteData()) {
-      Swal.fire("Gagal", "Data untuk mencetak tidak tersedia. Pastikan Anda dalam mode Edit/View.", "error");
+      Swal.fire(
+        "Gagal",
+        "Data untuk mencetak tidak tersedia. Pastikan Anda dalam mode Edit/View.",
+        "error"
+      );
       return;
     }
 
@@ -546,7 +579,7 @@ export default function OCDeliveryNoteForm() {
         Print
       </button>
 
-      <form class="space-y-4" onSubmit={handleSubmit}>
+      <form class="space-y-4" onSubmit={handleSubmit} onkeydown={handleKeyDown}>
         <div class="grid grid-cols-3 gap-4">
           <div>
             <label class="block text-sm mb-1">No Surat Jalan</label>
@@ -563,7 +596,9 @@ export default function OCDeliveryNoteForm() {
             <input
               class="w-full border p-2 rounded"
               value={form().no_sj_supplier}
-              onInput={(e) => setForm({ ...form(), no_sj_supplier: e.target.value })}
+              onInput={(e) =>
+                setForm({ ...form(), no_sj_supplier: e.target.value })
+              }
               required
               disabled={isView}
               classList={{ "bg-gray-200": isView }}
@@ -584,25 +619,26 @@ export default function OCDeliveryNoteForm() {
             <div class="flex gap-2">
               <input
                 type="date"
-                class="w-full border p-2 rounded"                
+                class="w-full border p-2 rounded"
                 value={form().tanggal_kirim}
-                onInput={(e) => 
-                  setForm({ ...form(), tanggal_kirim: e.target.value })}
+                onInput={(e) =>
+                  setForm({ ...form(), tanggal_kirim: e.target.value })
+                }
                 disabled={isView}
-                classList={{ "bg-gray-200": isView }} 
+                classList={{ "bg-gray-200": isView }}
               />
             </div>
-          </div> 
+          </div>
           <div>
             <label class="block text-sm mb-1">Purchase Order</label>
-              <OrderCelupSearch
-                items={orderCelupList()}
-                value={form().purchase_order_id} 
-                form={form}
-                setForm={setForm}
-                onChange={handleSuratJalanChange}
-                disabled={isView}
-              />
+            <OrderCelupSearch
+              items={orderCelupList()}
+              value={form().purchase_order_id}
+              form={form}
+              setForm={setForm}
+              onChange={handleSuratJalanChange}
+              disabled={isView}
+            />
           </div>
         </div>
 
@@ -621,28 +657,36 @@ export default function OCDeliveryNoteForm() {
           </div>
         </div>
 
-        <Show when={form().purchase_order_items && form().itemGroups.length > 0}>
+        <Show
+          when={form().purchase_order_items && form().itemGroups.length > 0}
+        >
           <div class="border p-3 rounded my-4 bg-gray-50">
-            <h3 class="text-md font-bold mb-2 text-gray-700">Quantity Kain PO:</h3>
+            <h3 class="text-md font-bold mb-2 text-gray-700">
+              Quantity Kain PO:
+            </h3>
             <ul class="space-y-1 pl-5">
               <For each={form().purchase_order_items.items}>
                 {(item) => {
-                  const sisa = form().unit === 'Meter'
-                    ? Number(item.meter_total) - Number(item.meter_dalam_proses || 0)
-                    : Number(item.yard_total) - Number(item.yard_dalam_proses || 0);
+                  const sisa =
+                    form().unit === "Meter"
+                      ? Number(item.meter_total) -
+                        Number(item.meter_dalam_proses || 0)
+                      : Number(item.yard_total) -
+                        Number(item.yard_dalam_proses || 0);
 
                   return (
                     <li class="text-sm list-disc">
-                      <span class="font-semibold">{item.corak_kain} | {item.konstruksi_kain}</span> - 
-                      Quantity: 
+                      <span class="font-semibold">
+                        {item.corak_kain} | {item.konstruksi_kain}
+                      </span>{" "}
+                      - Quantity:
                       {sisa > 0 ? (
                         <span class="font-bold text-blue-600">
-                          {formatNumber(sisa)} {form().unit === 'Meter' ? 'm' : 'yd'}
+                          {formatNumber(sisa)}{" "}
+                          {form().unit === "Meter" ? "m" : "yd"}
                         </span>
                       ) : (
-                        <span class="font-bold text-red-600">
-                          HABIS
-                        </span>
+                        <span class="font-bold text-red-600">HABIS</span>
                       )}
                     </li>
                   );
@@ -667,9 +711,7 @@ export default function OCDeliveryNoteForm() {
           <For each={form().itemGroups}>
             {(group, i) => (
               <div class="border p-4 rounded mb-6">
-                <div
-                  class="flex justify-between items-center mb-2 cursor-pointer"
-                >
+                <div class="flex justify-between items-center mb-2 cursor-pointer">
                   <h3 class="font-semibold">
                     Purchase Order Item Group #{i() + 1}
                   </h3>
@@ -711,47 +753,60 @@ export default function OCDeliveryNoteForm() {
                           )}
                         </For>
                         <th class="border px-2 py-1 w-14">TTL/PCS</th>
-                        <Show when={form().unit === 'Meter'}>
-                          <th class="border px-2 py-1 w-24 bg-gray-200">TTL/MTR</th>
+                        <Show when={form().unit === "Meter"}>
+                          <th class="border px-2 py-1 w-24 bg-gray-200">
+                            TTL/MTR
+                          </th>
                         </Show>
-                        <Show when={form().unit === 'Yard'}>
-                          <th class="border px-2 py-1 w-24 bg-gray-200">TTL/YARD</th>
+                        <Show when={form().unit === "Yard"}>
+                          <th class="border px-2 py-1 w-24 bg-gray-200">
+                            TTL/YARD
+                          </th>
                         </Show>
                         <th class="border px-2 py-1 w-24">Harga</th>
                       </tr>
                     </thead>
                     <tbody>
-                    {/* Loop per baris (setiap baris berisi maksimal 5 roll) */}
-                    <For each={chunkArrayWithIndex(group.rolls, 5)}>
-                      {(rollChunk, chunkIndex) => (
-                        <tr>
-                          {/* Kolom No. */}
-                          <td class="border text-center align-top p-1">
-                            {chunkIndex() === 0 ? i() + 1 : ""}
-                          </td>
+                      {/* Loop per baris (setiap baris berisi maksimal 5 roll) */}
+                      <For each={chunkArrayWithIndex(group.rolls, 5)}>
+                        {(rollChunk, chunkIndex) => (
+                          <tr>
+                            {/* Kolom No. */}
+                            <td class="border text-center align-top p-1">
+                              {chunkIndex() === 0 ? i() + 1 : ""}
+                            </td>
 
-                          {/* Kolom Item (hanya tampil di baris pertama per group) */}
-                          <td class="border p-1 align-top">
-                            {chunkIndex() === 0 ? (
-                              <div class="font-semibold">
-                                {group.item_details?.corak_kain} | {group.item_details?.konstruksi_kain}
-                              </div>
-                            ) : null}
-                          </td>
+                            {/* Kolom Item (hanya tampil di baris pertama per group) */}
+                            <td class="border p-1 align-top">
+                              {chunkIndex() === 0 ? (
+                                <div class="font-semibold">
+                                  {group.item_details?.corak_kain} |{" "}
+                                  {group.item_details?.konstruksi_kain}
+                                </div>
+                              ) : null}
+                            </td>
 
-                          <td class="border p-1 align-top text-center">
-                            {chunkIndex() === 0 ? group.item_details?.deskripsi_warna : null}
-                          </td>
+                            <td class="border p-1 align-top text-center">
+                              {chunkIndex() === 0
+                                ? group.item_details?.deskripsi_warna
+                                : null}
+                            </td>
 
-                          <td class="border p-1 align-top text-center">
-                            {chunkIndex() === 0 ? group.item_details?.lebar_greige : null}"
-                          </td>
-                          <td class="border p-1 align-top text-center">
-                            {chunkIndex() === 0 ? group.item_details?.lebar_finish : null}"
-                          </td>
+                            <td class="border p-1 align-top text-center">
+                              {chunkIndex() === 0
+                                ? group.item_details?.lebar_greige
+                                : null}
+                              "
+                            </td>
+                            <td class="border p-1 align-top text-center">
+                              {chunkIndex() === 0
+                                ? group.item_details?.lebar_finish
+                                : null}
+                              "
+                            </td>
 
-                          {/* Kolom untuk 5 roll */}
-                          <For each={rollChunk}>
+                            {/* Kolom untuk 5 roll */}
+                            <For each={rollChunk}>
                               {(r) => (
                                 <td class="border p-1 align-top">
                                   <div class="flex flex-row">
@@ -759,9 +814,18 @@ export default function OCDeliveryNoteForm() {
                                       type="text"
                                       inputmode="decimal"
                                       class="border p-1 text-right text-xs pr-2 w-full"
-                                      value={formatNumber(form().unit === 'Yard' ? r.roll.yard : r.roll.meter, 2)}
+                                      value={formatNumber(
+                                        form().unit === "Yard"
+                                          ? r.roll.yard
+                                          : r.roll.meter,
+                                        2
+                                      )}
                                       onBlur={(e) =>
-                                        handleRollChange(i(), r.index, e.target.value)
+                                        handleRollChange(
+                                          i(),
+                                          r.index,
+                                          e.target.value
+                                        )
                                       }
                                       disabled={isView}
                                       classList={{ "bg-gray-200": isView }}
@@ -779,59 +843,74 @@ export default function OCDeliveryNoteForm() {
                               )}
                             </For>
 
-                          {/* Tambahkan sel kosong jika roll kurang dari 5 */}
-                          <For each={Array(5 - rollChunk.length)}>
-                            {() => <td class="border p-1 bg-gray-50"></td>}
-                          </For>
+                            {/* Tambahkan sel kosong jika roll kurang dari 5 */}
+                            <For each={Array(5 - rollChunk.length)}>
+                              {() => <td class="border p-1 bg-gray-50"></td>}
+                            </For>
 
-                          {/* Kolom Total per Baris */}
-                          <td class="border text-center align-top p-1">
-                            {rollChunk.length}
-                          </td>
-                          <Show when={form().unit === 'Meter'}>
-                            <td class="border text-right px-2 align-top p-1 bg-gray-200">
-                                {formatNumber(rollChunk.reduce((sum, r) => sum + Number(r.roll.meter || 0), 0))}
+                            {/* Kolom Total per Baris */}
+                            <td class="border text-center align-top p-1">
+                              {rollChunk.length}
                             </td>
-                          </Show>
-                          <Show when={form().unit === 'Yard'}>
-                            <td class="border text-right px-2 align-top p-1 bg-gray-200">
-                                {formatNumber(rollChunk.reduce((sum, r) => sum + Number(r.roll.yard || 0), 0))}
-                            </td>
-                          </Show>
-                          
-                          <td class="border px-2 py-1 text-right align-top font-semibold">
-                            {formatHarga(group.item_details?.harga)}
-                          </td>
-                        </tr>
-                      )}
-                    </For>
+                            <Show when={form().unit === "Meter"}>
+                              <td class="border text-right px-2 align-top p-1 bg-gray-200">
+                                {formatNumber(
+                                  rollChunk.reduce(
+                                    (sum, r) => sum + Number(r.roll.meter || 0),
+                                    0
+                                  )
+                                )}
+                              </td>
+                            </Show>
+                            <Show when={form().unit === "Yard"}>
+                              <td class="border text-right px-2 align-top p-1 bg-gray-200">
+                                {formatNumber(
+                                  rollChunk.reduce(
+                                    (sum, r) => sum + Number(r.roll.yard || 0),
+                                    0
+                                  )
+                                )}
+                              </td>
+                            </Show>
 
-                    {/* Baris Sub Total */}
-                    <tr>
-                      <td colSpan={10} class="border px-2 py-1 font-semibold text-left">
-                        Sub Total
-                      </td>
-                      <td class="border px-2 py-1 text-center font-semibold">
-                        {group.rolls.length}
-                      </td>
-                      <Show when={form().unit === 'Meter'}>
-                        <td class="border px-2 py-1 text-right font-semibold bg-gray-200">
-                          {formatNumber(group.meter_total)} m
-                        </td>
-                      </Show>
-                      <Show when={form().unit === 'Yard'}>
-                        <td class="border px-2 py-1 text-right font-semibold bg-gray-200">
-                          {formatNumber(group.yard_total)} yd
-                        </td>
-                      </Show>
-                      <td class="border px-2 py-1 text-right font-semibold">
-                        {formatHarga(
-                          (form().unit === 'Meter' ? group.meter_total : group.yard_total) *
-                          (group.item_details?.harga || 0)
+                            <td class="border px-2 py-1 text-right align-top font-semibold">
+                              {formatHarga(group.item_details?.harga)}
+                            </td>
+                          </tr>
                         )}
-                      </td>
-                    </tr>
-                  </tbody>
+                      </For>
+
+                      {/* Baris Sub Total */}
+                      <tr>
+                        <td
+                          colSpan={10}
+                          class="border px-2 py-1 font-semibold text-left"
+                        >
+                          Sub Total
+                        </td>
+                        <td class="border px-2 py-1 text-center font-semibold">
+                          {group.rolls.length}
+                        </td>
+                        <Show when={form().unit === "Meter"}>
+                          <td class="border px-2 py-1 text-right font-semibold bg-gray-200">
+                            {formatNumber(group.meter_total)} m
+                          </td>
+                        </Show>
+                        <Show when={form().unit === "Yard"}>
+                          <td class="border px-2 py-1 text-right font-semibold bg-gray-200">
+                            {formatNumber(group.yard_total)} yd
+                          </td>
+                        </Show>
+                        <td class="border px-2 py-1 text-right font-semibold">
+                          {formatHarga(
+                            (form().unit === "Meter"
+                              ? group.meter_total
+                              : group.yard_total) *
+                              (group.item_details?.harga || 0)
+                          )}
+                        </td>
+                      </tr>
+                    </tbody>
                   </table>
 
                   <div class="mt-4 flex flex-wrap gap-2 items-center">
@@ -894,23 +973,38 @@ export default function OCDeliveryNoteForm() {
                       0
                     )}
                   </th>
-                  <Show when={form().unit === 'Meter'}>
+                  <Show when={form().unit === "Meter"}>
                     <th class="border px-2 py-1 text-right font-bold w-20">
-                      {formatNumber(form().itemGroups.reduce((sum, g) => sum + Number(g.meter_total || 0), 0))} m
+                      {formatNumber(
+                        form().itemGroups.reduce(
+                          (sum, g) => sum + Number(g.meter_total || 0),
+                          0
+                        )
+                      )}{" "}
+                      m
                     </th>
                   </Show>
-                  <Show when={form().unit === 'Yard'}>
+                  <Show when={form().unit === "Yard"}>
                     <th class="border px-2 py-1 text-right font-bold w-20">
-                      {formatNumber(form().itemGroups.reduce((sum, g) => sum + Number(g.yard_total || 0), 0))} yd
+                      {formatNumber(
+                        form().itemGroups.reduce(
+                          (sum, g) => sum + Number(g.yard_total || 0),
+                          0
+                        )
+                      )}{" "}
+                      yd
                     </th>
                   </Show>
 
                   <th class="border px-2 py-1 text-right font-bold w-24">
                     {formatHarga(
                       form().itemGroups.reduce((total, group) => {
-                        const quantity = form().unit === 'Meter' ? group.meter_total : group.yard_total;
+                        const quantity =
+                          form().unit === "Meter"
+                            ? group.meter_total
+                            : group.yard_total;
                         const price = group.item_details?.harga || 0;
-                        return total + (quantity * price);
+                        return total + quantity * price;
                       }, 0)
                     )}
                   </th>
@@ -929,7 +1023,7 @@ export default function OCDeliveryNoteForm() {
             Simpan
           </button>
         </div>
-      </form>      
+      </form>
     </MainLayout>
   );
 }

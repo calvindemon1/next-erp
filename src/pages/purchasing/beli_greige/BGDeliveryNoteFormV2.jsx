@@ -1,4 +1,11 @@
-import { createSignal, createEffect, For, onMount, Show, createMemo } from "solid-js";
+import {
+  createSignal,
+  createEffect,
+  For,
+  onMount,
+  Show,
+  createMemo,
+} from "solid-js";
 import { useNavigate, useSearchParams } from "@solidjs/router";
 import MainLayout from "../../../layouts/MainLayout";
 import Swal from "sweetalert2";
@@ -21,7 +28,7 @@ import FabricDropdownSearch from "../../../components/FabricDropdownSearch";
 export default function BGDeliveryNoteForm() {
   const [params] = useSearchParams();
   const isEdit = !!params.id;
-  const isView = params.view === 'true';
+  const isView = params.view === "true";
   const navigate = useNavigate();
   const user = getUser();
 
@@ -30,11 +37,10 @@ export default function BGDeliveryNoteForm() {
   const [groupRollCounts, setGroupRollCounts] = createSignal([]);
   const [loading, setLoading] = createSignal(true);
   const [allFabrics, setAllFabrics] = createSignal([]);
-  const [deliveryNoteData, setDeliveryNoteData] = createSignal(null); 
+  const [deliveryNoteData, setDeliveryNoteData] = createSignal(null);
   const [deletedItems, setDeletedItems] = createSignal([]);
   const [allSuppliers, setAllSuppliers] = createSignal([]);
   const [selectedSupplierId, setSelectedSupplierId] = createSignal(null);
-
 
   const [form, setForm] = createSignal({
     sequence_number: "",
@@ -45,23 +51,31 @@ export default function BGDeliveryNoteForm() {
     no_sj_supplier: "",
     tanggal_kirim: "",
     supplier_kirim_alamat: "",
-    supplier_kirim_id: null, 
-    unit: "Meter", 
+    supplier_kirim_id: null,
+    unit: "Meter",
     itemGroups: [],
   });
 
-  const totalMeter = createMemo(() => 
-    form().itemGroups.reduce((sum, group) => sum + (Number(group.meter_total) || 0), 0)
+  const totalMeter = createMemo(() =>
+    form().itemGroups.reduce(
+      (sum, group) => sum + (Number(group.meter_total) || 0),
+      0
+    )
   );
 
-  const totalYard = createMemo(() => 
-    form().itemGroups.reduce((sum, group) => sum + (Number(group.yard_total) || 0), 0)
+  const totalYard = createMemo(() =>
+    form().itemGroups.reduce(
+      (sum, group) => sum + (Number(group.yard_total) || 0),
+      0
+    )
   );
 
-  const totalAll = createMemo(() => 
+  const totalAll = createMemo(() =>
     form().itemGroups.reduce((sum, group) => {
-      const quantity = form().unit === 'Meter' ? group.meter_total : group.yard_total;
-      const subtotal = (Number(group.item_details?.harga) || 0) * (Number(quantity) || 0);
+      const quantity =
+        form().unit === "Meter" ? group.meter_total : group.yard_total;
+      const subtotal =
+        (Number(group.item_details?.harga) || 0) * (Number(quantity) || 0);
       return sum + subtotal;
     }, 0)
   );
@@ -70,7 +84,7 @@ export default function BGDeliveryNoteForm() {
     setLoading(true);
     const fabricsResponse = await getAllFabrics(user?.token);
     setAllFabrics(fabricsResponse.kain || []);
-    //console.log("1. Data Master Kain:", JSON.stringify(fabricsResponse, null, 2)); 
+    //console.log("1. Data Master Kain:", JSON.stringify(fabricsResponse, null, 2));
 
     const poListResponse = await getAllBeliGreigeOrders(user?.token);
     //console.log("Data all PO BG: ", JSON.stringify(poListResponse, null, 2));
@@ -90,7 +104,10 @@ export default function BGDeliveryNoteForm() {
         return;
       }
 
-      const poDetailResponse = await getBeliGreigeOrders(suratJalanData.po_id, user?.token);
+      const poDetailResponse = await getBeliGreigeOrders(
+        suratJalanData.po_id,
+        user?.token
+      );
       const poData = poDetailResponse?.order;
 
       const fullPrintData = {
@@ -99,7 +116,7 @@ export default function BGDeliveryNoteForm() {
       };
       // Simpan ke dalam signal
       setDeliveryNoteData(fullPrintData);
-      
+
       const supplierById = (suppliersResponse?.suppliers || []).find(
         (s) => s.id === suratJalanData.supplier_kirim_id
       );
@@ -116,29 +133,35 @@ export default function BGDeliveryNoteForm() {
         no_sj_supplier: suratJalanData.no_sj_supplier,
         supplier_kirim_alamat: suratJalanData.supplier_kirim_alamat || "",
         supplier_kirim_id: supplierById ? supplierById.id : null,
-        tanggal_kirim: suratJalanData.tanggal_kirim ? new Date(suratJalanData.tanggal_kirim).toISOString().split("T")[0] : "",
+        tanggal_kirim: suratJalanData.tanggal_kirim
+          ? new Date(suratJalanData.tanggal_kirim).toISOString().split("T")[0]
+          : "",
         purchase_order_id: suratJalanData.po_id,
         purchase_order_items: poData,
         sequence_number: suratJalanData.sequence_number,
         keterangan: suratJalanData.keterangan || "",
         unit: poData?.satuan_unit_name || "Meter",
         itemGroups: (suratJalanData.items || [])
-          .filter(group => !group.deleted_at)
+          .filter((group) => !group.deleted_at)
           .map((group) => {
-            const poItem = poData?.items.find(item => item.id === group.po_item_id);
+            const poItem = poData?.items.find(
+              (item) => item.id === group.po_item_id
+            );
             return {
               id: group.id,
               purchase_order_item_id: group.po_item_id,
               item_details: {
                 corak_kain: poItem?.corak_kain || group.corak_kain || "N/A",
-                konstruksi_kain: poItem?.konstruksi_kain || group.konstruksi_kain || "",
-                lebar_greige: poItem?.lebar_greige || group.lebar_greige || "N/A",
+                konstruksi_kain:
+                  poItem?.konstruksi_kain || group.konstruksi_kain || "",
+                lebar_greige:
+                  poItem?.lebar_greige || group.lebar_greige || "N/A",
                 harga: poItem?.harga || group.harga || 0,
               },
               meter_total: Number(group.meter_total) || 0,
               yard_total: Number(group.yard_total) || 0,
             };
-          })
+          }),
       });
 
       if (supplierById) {
@@ -150,7 +173,7 @@ export default function BGDeliveryNoteForm() {
         );
         if (matchSupplier) {
           setSelectedSupplierId(matchSupplier.id);
-          setForm(prev => ({
+          setForm((prev) => ({
             ...prev,
             supplier_kirim_id: matchSupplier.id,
             supplier_kirim_alamat: matchSupplier.alamat,
@@ -178,9 +201,9 @@ export default function BGDeliveryNoteForm() {
     if (num === "" || num === null || num === undefined) return "";
 
     const numValue = Number(num);
-    
+
     if (isNaN(numValue)) return "";
-    
+
     if (numValue === 0) return "0";
 
     return new Intl.NumberFormat("id-ID", {
@@ -190,7 +213,7 @@ export default function BGDeliveryNoteForm() {
   };
 
   const parseNumber = (str) => {
-    if (typeof str !== 'string' || !str) return 0;
+    if (typeof str !== "string" || !str) return 0;
     const cleaned = str.replace(/[^\d,]/g, "").replace(",", ".");
     return parseFloat(cleaned) || 0;
   };
@@ -198,20 +221,20 @@ export default function BGDeliveryNoteForm() {
   const formatHarga = (val) => {
     if (val === null || val === "") return "";
     return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    maximumFractionDigits: 2,
+      style: "currency",
+      currency: "IDR",
+      maximumFractionDigits: 2,
     }).format(val);
   };
-  
-  const formatIDR = (val) =>{
-    if(val === null || val === "") return "";
+
+  const formatIDR = (val) => {
+    if (val === null || val === "") return "";
     return new Intl.NumberFormat("id-ID", {
-        style: "currency",
-        currency: "IDR",
-        maximumFractionDigits: 2,
+      style: "currency",
+      currency: "IDR",
+      maximumFractionDigits: 2,
     }).format(val);
-  }
+  };
 
   const handleQuantityChange = (index, value) => {
     const unit = form().unit;
@@ -233,12 +256,12 @@ export default function BGDeliveryNoteForm() {
       return { ...prev, itemGroups: updatedItemGroups };
     });
   };
-  
+
   const handleSuratJalanChange = async (selectedPO) => {
     if (!selectedPO) return;
 
     const res = await getBeliGreigeOrders(selectedPO.id, user?.token);
-    const selectedGreigeData = res?.order; 
+    const selectedGreigeData = res?.order;
 
     const poTypeLetter = selectedPO.no_po.split("/")[1];
     const poPPN = selectedPO.no_po.split("/")[2];
@@ -250,7 +273,7 @@ export default function BGDeliveryNoteForm() {
     );
 
     const unitName = selectedGreigeData.satuan_unit_name; // "Meter" / "Yard"
-    const newItemGroups = (selectedGreigeData.items || []).map(item =>
+    const newItemGroups = (selectedGreigeData.items || []).map((item) =>
       templateFromPOItem(item, unitName)
     );
 
@@ -267,12 +290,7 @@ export default function BGDeliveryNoteForm() {
   };
 
   const generateSJNumber = async (salesType, ppn) => {
-    const lastSeq = await getLastSequence(
-      user?.token,
-      "bg_sj",
-      salesType,
-      ppn
-    );
+    const lastSeq = await getLastSequence(user?.token, "bg_sj", salesType, ppn);
 
     const nextNum = String((lastSeq?.last_sequence || 0) + 1).padStart(5, "0");
     const now = new Date();
@@ -317,13 +335,13 @@ export default function BGDeliveryNoteForm() {
 
   const templateFromPOItem = (poItem) => {
     const m = Number(poItem.meter_total ?? poItem.meter ?? 0) || 0;
-    const y = Number(poItem.yard_total  ?? poItem.yard  ?? 0) || 0;
+    const y = Number(poItem.yard_total ?? poItem.yard ?? 0) || 0;
 
     const hasM = m > 0;
     const hasY = y > 0;
 
-    const meterVal = hasM ? m : (hasY ? y * 0.9144 : 0);
-    const yardVal  = hasY ? y : (hasM ? m * 1.093613 : 0);
+    const meterVal = hasM ? m : hasY ? y * 0.9144 : 0;
+    const yardVal = hasY ? y : hasM ? m * 1.093613 : 0;
 
     return {
       purchase_order_item_id: poItem.id,
@@ -334,14 +352,18 @@ export default function BGDeliveryNoteForm() {
         harga: poItem.harga,
       },
       meter_total: meterVal,
-      yard_total:  yardVal,
+      yard_total: yardVal,
     };
   };
 
   const addItemGroup = () => {
     const poDetail = form().purchase_order_items;
     if (!poDetail || !poDetail.items || poDetail.items.length === 0) {
-      Swal.fire("Peringatan", "Silakan pilih Purchase Order terlebih dahulu.", "warning");
+      Swal.fire(
+        "Peringatan",
+        "Silakan pilih Purchase Order terlebih dahulu.",
+        "warning"
+      );
       return;
     }
 
@@ -353,15 +375,33 @@ export default function BGDeliveryNoteForm() {
     }));
   };
 
+  const handleKeyDown = (e) => {
+    const tag = e.target.tagName;
+    const type = e.target.type;
+
+    if (
+      e.key === "Enter" &&
+      tag !== "TEXTAREA" &&
+      type !== "submit" &&
+      type !== "button"
+    ) {
+      e.preventDefault();
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     // LANGKAH 1: Validasi Input
     if (!form().purchase_order_id) {
-      Swal.fire("Gagal", "Harap pilih Purchase Order terlebih dahulu.", "error");
+      Swal.fire(
+        "Gagal",
+        "Harap pilih Purchase Order terlebih dahulu.",
+        "error"
+      );
       return;
     }
-    if (!form().no_sj_supplier.trim()) { 
+    if (!form().no_sj_supplier.trim()) {
       Swal.fire("Gagal", "Harap isi No Surat Jalan Supplier.", "error");
       return;
     }
@@ -378,25 +418,28 @@ export default function BGDeliveryNoteForm() {
 
     try {
       if (isEdit) {
-      const payload = {
-        no_sj: form().po_id,
-        po_id: form().purchase_order_id,
-        no_sj_supplier: form().no_sj_supplier.trim(),
-        tanggal_kirim: form().tanggal_kirim,
-        supplier_kirim_alamat: form().supplier_kirim_alamat,
-        supplier_kirim_id: form().supplier_kirim_id,  
-        keterangan: form().keterangan,
-        items: form().itemGroups
-          .filter(g => (form().unit === 'Meter' ? g.meter_total : g.yard_total) > 0)
-          .map((g) => ({
-            id: g.id,
-            po_item_id: Number(g.purchase_order_item_id),
-            meter_total: Number(g.meter_total) || 0,
-            yard_total: Number(g.yard_total) || 0,
-          })),
-         deleted_items: deletedItems(),
-      };
-        //console.log("Update SJ BG: ", JSON.stringify(payload, null, 2));  
+        const payload = {
+          no_sj: form().po_id,
+          po_id: form().purchase_order_id,
+          no_sj_supplier: form().no_sj_supplier.trim(),
+          tanggal_kirim: form().tanggal_kirim,
+          supplier_kirim_alamat: form().supplier_kirim_alamat,
+          supplier_kirim_id: form().supplier_kirim_id,
+          keterangan: form().keterangan,
+          items: form()
+            .itemGroups.filter(
+              (g) =>
+                (form().unit === "Meter" ? g.meter_total : g.yard_total) > 0
+            )
+            .map((g) => ({
+              id: g.id,
+              po_item_id: Number(g.purchase_order_item_id),
+              meter_total: Number(g.meter_total) || 0,
+              yard_total: Number(g.yard_total) || 0,
+            })),
+          deleted_items: deletedItems(),
+        };
+        //console.log("Update SJ BG: ", JSON.stringify(payload, null, 2));
         await updateDataBGDeliveryNote(user?.token, params.id, payload);
       } else {
         const payload = {
@@ -405,23 +448,27 @@ export default function BGDeliveryNoteForm() {
           keterangan: form().keterangan,
           tanggal_kirim: form().tanggal_kirim,
           supplier_kirim_alamat: form().supplier_kirim_alamat,
-          supplier_kirim_id: form().supplier_kirim_id,  
+          supplier_kirim_id: form().supplier_kirim_id,
           no_sj_supplier: form().no_sj_supplier.trim(),
-          items: form().itemGroups.filter(g => (form().unit === 'Meter' ? g.meter_total : g.yard_total) > 0)
+          items: form()
+            .itemGroups.filter(
+              (g) =>
+                (form().unit === "Meter" ? g.meter_total : g.yard_total) > 0
+            )
             .map((g) => ({
-                //id: g.id,
-                po_item_id: Number(g.purchase_order_item_id),
-                meter_total: Number(g.meter_total) || 0,
-                yard_total: Number(g.yard_total) || 0,
-          })),
-        }; 
+              //id: g.id,
+              po_item_id: Number(g.purchase_order_item_id),
+              meter_total: Number(g.meter_total) || 0,
+              yard_total: Number(g.yard_total) || 0,
+            })),
+        };
         //console.log("Response Create SJ BG Format PO: ", JSON.stringify(payload, null, 2));
         await createBGDeliveryNote(user?.token, payload);
       }
 
       Swal.fire({
         icon: "success",
-        title: isEdit ? "Berhasil Update" : "Berhasil Simpan",  
+        title: isEdit ? "Berhasil Update" : "Berhasil Simpan",
         showConfirmButton: false,
         timer: 1000,
         timerProgressBar: true,
@@ -458,7 +505,11 @@ export default function BGDeliveryNoteForm() {
 
   function handlePrint() {
     if (!deliveryNoteData()) {
-      Swal.fire("Gagal", "Data untuk mencetak tidak tersedia. Pastikan Anda dalam mode Edit/View.", "error");
+      Swal.fire(
+        "Gagal",
+        "Data untuk mencetak tidak tersedia. Pastikan Anda dalam mode Edit/View.",
+        "error"
+      );
       return;
     }
 
@@ -466,7 +517,7 @@ export default function BGDeliveryNoteForm() {
     // CHANGED: kirim via hash, bukan query, agar tidak kena 431
     const encodedData = encodeURIComponent(JSON.stringify(dataToPrint));
     window.open(`/print/beligreige/suratjalan#${encodedData}`, "_blank");
-  }  
+  }
 
   return (
     <MainLayout>
@@ -489,7 +540,7 @@ export default function BGDeliveryNoteForm() {
         Print
       </button>
 
-      <form class="space-y-4" onSubmit={handleSubmit}>
+      <form class="space-y-4" onSubmit={handleSubmit} onkeydown={handleKeyDown}>
         <div class="grid grid-cols-3 gap-4">
           <div>
             <label class="block text-sm mb-1">No Surat Penerimaan</label>
@@ -506,7 +557,9 @@ export default function BGDeliveryNoteForm() {
             <input
               class="w-full border p-2 rounded"
               value={form().no_sj_supplier}
-              onInput={(e) => setForm({ ...form(), no_sj_supplier: e.target.value })}
+              onInput={(e) =>
+                setForm({ ...form(), no_sj_supplier: e.target.value })
+              }
               required
               disabled={isView}
               classList={{ "bg-gray-200": isView }}
@@ -514,38 +567,39 @@ export default function BGDeliveryNoteForm() {
           </div>
           <div>
             <label class="block text-sm mb-1">Alamat Pengiriman</label>
-              <SupplierAlamatDropdownSearch
-                suppliers={allSuppliers()}
-                value={selectedSupplierId()}
-                onChange={handleSupplierSelected}
-                disabled={isView}
-                showPreview={true}
-              />
+            <SupplierAlamatDropdownSearch
+              suppliers={allSuppliers()}
+              value={selectedSupplierId()}
+              onChange={handleSupplierSelected}
+              disabled={isView}
+              showPreview={true}
+            />
           </div>
           <div>
             <label class="block text-sm mb-1">Tanggal Pengiriman</label>
             <div class="flex gap-2">
               <input
                 type="date"
-                class="w-full border p-2 rounded"                
+                class="w-full border p-2 rounded"
                 value={form().tanggal_kirim}
-                onInput={(e) => 
-                  setForm({ ...form(), tanggal_kirim: e.target.value })}
+                onInput={(e) =>
+                  setForm({ ...form(), tanggal_kirim: e.target.value })
+                }
                 disabled={isView}
-                classList={{ "bg-gray-200": isView }} 
+                classList={{ "bg-gray-200": isView }}
               />
             </div>
-          </div>          
+          </div>
           <div>
             <label class="block text-sm mb-1">Purchase Order</label>
-              <PurchaseOrderGreigeSearch
-                items={beliGreigeList()}
-                value={form().purchase_order_id} 
-                form={form}
-                setForm={setForm}
-                onChange={handleSuratJalanChange}
-                disabled={isView || isEdit}
-              />
+            <PurchaseOrderGreigeSearch
+              items={beliGreigeList()}
+              value={form().purchase_order_id}
+              form={form}
+              setForm={setForm}
+              onChange={handleSuratJalanChange}
+              disabled={isView || isEdit}
+            />
           </div>
         </div>
 
@@ -564,28 +618,36 @@ export default function BGDeliveryNoteForm() {
           </div>
         </div>
 
-        <Show when={form().purchase_order_items && form().itemGroups.length > 0}>
+        <Show
+          when={form().purchase_order_items && form().itemGroups.length > 0}
+        >
           <div class="border p-3 rounded my-4 bg-gray-50">
-            <h3 class="text-md font-bold mb-2 text-gray-700">Quantity Kain PO:</h3>
+            <h3 class="text-md font-bold mb-2 text-gray-700">
+              Quantity Kain PO:
+            </h3>
             <ul class="space-y-1 pl-5">
               <For each={form().purchase_order_items.items}>
                 {(item) => {
-                  const sisa = form().unit === 'Meter'
-                    ? Number(item.meter_total) - Number(item.meter_dalam_proses || 0)
-                    : Number(item.yard_total) - Number(item.yard_dalam_proses || 0);
+                  const sisa =
+                    form().unit === "Meter"
+                      ? Number(item.meter_total) -
+                        Number(item.meter_dalam_proses || 0)
+                      : Number(item.yard_total) -
+                        Number(item.yard_dalam_proses || 0);
 
                   return (
                     <li class="text-sm list-disc">
-                      <span class="font-semibold">{item.corak_kain} | {item.konstruksi_kain}</span> - 
-                      Quantity: 
+                      <span class="font-semibold">
+                        {item.corak_kain} | {item.konstruksi_kain}
+                      </span>{" "}
+                      - Quantity:
                       {sisa > 0 ? (
                         <span class="font-bold text-blue-600">
-                          {formatNumber(sisa)} {form().unit === 'Meter' ? 'm' : 'yd'}
+                          {formatNumber(sisa)}{" "}
+                          {form().unit === "Meter" ? "m" : "yd"}
                         </span>
                       ) : (
-                        <span class="font-bold text-red-600">
-                          HABIS
-                        </span>
+                        <span class="font-bold text-red-600">HABIS</span>
                       )}
                     </li>
                   );
@@ -606,19 +668,23 @@ export default function BGDeliveryNoteForm() {
             + Tambah Item
           </button>
           <table class="w-full text-sm border border-gray-300 mb-4">
-          <thead class="bg-gray-100">
-            <tr>
-              <th class="border p-2 w-10">#</th>
-              <th class="border p-2">Jenis Kain</th>
-              <th class="border p-2 w-60">Lebar Greige</th>
-              <th class="border p-2 w-60">{form().unit}</th>
-              <th hidden class="border p-2 w-48">Harga</th>
-              <th hidden class="border p-2 w-48">Subtotal</th>
-              <th class="border p-2 w-48">Aksi</th>
-            </tr>
-          </thead>
-          <tbody>
-            <Show 
+            <thead class="bg-gray-100">
+              <tr>
+                <th class="border p-2 w-10">#</th>
+                <th class="border p-2">Jenis Kain</th>
+                <th class="border p-2 w-60">Lebar Greige</th>
+                <th class="border p-2 w-60">{form().unit}</th>
+                <th hidden class="border p-2 w-48">
+                  Harga
+                </th>
+                <th hidden class="border p-2 w-48">
+                  Subtotal
+                </th>
+                <th class="border p-2 w-48">Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              <Show
                 when={form().itemGroups.length > 0}
                 // fallback={
                 // <tr>
@@ -627,88 +693,99 @@ export default function BGDeliveryNoteForm() {
                 //     </td>
                 // </tr>
                 // }
-            >
-              <For each={form().itemGroups}>
-                {(group, i) => {
-                  const quantity = form().unit === 'Meter' ? group.meter_total : group.yard_total;
-                  const subtotal = (group.item_details?.harga || 0) * quantity;
+              >
+                <For each={form().itemGroups}>
+                  {(group, i) => {
+                    const quantity =
+                      form().unit === "Meter"
+                        ? group.meter_total
+                        : group.yard_total;
+                    const subtotal =
+                      (group.item_details?.harga || 0) * quantity;
 
-                  return (
-                    <tr>
-                      <td class="border p-2 text-center">{i() + 1}</td>
-                      <td class="border w-108 p-2">
-                        <input
-                          class="border p-1 rounded w-full bg-gray-200"
-                          value={`${group.item_details?.corak_kain || ""} | ${group.item_details?.konstruksi_kain || ""}`}
-                          disabled
-                        />
-                      </td>
-                      <td class="border p-2">
-                        <input type="number"
+                    return (
+                      <tr>
+                        <td class="border p-2 text-center">{i() + 1}</td>
+                        <td class="border w-108 p-2">
+                          <input
+                            class="border p-1 rounded w-full bg-gray-200"
+                            value={`${group.item_details?.corak_kain || ""} | ${
+                              group.item_details?.konstruksi_kain || ""
+                            }`}
+                            disabled
+                          />
+                        </td>
+                        <td class="border p-2">
+                          <input
+                            type="number"
                             class="border p-1 rounded w-full bg-gray-200"
                             value={group.item_details?.lebar_greige}
                             disabled={true}
-                        />
-                      </td>
-                      <td class="border p-2">
-                        <input
-                          type="text"
-                          class="w-full border p-2 rounded text-right"
-                          value={formatNumber(quantity)}
-                          onBlur={(e) => handleQuantityChange(i(), e.target.value)}
-                          disabled={isView}
-                          classList={{ "bg-gray-200": isView }}
-                        />
-                      </td>
-                      <td hidden class="border p-2 text-right">
-                        <input
-                          class="w-full border p-2 rounded text-right"
-                          value={formatHarga(group.item_details?.harga)}
-                          disabled={true}
-                          classList={{ "bg-gray-200": true }}
-                        />
-                      </td>
-                      <td hidden class="border p-2 text-right font-semibold">
-                        <input
-                          class="w-full border p-2 rounded text-right"
-                          value={formatHarga(subtotal)}
-                          disabled={true}
-                          classList={{ "bg-gray-200": true }}
-                        />
-                      </td>
-                      <td class="border p-2 text-center">
-                        <button
-                          type="button"
-                          class="text-red-600 hover:text-red-800 disabled:cursor-not-allowed"
-                          onClick={() => removeItem(i())}
-                          disabled={isView} 
-                        >
-                          <Trash2 size={20} />
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                }}
-              </For>
-            </Show>
-          </tbody>
-          <tfoot>
-           <tr class="font-bold bg-gray-100">
-            <td colSpan="3" class="text-right p-2 border-t border-gray-300">TOTAL</td>
-            <td class="border p-2 text-right">
-              {form().unit === 'Meter' 
-                ? formatNumber(totalMeter(), 2) 
-                : formatNumber(totalYard(), 2)
-              }
-            </td>
-            {/* Kolom kosong untuk harga */}
-            {/* <td></td>  */}
-            <td hidden class="border p-2 text-right">{formatIDR(totalAll())}</td>
-            <td hidden class="border-t border-gray-300"></td>
-        </tr>
-        </tfoot>
-        </table>
-
+                          />
+                        </td>
+                        <td class="border p-2">
+                          <input
+                            type="text"
+                            class="w-full border p-2 rounded text-right"
+                            value={formatNumber(quantity)}
+                            onBlur={(e) =>
+                              handleQuantityChange(i(), e.target.value)
+                            }
+                            disabled={isView}
+                            classList={{ "bg-gray-200": isView }}
+                          />
+                        </td>
+                        <td hidden class="border p-2 text-right">
+                          <input
+                            class="w-full border p-2 rounded text-right"
+                            value={formatHarga(group.item_details?.harga)}
+                            disabled={true}
+                            classList={{ "bg-gray-200": true }}
+                          />
+                        </td>
+                        <td hidden class="border p-2 text-right font-semibold">
+                          <input
+                            class="w-full border p-2 rounded text-right"
+                            value={formatHarga(subtotal)}
+                            disabled={true}
+                            classList={{ "bg-gray-200": true }}
+                          />
+                        </td>
+                        <td class="border p-2 text-center">
+                          <button
+                            type="button"
+                            class="text-red-600 hover:text-red-800 disabled:cursor-not-allowed"
+                            onClick={() => removeItem(i())}
+                            disabled={isView}
+                          >
+                            <Trash2 size={20} />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  }}
+                </For>
+              </Show>
+            </tbody>
+            <tfoot>
+              <tr class="font-bold bg-gray-100">
+                <td colSpan="3" class="text-right p-2 border-t border-gray-300">
+                  TOTAL
+                </td>
+                <td class="border p-2 text-right">
+                  {form().unit === "Meter"
+                    ? formatNumber(totalMeter(), 2)
+                    : formatNumber(totalYard(), 2)}
+                </td>
+                {/* Kolom kosong untuk harga */}
+                {/* <td></td>  */}
+                <td hidden class="border p-2 text-right">
+                  {formatIDR(totalAll())}
+                </td>
+                <td hidden class="border-t border-gray-300"></td>
+              </tr>
+            </tfoot>
+          </table>
         </div>
 
         <div class="mt-6">
@@ -720,7 +797,7 @@ export default function BGDeliveryNoteForm() {
             Simpan
           </button>
         </div>
-      </form>      
+      </form>
     </MainLayout>
   );
 }

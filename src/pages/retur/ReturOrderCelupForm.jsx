@@ -519,6 +519,21 @@ export default function ReturOrderCelupForm() {
     });
 
   // ============= SUBMIT =============
+
+  const handleKeyDown = (e) => {
+    const tag = e.target.tagName;
+    const type = e.target.type;
+
+    if (
+      e.key === "Enter" &&
+      tag !== "TEXTAREA" &&
+      type !== "submit" &&
+      type !== "button"
+    ) {
+      e.preventDefault();
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -628,7 +643,7 @@ export default function ReturOrderCelupForm() {
         <Printer size={20} /> Print
       </button>
 
-      <form class="space-y-4" onSubmit={handleSubmit}>
+      <form class="space-y-4" onSubmit={handleSubmit} onkeydown={handleKeyDown}>
         {/* Row 1 */}
         <div class="grid grid-cols-3 gap-4">
           <div>

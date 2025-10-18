@@ -40,7 +40,11 @@ function enrichLeftWithInfo(leftArr = [], referItems = []) {
 
 // Hitung sisa per sj_item_id untuk SJ tertentu berdasarkan semua retur KJ yang ada.
 // Saat EDIT, retur yang sedang dibuka tidak ikut dihitung (includeCurrent=false).
-async function computeAvailableForSJ(sjId, token, { includeCurrent = false, currentReturId = null } = {}) {
+async function computeAvailableForSJ(
+  sjId,
+  token,
+  { includeCurrent = false, currentReturId = null } = {}
+) {
   // 1) Detail SJ → qty awal + label
   const sjRes = await getKJDeliveryNotes(sjId, token);
   const sj = sjRes?.suratJalan || sjRes?.order || sjRes;
@@ -51,7 +55,12 @@ async function computeAvailableForSJ(sjId, token, { includeCurrent = false, curr
   const rows = (all && Array.isArray(all.data) && all.data) || [];
   const sameSJ = rows
     .filter((r) => String(r.sj_id) === String(sjId))
-    .filter((r) => includeCurrent || !currentReturId || String(r.id) !== String(currentReturId));
+    .filter(
+      (r) =>
+        includeCurrent ||
+        !currentReturId ||
+        String(r.id) !== String(currentReturId)
+    );
 
   // 3) Akumulasi qty retur per sj_item_id
   const returned = new Map(); // sj_item_id -> {meter, yard}
@@ -62,7 +71,7 @@ async function computeAvailableForSJ(sjId, token, { includeCurrent = false, curr
       const prev = returned.get(key) || { meter: 0, yard: 0 };
       returned.set(key, {
         meter: prev.meter + toNum(it.meter_total),
-        yard:  prev.yard  + toNum(it.yard_total),
+        yard: prev.yard + toNum(it.yard_total),
       });
     }
   }
@@ -72,13 +81,13 @@ async function computeAvailableForSJ(sjId, token, { includeCurrent = false, curr
     const key = Number(it.id);
     const ret = returned.get(key) || { meter: 0, yard: 0 };
     const meter_awal = toNum(it.meter_total);
-    const yard_awal  = toNum(it.yard_total);
+    const yard_awal = toNum(it.yard_total);
     return {
       sj_item_id: key,
       meter_awal,
       yard_awal,
       available_meter: Math.max(meter_awal - ret.meter, 0),
-      available_yard: Math.max(yard_awal  - ret.yard,  0),
+      available_yard: Math.max(yard_awal - ret.yard, 0),
       // label:
       corak_kain: it.corak_kain ?? "N/A",
       konstruksi_kain: it.konstruksi_kain ?? "",
@@ -96,10 +105,17 @@ async function annotateWithAvailableTotal(list, token) {
   const enriched = await Promise.all(
     (Array.isArray(list) ? list : []).map(async (sj) => {
       try {
-        const left = await computeAvailableForSJ(sj.id, token, { includeCurrent: true });
+        const left = await computeAvailableForSJ(sj.id, token, {
+          includeCurrent: true,
+        });
         const unit = sj.satuan_unit_name || sj.satuan_unit || "Meter";
         const total = (left || []).reduce((sum, r) => {
-          return sum + (unit === "Meter" ? toNum(r.available_meter) : toNum(r.available_yard));
+          return (
+            sum +
+            (unit === "Meter"
+              ? toNum(r.available_meter)
+              : toNum(r.available_yard))
+          );
         }, 0);
         return { ...sj, __available_total__: total };
       } catch {
@@ -158,7 +174,9 @@ export default function ReturKainJadiForm() {
     setLoading(true);
     try {
       const allSP = await getAllKJDeliveryNotes(user?.token);
-      const rawList = Array.isArray(allSP?.suratJalans) ? allSP.suratJalans : [];
+      const rawList = Array.isArray(allSP?.suratJalans)
+        ? allSP.suratJalans
+        : [];
       const list = await annotateWithAvailableTotal(rawList, user?.token); // ⬅️ untuk hide HABIS
       setSpOptions(list);
 
@@ -236,20 +254,31 @@ export default function ReturKainJadiForm() {
     const sjResponse = await getKJDeliveryNotes(id, user?.token);
     const sj = sjResponse?.suratJalan;
     if (!sj) {
-      Swal.fire({ icon: "error", title: "Error", text: "Data Surat Penerimaan tidak ditemukan.", showConfirmButton: false, timer: 1500, timerProgressBar: true });
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Data Surat Penerimaan tidak ditemukan.",
+        showConfirmButton: false,
+        timer: 1500,
+        timerProgressBar: true,
+      });
       return;
     }
     setDeliveryNoteData({ ...sj });
 
     // Hitung sisa dari retur-retur sebelumnya (tanpa retur saat ini)
-    const left = await computeAvailableForSJ(sj.id, user?.token, { includeCurrent: false });
+    const left = await computeAvailableForSJ(sj.id, user?.token, {
+      includeCurrent: false,
+    });
     setAvailableItems(left);
 
     setForm((prev) => ({
       ...prev,
       no_sj_supplier: sj.no_sj_supplier || "",
       alamat_pengiriman: sj.supplier_alamat || "",
-      tanggal_kirim: sj.tanggal_kirim ? new Date(sj.tanggal_kirim).toISOString().split("T")[0] : "",
+      tanggal_kirim: sj.tanggal_kirim
+        ? new Date(sj.tanggal_kirim).toISOString().split("T")[0]
+        : "",
       unit: sj.satuan_unit_name || sj.satuan_unit || "Meter",
       itemGroups: (sj.items || []).map(mapToItemGroupFromSJ),
     }));
@@ -259,7 +288,14 @@ export default function ReturKainJadiForm() {
     const res = await getFinishRetur(id, user?.token);
     const detail = Array.isArray(res?.data) ? res.data[0] : res?.data;
     if (!detail) {
-      Swal.fire({ icon: "error", title: "Error", text: "Data Retur tidak ditemukan.", showConfirmButton: false, timer: 1500, timerProgressBar: true });
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Data Retur tidak ditemukan.",
+        showConfirmButton: false,
+        timer: 1500,
+        timerProgressBar: true,
+      });
       return;
     }
 
@@ -286,7 +322,9 @@ export default function ReturKainJadiForm() {
       no_retur: detail.no_retur || "",
       no_sj_supplier: detail.no_sj_supplier || "",
       alamat_pengiriman: detail.supplier_alamat || "",
-      tanggal_kirim: detail.tanggal_kirim ? new Date(detail.tanggal_kirim).toISOString().split("T")[0] : "",
+      tanggal_kirim: detail.tanggal_kirim
+        ? new Date(detail.tanggal_kirim).toISOString().split("T")[0]
+        : "",
       unit: detail.satuan_unit_name || detail.satuan_unit || "Meter",
       keterangan_retur: detail.keterangan_retur || "",
       itemGroups: (detail.items || []).map(mapToItemGroupFromRetur),
@@ -300,7 +338,14 @@ export default function ReturKainJadiForm() {
       await prefillFromSPId(sj.id);
     } catch (err) {
       console.error(err);
-      Swal.fire({ icon: "error", title: "Gagal memuat detail Surat Penerimaan", text: err?.message || "", showConfirmButton: false, timer: 1500, timerProgressBar: true });
+      Swal.fire({
+        icon: "error",
+        title: "Gagal memuat detail Surat Penerimaan",
+        text: err?.message || "",
+        showConfirmButton: false,
+        timer: 1500,
+        timerProgressBar: true,
+      });
     } finally {
       setLoading(false);
     }
@@ -310,28 +355,45 @@ export default function ReturKainJadiForm() {
   const handleGenerateNoRetur = async () => {
     try {
       const ppnValue = Number(deliveryNoteData()?.ppn_percent || 0);
-      const seq = await getLastSequence(user?.token, "kj_r", "domestik", ppnValue);
+      const seq = await getLastSequence(
+        user?.token,
+        "kj_r",
+        "domestik",
+        ppnValue
+      );
       const nextNum = String((seq?.last_sequence || 0) + 1).padStart(5, "0");
       const now = new Date();
       const mm = String(now.getMonth() + 1).padStart(2, "0");
       const yy = String(now.getFullYear()).slice(2);
       const flag = ppnValue > 0 ? "P" : "N";
-      setForm((prev) => ({ ...prev, no_retur: `RT/KJ/${flag}/${mm}${yy}-${nextNum}` }));
+      setForm((prev) => ({
+        ...prev,
+        no_retur: `RT/KJ/${flag}/${mm}${yy}-${nextNum}`,
+      }));
     } catch (e) {
       console.error(e);
-      Swal.fire({ icon: "error", title: "Tidak bisa generate No Retur", text: e?.message || "", showConfirmButton: false, timer: 1500, timerProgressBar: true });
+      Swal.fire({
+        icon: "error",
+        title: "Tidak bisa generate No Retur",
+        text: e?.message || "",
+        showConfirmButton: false,
+        timer: 1500,
+        timerProgressBar: true,
+      });
     }
   };
 
   async function addMoreItemsFromSJ() {
     try {
       const sj_id =
-        selectedSJId() ||
-        deliveryNoteData()?.sj_id ||
-        deliveryNoteData()?.id;
+        selectedSJId() || deliveryNoteData()?.sj_id || deliveryNoteData()?.id;
 
       if (!sj_id) {
-        await Swal.fire("Tidak bisa", "Surat Penerimaan belum dipilih.", "warning");
+        await Swal.fire(
+          "Tidak bisa",
+          "Surat Penerimaan belum dipilih.",
+          "warning"
+        );
         return;
       }
 
@@ -341,11 +403,10 @@ export default function ReturKainJadiForm() {
       const sjItems = (sj?.items || []).filter((it) => !it?.deleted_at);
 
       // 2) Hitung item yang masih tersedia (exclude retur yang sedang diedit)
-      const available = await computeAvailableForSJ(
-        sj_id,
-        user?.token,
-        { includeCurrent: false, currentReturId: returId }
-      );
+      const available = await computeAvailableForSJ(sj_id, user?.token, {
+        includeCurrent: false,
+        currentReturId: returId,
+      });
 
       // Set sj_item_id yang masih punya sisa > 0
       const unit = sj?.satuan_unit_name || sj?.satuan_unit || "Meter";
@@ -360,15 +421,22 @@ export default function ReturKainJadiForm() {
       );
 
       // 3) Hindari duplikasi: kumpulkan sj_item_id yang sudah ada di retur sekarang
-      const existingSet = new Set((form().itemGroups || []).map((g) => Number(g.sj_item_id)));
+      const existingSet = new Set(
+        (form().itemGroups || []).map((g) => Number(g.sj_item_id))
+      );
 
       // 4) Kandidat = item SJ yang masih available & belum ada di tabel
       const candidates = sjItems.filter(
-        (it) => availableSet.has(Number(it.id)) && !existingSet.has(Number(it.id))
+        (it) =>
+          availableSet.has(Number(it.id)) && !existingSet.has(Number(it.id))
       );
 
       if (candidates.length === 0) {
-        await Swal.fire("Info", "Tidak ada item tersedia untuk ditambahkan.", "info");
+        await Swal.fire(
+          "Info",
+          "Tidak ada item tersedia untuk ditambahkan.",
+          "info"
+        );
         return;
       }
 
@@ -389,7 +457,11 @@ export default function ReturKainJadiForm() {
       }));
     } catch (err) {
       console.error(err);
-      await Swal.fire("Gagal", err?.message || "Tidak bisa menambahkan item dari SJ.", "error");
+      await Swal.fire(
+        "Gagal",
+        err?.message || "Tidak bisa menambahkan item dari SJ.",
+        "error"
+      );
     }
   }
 
@@ -397,7 +469,8 @@ export default function ReturKainJadiForm() {
     setForm((prev) => {
       const arr = [...prev.itemGroups];
       const [removed] = arr.splice(index, 1);
-      if (removed?.retur_item_id) setDeletedItems((d) => [...d, removed.retur_item_id]);
+      if (removed?.retur_item_id)
+        setDeletedItems((d) => [...d, removed.retur_item_id]);
       return { ...prev, itemGroups: arr };
     });
   };
@@ -407,7 +480,10 @@ export default function ReturKainJadiForm() {
     const v = Number(num);
     if (Number.isNaN(v)) return "";
     if (v === 0) return "0";
-    return new Intl.NumberFormat("id-ID", { minimumFractionDigits: decimals, maximumFractionDigits: decimals }).format(v);
+    return new Intl.NumberFormat("id-ID", {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    }).format(v);
   };
   const parseNumber = (str) => {
     if (typeof str !== "string" || !str) return 0;
@@ -417,7 +493,11 @@ export default function ReturKainJadiForm() {
   const formatHarga = (val) =>
     val === null || val === ""
       ? ""
-      : new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 2 }).format(val);
+      : new Intl.NumberFormat("id-ID", {
+          style: "currency",
+          currency: "IDR",
+          maximumFractionDigits: 2,
+        }).format(val);
 
   const handleQuantityChange = (index, value) => {
     const unit = form().unit;
@@ -467,10 +547,32 @@ export default function ReturKainJadiForm() {
     });
 
   /* ===== Submit ===== */
+
+  const handleKeyDown = (e) => {
+    const tag = e.target.tagName;
+    const type = e.target.type;
+
+    if (
+      e.key === "Enter" &&
+      tag !== "TEXTAREA" &&
+      type !== "submit" &&
+      type !== "button"
+    ) {
+      e.preventDefault();
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!selectedSJId()) {
-      Swal.fire({ icon: "error", title: "Gagal", text: "Pilih Surat Penerimaan terlebih dahulu.", showConfirmButton: false, timer: 1500, timerProgressBar: true });
+      Swal.fire({
+        icon: "error",
+        title: "Gagal",
+        text: "Pilih Surat Penerimaan terlebih dahulu.",
+        showConfirmButton: false,
+        timer: 1500,
+        timerProgressBar: true,
+      });
       return;
     }
     if (!form().no_retur?.trim() && !returId) {
@@ -478,12 +580,28 @@ export default function ReturKainJadiForm() {
       if (!form().no_retur?.trim()) return;
     }
     if (form().itemGroups.length === 0) {
-      Swal.fire({ icon: "error", title: "Gagal", text: "Harap tambahkan minimal satu item.", showConfirmButton: false, timer: 1500, timerProgressBar: true });
+      Swal.fire({
+        icon: "error",
+        title: "Gagal",
+        text: "Harap tambahkan minimal satu item.",
+        showConfirmButton: false,
+        timer: 1500,
+        timerProgressBar: true,
+      });
       return;
     }
-    const hasQty = form().itemGroups.some((g) => Number(g.meter_total) > 0 || Number(g.yard_total) > 0);
+    const hasQty = form().itemGroups.some(
+      (g) => Number(g.meter_total) > 0 || Number(g.yard_total) > 0
+    );
     if (!hasQty) {
-      Swal.fire({ icon: "error", title: "Gagal", text: "Jumlah (meter/yard) masih 0 semua.", showConfirmButton: false, timer: 1500, timerProgressBar: true });
+      Swal.fire({
+        icon: "error",
+        title: "Gagal",
+        text: "Jumlah (meter/yard) masih 0 semua.",
+        showConfirmButton: false,
+        timer: 1500,
+        timerProgressBar: true,
+      });
       return;
     }
 
@@ -497,21 +615,53 @@ export default function ReturKainJadiForm() {
     try {
       if (returId) {
         await updateDataFinishRetur(user?.token, returId, payload);
-        await Swal.fire({ icon: "success", title: "Berhasil diubah", text: "Retur Kain Jadi berhasil diupdate!", showConfirmButton: false, timer: 1000, timerProgressBar: true });
+        await Swal.fire({
+          icon: "success",
+          title: "Berhasil diubah",
+          text: "Retur Kain Jadi berhasil diupdate!",
+          showConfirmButton: false,
+          timer: 1000,
+          timerProgressBar: true,
+        });
       } else {
         await createFinishRetur(user?.token, payload);
-        await Swal.fire({ icon: "success", title: "Berhasil disimpan", text: "Retur Kain Jadi berhasil disimpan!", showConfirmButton: false, timer: 1000, timerProgressBar: true });
+        await Swal.fire({
+          icon: "success",
+          title: "Berhasil disimpan",
+          text: "Retur Kain Jadi berhasil disimpan!",
+          showConfirmButton: false,
+          timer: 1000,
+          timerProgressBar: true,
+        });
       }
       navigate("/retur-kainjadi");
     } catch (err) {
       console.error(err);
-      Swal.fire({ icon: "error", title: "Gagal", text: err?.message || (returId ? "Gagal mengubah Retur Kain Jadi." : "Gagal menyimpan Retur Kain Jadi."), showConfirmButton: false, timer: 1500, timerProgressBar: true });
+      Swal.fire({
+        icon: "error",
+        title: "Gagal",
+        text:
+          err?.message ||
+          (returId
+            ? "Gagal mengubah Retur Kain Jadi."
+            : "Gagal menyimpan Retur Kain Jadi."),
+        showConfirmButton: false,
+        timer: 1500,
+        timerProgressBar: true,
+      });
     }
   };
 
   function handlePrint() {
     if (!deliveryNoteData()) {
-      Swal.fire({ icon: "error", title: "Gagal", text: "Pilih data dulu untuk cetak.", showConfirmButton: false, timer: 1500, timerProgressBar: true });
+      Swal.fire({
+        icon: "error",
+        title: "Gagal",
+        text: "Pilih data dulu untuk cetak.",
+        showConfirmButton: false,
+        timer: 1500,
+        timerProgressBar: true,
+      });
       return;
     }
     const dataToPrint = { ...deliveryNoteData() };
@@ -545,13 +695,17 @@ export default function ReturKainJadiForm() {
         <Printer size={20} /> Print
       </button>
 
-      <form class="space-y-4" onSubmit={handleSubmit}>
+      <form class="space-y-4" onSubmit={handleSubmit} onkeydown={handleKeyDown}>
         {/* Row 1 */}
         <div class="grid grid-cols-3 gap-4">
           <div>
             <label class="block text-sm mb-1">No Retur</label>
             <div class="flex gap-2">
-              <input class="w-full border p-2 rounded bg-gray-200" value={form().no_retur} disabled />
+              <input
+                class="w-full border p-2 rounded bg-gray-200"
+                value={form().no_retur}
+                disabled
+              />
               <button
                 type="button"
                 class="bg-gray-300 text-sm px-2 rounded hover:bg-gray-400"
@@ -573,13 +727,17 @@ export default function ReturKainJadiForm() {
               showLots
               disabled={isView || !!returId}
               placeholder="Pilih Surat Penerimaan…"
-              excludeZeroAvailable   // ⬅️ hide SP yang total available = 0
+              excludeZeroAvailable // ⬅️ hide SP yang total available = 0
             />
           </div>
 
           <div>
             <label class="block text-sm mb-1">No Surat Jalan Supplier</label>
-            <input class="w-full border p-2 rounded bg-gray-200" value={form().no_sj_supplier} disabled />
+            <input
+              class="w-full border p-2 rounded bg-gray-200"
+              value={form().no_sj_supplier}
+              disabled
+            />
           </div>
         </div>
 
@@ -587,11 +745,20 @@ export default function ReturKainJadiForm() {
         <div class="grid grid-cols-3 gap-4">
           <div class="col-span-1">
             <label class="block text-sm mb-1">Alamat Pengiriman</label>
-            <input class="w-full border p-2 rounded bg-gray-200" value={form().alamat_pengiriman} disabled />
+            <input
+              class="w-full border p-2 rounded bg-gray-200"
+              value={form().alamat_pengiriman}
+              disabled
+            />
           </div>
           <div>
             <label class="block text-sm mb-1">Tanggal Pengiriman</label>
-            <input type="date" class="w-full border p-2 rounded bg-gray-200" value={form().tanggal_kirim} disabled />
+            <input
+              type="date"
+              class="w-full border p-2 rounded bg-gray-200"
+              value={form().tanggal_kirim}
+              disabled
+            />
           </div>
         </div>
 
@@ -601,7 +768,9 @@ export default function ReturKainJadiForm() {
           <textarea
             class="w-full border p-2 rounded"
             value={form().keterangan_retur}
-            onInput={(e) => setForm({ ...form(), keterangan_retur: e.target.value })}
+            onInput={(e) =>
+              setForm({ ...form(), keterangan_retur: e.target.value })
+            }
             disabled={isView}
             classList={{ "bg-gray-200": isView }}
             placeholder="Tulis catatan retur"
@@ -611,32 +780,45 @@ export default function ReturKainJadiForm() {
         {/* PREVIEW Available */}
         <Show when={deliveryNoteData()}>
           {() => {
-            const unit = deliveryNoteData()?.satuan_unit_name || form().unit || "Meter";
+            const unit =
+              deliveryNoteData()?.satuan_unit_name || form().unit || "Meter";
             const items = availableItems();
             return (
               <div class="border p-3 rounded my-4 bg-gray-50">
                 <h3 class="text-md font-bold mb-2 text-gray-700">
-                  Quantity Kain pada Surat Penerimaan{returId ? " (Available)" : ""}:
+                  Quantity Kain pada Surat Penerimaan
+                  {returId ? " (Available)" : ""}:
                 </h3>
                 <ul class="space-y-1 pl-5">
                   <For each={items}>
                     {(row) => {
-                      const sisa = unit === "Meter" ? toNum(row.available_meter ?? row.meter_awal) : toNum(row.available_yard ?? row.yard_awal);
-                      const awal = unit === "Meter" ? toNum(row.meter_awal) : toNum(row.yard_awal);
+                      const sisa =
+                        unit === "Meter"
+                          ? toNum(row.available_meter ?? row.meter_awal)
+                          : toNum(row.available_yard ?? row.yard_awal);
+                      const awal =
+                        unit === "Meter"
+                          ? toNum(row.meter_awal)
+                          : toNum(row.yard_awal);
                       const satuan = unit === "Meter" ? "m" : "yd";
                       const habis = sisa <= 0;
 
                       return (
                         <li class="text-sm list-disc">
                           <span class="font-semibold">
-                            {(row.corak_kain || "N/A")} | {(row.konstruksi_kain || "")}
+                            {row.corak_kain || "N/A"} |{" "}
+                            {row.konstruksi_kain || ""}
                           </span>{" "}
                           - Quantity:{" "}
                           {habis ? (
                             <span class="font-bold text-red-600">HABIS</span>
                           ) : (
                             <span class="font-bold text-blue-600">
-                              {returId ? `${formatNumber(sisa)} / ${formatNumber(awal)} ${satuan}` : `${formatNumber(sisa)} ${satuan}`}
+                              {returId
+                                ? `${formatNumber(sisa)} / ${formatNumber(
+                                    awal
+                                  )} ${satuan}`
+                                : `${formatNumber(sisa)} ${satuan}`}
                             </span>
                           )}
                         </li>
@@ -675,9 +857,15 @@ export default function ReturKainJadiForm() {
                 <th class="border p-2 w-50">{form().unit}</th>
                 <th class="border p-2 w-32">Gulung</th>
                 <th class="border p-2 w-32">Lot</th>
-                <th hidden class="border p-2 w-48">Harga Greige</th>
-                <th hidden class="border p-2 w-48">Harga Celup</th>
-                <th hidden class="border p-2 w-48">Subtotal</th>
+                <th hidden class="border p-2 w-48">
+                  Harga Greige
+                </th>
+                <th hidden class="border p-2 w-48">
+                  Harga Celup
+                </th>
+                <th hidden class="border p-2 w-48">
+                  Subtotal
+                </th>
                 <th class="border p-2 w-48">Aksi</th>
               </tr>
             </thead>
@@ -685,7 +873,10 @@ export default function ReturKainJadiForm() {
               <Show when={form().itemGroups.length > 0}>
                 <For each={form().itemGroups}>
                   {(group, i) => {
-                    const qty = form().unit === "Meter" ? group.meter_total : group.yard_total;
+                    const qty =
+                      form().unit === "Meter"
+                        ? group.meter_total
+                        : group.yard_total;
                     const hg = Number(group.item_details?.harga_greige) || 0;
                     const hm = Number(group.item_details?.harga_maklun) || 0;
                     const subtotal = (hg + hm) * (Number(qty) || 0);
@@ -694,23 +885,45 @@ export default function ReturKainJadiForm() {
                       <tr>
                         <td class="border p-2 text-center">{i() + 1}</td>
                         <td class="border w-72 p-2">
-                          <input class="border p-1 rounded w-full bg-gray-200" value={`${group.item_details?.corak_kain || ""} | ${group.item_details?.konstruksi_kain || ""}`} disabled />
+                          <input
+                            class="border p-1 rounded w-full bg-gray-200"
+                            value={`${group.item_details?.corak_kain || ""} | ${
+                              group.item_details?.konstruksi_kain || ""
+                            }`}
+                            disabled
+                          />
                         </td>
                         <td class="border p-2">
-                          <input class="border p-1 rounded w-full bg-gray-200" value={group.item_details?.deskripsi_warna} disabled />
+                          <input
+                            class="border p-1 rounded w-full bg-gray-200"
+                            value={group.item_details?.deskripsi_warna}
+                            disabled
+                          />
                         </td>
                         <td class="border p-2">
-                          <input type="number" class="border p-1 rounded w-full bg-gray-200" value={group.item_details?.lebar_greige} disabled />
+                          <input
+                            type="number"
+                            class="border p-1 rounded w-full bg-gray-200"
+                            value={group.item_details?.lebar_greige}
+                            disabled
+                          />
                         </td>
                         <td class="border p-2">
-                          <input type="number" class="border p-1 rounded w-full bg-gray-200" value={group.item_details?.lebar_finish} disabled />
+                          <input
+                            type="number"
+                            class="border p-1 rounded w-full bg-gray-200"
+                            value={group.item_details?.lebar_finish}
+                            disabled
+                          />
                         </td>
                         <td class="border p-2">
                           <input
                             type="text"
                             class="w-full border p-2 rounded text-right"
                             value={formatNumber(qty)}
-                            onBlur={(e) => handleQuantityChange(i(), e.target.value)}
+                            onBlur={(e) =>
+                              handleQuantityChange(i(), e.target.value)
+                            }
                             disabled={isView}
                             classList={{ "bg-gray-200": isView }}
                           />
@@ -721,7 +934,9 @@ export default function ReturKainJadiForm() {
                             placeholder="Banyak gulung…"
                             class="w-full border p-2 rounded text-right"
                             value={group.gulung ?? 0}
-                            onBlur={(e) => handleGulungChange(i(), e.target.value)}
+                            onBlur={(e) =>
+                              handleGulungChange(i(), e.target.value)
+                            }
                             disabled={isView}
                             classList={{ "bg-gray-200": isView }}
                           />
@@ -738,13 +953,29 @@ export default function ReturKainJadiForm() {
                           />
                         </td>
                         <td hidden class="border p-2 text-right">
-                          <input class="w-full border p-2 rounded text-right" value={formatHarga(group.item_details?.harga_greige)} disabled />
+                          <input
+                            class="w-full border p-2 rounded text-right"
+                            value={formatHarga(
+                              group.item_details?.harga_greige
+                            )}
+                            disabled
+                          />
                         </td>
                         <td hidden class="border p-2 text-right">
-                          <input class="w-full border p-2 rounded text-right" value={formatHarga(group.item_details?.harga_maklun)} disabled />
+                          <input
+                            class="w-full border p-2 rounded text-right"
+                            value={formatHarga(
+                              group.item_details?.harga_maklun
+                            )}
+                            disabled
+                          />
                         </td>
                         <td hidden class="border p-2 text-right font-semibold">
-                          <input class="w-full border p-2 rounded text-right" value={formatHarga(subtotal)} disabled />
+                          <input
+                            class="w-full border p-2 rounded text-right"
+                            value={formatHarga(subtotal)}
+                            disabled
+                          />
                         </td>
                         <td class="border p-2 text-center">
                           <button
@@ -764,11 +995,17 @@ export default function ReturKainJadiForm() {
             </tbody>
             <tfoot>
               <tr class="font-bold bg-gray-100">
-                <td colSpan="5" class="text-right p-2 border-t border-gray-300">TOTAL</td>
-                <td class="border p-2 text-right">
-                  {form().unit === "Meter" ? formatNumber(totalMeter(), 2) : formatNumber(totalYard(), 2)}
+                <td colSpan="5" class="text-right p-2 border-t border-gray-300">
+                  TOTAL
                 </td>
-                <td hidden class="border p-2 text-right">{/* {formatHarga(totalAll())} */}</td>
+                <td class="border p-2 text-right">
+                  {form().unit === "Meter"
+                    ? formatNumber(totalMeter(), 2)
+                    : formatNumber(totalYard(), 2)}
+                </td>
+                <td hidden class="border p-2 text-right">
+                  {/* {formatHarga(totalAll())} */}
+                </td>
                 <td hidden class="border-t border-gray-300"></td>
                 <td class="border-t border-gray-300" colSpan="3"></td>
               </tr>
@@ -777,7 +1014,11 @@ export default function ReturKainJadiForm() {
         </div>
 
         <div class="mt-6">
-          <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700" hidden={isView}>
+          <button
+            type="submit"
+            class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            hidden={isView}
+          >
             {returId ? "Update" : "Simpan"}
           </button>
         </div>

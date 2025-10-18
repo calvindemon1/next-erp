@@ -37,7 +37,8 @@ const parseNumber = (str) => {
 };
 
 const isDelivered = (row) => {
-  const v = row?.delivered_status ?? row?.is_invoiced ?? row?.invoice_issued ?? 0;
+  const v =
+    row?.delivered_status ?? row?.is_invoiced ?? row?.invoice_issued ?? 0;
   if (typeof v === "string") return v === "1" || v.toLowerCase() === "true";
   if (typeof v === "number") return v === 1;
   return !!v;
@@ -79,11 +80,13 @@ export default function ReturJualBeliForm() {
       const list = Array.isArray(sameSJ[0]?.itemLeft) ? sameSJ[0].itemLeft : [];
 
       // filter supaya hanya yang qty-nya masih ada
-      const unit = deliveryNoteData()?.satuan_unit_name || form().unit || "Meter";
+      const unit =
+        deliveryNoteData()?.satuan_unit_name || form().unit || "Meter";
       const filtered = list.filter((row) => {
-        const qty = unit === "Meter"
-          ? toNum(row.available_meter ?? row.meter_awal)
-          : toNum(row.available_yard ?? row.yard_awal);
+        const qty =
+          unit === "Meter"
+            ? toNum(row.available_meter ?? row.meter_awal)
+            : toNum(row.available_yard ?? row.yard_awal);
         return qty > 0;
       });
 
@@ -105,7 +108,8 @@ export default function ReturJualBeliForm() {
     const allReturs = (rRes && Array.isArray(rRes.data) && rRes.data) || [];
     const sameSJReturs = allReturs.filter((r) => {
       if (String(r.sj_id) !== String(sjId)) return false;
-      if (!includeCurrent && returId && String(r.id) === String(returId)) return false;
+      if (!includeCurrent && returId && String(r.id) === String(returId))
+        return false;
       return true;
     });
 
@@ -118,7 +122,7 @@ export default function ReturJualBeliForm() {
         const prev = returnedBySJItem.get(key) || { meter: 0, yard: 0 };
         returnedBySJItem.set(key, {
           meter: prev.meter + toNum(it.meter_total),
-          yard:  prev.yard  + toNum(it.yard_total),
+          yard: prev.yard + toNum(it.yard_total),
         });
       }
     }
@@ -128,9 +132,9 @@ export default function ReturJualBeliForm() {
       const key = it.id;
       const ret = returnedBySJItem.get(key) || { meter: 0, yard: 0 };
       const meterAwal = toNum(it.meter_total);
-      const yardAwal  = toNum(it.yard_total);
+      const yardAwal = toNum(it.yard_total);
       const available_meter = Math.max(meterAwal - ret.meter, 0);
-      const available_yard  = Math.max(yardAwal  - ret.yard,  0);
+      const available_yard = Math.max(yardAwal - ret.yard, 0);
 
       return {
         sj_item_id: key,
@@ -157,10 +161,15 @@ export default function ReturJualBeliForm() {
     if (!sj) return 0;
 
     const unitName = sj?.satuan_unit_name || sj?.satuan_unit || "Meter";
-    const itemsAvail = await computeAvailableForSJ(sjId, { includeCurrent: false });
+    const itemsAvail = await computeAvailableForSJ(sjId, {
+      includeCurrent: false,
+    });
 
     const total = itemsAvail.reduce((sum, row) => {
-      const v = unitName === "Meter" ? toNum(row.available_meter) : toNum(row.available_yard);
+      const v =
+        unitName === "Meter"
+          ? toNum(row.available_meter)
+          : toNum(row.available_yard);
       return sum + v;
     }, 0);
 
@@ -182,12 +191,14 @@ export default function ReturJualBeliForm() {
   async function addMoreItemsFromSJ() {
     try {
       const sj_id =
-        selectedSJId() ||
-        deliveryNoteData()?.sj_id ||
-        deliveryNoteData()?.id;
+        selectedSJId() || deliveryNoteData()?.sj_id || deliveryNoteData()?.id;
 
       if (!sj_id) {
-        await Swal.fire("Tidak bisa", "Surat Penerimaan belum dipilih.", "warning");
+        await Swal.fire(
+          "Tidak bisa",
+          "Surat Penerimaan belum dipilih.",
+          "warning"
+        );
         return;
       }
 
@@ -197,7 +208,9 @@ export default function ReturJualBeliForm() {
       const sjItems = (sj?.items || []).filter((it) => !it?.deleted_at);
 
       // 2) Hitung item yang masih tersedia (exclude retur yang sedang diedit)
-      const available = await computeAvailableForSJ(sj_id, { includeCurrent: false });
+      const available = await computeAvailableForSJ(sj_id, {
+        includeCurrent: false,
+      });
 
       // Buat set sj_item_id yang available > 0
       const availableSet = new Set(
@@ -217,7 +230,11 @@ export default function ReturJualBeliForm() {
       );
 
       if (candidates.length === 0) {
-        await Swal.fire("Info", "Tidak ada item tersedia untuk ditambahkan.", "info");
+        await Swal.fire(
+          "Info",
+          "Tidak ada item tersedia untuk ditambahkan.",
+          "info"
+        );
         return;
       }
 
@@ -236,10 +253,13 @@ export default function ReturJualBeliForm() {
         ...prev,
         itemGroups: [...prev.itemGroups, ...newRows],
       }));
-
     } catch (err) {
       console.error(err);
-      await Swal.fire("Gagal", err?.message || "Tidak bisa menambahkan item dari SJ.", "error");
+      await Swal.fire(
+        "Gagal",
+        err?.message || "Tidak bisa menambahkan item dari SJ.",
+        "error"
+      );
     }
   }
 
@@ -269,10 +289,11 @@ export default function ReturJualBeliForm() {
   // Dari SP → baris tabel (CREATE)
   function mapToItemGroupFromSJ(group) {
     return {
-      id: group.id,               // legacy untuk UI
-      sj_item_id: group.id,       // penting untuk payload
-      retur_item_id: null,        // belum ada saat create
-      purchase_order_item_id: group.jb_item_id ?? group.purchase_order_item_id ?? null,
+      id: group.id, // legacy untuk UI
+      sj_item_id: group.id, // penting untuk payload
+      retur_item_id: null, // belum ada saat create
+      purchase_order_item_id:
+        group.jb_item_id ?? group.purchase_order_item_id ?? null,
       item_details: {
         corak_kain: group.corak_kain ?? "N/A",
         konstruksi_kain: group.konstruksi_kain ?? "",
@@ -293,7 +314,8 @@ export default function ReturJualBeliForm() {
       id: it.sj_item_id ?? it.id,
       sj_item_id: it.sj_item_id ?? it.id,
       retur_item_id: it.id ?? null,
-      purchase_order_item_id: it.po_item_id ?? it.purchase_order_item_id ?? null,
+      purchase_order_item_id:
+        it.po_item_id ?? it.purchase_order_item_id ?? null,
       item_details: {
         corak_kain: it.corak_kain ?? "N/A",
         konstruksi_kain: it.konstruksi_kain ?? "",
@@ -313,7 +335,11 @@ export default function ReturJualBeliForm() {
     const sjResponse = await getJBDeliveryNotes(id, user?.token);
     const sj = sjResponse?.suratJalan || sjResponse?.order || sjResponse;
     if (!sj) {
-      Swal.fire("Error", "Data Surat Penerimaan Jual Beli tidak ditemukan.", "error");
+      Swal.fire(
+        "Error",
+        "Data Surat Penerimaan Jual Beli tidak ditemukan.",
+        "error"
+      );
       return;
     }
     setDeliveryNoteData({ ...sj });
@@ -325,9 +351,13 @@ export default function ReturJualBeliForm() {
       alamat_pengiriman: sj.supplier_alamat || sj.alamat_pengiriman || "",
       tanggal_kirim: sj.tanggal_kirim
         ? new Date(sj.tanggal_kirim).toISOString().split("T")[0]
-        : (sj.created_at ? new Date(sj.created_at).toISOString().split("T")[0] : ""),
+        : sj.created_at
+        ? new Date(sj.created_at).toISOString().split("T")[0]
+        : "",
       unit: unitName,
-      itemGroups: (sj.items || []).filter((g) => !g?.deleted_at).map(mapToItemGroupFromSJ),
+      itemGroups: (sj.items || [])
+        .filter((g) => !g?.deleted_at)
+        .map(mapToItemGroupFromSJ),
     }));
   }
 
@@ -345,7 +375,9 @@ export default function ReturJualBeliForm() {
     setSelectedSJId(detail.sj_id ?? null);
 
     if (detail.sj_id) {
-      const avail = await computeAvailableForSJ(detail.sj_id, { includeCurrent: true });
+      const avail = await computeAvailableForSJ(detail.sj_id, {
+        includeCurrent: true,
+      });
       setAvailableItems(avail);
     } else {
       setAvailableItems([]);
@@ -355,7 +387,8 @@ export default function ReturJualBeliForm() {
       ...prev,
       no_retur: detail.no_retur || "",
       no_sj_supplier: detail.no_sj_supplier || detail.no_sj || "",
-      alamat_pengiriman: detail.supplier_alamat || detail.alamat_pengiriman || "",
+      alamat_pengiriman:
+        detail.supplier_alamat || detail.alamat_pengiriman || "",
       tanggal_kirim: detail.tanggal_kirim
         ? new Date(detail.tanggal_kirim).toISOString().split("T")[0]
         : "",
@@ -369,20 +402,30 @@ export default function ReturJualBeliForm() {
   const handleSuratPenerimaanChange = async (sj) => {
     try {
       if (!isDelivered(sj)) {
-        await Swal.fire("Tidak bisa", "Retur hanya untuk SP yang sudah di-invoice.", "warning");
+        await Swal.fire(
+          "Tidak bisa",
+          "Retur hanya untuk SP yang sudah di-invoice.",
+          "warning"
+        );
         setSelectedSJId(null);
         setDeliveryNoteData(null);
         return;
       }
       setSelectedSJId(sj?.id ?? null);
       if (!sj?.id) return;
-      
-      await prefillFromSPId(sj.id);                 // isi header + itemGroups
-      const avail = await computeAvailableForSJ(sj.id, { includeCurrent: false });
-      setAvailableItems(avail);                    // panel "Available" sudah per-SJ
+
+      await prefillFromSPId(sj.id); // isi header + itemGroups
+      const avail = await computeAvailableForSJ(sj.id, {
+        includeCurrent: false,
+      });
+      setAvailableItems(avail); // panel "Available" sudah per-SJ
     } catch (err) {
       console.error(err);
-      Swal.fire("Error", err?.message || "Gagal memuat detail Surat Penerimaan.", "error");
+      Swal.fire(
+        "Error",
+        err?.message || "Gagal memuat detail Surat Penerimaan.",
+        "error"
+      );
     } finally {
       setLoading(false);
     }
@@ -412,7 +455,9 @@ export default function ReturJualBeliForm() {
       if (sjId) {
         await prefillFromSPId(sjId);
         setSelectedSJId(sjId);
-        const avail = await computeAvailableForSJ(sjId, { includeCurrent: false });
+        const avail = await computeAvailableForSJ(sjId, {
+          includeCurrent: false,
+        });
         setAvailableItems(avail);
       }
     } catch (err) {
@@ -427,7 +472,11 @@ export default function ReturJualBeliForm() {
   const handleGenerateNoRetur = async () => {
     try {
       if (!deliveryNoteData()) {
-        await Swal.fire("Tidak bisa", "Pilih Surat Penerimaan dulu.", "warning");
+        await Swal.fire(
+          "Tidak bisa",
+          "Pilih Surat Penerimaan dulu.",
+          "warning"
+        );
         return;
       }
 
@@ -441,7 +490,12 @@ export default function ReturJualBeliForm() {
         ) || 0;
 
       // Ikuti pola form lain: kode = "jb_r", region "domestik", kirim nilai PPN
-      const seq = await getLastSequence(user?.token, "jb_r", "domestik", ppnValue);
+      const seq = await getLastSequence(
+        user?.token,
+        "jb_r",
+        "domestik",
+        ppnValue
+      );
       const nextNum = String((seq?.last_sequence || 0) + 1).padStart(5, "0");
 
       const now = new Date();
@@ -453,7 +507,11 @@ export default function ReturJualBeliForm() {
       setForm((prev) => ({ ...prev, no_retur: nomor }));
     } catch (e) {
       console.error(e);
-      Swal.fire("Gagal", e?.message || "Tidak bisa generate No Retur.", "error");
+      Swal.fire(
+        "Gagal",
+        e?.message || "Tidak bisa generate No Retur.",
+        "error"
+      );
     }
   };
 
@@ -498,7 +556,8 @@ export default function ReturJualBeliForm() {
     setForm((prev) => {
       const arr = [...prev.itemGroups];
       const [removed] = arr.splice(index, 1);
-      if (removed?.retur_item_id) setDeletedItems((d) => [...d, removed.retur_item_id]);
+      if (removed?.retur_item_id)
+        setDeletedItems((d) => [...d, removed.retur_item_id]);
       return { ...prev, itemGroups: arr };
     });
   };
@@ -518,6 +577,21 @@ export default function ReturJualBeliForm() {
     });
 
   /* ===================== SUBMIT ===================== */
+
+  const handleKeyDown = (e) => {
+    const tag = e.target.tagName;
+    const type = e.target.type;
+
+    if (
+      e.key === "Enter" &&
+      tag !== "TEXTAREA" &&
+      type !== "submit" &&
+      type !== "button"
+    ) {
+      e.preventDefault();
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -581,7 +655,11 @@ export default function ReturJualBeliForm() {
       Swal.fire({
         icon: "error",
         title: "Gagal",
-        text: err?.message || (returId ? "Gagal mengubah Retur Jual Beli." : "Gagal menyimpan Retur Jual Beli."),
+        text:
+          err?.message ||
+          (returId
+            ? "Gagal mengubah Retur Jual Beli."
+            : "Gagal menyimpan Retur Jual Beli."),
         showConfirmButton: false,
         timer: 1500,
         timerProgressBar: true,
@@ -627,13 +705,17 @@ export default function ReturJualBeliForm() {
         <Printer size={20} /> Print
       </button>
 
-      <form class="space-y-4" onSubmit={handleSubmit}>
+      <form class="space-y-4" onSubmit={handleSubmit} onkeydown={handleKeyDown}>
         {/* Row 1 */}
         <div class="grid grid-cols-3 gap-4">
           <div>
             <label class="block text-sm mb-1">No Retur</label>
             <div class="flex gap-2">
-              <input class="w-full border p-2 rounded bg-gray-200" value={form().no_retur} disabled />
+              <input
+                class="w-full border p-2 rounded bg-gray-200"
+                value={form().no_retur}
+                disabled
+              />
               <button
                 type="button"
                 class="bg-gray-300 text-sm px-2 rounded hover:bg-gray-400"
@@ -661,7 +743,11 @@ export default function ReturJualBeliForm() {
 
           <div>
             <label class="block text-sm mb-1">No Surat Jalan Supplier</label>
-            <input class="w-full border p-2 rounded bg-gray-200" value={form().no_sj_supplier} disabled />
+            <input
+              class="w-full border p-2 rounded bg-gray-200"
+              value={form().no_sj_supplier}
+              disabled
+            />
           </div>
         </div>
 
@@ -669,12 +755,21 @@ export default function ReturJualBeliForm() {
         <div class="grid grid-cols-3 gap-4">
           <div class="col-span-1">
             <label class="block text-sm mb-1">Alamat Pengiriman</label>
-            <input class="w-full border p-2 rounded bg-gray-200" value={form().alamat_pengiriman} disabled />
+            <input
+              class="w-full border p-2 rounded bg-gray-200"
+              value={form().alamat_pengiriman}
+              disabled
+            />
           </div>
 
           <div>
             <label class="block text-sm mb-1">Tanggal Pengiriman</label>
-            <input type="date" class="w-full border p-2 rounded bg-gray-200" value={form().tanggal_kirim} disabled />
+            <input
+              type="date"
+              class="w-full border p-2 rounded bg-gray-200"
+              value={form().tanggal_kirim}
+              disabled
+            />
           </div>
         </div>
 
@@ -684,7 +779,9 @@ export default function ReturJualBeliForm() {
           <textarea
             class="w-full border p-2 rounded"
             value={form().keterangan_retur}
-            onInput={(e) => setForm({ ...form(), keterangan_retur: e.target.value })}
+            onInput={(e) =>
+              setForm({ ...form(), keterangan_retur: e.target.value })
+            }
             disabled={isView}
             classList={{ "bg-gray-200": isView }}
             placeholder="Tulis catatan retur"
@@ -694,21 +791,26 @@ export default function ReturJualBeliForm() {
         {/* Ringkasan quantity dari SP/Retur terpilih */}
         <Show when={deliveryNoteData()}>
           {() => {
-            const unit = deliveryNoteData()?.satuan_unit_name || form().unit || "Meter";
+            const unit =
+              deliveryNoteData()?.satuan_unit_name || form().unit || "Meter";
             const items = availableItems();
 
             if (!items || items.length === 0) {
               return (
                 <div class="border p-3 rounded my-4 bg-gray-50">
-                  <h3 class="text-md font-bold mb-2 text-gray-700">Quantity Kain pada Surat Penerimaan:</h3>
+                  <h3 class="text-md font-bold mb-2 text-gray-700">
+                    Quantity Kain pada Surat Penerimaan:
+                  </h3>
                   <ul class="space-y-1 pl-5">
                     <For each={form().itemGroups}>
                       {(it) => {
-                        const qty = unit === "Meter" ? it.meter_total : it.yard_total;
+                        const qty =
+                          unit === "Meter" ? it.meter_total : it.yard_total;
                         return (
                           <li class="text-sm list-disc">
                             <span class="font-semibold">
-                              {it.item_details?.corak_kain} | {it.item_details?.konstruksi_kain}
+                              {it.item_details?.corak_kain} |{" "}
+                              {it.item_details?.konstruksi_kain}
                             </span>{" "}
                             - Quantity:{" "}
                             <span class="font-bold text-blue-600">
@@ -731,13 +833,15 @@ export default function ReturJualBeliForm() {
                 <ul class="space-y-1 pl-5">
                   <For each={items}>
                     {(row) => {
-                      const qty = unit === "Meter"
-                        ? toNum(row.available_meter ?? row.meter_awal)
-                        : toNum(row.available_yard ?? row.yard_awal);
+                      const qty =
+                        unit === "Meter"
+                          ? toNum(row.available_meter ?? row.meter_awal)
+                          : toNum(row.available_yard ?? row.yard_awal);
 
-                      const awal = unit === "Meter"
-                        ? toNum(row.meter_awal)
-                        : toNum(row.yard_awal);
+                      const awal =
+                        unit === "Meter"
+                          ? toNum(row.meter_awal)
+                          : toNum(row.yard_awal);
 
                       const satuan = unit === "Meter" ? "m" : "yd";
                       const habis = qty <= 0;
@@ -745,7 +849,8 @@ export default function ReturJualBeliForm() {
                       return (
                         <li class="text-sm list-disc">
                           <span class="font-semibold">
-                            {(row.corak_kain || "N/A")} | {(row.konstruksi_kain || "")}
+                            {row.corak_kain || "N/A"} |{" "}
+                            {row.konstruksi_kain || ""}
                           </span>{" "}
                           {/* <span class="text-gray-600">
                             ({row.deskripsi_warna || row.kode_warna || "-"})
@@ -794,8 +899,12 @@ export default function ReturJualBeliForm() {
                 <th class="border p-2 w-50">{form().unit}</th>
                 <th class="border p-2 w-32">Gulung</th>
                 <th class="border p-2 w-32">Lot</th>
-                <th hidden class="border p-2 w-48">Harga</th>
-                <th hidden class="border p-2 w-48">Subtotal</th>
+                <th hidden class="border p-2 w-48">
+                  Harga
+                </th>
+                <th hidden class="border p-2 w-48">
+                  Subtotal
+                </th>
                 <th class="border p-2 w-48">Aksi</th>
               </tr>
             </thead>
@@ -803,8 +912,12 @@ export default function ReturJualBeliForm() {
               <Show when={form().itemGroups.length > 0}>
                 <For each={form().itemGroups}>
                   {(group, i) => {
-                    const qty = form().unit === "Meter" ? group.meter_total : group.yard_total;
-                    const subtotal = toNum(group.item_details?.harga) * toNum(qty);
+                    const qty =
+                      form().unit === "Meter"
+                        ? group.meter_total
+                        : group.yard_total;
+                    const subtotal =
+                      toNum(group.item_details?.harga) * toNum(qty);
 
                     return (
                       <tr>
@@ -812,7 +925,9 @@ export default function ReturJualBeliForm() {
                         <td class="border w-72 p-2">
                           <input
                             class="border p-1 rounded w-full bg-gray-200"
-                            value={`${group.item_details?.corak_kain || ""} | ${group.item_details?.konstruksi_kain || ""}`}
+                            value={`${group.item_details?.corak_kain || ""} | ${
+                              group.item_details?.konstruksi_kain || ""
+                            }`}
                             disabled
                           />
                         </td>
@@ -836,7 +951,9 @@ export default function ReturJualBeliForm() {
                             type="text"
                             class="w-full border p-2 rounded text-right"
                             value={fmtNum(qty)}
-                            onBlur={(e) => handleQuantityChange(i(), e.target.value)}
+                            onBlur={(e) =>
+                              handleQuantityChange(i(), e.target.value)
+                            }
                             disabled={isView}
                             classList={{ "bg-gray-200": isView }}
                           />
@@ -849,7 +966,9 @@ export default function ReturJualBeliForm() {
                             placeholder="Banyak gulung…"
                             class="w-full border p-2 rounded text-right"
                             value={group.gulung ?? 0}
-                            onBlur={(e) => handleGulungChange(i(), e.target.value)}
+                            onBlur={(e) =>
+                              handleGulungChange(i(), e.target.value)
+                            }
                             disabled={isView}
                             classList={{ "bg-gray-200": isView }}
                           />
@@ -869,10 +988,18 @@ export default function ReturJualBeliForm() {
                         </td>
 
                         <td hidden class="border p-2 text-right">
-                          <input class="w-full border p-2 rounded text-right" value={fmtNum(group.item_details?.harga)} disabled />
+                          <input
+                            class="w-full border p-2 rounded text-right"
+                            value={fmtNum(group.item_details?.harga)}
+                            disabled
+                          />
                         </td>
                         <td hidden class="border p-2 text-right font-semibold">
-                          <input class="w-full border p-2 rounded text-right" value={fmtNum(subtotal)} disabled />
+                          <input
+                            class="w-full border p-2 rounded text-right"
+                            value={fmtNum(subtotal)}
+                            disabled
+                          />
                         </td>
                         <td class="border p-2 text-center">
                           <button
@@ -892,9 +1019,13 @@ export default function ReturJualBeliForm() {
             </tbody>
             <tfoot>
               <tr class="font-bold bg-gray-100">
-                <td colSpan="4" class="text-right p-2 border-t border-gray-300">TOTAL</td>
+                <td colSpan="4" class="text-right p-2 border-t border-gray-300">
+                  TOTAL
+                </td>
                 <td class="border p-2 text-right">
-                  {form().unit === "Meter" ? fmtNum(totalMeter(), 2) : fmtNum(totalYard(), 2)}
+                  {form().unit === "Meter"
+                    ? fmtNum(totalMeter(), 2)
+                    : fmtNum(totalYard(), 2)}
                 </td>
                 <td class="border-t border-gray-300" colSpan="3"></td>
               </tr>
@@ -903,7 +1034,11 @@ export default function ReturJualBeliForm() {
         </div>
 
         <div class="mt-6">
-          <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700" hidden={isView}>
+          <button
+            type="submit"
+            class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            hidden={isView}
+          >
             {returId ? "Update" : "Simpan"}
           </button>
         </div>

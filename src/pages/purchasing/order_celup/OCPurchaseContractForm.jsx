@@ -20,23 +20,21 @@ import ColorDropdownSearch from "../../../components/ColorDropdownSearch";
 export default function OCPurchaseContractForm() {
   const navigate = useNavigate();
   const user = getUser();
-  
-  const [manualGenerateDone, setManualGenerateDone] = createSignal(false)
+
+  const [manualGenerateDone, setManualGenerateDone] = createSignal(false);
   const [supplierOptions, setSupplierOptions] = createSignal([]);
   const [satuanUnitOptions, setSatuanUnitOptions] = createSignal([
-    { id: 1, satuan: 'Meter' },
-    { id: 2, satuan: 'Yard' },
-    { id: 3, satuan: 'Kilogram' },
+    { id: 1, satuan: "Meter" },
+    { id: 2, satuan: "Yard" },
+    { id: 3, satuan: "Kilogram" },
   ]);
   const [fabricOptions, setFabricOptions] = createSignal([]);
   const [loading, setLoading] = createSignal(true);
   const [params] = useSearchParams();
   const isEdit = !!params.id;
-  const isView = params.view === 'true';
+  const isView = params.view === "true";
   const filteredSatuanOptions = () =>
-    satuanUnitOptions().filter(
-      (u) => u.satuan.toLowerCase() !== "kilogram"
-    );
+    satuanUnitOptions().filter((u) => u.satuan.toLowerCase() !== "kilogram");
   const [purchaseContractData, setPurchaseContractData] = createSignal(null);
 
   const [form, setForm] = createSignal({
@@ -52,16 +50,16 @@ export default function OCPurchaseContractForm() {
   });
 
   createEffect(() => {
-    const ppn = form().ppn_percent; 
+    const ppn = form().ppn_percent;
 
     if (isEdit || isView || !manualGenerateDone()) {
-        return;
+      return;
     }
     generateNomorKontrak();
   });
 
   const formatNumber = (num, options = {}) => {
-    const numValue = typeof num === 'string' ? parseNumber(num) : num;
+    const numValue = typeof num === "string" ? parseNumber(num) : num;
     if (isNaN(numValue)) return "";
 
     // Opsi untuk menampilkan "0,00" jika diperlukan
@@ -71,7 +69,7 @@ export default function OCPurchaseContractForm() {
         maximumFractionDigits: options.decimals ?? 2,
       }).format(0);
     }
-    
+
     if (numValue === 0) return "";
 
     return new Intl.NumberFormat("id-ID", {
@@ -84,9 +82,9 @@ export default function OCPurchaseContractForm() {
     if (num === "" || num === null || num === undefined) return "";
 
     const numValue = Number(num);
-    
+
     if (isNaN(numValue)) return "";
-    
+
     if (numValue === 0) return "0";
 
     return new Intl.NumberFormat("id-ID", {
@@ -96,7 +94,7 @@ export default function OCPurchaseContractForm() {
   };
 
   const parseNumber = (str) => {
-    if (typeof str !== 'string' || !str) return 0;
+    if (typeof str !== "string" || !str) return 0;
     // Hapus semua karakter non-numerik KECUALI koma, lalu ganti koma dengan titik
     const cleaned = str.replace(/[^0-9,]/g, "").replace(",", ".");
     return parseFloat(cleaned) || 0;
@@ -137,12 +135,15 @@ export default function OCPurchaseContractForm() {
         const lebarGreigeValue = parseFloat(item.lebar_greige) || 0;
         const lebarFinishValue = parseFloat(item.lebar_finish) || 0;
 
-        const subtotal = hargaValue * (
-          parseInt(data.satuan_unit_id) === 1 ? meterValue :
-          parseInt(data.satuan_unit_id) === 2 ? yardValue : 0
-        );
+        const subtotal =
+          hargaValue *
+          (parseInt(data.satuan_unit_id) === 1
+            ? meterValue
+            : parseInt(data.satuan_unit_id) === 2
+            ? yardValue
+            : 0);
 
-        return{
+        return {
           // Data asli disimpan untuk display Quantity
           meter_total: item.meter_total,
           yard_total: item.yard_total,
@@ -183,7 +184,6 @@ export default function OCPurchaseContractForm() {
         no_seq: sequenceNumber ?? 0,
         items: normalizedItems,
       }));
-
     } else {
       const lastSeq = await getLastSequence(
         user?.token,
@@ -231,12 +231,18 @@ export default function OCPurchaseContractForm() {
         ...prev.items,
         {
           fabric_id: "",
-          lebar_greige: "", lebar_greigeValue: 0,
-          lebar_finish: "", lebar_finishValue: 0,
-          meter: "", meterValue: 0,
-          yard: "", yardValue: 0,
-          harga: "", hargaValue: 0,
-          subtotal: "", subtotalFormatted: "",
+          lebar_greige: "",
+          lebar_greigeValue: 0,
+          lebar_finish: "",
+          lebar_finishValue: 0,
+          meter: "",
+          meterValue: 0,
+          yard: "",
+          yardValue: 0,
+          harga: "",
+          hargaValue: 0,
+          subtotal: "",
+          subtotalFormatted: "",
         },
       ],
     }));
@@ -266,33 +272,38 @@ export default function OCPurchaseContractForm() {
       const item = { ...items[index] };
       const satuanId = parseInt(prev.satuan_unit_id);
 
-      if (field === 'fabric_id') {
+      if (field === "fabric_id") {
         item[field] = value;
-      }
-      else {
+      } else {
         const numValue = parseNumber(value);
         item[`${field}Value`] = numValue;
 
         let decimals = 2;
-        if (['meter', 'yard'].includes(field)) decimals = 2;
-        if (field === 'lebar_greige') decimals = 0;
-        if (field === 'lebar_finish') decimals = 0;
+        if (["meter", "yard"].includes(field)) decimals = 2;
+        if (field === "lebar_greige") decimals = 0;
+        if (field === "lebar_finish") decimals = 0;
 
-        if (field === 'harga') {
+        if (field === "harga") {
           item.harga = formatIDR(numValue);
         } else {
           item[field] = formatNumber(numValue, { decimals });
         }
-        
-        if (satuanId === 1 && field === 'meter') {
+
+        if (satuanId === 1 && field === "meter") {
           item.yardValue = numValue * 1.093613;
-          item.yard = formatNumber(item.yardValue, { decimals: 2, showZero: true });
-        } else if (satuanId === 2 && field === 'yard') {
+          item.yard = formatNumber(item.yardValue, {
+            decimals: 2,
+            showZero: true,
+          });
+        } else if (satuanId === 2 && field === "yard") {
           item.meterValue = numValue * 0.9144;
-          item.meter = formatNumber(item.meterValue, { decimals: 2, showZero: true });
+          item.meter = formatNumber(item.meterValue, {
+            decimals: 2,
+            showZero: true,
+          });
         }
       }
-      
+
       const hargaValue = item.hargaValue || 0;
       let qtyValue = 0;
       if (satuanId === 1) qtyValue = item.meterValue || 0;
@@ -307,11 +318,25 @@ export default function OCPurchaseContractForm() {
     });
   };
 
+  const handleKeyDown = (e) => {
+    const tag = e.target.tagName;
+    const type = e.target.type;
+
+    if (
+      e.key === "Enter" &&
+      tag !== "TEXTAREA" &&
+      type !== "submit" &&
+      type !== "button"
+    ) {
+      e.preventDefault();
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     try {
-        // Kirim raw value ke API
+      // Kirim raw value ke API
       const payloadItems = form().items.map((i) => ({
         kain_id: Number(i.fabric_id),
         lebar_greige: i.lebar_greigeValue || 0,
@@ -375,7 +400,11 @@ export default function OCPurchaseContractForm() {
 
   function handlePrint() {
     if (!purchaseContractData()) {
-      Swal.fire("Gagal", "Data untuk mencetak tidak tersedia. Pastikan Anda dalam mode Edit/View.", "error");
+      Swal.fire(
+        "Gagal",
+        "Data untuk mencetak tidak tersedia. Pastikan Anda dalam mode Edit/View.",
+        "error"
+      );
       return;
     }
 
@@ -394,7 +423,8 @@ export default function OCPurchaseContractForm() {
         </div>
       )}
       <h1 class="text-2xl font-bold mb-4">
-        {isView ? "Detail" : isEdit ? "Edit" : "Tambah"} Kontrak Proses Order Celup
+        {isView ? "Detail" : isEdit ? "Edit" : "Tambah"} Kontrak Proses Order
+        Celup
       </h1>
       <button
         type="button"
@@ -405,7 +435,7 @@ export default function OCPurchaseContractForm() {
         <Printer size={20} />
         Print
       </button>
-      <form class="space-y-4" onSubmit={handleSubmit}>
+      <form class="space-y-4" onSubmit={handleSubmit} onkeydown={handleKeyDown}>
         <div class="grid grid-cols-3 gap-4">
           <div>
             <label class="block mb-1 font-medium">No Kontrak</label>
@@ -475,7 +505,7 @@ export default function OCPurchaseContractForm() {
               }
               required
               disabled={isView || isEdit}
-              classList={{ "bg-gray-200": isView || isEdit }} 
+              classList={{ "bg-gray-200": isView || isEdit }}
             >
               <option value="">Pilih Satuan</option>
               <For each={filteredSatuanOptions()}>
@@ -491,7 +521,7 @@ export default function OCPurchaseContractForm() {
               value={form().termin}
               onInput={(e) => setForm({ ...form(), termin: e.target.value })}
               disabled={isView || isEdit}
-              classList={{ "bg-gray-200": isView || isEdit }} 
+              classList={{ "bg-gray-200": isView || isEdit }}
             >
               <option value="">-- Pilih Termin --</option>
               <option value="0">Cash</option>
@@ -545,21 +575,24 @@ export default function OCPurchaseContractForm() {
             <ul class="space-y-1 pl-5">
               <For each={form().items}>
                 {(item) => {
-                  const unit = form().satuan_unit_id == 1 ? 'Meter' : 'Yard';
+                  const unit = form().satuan_unit_id == 1 ? "Meter" : "Yard";
                   const sisa =
-                    unit === 'Meter'
-                      ? Number(item.meter_total) - Number(item.meter_dalam_proses || 0)
-                      : Number(item.yard_total) - Number(item.yard_dalam_proses || 0);
+                    unit === "Meter"
+                      ? Number(item.meter_total) -
+                        Number(item.meter_dalam_proses || 0)
+                      : Number(item.yard_total) -
+                        Number(item.yard_dalam_proses || 0);
 
                   return (
                     <li class="text-sm list-disc">
                       <span class="font-semibold">
                         {item.corak_kain} | {item.konstruksi_kain}
-                      </span>{' '}
-                      - Quantity:{' '}
+                      </span>{" "}
+                      - Quantity:{" "}
                       {sisa > 0 ? (
                         <span class="font-bold text-blue-600">
-                          {formatNumberQty(sisa)} {unit === 'Meter' ? 'm' : 'yd'}
+                          {formatNumberQty(sisa)}{" "}
+                          {unit === "Meter" ? "m" : "yd"}
                         </span>
                       ) : (
                         <span class="font-bold text-red-600">HABIS</span>
@@ -570,7 +603,7 @@ export default function OCPurchaseContractForm() {
               </For>
             </ul>
           </div>
-        </Show>        
+        </Show>
 
         <h2 class="text-lg font-bold mt-6 mb-2">Items</h2>
 
@@ -626,8 +659,8 @@ export default function OCPurchaseContractForm() {
                       onBlur={(e) =>
                         handleItemChange(i(), "lebar_greige", e.target.value)
                       }
-                      disabled={ isView }
-                      classList={{ "bg-gray-200": isView}}
+                      disabled={isView}
+                      classList={{ "bg-gray-200": isView }}
                     />
                   </td>
                   <td class="border p-2">
@@ -650,13 +683,16 @@ export default function OCPurchaseContractForm() {
                         inputmode="decimal"
                         class="border p-1 rounded w-full"
                         classList={{
-                          "bg-gray-200": isView || parseInt(form().satuan_unit_id) === 2,
+                          "bg-gray-200":
+                            isView || parseInt(form().satuan_unit_id) === 2,
                         }}
-                        readOnly={isView || parseInt(form().satuan_unit_id) === 2}
+                        readOnly={
+                          isView || parseInt(form().satuan_unit_id) === 2
+                        }
                         value={item.meter}
                         onBlur={(e) => {
                           if (parseInt(form().satuan_unit_id) === 1) {
-                              handleItemChange(i(), "meter", e.target.value);
+                            handleItemChange(i(), "meter", e.target.value);
                           }
                         }}
                       />
@@ -669,13 +705,16 @@ export default function OCPurchaseContractForm() {
                         inputmode="decimal"
                         class="border p-1 rounded w-full"
                         classList={{
-                          "bg-gray-200": isView || parseInt(form().satuan_unit_id) === 1,
+                          "bg-gray-200":
+                            isView || parseInt(form().satuan_unit_id) === 1,
                         }}
-                        readOnly={isView || parseInt(form().satuan_unit_id) === 1}
+                        readOnly={
+                          isView || parseInt(form().satuan_unit_id) === 1
+                        }
                         value={item.yard}
                         onBlur={(e) => {
                           if (parseInt(form().satuan_unit_id) === 2) {
-                              handleItemChange(i(), "yard", e.target.value);
+                            handleItemChange(i(), "yard", e.target.value);
                           }
                         }}
                       />
@@ -688,8 +727,7 @@ export default function OCPurchaseContractForm() {
                       class="border p-1 rounded w-full"
                       value={item.harga}
                       onBlur={(e) =>
-                        handleItemChange(i(), "harga", e.target.value, {
-                        })
+                        handleItemChange(i(), "harga", e.target.value, {})
                       }
                       disabled={isView}
                       classList={{ "bg-gray-200": isView }}

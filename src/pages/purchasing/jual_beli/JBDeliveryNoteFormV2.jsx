@@ -1,4 +1,11 @@
-import { createSignal, createEffect, For, onMount, Show, createMemo } from "solid-js";
+import {
+  createSignal,
+  createEffect,
+  For,
+  onMount,
+  Show,
+  createMemo,
+} from "solid-js";
 import { useNavigate, useSearchParams } from "@solidjs/router";
 import MainLayout from "../../../layouts/MainLayout";
 import Swal from "sweetalert2";
@@ -20,7 +27,7 @@ import FabricDropdownSearch from "../../../components/FabricDropdownSearch";
 export default function JBDeliveryNoteForm() {
   const [params] = useSearchParams();
   const isEdit = !!params.id;
-  const isView = params.view === 'true';
+  const isView = params.view === "true";
   const navigate = useNavigate();
   const user = getUser();
 
@@ -28,8 +35,8 @@ export default function JBDeliveryNoteForm() {
   const [openStates, setOpenStates] = createSignal([]);
   const [groupRollCounts, setGroupRollCounts] = createSignal([]);
   const [loading, setLoading] = createSignal(true);
-//   const [allFabrics, setAllFabrics] = createSignal([]);
-  const [deliveryNoteData, setDeliveryNoteData] = createSignal(null); 
+  //   const [allFabrics, setAllFabrics] = createSignal([]);
+  const [deliveryNoteData, setDeliveryNoteData] = createSignal(null);
   const [deletedItems, setDeletedItems] = createSignal([]);
   const [allSuppliers, setAllSuppliers] = createSignal([]);
   const [selectedSupplierId, setSelectedSupplierId] = createSignal(null);
@@ -44,23 +51,31 @@ export default function JBDeliveryNoteForm() {
     tanggal_kirim: "",
     alamat_pengiriman: "",
     // supplier_kirim_alamat: "",
-    // supplier_kirim_id: null, 
-    unit: "Meter", 
+    // supplier_kirim_id: null,
+    unit: "Meter",
     itemGroups: [],
   });
 
-  const totalMeter = createMemo(() => 
-    form().itemGroups.reduce((sum, group) => sum + (Number(group.meter_total) || 0), 0)
+  const totalMeter = createMemo(() =>
+    form().itemGroups.reduce(
+      (sum, group) => sum + (Number(group.meter_total) || 0),
+      0
+    )
   );
 
-  const totalYard = createMemo(() => 
-    form().itemGroups.reduce((sum, group) => sum + (Number(group.yard_total) || 0), 0)
+  const totalYard = createMemo(() =>
+    form().itemGroups.reduce(
+      (sum, group) => sum + (Number(group.yard_total) || 0),
+      0
+    )
   );
 
-  const totalAll = createMemo(() => 
+  const totalAll = createMemo(() =>
     form().itemGroups.reduce((sum, group) => {
-      const quantity = form().unit === 'Meter' ? group.meter_total : group.yard_total;
-      const subtotal = (Number(group.item_details?.harga) || 0) * (Number(quantity) || 0);
+      const quantity =
+        form().unit === "Meter" ? group.meter_total : group.yard_total;
+      const subtotal =
+        (Number(group.item_details?.harga) || 0) * (Number(quantity) || 0);
       return sum + subtotal;
     }, 0)
   );
@@ -69,7 +84,7 @@ export default function JBDeliveryNoteForm() {
     setLoading(true);
     // const fabricsResponse = await getAllFabrics(user?.token);
     // setAllFabrics(fabricsResponse.kain || []);
-    //console.log("1. Data Master Kain:", JSON.stringify(fabricsResponse, null, 2)); 
+    //console.log("1. Data Master Kain:", JSON.stringify(fabricsResponse, null, 2));
 
     const poListResponse = await getAllJualBelis(user?.token);
     //console.log("Data all JB: ", JSON.stringify(poListResponse, null, 2));
@@ -89,7 +104,10 @@ export default function JBDeliveryNoteForm() {
         return;
       }
 
-      const poDetailResponse = await getJualBelis(suratJalanData.jb_id, user?.token);
+      const poDetailResponse = await getJualBelis(
+        suratJalanData.jb_id,
+        user?.token
+      );
       //console.log("Data JB: ", JSON.stringify(poDetailResponse, null , 2));
       const poData = poDetailResponse?.mainRow;
 
@@ -99,7 +117,7 @@ export default function JBDeliveryNoteForm() {
       };
       // Simpan ke dalam signal
       setDeliveryNoteData(fullPrintData);
-      
+
       // const supplierById = (suppliersResponse?.suppliers || []).find(
       //   (s) => s.id === suratJalanData.supplier_kirim_id
       // );
@@ -117,31 +135,32 @@ export default function JBDeliveryNoteForm() {
         alamat_pengiriman: suratJalanData.supplier_alamat || "",
         // supplier_kirim_alamat: suratJalanData.supplier_kirim_alamat || "",
         // supplier_kirim_id: supplierById ? supplierById.id : null,
-        tanggal_kirim: suratJalanData.tanggal_kirim ? new Date(suratJalanData.tanggal_kirim).toISOString().split("T")[0] : "",
+        tanggal_kirim: suratJalanData.tanggal_kirim
+          ? new Date(suratJalanData.tanggal_kirim).toISOString().split("T")[0]
+          : "",
         purchase_order_id: suratJalanData.jb_id,
         purchase_order_items: poData,
         sequence_number: suratJalanData.sequence_number,
         keterangan: suratJalanData.keterangan || "",
         unit: suratJalanData.satuan_unit_name || "Meter",
         itemGroups: (suratJalanData.items || [])
-          .filter(group => !group.deleted_at)
+          .filter((group) => !group.deleted_at)
           .map((group) => ({
-          
-          id: group.id,
-          purchase_order_item_id: group.jb_item_id,
-          item_details: {
+            id: group.id,
+            purchase_order_item_id: group.jb_item_id,
+            item_details: {
               corak_kain: group.corak_kain || "N/A",
               konstruksi_kain: group.konstruksi_kain || "",
               deskripsi_warna: group.deskripsi_warna || "",
               lebar_kain: group.lebar_kain || 0,
               harga: group.harga || 0,
-          },
-          meter_total: Number(group.meter_total) || 0,
-          yard_total: Number(group.yard_total) || 0,
+            },
+            meter_total: Number(group.meter_total) || 0,
+            yard_total: Number(group.yard_total) || 0,
 
-          gulung: typeof group.gulung === "number" ? group.gulung : 0,
-          lot: typeof group.lot === "number" ? group.lot : 0,
-          }))
+            gulung: typeof group.gulung === "number" ? group.gulung : 0,
+            lot: typeof group.lot === "number" ? group.lot : 0,
+          })),
       });
 
       // if (supplierById) {
@@ -181,9 +200,9 @@ export default function JBDeliveryNoteForm() {
     if (num === "" || num === null || num === undefined) return "";
 
     const numValue = Number(num);
-    
+
     if (isNaN(numValue)) return "";
-    
+
     if (numValue === 0) return "0";
 
     return new Intl.NumberFormat("id-ID", {
@@ -193,7 +212,7 @@ export default function JBDeliveryNoteForm() {
   };
 
   const parseNumber = (str) => {
-    if (typeof str !== 'string' || !str) return 0;
+    if (typeof str !== "string" || !str) return 0;
     const cleaned = str.replace(/[^\d,]/g, "").replace(",", ".");
     return parseFloat(cleaned) || 0;
   };
@@ -201,20 +220,20 @@ export default function JBDeliveryNoteForm() {
   const formatHarga = (val) => {
     if (val === null || val === "") return "";
     return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    maximumFractionDigits: 2,
+      style: "currency",
+      currency: "IDR",
+      maximumFractionDigits: 2,
     }).format(val);
   };
-  
-  const formatIDR = (val) =>{
-    if(val === null || val === "") return "";
+
+  const formatIDR = (val) => {
+    if (val === null || val === "") return "";
     return new Intl.NumberFormat("id-ID", {
-        style: "currency",
-        currency: "IDR",
-        maximumFractionDigits: 2,
+      style: "currency",
+      currency: "IDR",
+      maximumFractionDigits: 2,
     }).format(val);
-  }
+  };
 
   const handleQuantityChange = (index, value) => {
     const unit = form().unit;
@@ -239,7 +258,7 @@ export default function JBDeliveryNoteForm() {
 
   const handleGulungChange = (index, value) => {
     const numValue = parseNumber(value);
-    setForm(prev => {
+    setForm((prev) => {
       const arr = [...prev.itemGroups];
       arr[index] = { ...arr[index], gulung: numValue };
       return { ...prev, itemGroups: arr };
@@ -248,20 +267,20 @@ export default function JBDeliveryNoteForm() {
 
   const handleLotChange = (index, value) => {
     const numValue = parseNumber(value);
-    setForm(prev => {
+    setForm((prev) => {
       const arr = [...prev.itemGroups];
       arr[index] = { ...arr[index], lot: numValue };
       return { ...prev, itemGroups: arr };
     });
   };
-  
+
   const handleSuratJalanChange = async (selectedPO) => {
     if (!selectedPO) return;
 
     // Hanya jalankan logika untuk mode "Tambah Baru"
     const res = await getJualBelis(selectedPO.id, user?.token);
-    //console.log("Data SP JB ", JSON.stringify(res, null, 2));    
-    const selectedPOData = res?.mainRow; 
+    //console.log("Data SP JB ", JSON.stringify(res, null, 2));
+    const selectedPOData = res?.mainRow;
 
     const poTypeLetter = selectedPO.no_jb.split("/")[1];
     const poPPN = selectedPO.no_jb.split("/")[2];
@@ -273,7 +292,7 @@ export default function JBDeliveryNoteForm() {
     );
 
     const unitName = selectedPOData.satuan_unit_name; // "Meter" / "Yard"
-    const newItemGroups = (selectedPOData.items || []).map(item =>
+    const newItemGroups = (selectedPOData.items || []).map((item) =>
       templateFromPOItem(item, unitName)
     );
 
@@ -286,17 +305,12 @@ export default function JBDeliveryNoteForm() {
       // Komen alamat_pengiriman klo dropdown
       alamat_pengiriman: selectedPOData.supplier_alamat,
       unit: unitName,
-      itemGroups: newItemGroups, 
+      itemGroups: newItemGroups,
     });
   };
 
   const generateSJNumber = async (salesType, ppn) => {
-    const lastSeq = await getLastSequence(
-      user?.token,
-      "jb_sj",
-      salesType,
-      ppn
-    );
+    const lastSeq = await getLastSequence(user?.token, "jb_sj", salesType, ppn);
 
     const nextNum = String((lastSeq?.last_sequence || 0) + 1).padStart(5, "0");
     const now = new Date();
@@ -324,27 +338,27 @@ export default function JBDeliveryNoteForm() {
 
   const templateFromPOItem = (poItem) => {
     const m = Number(poItem.meter_total ?? poItem.meter ?? 0) || 0;
-    const y = Number(poItem.yard_total  ?? poItem.yard  ?? 0) || 0;
+    const y = Number(poItem.yard_total ?? poItem.yard ?? 0) || 0;
 
     const hasM = m > 0;
     const hasY = y > 0;
 
     // Lengkapi unit lain bila kosong
-    const meterVal = hasM ? m : (hasY ? y * 0.9144   : 0);
-    const yardVal  = hasY ? y : (hasM ? m * 1.093613 : 0);
+    const meterVal = hasM ? m : hasY ? y * 0.9144 : 0;
+    const yardVal = hasY ? y : hasM ? m * 1.093613 : 0;
 
     return {
       purchase_order_item_id: poItem.id,
       item_details: {
-        corak_kain:      poItem.corak_kain,
+        corak_kain: poItem.corak_kain,
         konstruksi_kain: poItem.konstruksi_kain,
         deskripsi_warna: poItem.deskripsi_warna,
-        lebar_kain:      poItem.lebar_kain,
-        harga:           poItem.harga,
+        lebar_kain: poItem.lebar_kain,
+        harga: poItem.harga,
       },
       // Keduanya diisi, UI tinggal pilih mana yang ditampilkan sesuai form().unit
       meter_total: meterVal,
-      yard_total:  yardVal,
+      yard_total: yardVal,
 
       gulung: 0,
       lot: 0,
@@ -354,7 +368,11 @@ export default function JBDeliveryNoteForm() {
   const addItemGroup = () => {
     const poDetail = form().purchase_order_items;
     if (!poDetail || !poDetail.items || poDetail.items.length === 0) {
-      Swal.fire("Peringatan", "Silakan pilih Jual Beli terlebih dahulu.", "warning");
+      Swal.fire(
+        "Peringatan",
+        "Silakan pilih Jual Beli terlebih dahulu.",
+        "warning"
+      );
       return;
     }
 
@@ -383,15 +401,33 @@ export default function JBDeliveryNoteForm() {
   //   setGroupRollCounts((prev) => [...prev, 0]);
   // };
 
+  const handleKeyDown = (e) => {
+    const tag = e.target.tagName;
+    const type = e.target.type;
+
+    if (
+      e.key === "Enter" &&
+      tag !== "TEXTAREA" &&
+      type !== "submit" &&
+      type !== "button"
+    ) {
+      e.preventDefault();
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     // LANGKAH 1: Validasi Input
     if (!form().purchase_order_id) {
-      Swal.fire("Gagal", "Harap pilih Purchase Order terlebih dahulu.", "error");
+      Swal.fire(
+        "Gagal",
+        "Harap pilih Purchase Order terlebih dahulu.",
+        "error"
+      );
       return;
     }
-    if (!form().no_sj_supplier.trim()) { 
+    if (!form().no_sj_supplier.trim()) {
       Swal.fire("Gagal", "Harap isi No Surat Jalan Supplier.", "error");
       return;
     }
@@ -408,27 +444,30 @@ export default function JBDeliveryNoteForm() {
 
     try {
       if (isEdit) {
-      const payload = {
-        no_sj: form().jb_id,
-        jb_id: form().purchase_order_id,
-        no_sj_supplier: form().no_sj_supplier.trim(),
-        // supplier_kirim_alamat: form().supplier_kirim_alamat,
-        // supplier_kirim_id: form().supplier_kirim_id,
-        tanggal_kirim: form().tanggal_kirim,
-        alamat_pengiriman: form().alamat_pengiriman,
-        keterangan: form().keterangan,
-        items: form().itemGroups
-          .filter(g => (form().unit === 'Meter' ? g.meter_total : g.yard_total) > 0)
-          .map((g) => ({
-            jb_item_id: Number(g.purchase_order_item_id),
-            meter_total: Number(g.meter_total) || 0,
-            yard_total: Number(g.yard_total) || 0,
-            gulung: Number(g.gulung) || 0,
-            lot: Number(g.lot) || 0,
-          })),
-        deleted_items: deletedItems(),
-      };
-        //console.log("Update JB SJ: ", JSON.stringify(payload, null, 2));  
+        const payload = {
+          no_sj: form().jb_id,
+          jb_id: form().purchase_order_id,
+          no_sj_supplier: form().no_sj_supplier.trim(),
+          // supplier_kirim_alamat: form().supplier_kirim_alamat,
+          // supplier_kirim_id: form().supplier_kirim_id,
+          tanggal_kirim: form().tanggal_kirim,
+          alamat_pengiriman: form().alamat_pengiriman,
+          keterangan: form().keterangan,
+          items: form()
+            .itemGroups.filter(
+              (g) =>
+                (form().unit === "Meter" ? g.meter_total : g.yard_total) > 0
+            )
+            .map((g) => ({
+              jb_item_id: Number(g.purchase_order_item_id),
+              meter_total: Number(g.meter_total) || 0,
+              yard_total: Number(g.yard_total) || 0,
+              gulung: Number(g.gulung) || 0,
+              lot: Number(g.lot) || 0,
+            })),
+          deleted_items: deletedItems(),
+        };
+        //console.log("Update JB SJ: ", JSON.stringify(payload, null, 2));
         await updateDataJBDeliveryNote(user?.token, params.id, payload);
       } else {
         const payload = {
@@ -438,18 +477,22 @@ export default function JBDeliveryNoteForm() {
           tanggal_kirim: form().tanggal_kirim,
           alamat_pengiriman: form().alamat_pengiriman,
           // supplier_kirim_alamat: form().supplier_kirim_alamat,
-          // supplier_kirim_id: form().supplier_kirim_id,  
+          // supplier_kirim_id: form().supplier_kirim_id,
           no_sj_supplier: form().no_sj_supplier.trim(),
-          items: form().itemGroups.filter(g => (form().unit === 'Meter' ? g.meter_total : g.yard_total) > 0) // Hanya kirim item yg diisi
+          items: form()
+            .itemGroups.filter(
+              (g) =>
+                (form().unit === "Meter" ? g.meter_total : g.yard_total) > 0
+            ) // Hanya kirim item yg diisi
             .map((g) => ({
-                id: g.id,
-                jb_item_id: Number(g.purchase_order_item_id),
-                meter_total: Number(g.meter_total) || 0,
-                yard_total: Number(g.yard_total) || 0,
-                gulung: Number(g.gulung) || 0,
-                lot: Number(g.lot) || 0,
-          })),
-        }; 
+              id: g.id,
+              jb_item_id: Number(g.purchase_order_item_id),
+              meter_total: Number(g.meter_total) || 0,
+              yard_total: Number(g.yard_total) || 0,
+              gulung: Number(g.gulung) || 0,
+              lot: Number(g.lot) || 0,
+            })),
+        };
         await createJBDeliveryNote(user?.token, payload);
       }
 
@@ -492,7 +535,11 @@ export default function JBDeliveryNoteForm() {
 
   function handlePrint() {
     if (!deliveryNoteData()) {
-      Swal.fire("Gagal", "Data untuk mencetak tidak tersedia. Pastikan Anda dalam mode Edit/View.", "error");
+      Swal.fire(
+        "Gagal",
+        "Data untuk mencetak tidak tersedia. Pastikan Anda dalam mode Edit/View.",
+        "error"
+      );
       return;
     }
 
@@ -500,7 +547,7 @@ export default function JBDeliveryNoteForm() {
     // CHANGED: kirim via hash, bukan query, agar tidak kena 431
     const encodedData = encodeURIComponent(JSON.stringify(dataToPrint));
     window.open(`/print/jualbeli/suratjalan#${encodedData}`, "_blank");
-  }  
+  }
 
   return (
     <MainLayout>
@@ -511,7 +558,8 @@ export default function JBDeliveryNoteForm() {
         </div>
       )}
       <h1 class="text-2xl font-bold mb-4">
-        {isView ? "Detail" : isEdit ? "Edit" : "Tambah"} Surat Penerimaan Jual Beli
+        {isView ? "Detail" : isEdit ? "Edit" : "Tambah"} Surat Penerimaan Jual
+        Beli
       </h1>
       <button
         type="button"
@@ -523,7 +571,7 @@ export default function JBDeliveryNoteForm() {
         Print
       </button>
 
-      <form class="space-y-4" onSubmit={handleSubmit}>
+      <form class="space-y-4" onSubmit={handleSubmit} onkeydown={handleKeyDown}>
         <div class="grid grid-cols-3 gap-4">
           <div>
             <label class="block text-sm mb-1">No Surat Penerimaan</label>
@@ -540,7 +588,9 @@ export default function JBDeliveryNoteForm() {
             <input
               class="w-full border p-2 rounded"
               value={form().no_sj_supplier}
-              onInput={(e) => setForm({ ...form(), no_sj_supplier: e.target.value })}
+              onInput={(e) =>
+                setForm({ ...form(), no_sj_supplier: e.target.value })
+              }
               required
               disabled={isView}
               classList={{ "bg-gray-200": isView }}
@@ -571,25 +621,26 @@ export default function JBDeliveryNoteForm() {
             <div class="flex gap-2">
               <input
                 type="date"
-                class="w-full border p-2 rounded"                
+                class="w-full border p-2 rounded"
                 value={form().tanggal_kirim}
-                onInput={(e) => 
-                  setForm({ ...form(), tanggal_kirim: e.target.value })}
+                onInput={(e) =>
+                  setForm({ ...form(), tanggal_kirim: e.target.value })
+                }
                 disabled={isView}
-                classList={{ "bg-gray-200": isView }} 
+                classList={{ "bg-gray-200": isView }}
               />
             </div>
-          </div>          
+          </div>
           <div>
             <label class="block text-sm mb-1">Purchase Order</label>
-              <PurchaseOrderSearch
-                items={jualBeliList()}
-                value={form().purchase_order_id} 
-                form={form}
-                setForm={setForm}
-                onChange={handleSuratJalanChange}
-                disabled={isView}
-              />
+            <PurchaseOrderSearch
+              items={jualBeliList()}
+              value={form().purchase_order_id}
+              form={form}
+              setForm={setForm}
+              onChange={handleSuratJalanChange}
+              disabled={isView}
+            />
           </div>
         </div>
 
@@ -608,28 +659,36 @@ export default function JBDeliveryNoteForm() {
           </div>
         </div>
 
-        <Show when={form().purchase_order_items && form().itemGroups.length > 0}>
+        <Show
+          when={form().purchase_order_items && form().itemGroups.length > 0}
+        >
           <div class="border p-3 rounded my-4 bg-gray-50">
-            <h3 class="text-md font-bold mb-2 text-gray-700">Quantity Kain PO:</h3>
+            <h3 class="text-md font-bold mb-2 text-gray-700">
+              Quantity Kain PO:
+            </h3>
             <ul class="space-y-1 pl-5">
               <For each={form().purchase_order_items.items}>
                 {(item) => {
-                  const sisa = form().unit === 'Meter'
-                    ? Number(item.meter_total) - Number(item.meter_dalam_proses || 0)
-                    : Number(item.yard_total) - Number(item.yard_dalam_proses || 0);
+                  const sisa =
+                    form().unit === "Meter"
+                      ? Number(item.meter_total) -
+                        Number(item.meter_dalam_proses || 0)
+                      : Number(item.yard_total) -
+                        Number(item.yard_dalam_proses || 0);
 
                   return (
                     <li class="text-sm list-disc">
-                      <span class="font-semibold">{item.corak_kain} | {item.konstruksi_kain}</span> - 
-                      Quantity: 
+                      <span class="font-semibold">
+                        {item.corak_kain} | {item.konstruksi_kain}
+                      </span>{" "}
+                      - Quantity:
                       {sisa > 0 ? (
                         <span class="font-bold text-blue-600">
-                          {formatNumber(sisa)} {form().unit === 'Meter' ? 'm' : 'yd'}
+                          {formatNumber(sisa)}{" "}
+                          {form().unit === "Meter" ? "m" : "yd"}
                         </span>
                       ) : (
-                        <span class="font-bold text-red-600">
-                          HABIS
-                        </span>
+                        <span class="font-bold text-red-600">HABIS</span>
                       )}
                     </li>
                   );
@@ -641,31 +700,35 @@ export default function JBDeliveryNoteForm() {
 
         <div>
           <h2 class="text-lg font-bold mt-6 mb-2">Items</h2>
-            <button
-              type="button"
-              onClick={() => addItemGroup()}
-              class="bg-green-600 text-white px-3 py-2 rounded hover:bg-green-700 mb-4"
-              hidden
-              >
-              + Tambah Item
-            </button>
+          <button
+            type="button"
+            onClick={() => addItemGroup()}
+            class="bg-green-600 text-white px-3 py-2 rounded hover:bg-green-700 mb-4"
+            hidden
+          >
+            + Tambah Item
+          </button>
           <table class="w-full text-sm border border-gray-300 mb-4">
-          <thead class="bg-gray-100">
-            <tr>
-              <th class="border p-2 w-10">#</th>
-              <th class="border p-2">Jenis Kain</th>
-              <th class="border p-2 w-48">Lebar Kain</th>
-              <th class="border p-2 w-60">Warna</th>
-              <th class="border p-2 w-55">{form().unit}</th>
-              <th class="border p-2 w-32">Gulung</th>
-              <th class="border p-2 w-32">Lot</th>
-              <th hidden class="border p-2 w-48">Harga</th>
-              <th hidden class="border p-2 w-48">Subtotal</th>
-              <th class="border p-2 w-48">Aksi</th>
-            </tr>
-          </thead>
-          <tbody>
-            <Show 
+            <thead class="bg-gray-100">
+              <tr>
+                <th class="border p-2 w-10">#</th>
+                <th class="border p-2">Jenis Kain</th>
+                <th class="border p-2 w-48">Lebar Kain</th>
+                <th class="border p-2 w-60">Warna</th>
+                <th class="border p-2 w-55">{form().unit}</th>
+                <th class="border p-2 w-32">Gulung</th>
+                <th class="border p-2 w-32">Lot</th>
+                <th hidden class="border p-2 w-48">
+                  Harga
+                </th>
+                <th hidden class="border p-2 w-48">
+                  Subtotal
+                </th>
+                <th class="border p-2 w-48">Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              <Show
                 when={form().itemGroups.length > 0}
                 // fallback={
                 // <tr>
@@ -674,120 +737,133 @@ export default function JBDeliveryNoteForm() {
                 //     </td>
                 // </tr>
                 // }
-            >
-              <For each={form().itemGroups}>
-                {(group, i) => {
-                  const quantity = form().unit === 'Meter' ? group.meter_total : group.yard_total;
-                  const subtotal = (group.item_details?.harga || 0) * quantity;
+              >
+                <For each={form().itemGroups}>
+                  {(group, i) => {
+                    const quantity =
+                      form().unit === "Meter"
+                        ? group.meter_total
+                        : group.yard_total;
+                    const subtotal =
+                      (group.item_details?.harga || 0) * quantity;
 
-                  return (
-                    <tr>
-                      <td class="border p-2 text-center">{i() + 1}</td>
-                      <td class="border w-108 p-2">
-                        <input
-                          class="border p-1 rounded w-full bg-gray-200"
-                          value={`${group.item_details?.corak_kain || ""} | ${group.item_details?.konstruksi_kain || ""}`}
-                          disabled
-                        />
-                      </td>
-                      <td class="border p-2">
-                        <input type="number"
+                    return (
+                      <tr>
+                        <td class="border p-2 text-center">{i() + 1}</td>
+                        <td class="border w-108 p-2">
+                          <input
+                            class="border p-1 rounded w-full bg-gray-200"
+                            value={`${group.item_details?.corak_kain || ""} | ${
+                              group.item_details?.konstruksi_kain || ""
+                            }`}
+                            disabled
+                          />
+                        </td>
+                        <td class="border p-2">
+                          <input
+                            type="number"
                             class="border p-1 rounded w-full bg-gray-200"
                             value={group.item_details?.lebar_kain}
                             disabled={true}
-                        />
-                      </td>
-                      <td class="border p-2">
-                        <input
+                          />
+                        </td>
+                        <td class="border p-2">
+                          <input
                             class="border p-1 rounded w-full bg-gray-200"
                             value={group.item_details?.deskripsi_warna}
                             disabled={true}
-                        />
-                      </td>
-                      <td class="border p-2">
-                        <input
-                          type="text"
-                          class="w-full border p-2 rounded text-right"
-                          value={formatNumber(quantity)}
-                          onBlur={(e) => handleQuantityChange(i(), e.target.value)}
-                          disabled={isView}
-                          classList={{ "bg-gray-200": isView }}
-                        />
-                      </td>
-                      {/* NEW: Gulung */}
-                      <td class="border p-2">
-                        <input
-                          type="number"
-                          placeholder="Banyak gulung..."
-                          class="w-full border p-2 rounded text-right"
-                          value={group.gulung ?? 0}
-                          onBlur={(e) => handleGulungChange(i(), e.target.value)}
-                          disabled={isView}
-                          classList={{ "bg-gray-200": isView }}
-                        />
-                      </td>
+                          />
+                        </td>
+                        <td class="border p-2">
+                          <input
+                            type="text"
+                            class="w-full border p-2 rounded text-right"
+                            value={formatNumber(quantity)}
+                            onBlur={(e) =>
+                              handleQuantityChange(i(), e.target.value)
+                            }
+                            disabled={isView}
+                            classList={{ "bg-gray-200": isView }}
+                          />
+                        </td>
+                        {/* NEW: Gulung */}
+                        <td class="border p-2">
+                          <input
+                            type="number"
+                            placeholder="Banyak gulung..."
+                            class="w-full border p-2 rounded text-right"
+                            value={group.gulung ?? 0}
+                            onBlur={(e) =>
+                              handleGulungChange(i(), e.target.value)
+                            }
+                            disabled={isView}
+                            classList={{ "bg-gray-200": isView }}
+                          />
+                        </td>
 
-                      {/* NEW: Lot */}
-                      <td class="border p-2">
-                        <input
-                          type="number"
-                          placeholder="Input lot..."
-                          class="w-full border p-2 rounded text-right"
-                          value={group.lot ?? 0}
-                          onBlur={(e) => handleLotChange(i(), e.target.value)}
-                          disabled={isView}
-                          classList={{ "bg-gray-200": isView }}
-                        />
-                      </td>
-                      <td hidden class="border p-2 text-right">
-                        <input
-                          class="w-full border p-2 rounded text-right"
-                          value={formatHarga(group.item_details?.harga)}
-                          disabled={true}
-                          classList={{ "bg-gray-200": true }}
-                        />
-                      </td>
-                      <td hidden class="border p-2 text-right font-semibold">
-                        <input
-                          class="w-full border p-2 rounded text-right"
-                          value={formatHarga(subtotal)}
-                          disabled={true}
-                          classList={{ "bg-gray-200": true }}
-                        />
-                      </td>
-                      <td class="border p-2 text-center">
-                        <button
-                          type="button"
-                          class="text-red-600 hover:text-red-800 disabled:cursor-not-allowed"
-                          onClick={() => removeItem(i())}
-                          disabled={isView} 
-                        >
-                          <Trash2 size={20} />
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                }}
-              </For>
-            </Show>
-          </tbody>
-          <tfoot>
-           <tr class="font-bold bg-gray-100">
-            <td colSpan="4" class="text-right p-2 border-t border-gray-300">TOTAL</td>
-            <td class="border p-2 text-right">
-              {form().unit === 'Meter' 
-                ? formatNumber(totalMeter(), 2) 
-                : formatNumber(totalYard(), 2)
-              }
-            </td>
-            {/* Kolom kosong untuk harga */}
-            {/* <td></td>  */}
-            <td hidden class="border p-2 text-right">{formatIDR(totalAll())}</td>
-            <td hidden class="border-t border-gray-300"></td>
-        </tr>
-        </tfoot>
-        </table>
-
+                        {/* NEW: Lot */}
+                        <td class="border p-2">
+                          <input
+                            type="number"
+                            placeholder="Input lot..."
+                            class="w-full border p-2 rounded text-right"
+                            value={group.lot ?? 0}
+                            onBlur={(e) => handleLotChange(i(), e.target.value)}
+                            disabled={isView}
+                            classList={{ "bg-gray-200": isView }}
+                          />
+                        </td>
+                        <td hidden class="border p-2 text-right">
+                          <input
+                            class="w-full border p-2 rounded text-right"
+                            value={formatHarga(group.item_details?.harga)}
+                            disabled={true}
+                            classList={{ "bg-gray-200": true }}
+                          />
+                        </td>
+                        <td hidden class="border p-2 text-right font-semibold">
+                          <input
+                            class="w-full border p-2 rounded text-right"
+                            value={formatHarga(subtotal)}
+                            disabled={true}
+                            classList={{ "bg-gray-200": true }}
+                          />
+                        </td>
+                        <td class="border p-2 text-center">
+                          <button
+                            type="button"
+                            class="text-red-600 hover:text-red-800 disabled:cursor-not-allowed"
+                            onClick={() => removeItem(i())}
+                            disabled={isView}
+                          >
+                            <Trash2 size={20} />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  }}
+                </For>
+              </Show>
+            </tbody>
+            <tfoot>
+              <tr class="font-bold bg-gray-100">
+                <td colSpan="4" class="text-right p-2 border-t border-gray-300">
+                  TOTAL
+                </td>
+                <td class="border p-2 text-right">
+                  {form().unit === "Meter"
+                    ? formatNumber(totalMeter(), 2)
+                    : formatNumber(totalYard(), 2)}
+                </td>
+                {/* Kolom kosong untuk harga */}
+                {/* <td></td>  */}
+                <td hidden class="border p-2 text-right">
+                  {formatIDR(totalAll())}
+                </td>
+                <td hidden class="border-t border-gray-300"></td>
+              </tr>
+            </tfoot>
+          </table>
         </div>
 
         <div class="mt-6">
@@ -799,7 +875,7 @@ export default function JBDeliveryNoteForm() {
             Simpan
           </button>
         </div>
-      </form>      
+      </form>
     </MainLayout>
   );
 }

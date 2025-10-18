@@ -52,7 +52,7 @@ export default function ExporSalesContractForm() {
   const [form, setForm] = createSignal({
     type: "",
     sequence_number: "", // SC/E/P/....
-    no_seq: undefined,   // angka urut (sequence)
+    no_seq: undefined, // angka urut (sequence)
     tanggal: "",
     po_cust: "-",
     no_pesan: "",
@@ -61,7 +61,7 @@ export default function ExporSalesContractForm() {
     currency_id: "",
     kurs: "",
     termin: "",
-    ppn_percent: "11.00",   // ekspor selalu P
+    ppn_percent: "11.00", // ekspor selalu P
     keterangan: "",
     satuan_unit_id: "",
     percentage_tolerance: "",
@@ -176,8 +176,10 @@ export default function ExporSalesContractForm() {
 
   const activeCurrencyName = () =>
     isEdit
-      ? (purchaseContractData()?.currency_name || selectedCurrency()?.name || "IDR")
-      : (selectedCurrency()?.name || "IDR");
+      ? purchaseContractData()?.currency_name ||
+        selectedCurrency()?.name ||
+        "IDR"
+      : selectedCurrency()?.name || "IDR";
 
   const displayMoney = (n) => moneyWith(activeCurrencyName(), n);
 
@@ -234,7 +236,7 @@ export default function ExporSalesContractForm() {
   // === AGENT HELPERS ===
 
   const agentNameById = (id) => {
-    const row = (agentList() || []).find(a => String(a.id) === String(id));
+    const row = (agentList() || []).find((a) => String(a.id) === String(id));
     return row?.agent_name || null;
   };
 
@@ -314,8 +316,9 @@ export default function ExporSalesContractForm() {
             ? kilogramValue
             : 0);
 
-        const designId  = item.design_id ?? item.warna_id ?? null;
-        const designKod = item.design_kode ?? item.design ?? colorNameById(designId) ?? "";
+        const designId = item.design_id ?? item.warna_id ?? null;
+        const designKod =
+          item.design_kode ?? item.design ?? colorNameById(designId) ?? "";
 
         return {
           meter_total: item.meter_total,
@@ -332,7 +335,7 @@ export default function ExporSalesContractForm() {
           grade_id: item.grade_id ?? "",
 
           warna_id: designId,
-          design: designKod, 
+          design: designKod,
 
           lebar: formatNumber(lebarValue, { decimals: 0, showZero: true }),
           lebarValue: Math.round(lebarValue),
@@ -450,8 +453,8 @@ export default function ExporSalesContractForm() {
         {
           fabric_id: null,
           grade_id: "",
-          warna_id: null, 
-          design: "", 
+          warna_id: null,
+          design: "",
           lebar: "",
           lebarValue: 0,
           description_of_goods: "",
@@ -491,12 +494,18 @@ export default function ExporSalesContractForm() {
 
       if (field === "fabric_id" || field === "grade_id") {
         item[field] = value;
-        } else if (field === "warna_id") {
-          const obj  = (typeof value === "object" && value) ? value : {};
-          const id   = obj.id ?? value ?? null;
-          const name = obj.warna ?? obj.nama ?? obj.name ?? obj.label ?? colorNameById(id) ?? "";
-          item.warna_id = id;
-          item.design   = name;
+      } else if (field === "warna_id") {
+        const obj = typeof value === "object" && value ? value : {};
+        const id = obj.id ?? value ?? null;
+        const name =
+          obj.warna ??
+          obj.nama ??
+          obj.name ??
+          obj.label ??
+          colorNameById(id) ??
+          "";
+        item.warna_id = id;
+        item.design = name;
       } else if (field === "lebar") {
         const intVal = sanitizeInt(value);
         item.lebarValue = intVal;
@@ -508,7 +517,10 @@ export default function ExporSalesContractForm() {
         let numValue;
         if (field === "harga") {
           const curr = activeCurrencyName();
-          numValue = roundTo(curr === "USD" ? parseUSD(value) : parseIDR(value), 2);
+          numValue = roundTo(
+            curr === "USD" ? parseUSD(value) : parseIDR(value),
+            2
+          );
           item.hargaValue = numValue;
           item.harga = displayMoney(numValue); // tampil sesuai currency aktif (lihat helper)
         } else {
@@ -520,12 +532,18 @@ export default function ExporSalesContractForm() {
         // auto convert antar satuan
         if (satuanId === 1 && field === "meter") {
           item.yardValue = roundTo((numValue || 0) * 1.093613, 2);
-          item.yard = formatNumber(item.yardValue, { decimals: 2, showZero: true });
+          item.yard = formatNumber(item.yardValue, {
+            decimals: 2,
+            showZero: true,
+          });
           item.kilogramValue = 0;
           item.kilogram = formatNumber(0, { decimals: 2, showZero: true });
         } else if (satuanId === 2 && field === "yard") {
           item.meterValue = roundTo((numValue || 0) * 0.9144, 2);
-          item.meter = formatNumber(item.meterValue, { decimals: 2, showZero: true });
+          item.meter = formatNumber(item.meterValue, {
+            decimals: 2,
+            showZero: true,
+          });
           item.kilogramValue = 0;
           item.kilogram = formatNumber(0, { decimals: 2, showZero: true });
         } else if (satuanId === 3 && field === "kilogram") {
@@ -550,6 +568,20 @@ export default function ExporSalesContractForm() {
       items[index] = item;
       return { ...prev, items };
     });
+  };
+
+  const handleKeyDown = (e) => {
+    const tag = e.target.tagName;
+    const type = e.target.type;
+
+    if (
+      e.key === "Enter" &&
+      tag !== "TEXTAREA" &&
+      type !== "submit" &&
+      type !== "button"
+    ) {
+      e.preventDefault();
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -606,7 +638,7 @@ export default function ExporSalesContractForm() {
 
       if (isEdit) {
         //console.log("Update Data SC: ", JSON.stringify(payload, null, 2));
-        
+
         await updateDataSalesContract(user?.token, params.id, payload);
       } else {
         //console.log("Create Data SC: ", JSON.stringify(payload, null, 2));
@@ -638,7 +670,11 @@ export default function ExporSalesContractForm() {
 
   function handlePrint() {
     if (!purchaseContractData()) {
-      Swal.fire("Gagal", "Data untuk mencetak tidak tersedia. Pastikan Anda dalam mode Edit/View.", "error");
+      Swal.fire(
+        "Gagal",
+        "Data untuk mencetak tidak tersedia. Pastikan Anda dalam mode Edit/View.",
+        "error"
+      );
       return;
     }
     const dataToPrint = { ...purchaseContractData() };
@@ -670,7 +706,7 @@ export default function ExporSalesContractForm() {
         Print
       </button>
 
-      <form class="space-y-4" onSubmit={handleSubmit}>
+      <form class="space-y-4" onSubmit={handleSubmit} onkeydown={handleKeyDown}>
         <div class="grid grid-cols-5 gap-4">
           <div>
             <label class="block mb-1 font-medium">Contract Number</label>
@@ -783,7 +819,9 @@ export default function ExporSalesContractForm() {
                   class="w-full border p-2 rounded rounded-l-none"
                   type="text"
                   value={formatGroupID(form().kurs)}
-                  onInput={(e) => setForm({ ...form(), kurs: parseKurs(e.target.value) })}
+                  onInput={(e) =>
+                    setForm({ ...form(), kurs: parseKurs(e.target.value) })
+                  }
                   required
                   disabled={isView}
                   classList={{ "bg-gray-200": isView }}
@@ -825,7 +863,7 @@ export default function ExporSalesContractForm() {
                 setForm({ ...form(), percentage_tolerance: e.target.value })
               }
               disabled={isView}
-              classList={{ "bg-gray-200" : isView }}
+              classList={{ "bg-gray-200": isView }}
             />
           </div>
 
@@ -839,7 +877,7 @@ export default function ExporSalesContractForm() {
                 setForm({ ...form(), piece_length: e.target.value })
               }
               disabled={isView}
-              classList={{ "bg-gray-200" : isView }}
+              classList={{ "bg-gray-200": isView }}
             />
           </div>
         </div>
@@ -851,9 +889,7 @@ export default function ExporSalesContractForm() {
               type="date"
               class="w-full border p-2 rounded"
               value={form().shipment}
-              onInput={(e) =>
-                setForm({ ...form(), shipment: e.target.value })
-              }
+              onInput={(e) => setForm({ ...form(), shipment: e.target.value })}
               disabled={isView || isEdit}
               classList={{ "bg-gray-200": isView || isEdit }}
             />
@@ -869,7 +905,7 @@ export default function ExporSalesContractForm() {
                 setForm({ ...form(), terms_of_delivery: e.target.value })
               }
               disabled={isView}
-              classList={{ "bg-gray-200" : isView }}
+              classList={{ "bg-gray-200": isView }}
             />
           </div>
 
@@ -897,7 +933,7 @@ export default function ExporSalesContractForm() {
             value={form().negotiation}
             onInput={(e) => setForm({ ...form(), negotiation: e.target.value })}
             disabled={isView}
-            classList={{ "bg-gray-200" : isView }}
+            classList={{ "bg-gray-200": isView }}
           />
         </div>
 
@@ -960,7 +996,11 @@ export default function ExporSalesContractForm() {
                       {sisa > 0 ? (
                         <span class="font-bold text-blue-600">
                           {formatNumberQty(sisa)}{" "}
-                          {unit === "Meter" ? "m" : unit === "Yard" ? "yd" : "kg"}
+                          {unit === "Meter"
+                            ? "m"
+                            : unit === "Yard"
+                            ? "yd"
+                            : "kg"}
                         </span>
                       ) : (
                         <span class="font-bold text-red-600">HABIS</span>
@@ -988,7 +1028,9 @@ export default function ExporSalesContractForm() {
             <tr>
               <th class="border p-2">#</th>
               <th class="border p-2">Article</th>
-              <th hidden class="border p-2">Design (Color)</th>
+              <th hidden class="border p-2">
+                Design (Color)
+              </th>
               <th class="border p-2">Desc of Goods</th>
               <th class="border p-2">Yard</th>
               <th class="border p-2">Meter</th>
@@ -1006,7 +1048,9 @@ export default function ExporSalesContractForm() {
                     <FabricDropdownSearch
                       fabrics={fabricOptions}
                       item={item}
-                      onChange={(val) => handleItemChange(i(), "fabric_id", val)}
+                      onChange={(val) =>
+                        handleItemChange(i(), "fabric_id", val)
+                      }
                       disabled={isView}
                       classList={{ "bg-gray-200": isView }}
                     />
@@ -1026,7 +1070,11 @@ export default function ExporSalesContractForm() {
                       class="border p-1 rounded w-full"
                       value={item.description_of_goods}
                       onBlur={(e) =>
-                        handleItemChange(i(), "description_of_goods", e.target.value)
+                        handleItemChange(
+                          i(),
+                          "description_of_goods",
+                          e.target.value
+                        )
                       }
                       disabled={isView}
                       classList={{ "bg-gray-200": isView }}
@@ -1037,7 +1085,9 @@ export default function ExporSalesContractForm() {
                       type="text"
                       inputmode="decimal"
                       class={`border p-1 rounded w-full ${
-                        parseInt(form().satuan_unit_id) !== 2 ? "bg-gray-200" : ""
+                        parseInt(form().satuan_unit_id) !== 2
+                          ? "bg-gray-200"
+                          : ""
                       }`}
                       readOnly={parseInt(form().satuan_unit_id) !== 2}
                       value={item.yard}
@@ -1055,7 +1105,9 @@ export default function ExporSalesContractForm() {
                       type="text"
                       inputmode="decimal"
                       class={`border p-1 rounded w-full ${
-                        parseInt(form().satuan_unit_id) !== 1 ? "bg-gray-200" : ""
+                        parseInt(form().satuan_unit_id) !== 1
+                          ? "bg-gray-200"
+                          : ""
                       }`}
                       readOnly={parseInt(form().satuan_unit_id) !== 1}
                       value={item.meter}
@@ -1074,7 +1126,9 @@ export default function ExporSalesContractForm() {
                       inputmode="decimal"
                       class="border p-1 rounded w-full"
                       value={item.harga}
-                      onBlur={(e) => handleItemChange(i(), "harga", e.target.value)}
+                      onBlur={(e) =>
+                        handleItemChange(i(), "harga", e.target.value)
+                      }
                       disabled={isView}
                       classList={{ "bg-gray-200": isView }}
                     />

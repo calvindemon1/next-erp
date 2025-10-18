@@ -48,8 +48,11 @@ export default function KJPurchaseOrderForm() {
   const [purchaseContractData, setPurchaseContractData] = createSignal(null);
 
   const payload = (() => {
-    try { return user?.token ? jwtDecode(user.token) : null; }
-    catch { return null; }
+    try {
+      return user?.token ? jwtDecode(user.token) : null;
+    } catch {
+      return null;
+    }
   })();
 
   const [me, setMe] = createSignal(payload);
@@ -67,10 +70,12 @@ export default function KJPurchaseOrderForm() {
   const canEditAll = () => !isView && !isStrictColorEdit();
   const canEditColorOnly = () => !isView && isStrictColorEdit();
 
-  const canEditKeteranganWarna = () => !isView && (!isEdit || !isStrictColorEdit());
-  const canEditKeterangan       = () => !isView && (!isEdit || !isStrictColorEdit());
-  const canEditInstruksiKain = () => !isView && (!isEdit || !isStrictColorEdit());
-  const canEditQty              = () => !isView && (!isEdit || !isStrictColorEdit());
+  const canEditKeteranganWarna = () =>
+    !isView && (!isEdit || !isStrictColorEdit());
+  const canEditKeterangan = () => !isView && (!isEdit || !isStrictColorEdit());
+  const canEditInstruksiKain = () =>
+    !isView && (!isEdit || !isStrictColorEdit());
+  const canEditQty = () => !isView && (!isEdit || !isStrictColorEdit());
 
   const [form, setForm] = createSignal({
     jenis_po_id: "",
@@ -119,9 +124,9 @@ export default function KJPurchaseOrderForm() {
     if (num === "" || num === null || num === undefined) return "";
 
     const numValue = Number(num);
-    
+
     if (isNaN(numValue)) return "";
-    
+
     if (numValue === 0) return "0";
 
     return new Intl.NumberFormat("id-ID", {
@@ -129,7 +134,7 @@ export default function KJPurchaseOrderForm() {
       maximumFractionDigits: decimals,
     }).format(numValue);
   };
-  
+
   const parsePercent = (s) => {
     if (s === null || s === undefined) return 0;
     if (typeof s !== "string") return Number(s) || 0;
@@ -146,7 +151,8 @@ export default function KJPurchaseOrderForm() {
   };
 
   const formatPercent = (num) => {
-    if (num === "" || num === null || num === undefined || isNaN(num)) return "";
+    if (num === "" || num === null || num === undefined || isNaN(num))
+      return "";
     return `${formatNumber(Number(num), { decimals: 2 })} %`;
   };
 
@@ -204,8 +210,12 @@ export default function KJPurchaseOrderForm() {
           // Field Keterangan untuk warna
           keterangan_warna: item.keterangan_warna || "",
 
-          std_susutValue: item.std_susut != null ? parseFloat(item.std_susut) : 0,
-          std_susut: item.std_susut != null ? formatPercent(parseFloat(item.std_susut)) : "",
+          std_susutValue:
+            item.std_susut != null ? parseFloat(item.std_susut) : 0,
+          std_susut:
+            item.std_susut != null
+              ? formatPercent(parseFloat(item.std_susut))
+              : "",
 
           meter: item.meter_total,
           yard: item.yard_total,
@@ -237,7 +247,7 @@ export default function KJPurchaseOrderForm() {
         ppn: data.ppn_percent ?? "",
         keterangan: data.keterangan ?? "",
         instruksi_kain: data.instruksi_kain ?? "",
-        tanggal: data.created_at 
+        tanggal: data.created_at
           ? new Date(data.created_at).toISOString().substring(0, 10) // ⬅️ ambil created_at dari API
           : prev.tanggal,
         //items: normalizedItems,
@@ -270,7 +280,9 @@ export default function KJPurchaseOrderForm() {
 
   const handlePurchaseContractChange = async (contractId, overrideItems) => {
     // Ambil dari cache
-    let selectedContract = purchaseContracts().find((sc) => sc.id == contractId);
+    let selectedContract = purchaseContracts().find(
+      (sc) => sc.id == contractId
+    );
 
     // SELALU fetch detail agar qty/lebar/harga lengkap
     try {
@@ -294,7 +306,9 @@ export default function KJPurchaseOrderForm() {
     const mappedItems = sourceItems.map((ci0) => {
       // kalau override (data dari PO), cari item kontrak aslinya pakai pc_item_id
       const base = overrideItems
-        ? (selectedContract.items || []).find(it => String(it.id) === String(ci0.pc_item_id))
+        ? (selectedContract.items || []).find(
+            (it) => String(it.id) === String(ci0.pc_item_id)
+          )
         : null;
 
       const ci = overrideItems ? ci0 : { ...ci0, pc_item_id: ci0.id };
@@ -310,10 +324,12 @@ export default function KJPurchaseOrderForm() {
         null;
 
       const meterNum = parseFloat(ci.meter_total ?? ci.meter ?? 0) || 0;
-      const yardNum  = parseFloat(ci.yard_total  ?? ci.yard  ?? 0) || 0;
+      const yardNum = parseFloat(ci.yard_total ?? ci.yard ?? 0) || 0;
 
-      const hargaGreige = parseFloat(ci.harga_greige ?? ci.harga_greige ?? 0) || 0;
-      const hargaMaklun = parseFloat(ci.harga_maklun ?? ci.harga_maklun ?? 0) || 0;
+      const hargaGreige =
+        parseFloat(ci.harga_greige ?? ci.harga_greige ?? 0) || 0;
+      const hargaMaklun =
+        parseFloat(ci.harga_maklun ?? ci.harga_maklun ?? 0) || 0;
 
       const qty = String(satuan_unit_id) === "2" ? yardNum : meterNum;
       const subtotal = (hargaGreige + hargaMaklun) * qty;
@@ -322,19 +338,24 @@ export default function KJPurchaseOrderForm() {
 
       return {
         // Panel "Quantity Kain"
-        meter_total:        parseFloat(ci.meter_total ?? ci.meter ?? 0) || 0,
-        yard_total:         parseFloat(ci.yard_total  ?? ci.yard  ?? 0) || 0,
+        meter_total: parseFloat(ci.meter_total ?? ci.meter ?? 0) || 0,
+        yard_total: parseFloat(ci.yard_total ?? ci.yard ?? 0) || 0,
         meter_dalam_proses: parseFloat(ci.meter_dalam_proses ?? 0) || 0,
-        yard_dalam_proses:  parseFloat(ci.yard_dalam_proses  ?? 0) || 0,
-        corak_kain:         ci.corak_kain ?? base.corak_kain ?? ci.kain?.corak_kain ?? "-",
-        konstruksi_kain:    ci.konstruksi_kain ?? base.konstruksi_kain ?? ci.kain?.konstruksi_kain ?? "-",
+        yard_dalam_proses: parseFloat(ci.yard_dalam_proses ?? 0) || 0,
+        corak_kain:
+          ci.corak_kain ?? base.corak_kain ?? ci.kain?.corak_kain ?? "-",
+        konstruksi_kain:
+          ci.konstruksi_kain ??
+          base.konstruksi_kain ??
+          ci.kain?.konstruksi_kain ??
+          "-",
 
         // Kunci referensi / dropdown
         id: ci.id ?? null,
         pc_item_id: ci.pc_item_id ?? ci.id ?? null,
 
         fabric_id: fabricId,
-        kain_id:   fabricId,
+        kain_id: fabricId,
 
         warna_id: ci.warna_id ?? null,
         lebar_greige: String(ci.lebar_greige ?? base.lebar_greige ?? ""),
@@ -342,21 +363,22 @@ export default function KJPurchaseOrderForm() {
         keterangan_warna: ci.keterangan_warna ?? "",
 
         std_susutValue: ci.std_susut != null ? parseFloat(ci.std_susut) : 0,
-        std_susut: ci.std_susut != null ? formatPercent(parseFloat(ci.std_susut)) : "",
+        std_susut:
+          ci.std_susut != null ? formatPercent(parseFloat(ci.std_susut)) : "",
 
         // Qty tampilan + value mentah
-        meter:      formatNumber(meterNum, { decimals: 2 }),
+        meter: formatNumber(meterNum, { decimals: 2 }),
         meterValue: meterNum,
-        yard:       formatNumber(yardNum,  { decimals: 2 }),
-        yardValue:  yardNum,
+        yard: formatNumber(yardNum, { decimals: 2 }),
+        yardValue: yardNum,
 
         // Harga dari kontrak
-        harga_greige:          hargaGreige,
-        harga_greigeValue:     hargaGreige,
+        harga_greige: hargaGreige,
+        harga_greigeValue: hargaGreige,
         harga_greigeFormatted: formatIDR(hargaGreige),
 
-        harga_maklun:          hargaMaklun,
-        harga_maklunValue:     hargaMaklun,
+        harga_maklun: hargaMaklun,
+        harga_maklunValue: hargaMaklun,
         harga_maklunFormatted: formatIDR(hargaMaklun),
 
         subtotal,
@@ -366,7 +388,12 @@ export default function KJPurchaseOrderForm() {
       };
     });
 
-    const lastSeq = await getLastSequence(user?.token, "kj_o", "domestik", form().ppn);
+    const lastSeq = await getLastSequence(
+      user?.token,
+      "kj_o",
+      "domestik",
+      form().ppn
+    );
 
     setForm((prev) => ({
       ...prev,
@@ -411,11 +438,11 @@ export default function KJPurchaseOrderForm() {
 
   const templateFromKJContractItem = (ci, satuan_unit_id) => {
     const meterTotal = Number(ci.meter_total ?? ci.meter ?? 0) || 0;
-    const yardTotal  = Number(ci.yard_total  ?? ci.yard  ?? 0) || 0;
+    const yardTotal = Number(ci.yard_total ?? ci.yard ?? 0) || 0;
 
     // Lengkapi unit lain bila hanya salah satu yang ada
     const meterNum = meterTotal || (yardTotal ? yardTotal * 0.9144 : 0);
-    const yardNum  = yardTotal  || (meterTotal ? meterTotal * 1.093613 : 0);
+    const yardNum = yardTotal || (meterTotal ? meterTotal * 1.093613 : 0);
 
     const hargaGreige = parseFloat(ci.harga_greige ?? 0) || 0;
     const hargaMaklun = parseFloat(ci.harga_maklun ?? 0) || 0;
@@ -436,19 +463,20 @@ export default function KJPurchaseOrderForm() {
       lebar_greige: ci.lebar_greige ?? "",
       lebar_finish: ci.lebar_finish ?? "",
 
-      corak_kain:      ci.corak_kain ?? ci.kain?.corak_kain ?? "-",
+      corak_kain: ci.corak_kain ?? ci.kain?.corak_kain ?? "-",
       konstruksi_kain: ci.konstruksi_kain ?? ci.kain?.konstruksi_kain ?? "-",
-      meter_total:     meterNum,
-      yard_total:      yardNum,
+      meter_total: meterNum,
+      yard_total: yardNum,
       meter_dalam_proses: parseFloat(ci.meter_dalam_proses ?? 0) || 0,
-      yard_dalam_proses:  parseFloat(ci.yard_dalam_proses  ?? 0) || 0,
+      yard_dalam_proses: parseFloat(ci.yard_dalam_proses ?? 0) || 0,
 
       std_susutValue: ci.std_susut != null ? parseFloat(ci.std_susut) : 0,
-      std_susut: ci.std_susut != null ? formatPercent(parseFloat(ci.std_susut)) : "",
+      std_susut:
+        ci.std_susut != null ? formatPercent(parseFloat(ci.std_susut)) : "",
 
       meter: formatNumber(meterNum, { decimals: 2 }),
       meterValue: meterNum,
-      yard:  formatNumber(yardNum,  { decimals: 2 }),
+      yard: formatNumber(yardNum, { decimals: 2 }),
       yardValue: yardNum,
 
       harga_greigeValue: hargaGreige,
@@ -466,7 +494,11 @@ export default function KJPurchaseOrderForm() {
   const addItem = async () => {
     const pcId = form().pc_id;
     if (!pcId) {
-      Swal.fire("Peringatan", "Silakan pilih Purchase Contract terlebih dahulu.", "warning");
+      Swal.fire(
+        "Peringatan",
+        "Silakan pilih Purchase Contract terlebih dahulu.",
+        "warning"
+      );
       return;
     }
 
@@ -485,9 +517,11 @@ export default function KJPurchaseOrderForm() {
     }
 
     const satuanId = contractSatuan || form().satuan_unit_id; // 1=Meter, 2=Yard
-    const paketBaru = baseItems.map(ci => templateFromKJContractItem(ci, satuanId));
+    const paketBaru = baseItems.map((ci) =>
+      templateFromKJContractItem(ci, satuanId)
+    );
 
-    setForm(prev => ({ ...prev, items: [...prev.items, ...paketBaru] }));
+    setForm((prev) => ({ ...prev, items: [...prev.items, ...paketBaru] }));
   };
 
   const removeItem = (index) => {
@@ -504,12 +538,18 @@ export default function KJPurchaseOrderForm() {
       const item = { ...items[index] };
       const satuanId = parseInt(prev.satuan_unit_id);
 
-      if (field === "fabric_id" || field === "kain_id" || field === "warna_id") {
+      if (
+        field === "fabric_id" ||
+        field === "kain_id" ||
+        field === "warna_id"
+      ) {
         item[field] = value;
-  
+
         if (field === "fabric_id" || field === "kain_id") {
-          item.kain_id = value; 
-          const contract = purchaseContracts().find((sc) => sc.id == prev.pc_id);
+          item.kain_id = value;
+          const contract = purchaseContracts().find(
+            (sc) => sc.id == prev.pc_id
+          );
           if (contract && contract.items) {
             const matchedItem = contract.items.find(
               (i) => i.fabric_id == value || i.kain_id == value
@@ -526,7 +566,6 @@ export default function KJPurchaseOrderForm() {
         item.std_susutValue = p;
         item.std_susut = formatPercent(p);
       } else {
-
         const numValue = parseNumber(value);
         item[`${field}Value`] = numValue; // Selalu simpan nilai angka murni
 
@@ -579,6 +618,20 @@ export default function KJPurchaseOrderForm() {
     return form().items.reduce((sum, item) => {
       return sum + (item.subtotal || 0);
     }, 0);
+  };
+
+  const handleKeyDown = (e) => {
+    const tag = e.target.tagName;
+    const type = e.target.type;
+
+    if (
+      e.key === "Enter" &&
+      tag !== "TEXTAREA" &&
+      type !== "submit" &&
+      type !== "button"
+    ) {
+      e.preventDefault();
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -681,7 +734,11 @@ export default function KJPurchaseOrderForm() {
 
   function handlePrint() {
     if (!purchaseContractData()) {
-      Swal.fire("Gagal", "Data untuk mencetak tidak tersedia. Pastikan Anda dalam mode Edit/View.", "error");
+      Swal.fire(
+        "Gagal",
+        "Data untuk mencetak tidak tersedia. Pastikan Anda dalam mode Edit/View.",
+        "error"
+      );
       return;
     }
 
@@ -711,7 +768,7 @@ export default function KJPurchaseOrderForm() {
         <Printer size={20} />
         Print
       </button>
-      <form class="space-y-4" onSubmit={handleSubmit}>
+      <form class="space-y-4" onSubmit={handleSubmit} onkeydown={handleKeyDown}>
         <div class="grid grid-cols-3 gap-4">
           <div>
             <label class="block mb-1 font-medium">No Order</label>
@@ -839,18 +896,22 @@ export default function KJPurchaseOrderForm() {
             <textarea
               class="w-full border p-2 rounded"
               value={form().keterangan}
-              onInput={(e) => setForm({ ...form(), keterangan: e.target.value })}
+              onInput={(e) =>
+                setForm({ ...form(), keterangan: e.target.value })
+              }
               disabled={!canEditKeterangan()}
               classList={{ "bg-gray-200": !canEditKeterangan() }}
             ></textarea>
           </div>
 
-            <div>
+          <div>
             <label class="block mb-1 font-medium">Instruksi Kain</label>
             <textarea
               class="w-full border p-2 rounded"
               value={form().instruksi_kain}
-              onInput={(e) => setForm({ ...form(), instruksi_kain: e.target.value })}
+              onInput={(e) =>
+                setForm({ ...form(), instruksi_kain: e.target.value })
+              }
               disabled={!canEditInstruksiKain()}
               classList={{ "bg-gray-200": !canEditInstruksiKain() }}
             ></textarea>
@@ -863,21 +924,24 @@ export default function KJPurchaseOrderForm() {
             <ul class="space-y-1 pl-5">
               <For each={form().items}>
                 {(item) => {
-                  const unit = form().satuan_unit_id == 1 ? 'Meter' : 'Yard';
+                  const unit = form().satuan_unit_id == 1 ? "Meter" : "Yard";
                   const sisa =
-                    unit === 'Meter'
-                      ? Number(item.meter_total) - Number(item.meter_dalam_proses || 0)
-                      : Number(item.yard_total) - Number(item.yard_dalam_proses || 0);
+                    unit === "Meter"
+                      ? Number(item.meter_total) -
+                        Number(item.meter_dalam_proses || 0)
+                      : Number(item.yard_total) -
+                        Number(item.yard_dalam_proses || 0);
 
                   return (
                     <li class="text-sm list-disc">
                       <span class="font-semibold">
                         {item.corak_kain} | {item.konstruksi_kain}
-                      </span>{' '}
-                      - Quantity:{' '}
+                      </span>{" "}
+                      - Quantity:{" "}
                       {sisa > 0 ? (
                         <span class="font-bold text-blue-600">
-                          {formatNumberQty(sisa)} {unit === 'Meter' ? 'm' : 'yd'}
+                          {formatNumberQty(sisa)}{" "}
+                          {unit === "Meter" ? "m" : "yd"}
                         </span>
                       ) : (
                         <span class="font-bold text-red-600">HABIS</span>
@@ -888,7 +952,7 @@ export default function KJPurchaseOrderForm() {
               </For>
             </ul>
           </div>
-        </Show>        
+        </Show>
 
         <h2 class="text-lg font-bold mt-6 mb-2">Items</h2>
 
@@ -896,7 +960,7 @@ export default function KJPurchaseOrderForm() {
           type="button"
           class="bg-green-600 text-white px-3 py-2 rounded hover:bg-green-700 mb-4"
           onClick={addItem}
-          hidden={ isView || (isEdit && isStrictColorEdit()) }
+          hidden={isView || (isEdit && isStrictColorEdit())}
         >
           + Tambah Item
         </button>
@@ -906,7 +970,9 @@ export default function KJPurchaseOrderForm() {
             <tr>
               <th class="border p-2 w-[2%]">#</th>
               <th class="border p-2 w-[16%]">Jenis Kain</th>
-              <th hidden class="border p-2 w-[7%]">Lebar Greige</th>
+              <th hidden class="border p-2 w-[7%]">
+                Lebar Greige
+              </th>
               <th class="border p-2 w-[7%]">Lebar Finish</th>
               <th class="border p-2 w-[7%]">Std Susut</th>
               <th class="border p-2 w-[12%]">Warna</th>
@@ -917,9 +983,15 @@ export default function KJPurchaseOrderForm() {
               <Show when={parseInt(form().satuan_unit_id) === 2}>
                 <th class="border p-2 w-[10%]">Yard</th>
               </Show>
-              <th class="border p-2 w-[12%]" hidden>Harga Greige</th>
-              <th class="border p-2 w-[12%]" hidden>Harga Celup</th>
-              <th class="border p-2 w-[12%]" hidden>Subtotal</th>
+              <th class="border p-2 w-[12%]" hidden>
+                Harga Greige
+              </th>
+              <th class="border p-2 w-[12%]" hidden>
+                Harga Celup
+              </th>
+              <th class="border p-2 w-[12%]" hidden>
+                Subtotal
+              </th>
               <th class="border p-2 w-[4%]">Aksi</th>
             </tr>
           </thead>
@@ -959,9 +1031,14 @@ export default function KJPurchaseOrderForm() {
                       type="text"
                       class="border p-1 rounded w-full"
                       value={item.std_susut ?? ""}
-                      onBlur={(e) => handleItemChange(i(), "std_susut", e.target.value)}
-                      disabled={ isView || (isEdit && isStrictColorEdit()) }
-                      classList={{ "bg-gray-200": isView || (isEdit && isStrictColorEdit()) }}
+                      onBlur={(e) =>
+                        handleItemChange(i(), "std_susut", e.target.value)
+                      }
+                      disabled={isView || (isEdit && isStrictColorEdit())}
+                      classList={{
+                        "bg-gray-200":
+                          isView || (isEdit && isStrictColorEdit()),
+                      }}
                       // placeholder="0,00 %"
                     />
                   </td>
@@ -973,12 +1050,20 @@ export default function KJPurchaseOrderForm() {
                       disabled={isView}
                     />
                   </td>
-                  <td class="border p-2">  {/* kolom Keterangan warna */}
+                  <td class="border p-2">
+                    {" "}
+                    {/* kolom Keterangan warna */}
                     <input
                       type="text"
                       class="border p-1 rounded w-full"
                       value={item.keterangan_warna ?? ""}
-                      onBlur={(e) => handleItemChange(i(), "keterangan_warna", e.target.value)}
+                      onBlur={(e) =>
+                        handleItemChange(
+                          i(),
+                          "keterangan_warna",
+                          e.target.value
+                        )
+                      }
                       disabled={!canEditKeteranganWarna()}
                       classList={{ "bg-gray-200": !canEditKeteranganWarna() }}
                       placeholder="Keterangan warna..."
@@ -990,11 +1075,23 @@ export default function KJPurchaseOrderForm() {
                         type="text"
                         inputmode="decimal"
                         class="border p-1 rounded w-48"
-                        readOnly={isView || !canEditQty() || parseInt(form().satuan_unit_id) === 2}
-                        classList={{ "bg-gray-200": isView || !canEditQty() || parseInt(form().satuan_unit_id) === 2 }}
+                        readOnly={
+                          isView ||
+                          !canEditQty() ||
+                          parseInt(form().satuan_unit_id) === 2
+                        }
+                        classList={{
+                          "bg-gray-200":
+                            isView ||
+                            !canEditQty() ||
+                            parseInt(form().satuan_unit_id) === 2,
+                        }}
                         value={item.meter}
                         onBlur={(e) => {
-                          if (parseInt(form().satuan_unit_id) === 1 && canEditQty()) {
+                          if (
+                            parseInt(form().satuan_unit_id) === 1 &&
+                            canEditQty()
+                          ) {
                             handleItemChange(i(), "meter", e.target.value);
                           }
                         }}
@@ -1007,11 +1104,23 @@ export default function KJPurchaseOrderForm() {
                         type="text"
                         inputmode="decimal"
                         class="border p-1 rounded w-48"
-                        readOnly={isView || !canEditQty() || parseInt(form().satuan_unit_id) === 1}
-                        classList={{ "bg-gray-200": isView || !canEditQty() || parseInt(form().satuan_unit_id) === 1 }}
+                        readOnly={
+                          isView ||
+                          !canEditQty() ||
+                          parseInt(form().satuan_unit_id) === 1
+                        }
+                        classList={{
+                          "bg-gray-200":
+                            isView ||
+                            !canEditQty() ||
+                            parseInt(form().satuan_unit_id) === 1,
+                        }}
                         value={item.yard}
                         onBlur={(e) => {
-                          if (parseInt(form().satuan_unit_id) === 2 && canEditQty()) {
+                          if (
+                            parseInt(form().satuan_unit_id) === 2 &&
+                            canEditQty()
+                          ) {
                             handleItemChange(i(), "yard", e.target.value);
                           }
                         }}
@@ -1079,14 +1188,20 @@ export default function KJPurchaseOrderForm() {
                 TOTAL
               </td>
               <Show when={parseInt(form().satuan_unit_id) === 1}>
-                <td class="border p-2">{formatNumber(totalMeter(), { decimals: 2 })}</td>
+                <td class="border p-2">
+                  {formatNumber(totalMeter(), { decimals: 2 })}
+                </td>
               </Show>
               <Show when={parseInt(form().satuan_unit_id) === 2}>
-                <td class="border p-2">{formatNumber(totalYard(), { decimals: 2 })}</td>
+                <td class="border p-2">
+                  {formatNumber(totalYard(), { decimals: 2 })}
+                </td>
               </Show>
               <td hidden></td>
               <td hidden></td>
-              <td class="border p-2" hidden>{formatIDR(totalAll())}</td>
+              <td class="border p-2" hidden>
+                {formatIDR(totalAll())}
+              </td>
               <td></td>
             </tr>
           </tfoot>
