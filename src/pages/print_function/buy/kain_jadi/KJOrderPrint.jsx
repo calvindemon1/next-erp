@@ -242,13 +242,30 @@ function PrintPage(props) {
                 { label: "No. Order", value: data.no_po },
                 { label: "Tanggal", value: formatTanggal(data.created_at) },
                 {
-                  label: "Validity",
-                  value: formatTanggal(data.validity_contract),
+                  label: "Kode Kain",
+                  value: (() => {
+                    if (items && items.length) {
+                      const uniques = Array.from(
+                        new Set(
+                          items
+                            .map(it => (it.corak_kain || "").trim()) // ambil dan trim
+                            .filter(Boolean) // buang kosong
+                        )
+                      );
+                      return uniques.length ? uniques[0] : (data.corak_kain || "-");
+                    }
+                    return data.corak_kain || "-";
+                  })(),
                 },
-                {
-                  label: "Payment",
-                  value: data.termin == 0 ? "Cash" : data.termin + " Hari",
-                },
+
+                // {
+                //   label: "Validity",
+                //   value: formatTanggal(data.validity_contract),
+                // },
+                // {
+                //   label: "Payment",
+                //   value: data.termin == 0 ? "Cash" : data.termin + " Hari",
+                // },
               ].map((row, idx) => (
                 <tr key={idx} className="border-b border-black">
                   <td className="font-bold px-2 w-[30%] whitespace-nowrap">
@@ -267,17 +284,18 @@ function PrintPage(props) {
           <thead ref={bind("theadRef")} className="bg-gray-200">
             <tr>
               <th className="border border-black p-1 w-[4%]" rowSpan={2}>No</th>
-              <th className="border border-black p-1 w-[10%]" rowSpan={2}>Jenis Kain</th>
-              <th hidden className="border border-black p-1 w-[15%]" rowSpan={2}>Jenis Kain</th>
-              <th className="border border-black p-1 w-[10%]" rowSpan={2}>Warna</th>
-              <th className="border border-black p-1 w-[10%]" rowSpan={2}>Keterangan Warna</th>
-              <th hidden className="border border-black p-1 w-[10%]" rowSpan={2}>Lebar Greige</th>
+              {/* <th className="border border-black p-1 w-[10%]" rowSpan={2}>Kode Kain</th> */}
+              {/* <th className="border border-black p-1 w-[15%]" rowSpan={2}>Jenis Kain</th> */}
+              <th className="border border-black p-1 w-[10%]" rowSpan={2}>Kode Warna</th>
+              <th className="border border-black p-1 w-[12%]" rowSpan={2}>Warna</th>
+              <th className="border border-black p-1 w-[18%]" rowSpan={2}>Keterangan Warna</th>
+              {/* <th className="border border-black p-1 w-[10%]" rowSpan={2}>Lebar Greige</th>
               <th className="border border-black p-1 w-[10%]" rowSpan={2}>Lebar Finish</th>
-              <th className="border border-black p-1 w-[10%]" rowSpan={2}>Std Susut</th>
-              <th className="border border-black p-1 w-[13%] text-center" colSpan={2}>Quantity</th>
-              <th className="border border-black p-1 w-[15%]" hidden rowSpan={2}>Harga Greige</th>
+              <th className="border border-black p-1 w-[10%]" rowSpan={2}>Std Susut</th> */}
+              <th className="border border-black p-1 w-[10%] text-center" colSpan={2}>Quantity</th>
+              {/* <th className="border border-black p-1 w-[15%]" hidden rowSpan={2}>Harga Greige</th>
               <th className="border border-black p-1 w-[15%]" hidden rowSpan={2}>Harga Celup</th>
-              <th className="border border-black p-1 w-[20%]" hidden rowSpan={2}>Jumlah</th>
+              <th className="border border-black p-1 w-[20%]" hidden rowSpan={2}>Jumlah</th> */}
               </tr>
               <tr>
                 <th className="border border-black p-1 w-[24%]" colSpan={2}>{data.satuan_unit_name || 'Meter'}</th>
@@ -290,13 +308,14 @@ function PrintPage(props) {
                 <tr>
                   {/* nomor lanjut: startIndex + nomor di halaman + 1 */}
                   <td className="p-1 text-center break-words">{startIndex + i() + 1}</td>
-                  <td className="p-1 text-center break-words">{item.corak_kain || "-"}</td>
-                  <td hidden className="p-1 break-words">{item.konstruksi_kain}</td>
+                  {/* <td className="p-1 text-center break-words">{item.corak_kain || "-"}</td> */}
+                  {/* <td className="p-1 break-words">{item.konstruksi_kain}</td> */}
+                  <td className="p-1 break-words text-center">{item.kode_warna}</td>
                   <td className="p-1 break-words text-center">{item.deskripsi_warna}</td>
                   <td className="p-1 break-words text-center">{item.keterangan_warna}</td>
-                  <td hidden className="p-1 text-center break-words">{formatAngkaNonDecimal(item.lebar_greige)}"</td>
+                  {/* <td className="p-1 text-center break-words">{formatAngkaNonDecimal(item.lebar_greige)}"</td>
                   <td className="p-1 text-center break-words">{formatAngkaNonDecimal(item.lebar_finish)}"</td>
-                  <td className="p-1 text-center break-words">{formatPersen(item.std_susut)}</td>
+                  <td className="p-1 text-center break-words">{formatPersen(item.std_susut)}</td> */}
                   <td colSpan={2} className="p-1 text-center break-words">
                     {data.satuan_unit_name === 'Meter' 
                       ? formatAngka(item.meter_total)
@@ -344,7 +363,7 @@ function PrintPage(props) {
             {/* Total lengkap hanya di halaman terakhir */}
             <Show when={isLast}>
               <tr>
-                <td colSpan={6} className="border border-black font-bold px-2 py-1">
+                <td colSpan={4} className="border border-black font-bold px-2 py-1">
                   Total:
                 </td>
                 <td colSpan={2} className="border border-black px-2 py-1 text-center font-bold">
@@ -389,7 +408,7 @@ function PrintPage(props) {
                 </td>
               </tr>
               <tr>
-                <td colSpan={4} className="border border-black p-2 align-top">
+                <td colSpan={3} className="border border-black p-2 align-top">
                   <div className="font-bold mb-1">NOTE:</div>
                   <div className="whitespace-pre-wrap break-words italic">
                     {data.keterangan ?? "-"}
@@ -397,7 +416,7 @@ function PrintPage(props) {
                 </td>
 
                 {/* Kolom baru untuk Instruksi Kain */}
-                <td colSpan={4} className="border border-black p-2 align-top">
+                <td colSpan={3} className="border border-black p-2 align-top">
                   <div className="font-bold mb-1">INSTRUKSI KAIN:</div>
                   <div className="whitespace-pre-wrap break-words italic">
                     {data.instruksi_kain ?? "-"}
@@ -405,7 +424,7 @@ function PrintPage(props) {
                 </td>
               </tr>
               <tr>
-                <td colSpan={8} className="border border-black">
+                <td colSpan={6} className="border border-black">
                   <div className="w-full flex justify-between text-[12px] py-5 px-2">
                     <div className="text-center w-1/3 pb-3">
                       Supplier
@@ -433,7 +452,7 @@ function PrintPage(props) {
               </tr>
             </Show>
             <tr>
-              <td colSpan={8} className="border border-black px-2 py-1 text-right italic">
+              <td colSpan={6} className="border border-black px-2 py-1 text-right italic">
                 Halaman {pageNo} dari {pageCount}
               </td>
             </tr>
