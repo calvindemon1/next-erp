@@ -121,28 +121,82 @@ export default function OCOrderPrint(props) {
         }
       `}</style>
 
-      <For each={pagesWithOffsets()}>
-        {(p, idx) => {
-          const pageIndex = idx();
-          const count     = pagesWithOffsets().length;
-          const isLast    = pageIndex === count - 1;
-          return (
-            <PrintPage
-              data={data()}
-              items={p.items}
-              startIndex={p.offset}  // Penomoran lanjut saat new page
-              pageNo={pageIndex + 1}
-              pageCount={count}
-              isPPN={isPPN()}
-              isLast={isLast}
-              totals={totals()}
-              formatters={{ formatTanggal, formatRupiah, formatAngka, formatAngkaNonDecimal }}
-              logoNavel={logoNavel}
-              printType={printType()}
-            />
-          );
-        }}
-      </For>
+      <Show
+        when={printType() === "default"}
+        fallback={
+          <For each={pagesWithOffsets()}>
+            {(p, idx) => {
+              const pageIndex = idx();
+              const count     = pagesWithOffsets().length;
+              const isLast    = pageIndex === count - 1;
+              return (
+                <PrintPage
+                  data={data()}
+                  items={p.items}
+                  startIndex={p.offset}
+                  pageNo={pageIndex + 1}
+                  pageCount={count}
+                  isPPN={isPPN()}
+                  isLast={isLast}
+                  totals={totals()}
+                  formatters={{ formatTanggal, formatRupiah, formatAngka, formatAngkaNonDecimal }}
+                  logoNavel={logoNavel}
+                  printType={printType()}
+                />
+              );
+            }}
+          </For>
+        }
+      >
+
+        {/* 1. Render semua halaman "gudang" */}
+        <For each={pagesWithOffsets()}>
+          {(p, idx) => {
+            const pageIndex = idx();
+            const count     = pagesWithOffsets().length;
+            const isLast    = pageIndex === count - 1;
+            return (
+              <PrintPage
+                data={data()}
+                items={p.items}
+                startIndex={p.offset}
+                pageNo={pageIndex + 1}
+                pageCount={count}
+                isPPN={isPPN()}
+                isLast={isLast}
+                totals={totals()}
+                formatters={{ formatTanggal, formatRupiah, formatAngka, formatAngkaNonDecimal }}
+                logoNavel={logoNavel}
+                printType={"gudang"}
+              />
+            );
+          }}
+        </For>
+
+        {/* 2. Render semua halaman "pabrik" */}
+        <For each={pagesWithOffsets()}>
+          {(p, idx) => {
+            const pageIndex = idx();
+            const count     = pagesWithOffsets().length;
+            const isLast    = pageIndex === count - 1;
+            return (
+              <PrintPage
+                data={data()}
+                items={p.items}
+                startIndex={p.offset}
+                pageNo={pageIndex + 1}
+                pageCount={count}
+                isPPN={isPPN()}
+                isLast={isLast}
+                totals={totals()}
+                formatters={{ formatTanggal, formatRupiah, formatAngka, formatAngkaNonDecimal }}
+                logoNavel={logoNavel}
+                printType={"pabrik"}
+              />
+            );
+          }}
+        </For>
+      </Show>
     </>
   );
 }
@@ -151,8 +205,8 @@ function PrintPage(props) {
   const { data, items, startIndex, pageNo, pageCount, isPPN, isLast, totals, formatters, logoNavel, printType } = props;
   const { formatTanggal, formatRupiah, formatAngka, formatAngkaNonDecimal } = formatters;
 
-  const showNote = createMemo(() => printType === "gudang" || printType === "default");
-  const showInstruksi = createMemo(() => printType === "pabrik" || printType === "default");
+  const showNote = createMemo(() => printType === "gudang");
+  const showInstruksi = createMemo(() => printType === "pabrik");
 
   // Inisialisasi stretch lebih dulu, baru effect-nya
   const { extraRows, bind, recalc } = createStretch({ fudge: 40 }); // fudge diperbesar
@@ -414,41 +468,25 @@ function PrintPage(props) {
                 </td>
               </tr>
               <tr>
-                {/* Case 1: Tampilkan Keduanya (default) */}
-                <Show when={showNote() && showInstruksi()}>
-                  <td colSpan={3} className="border border-black p-2 align-top">
-                    <div className="font-bold mb-1">NOTE:</div>
-                    <div className="whitespace-pre-wrap break-words italic">
-                      {data.keterangan ?? "-"}
-                    </div>
-                  </td>
-                  <td colSpan={3} className="border border-black p-2 align-top">
-                    <div className="font-bold mb-1">INSTRUKSI KAIN:</div>
-                    <div className="whitespace-pre-wrap break-words italic">
-                      {data.instruksi_kain ?? "-"}
-                    </div>
-                  </td>
-                </Show>
+    	  	  	  {/* Case 1: Tampilkan NOTE (gudang) */}
+    	  	  	  <Show when={showNote() && !showInstruksi()}>
+    	  	  	  	<td colSpan={6} className="border border-black p-2 align-top">
+    	  	  	  	  <div className="font-bold mb-1">NOTE:</div>
+    	  	  	  	  <div className="whitespace-pre-wrap break-words italic">
+    	  	  	  	  	{data.keterangan ?? "-"}
+    	  	  	  	  </div>
+    	  	  	  	</td>
+    	  	  	  </Show>
 
-                {/* Case 2: Tampilkan NOTE Saja (gudang) */}
-                <Show when={showNote() && !showInstruksi()}>
-                  <td colSpan={6} className="border border-black p-2 align-top">
-                    <div className="font-bold mb-1">NOTE:</div>
-                    <div className="whitespace-pre-wrap break-words italic">
-                      {data.keterangan ?? "-"}
-                    </div>
-                  </td>
-                </Show>
-
-                {/* Case 3: Tampilkan INSTRUKSI Saja (pabrik) */}
-                <Show when={!showNote() && showInstruksi()}>
-                  <td colSpan={6} className="border border-black p-2 align-top">
-                    <div className="font-bold mb-1">INSTRUKSI KAIN:</div>
-                    <div className="whitespace-pre-wrap break-words italic">
-                      {data.instruksi_kain ?? "-"}
-                    </div>
-                  </td>
-                </Show>
+    	  	  	  {/* Case 2: Tampilkan INSTRUKSI (pabrik) */}
+    	  	  	  <Show when={!showNote() && showInstruksi()}>
+    	  	  	  	<td colSpan={6} className="border border-black p-2 align-top">
+    	  	  	  	  <div className="font-bold mb-1">INSTRUKSI KAIN:</div>
+    	  	  	  	  <div className="whitespace-pre-wrap break-words italic">
+    	  	  	  	  	{data.instruksi_kain ?? "-"}
+    	  	  	  	  </div>
+    	  	  	  	</td>
+    	  	  	  </Show>
               </tr>
               <tr>
                 <td colSpan={6} className="border border-black">
