@@ -257,12 +257,12 @@ function PrintPage(props) {
     };
   });
 
-// tetap pertahankan effect yang sudah ada
-createEffect(() => {
-  void (items?.length ?? 0);
-  void isLast;
-  requestAnimationFrame(() => requestAnimationFrame(recalc));
-});
+  // tetap pertahankan effect yang sudah ada
+  createEffect(() => {
+    void (items?.length ?? 0);
+    void isLast;
+    requestAnimationFrame(() => requestAnimationFrame(recalc));
+  });
 
   // Header data
   const customerName = data?.customer_name ?? "-";
@@ -271,6 +271,7 @@ createEffect(() => {
   const paymentDays  = data?.termin ?? data?.payment_terms ?? data?.customer_termin;
   const paymentText  =
     Number(paymentDays) === 0 || paymentDays === "0" ? "Cash" : `${paymentDays ?? "-"} Hari`;
+  const validityDisplay = paymentText === "Cash" ? "" : formatTanggal(data?.validity_contract);
 
   return (
     <div ref={bind("pageRef")} className="page">
@@ -335,7 +336,7 @@ createEffect(() => {
               <tr>
                 <td className="font-semibold px-2  w-[30%] whitespace-nowrap">Jatuh Tempo</td>
                 <td className="w-[5%]  text-center">:</td>
-                <td className="px-2  break-words w-[65%]">{formatTanggal(data?.validity_contract)}</td>
+                <td className="px-2  break-words w-[65%]">{validityDisplay}</td>
               </tr>
             </tbody>
           </table>

@@ -182,6 +182,43 @@ function PrintPage(props) {
     requestAnimationFrame(recalc);
   });
 
+  onMount(() => {
+    // 1) setelah mount
+    setTimeout(recalc, 0);
+
+    // 2) ketika masuk/keluar print preview
+    const onBefore = () => setTimeout(recalc, 0);
+    const onAfter  = () => setTimeout(recalc, 0);
+    window.addEventListener("beforeprint", onBefore);
+    window.addEventListener("afterprint", onAfter);
+
+    // 3) jika font/asset selesai load
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(() => setTimeout(recalc, 0));
+    }
+    window.addEventListener("load", onAfter);
+    window.addEventListener("resize", onAfter);
+
+    // cleanup
+    return () => {
+      window.removeEventListener("beforeprint", onBefore);
+      window.removeEventListener("afterprint", onAfter);
+      window.removeEventListener("load", onAfter);
+      window.removeEventListener("resize", onAfter);
+    };
+  });
+
+  // tetap pertahankan effect yang sudah ada
+  createEffect(() => {
+    void (items?.length ?? 0);
+    void isLast;
+    requestAnimationFrame(() => requestAnimationFrame(recalc));
+  });
+
+  const paymentText  =
+    Number(paymentDays) === 0 || paymentDays === "0" ? "Cash" : `${paymentDays ?? "-"} Hari`;
+  const validityDisplay = paymentText === "Cash" ? "" : formatTanggal(data?.validity_contract);
+
   return (
     <div ref={bind("pageRef")} className="page">
       <div className="safe">
@@ -276,12 +313,12 @@ function PrintPage(props) {
               <tr>
                   <td className="font-semibold px-2  w-[30%] whitespace-nowrap">Payment</td>
                   <td className="w-[5%]  text-center">:</td>
-                  <td className="px-2  break-words w-[65%]">{data.termin == 0 ? "Cash" : data.termin + " Hari"}</td>
+                  <td className="px-2  break-words w-[65%]">{paymentText}</td>
               </tr>
               <tr>
                   <td className="font-semibold px-2  w-[30%] whitespace-nowrap">Jatuh Tempo</td>
                   <td className="w-[5%]  text-center">:</td>
-                  <td className="px-2  break-words w-[65%]">{formatTanggal(data.validity_contract)}</td>
+                  <td className="px-2  break-words w-[65%]">{validityDisplay}</td>
               </tr>
             </tbody>
           </table>
