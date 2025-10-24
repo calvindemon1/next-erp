@@ -268,10 +268,38 @@ function PrintPage(props) {
   const customerName = data?.customer_name ?? "-";
   const customerAddr = data?.alamat ?? data?.customer_alamat ?? "-";
   const customerTelp = data?.telepon ?? data?.no_telp ?? data?.no_hp ?? "-";
-  const paymentDays  = data?.termin ?? data?.payment_terms ?? data?.customer_termin;
-  const paymentText  =
-    Number(paymentDays) === 0 || paymentDays === "0" ? "Cash" : `${paymentDays ?? "-"} Hari`;
-  const validityDisplay = paymentText === "Cash" ? "" : formatTanggal(data?.validity_contract);
+  // PAYMENT / VALIDITY (flexible)
+  // paymentDays bisa berupa number atau string -> parseInt untuk aman
+  const rawPaymentDays = data?.termin ?? data?.payment_terms ?? data?.customer_termin;
+  const paymentDays = (rawPaymentDays == null || rawPaymentDays === "") 
+    ? null 
+    : Number.isFinite(+rawPaymentDays) 
+      ? parseInt(+rawPaymentDays, 10) 
+      : (() => { const p = parseInt(rawPaymentDays, 10); return Number.isNaN(p) ? null : p; })();
+
+  const paymentText = paymentDays === 0 ? "Cash" : (paymentDays == null ? "-" : `${paymentDays} Hari`);
+
+  // Compute validity/jatuh tempo:
+  // Rule: always compute jatuh tempo = baseDate + paymentDays (unless paymentDays === 0 -> null)
+  // baseDate priority: created_at || now
+  function computeValidityDate() {
+    // cash -> no jatuh tempo
+    if (paymentDays === 0) return null;
+
+    // invalid / missing paymentDays -> no jatuh tempo
+    if (!Number.isFinite(paymentDays) || paymentDays == null) return null;
+
+    const baseRaw = data?.created_at ?? null;
+    const base = baseRaw ? new Date(baseRaw) : new Date();
+    if (Number.isNaN(base.getTime())) return null;
+
+    const result = new Date(base);
+    result.setDate(result.getDate() + paymentDays);
+    return result;
+  }
+
+  const validityDate = computeValidityDate();
+  const validityDisplay = validityDate ? formatTanggal(validityDate) : "";
 
   return (
     <div ref={bind("pageRef")} className="page">
