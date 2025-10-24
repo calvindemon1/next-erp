@@ -51,15 +51,17 @@ export default function CustomerDropdownSearch({
           type="button"
           class={`flex-1 border p-2 rounded text-left ${
             disabled ? "bg-gray-200" : "bg-transparent"
-          } cursor-default`}
+          } cursor-default overflow-hidden`}
           disabled={disabled}
           onClick={() => !disabled && setIsOpen(!isOpen())}
         >
-          {selectedCustomer()
-            ? (selectedCustomer().kode
-                ? `${selectedCustomer().kode} - ${selectedCustomer().nama}`
-                : `${selectedCustomer().nama}`)
-            : "Pilih Customer"}
+          <span class="block whitespace-nowrap overflow-hidden text-ellipsis">
+            {selectedCustomer()
+              ? (selectedCustomer().kode
+                  ? `${selectedCustomer().kode} - ${selectedCustomer().nama}`
+                  : `${selectedCustomer().nama}`)
+              : "Pilih Customer"}
+          </span>
         </button>
 
         <Show when={selectedCustomer() && !disabled}>
@@ -87,7 +89,7 @@ export default function CustomerDropdownSearch({
             filteredCustomers().map((cust) => (
               <div
                 key={cust.id}
-                class="p-2 hover:bg-blue-100 cursor-pointer"
+                class="p-2 hover:bg-blue-100 cursor-pointer whitespace-nowrap overflow-hidden text-ellipsis"
                 onClick={() => selectCustomer(cust)}
               >
                 {cust.kode ? `${cust.kode} - ${cust.nama}` : cust.nama}
