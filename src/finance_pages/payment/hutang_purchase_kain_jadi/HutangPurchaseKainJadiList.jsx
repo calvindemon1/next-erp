@@ -1,8 +1,8 @@
 import { createEffect, createMemo, createSignal } from "solid-js";
 import { useNavigate } from "@solidjs/router";
-import { PurchaseAksesorisEkspedisi, User } from "../../../utils/financeAuth";
+import { PembayaranHutangPurchaseKainJadi, User } from "../../../utils/financeAuth";
 import Swal from "sweetalert2";
-import { Edit, Trash } from "lucide-solid";
+import { Edit, Trash, Eye } from "lucide-solid";
 import FinanceMainLayout from "../../../layouts/FinanceMainLayout";
 
 export default function HutangPurchaseKainJadiList() {
@@ -21,6 +21,30 @@ export default function HutangPurchaseKainJadiList() {
     return hutangPurchaseKainJadi().slice(startIndex, startIndex + pageSize);
   };
 
+  function formatTanggal(tanggalString) {
+    const tanggal = new Date(tanggalString);
+    const bulanIndo = [
+      "Januari",
+      "Februari",
+      "Maret",
+      "April",
+      "Mei",
+      "Juni",
+      "Juli",
+      "Agustus",
+      "September",
+      "Oktober",
+      "November",
+      "Desember",
+    ];
+
+    const tanggalNum = tanggal.getDate();
+    const bulan = bulanIndo[tanggal.getMonth()];
+    const tahun = tanggal.getFullYear();
+
+    return `${tanggalNum} ${bulan} ${tahun}`;
+  }  
+
   const handleDelete = async (id) => {
     const result = await Swal.fire({
       title: "Hapus data pembayaran hutang pembelian kain jadi?",
@@ -33,45 +57,53 @@ export default function HutangPurchaseKainJadiList() {
       cancelButtonText: "Batal",
     });
 
-    if (result.isConfirmed) {
-      try {
-        await PurchaseAksesorisEkspedisi.delete(id);
+    if (!result.isConfirmed) return;
 
-        await Swal.fire({
-          title: "Terhapus!",
-          text: `Data pembayaran hutang pembelian kain jadi dengan ID ${id} berhasil dihapus.`,
-          icon: "success",
-          confirmButtonColor: "#6496df",
-        });
+    try {
+      await PembayaranHutangPurchaseKainJadi.delete(id);
 
-        setHutangPurchaseKainJadi(
-          hutangPurchaseKainJadi().filter((s) => s.id !== id)
-        );
-      } catch (error) {
-        console.error(error);
-        Swal.fire({
-          title: "Gagal",
-          text:
-            error.message ||
-            `Gagal menghapus data pembayaran hutang pembelian kain jadi dengan ID ${id}`,
-          icon: "error",
-          showConfirmButton: false,
-          timer: 1000,
-          timerProgressBar: true,
-        });
+      await Swal.fire({
+        title: "Terhapus!",
+        text: `Data pembayaran hutang pembelian kain jadi dengan ID ${id} berhasil dihapus.`,
+        icon: "success",
+        confirmButtonColor: "#6496df",
+      });
+
+      const filtered = hutangPurchaseKainJadi().filter((s) => s.id !== id);
+      setHutangPurchaseKainJadi(filtered);
+
+      if (currentPage() > Math.max(1, Math.ceil(filtered.length / pageSize))) {
+        setCurrentPage(Math.max(1, Math.ceil(filtered.length / pageSize)));
       }
+    } catch (error) {
+      console.error(error);
+      Swal.fire({
+        title: "Gagal",
+        text:
+          error?.message ||
+          `Gagal menghapus data pembayaran hutang pembelian kain jadi dengan ID ${id}`,
+        icon: "error",
+        showConfirmButton: false,
+        timer: 1200,
+        timerProgressBar: true,
+      });
     }
   };
 
   const handleGetAllHutangPurchaseKainJadi = async () => {
-    const getDataHutangPurchaseKainJadi =
-      await PurchaseAksesorisEkspedisi.getAll();
-
-    if (getDataHutangPurchaseKainJadi.status === 200) {
-      const sortedData = getDataHutangPurchaseKainJadi.data.sort(
-        (a, b) => a.id - b.id
-      );
-      setHutangPurchaseKainJadi(sortedData);
+    try {
+      const res = await PembayaranHutangPurchaseKainJadi.getAll();
+      if (res?.status === 200) {
+        const sortedData = (res.data || res).slice().sort((a, b) => b.id - a.id);
+        setHutangPurchaseKainJadi(sortedData);
+        setCurrentPage(1);
+      } else {
+        const data = res?.data ?? res ?? [];
+        setHutangPurchaseKainJadi(Array.isArray(data) ? data : []);
+      }
+    } catch (err) {
+      console.error("Gagal ambil data pembayaran hutang pembelian kain jadi:", err);
+      setHutangPurchaseKainJadi([]);
     }
   };
 
@@ -80,6 +112,13 @@ export default function HutangPurchaseKainJadiList() {
       handleGetAllHutangPurchaseKainJadi();
     }
   });
+
+  const goPrev = () => {
+    setCurrentPage((p) => Math.max(1, p - 1));
+  };
+  const goNext = () => {
+    setCurrentPage((p) => Math.min(totalPages(), p + 1));
+  };
 
   return (
     <FinanceMainLayout>
@@ -100,25 +139,40 @@ export default function HutangPurchaseKainJadiList() {
           <thead>
             <tr class="bg-gray-200 text-left text-sm uppercase text-gray-700">
               <th class="py-2 px-4">No</th>
-              <th class="py-2 px-2">
-                Nama Pembayaran Hutang Pembelian Kain Jadi
-              </th>
+              <th class="py-2 px-4">No Pembayaran</th>
+              <th class="py-2 px-4">No SJ</th>
+              <th class="py-2 px-4">Tanggal Jatuh Tempo</th>
+              <th class="py-2 px-4">No Giro</th>
+              <th class="py-2 px-4">Tanggal Pengambilan Giro</th>
+              <th class="py-2 px-2">Payment Method</th>
               <th class="py-2 px-2">Aksi</th>
             </tr>
           </thead>
           <tbody>
-            {paginatedData().map((expeditionAccessories, index) => (
-              <tr class="border-b" key={expeditionAccessories.id}>
-                <td class="py-2 px-4">
-                  {(currentPage() - 1) * pageSize + (index + 1)}
-                </td>
-                <td class="py-2 px-4">{expeditionAccessories.name}</td>
+            {paginatedData().map((ph, index) => (
+              <tr class="border-b" key={ph.id}>
+                <td class="py-2 px-4">{(currentPage() - 1) * pageSize + (index + 1)}</td>
+                <td class="py-2 px-4">{ph.no_pembayaran}</td>
+                <td class="py-2 px-4">{ph.no_sj}</td>
+                <td class="py-2 px-4">{formatTanggal(ph.tanggal_jatuh_tempo || "-")}</td>
+                <td class="py-2 px-4">{ph.no_giro}</td>
+                <td class="py-2 px-4">{formatTanggal(ph.tanggal_pengambilan_giro || "-")}</td>
+                <td class="py-2 px-4">{ph.payment_method_name || "-"}</td>
                 <td class="py-2 px-4 space-x-2">
+                  <button
+                    class="text-yellow-600 hover:underline mr-2"
+                    onClick={() =>
+                      navigate(`/hutang-purchase-kain-jadi/form?id=${ph.id}&view=true`)
+                    }
+                    title="View"
+                  >
+                    <Eye size={25} />
+                  </button>                  
                   <button
                     class="text-blue-600 hover:underline"
                     onClick={() =>
                       navigate(
-                        `/hutang-purchase-kain-jadi/form?id=${expeditionAccessories.id}`
+                        `/hutang-purchase-kain-jadi/form?id=${ph.id}`
                       )
                     }
                   >
@@ -126,7 +180,7 @@ export default function HutangPurchaseKainJadiList() {
                   </button>
                   <button
                     class="text-red-600 hover:underline"
-                    onClick={() => handleDelete(expeditionAccessories.id)}
+                    onClick={() => handleDelete(ph.id)}
                   >
                     <Trash size={25} />
                   </button>
