@@ -2,7 +2,7 @@ import { createEffect, createMemo, createSignal } from "solid-js";
 import { useNavigate } from "@solidjs/router";
 import { PurchaseAksesorisEkspedisi, User } from "../../../utils/financeAuth";
 import Swal from "sweetalert2";
-import { Edit, Trash } from "lucide-solid";
+import { Edit, Trash, Eye } from "lucide-solid";
 import FinanceMainLayout from "../../../layouts/FinanceMainLayout";
 
 export default function ExpeditionAccessoriesList() {
@@ -16,10 +16,34 @@ export default function ExpeditionAccessoriesList() {
     Math.max(1, Math.ceil(expeditionAccessories().length / pageSize))
   );
 
-  const paginatedData = () => {
+  const paginatedData = createMemo(() => {
     const startIndex = (currentPage() - 1) * pageSize;
     return expeditionAccessories().slice(startIndex, startIndex + pageSize);
-  };
+  });
+
+  function formatTanggal(tanggalString) {
+    const tanggal = new Date(tanggalString);
+    const bulanIndo = [
+      "Januari",
+      "Februari",
+      "Maret",
+      "April",
+      "Mei",
+      "Juni",
+      "Juli",
+      "Agustus",
+      "September",
+      "Oktober",
+      "November",
+      "Desember",
+    ];
+
+    const tanggalNum = tanggal.getDate();
+    const bulan = bulanIndo[tanggal.getMonth()];
+    const tahun = tanggal.getFullYear();
+
+    return `${tanggalNum} ${bulan} ${tahun}`;
+  }
 
   const handleDelete = async (id) => {
     const result = await Swal.fire({
@@ -33,45 +57,53 @@ export default function ExpeditionAccessoriesList() {
       cancelButtonText: "Batal",
     });
 
-    if (result.isConfirmed) {
-      try {
-        await PurchaseAksesorisEkspedisi.delete(id);
+    if (!result.isConfirmed) return;
 
-        await Swal.fire({
-          title: "Terhapus!",
-          text: `Data aksesoris ekspedisi dengan ID ${id} berhasil dihapus.`,
-          icon: "success",
-          confirmButtonColor: "#6496df",
-        });
+    try {
+      await PurchaseAksesorisEkspedisi.delete(id);
 
-        setExpeditionAccessories(
-          expeditionAccessories().filter((s) => s.id !== id)
-        );
-      } catch (error) {
-        console.error(error);
-        Swal.fire({
-          title: "Gagal",
-          text:
-            error.message ||
-            `Gagal menghapus data aksesoris ekspedisi dengan ID ${id}`,
-          icon: "error",
-          showConfirmButton: false,
-          timer: 1000,
-          timerProgressBar: true,
-        });
+      await Swal.fire({
+        title: "Terhapus!",
+        text: `Data aksesoris ekspedisi dengan ID ${id} berhasil dihapus.`,
+        icon: "success",
+        confirmButtonColor: "#6496df",
+      });
+
+      const filtered = expeditionAccessories().filter((s) => s.id !== id);
+      setExpeditionAccessories(filtered);
+
+      if (currentPage() > Math.max(1, Math.ceil(filtered.length / pageSize))) {
+        setCurrentPage(Math.max(1, Math.ceil(filtered.length / pageSize)));
       }
+    } catch (error) {
+      console.error(error);
+      Swal.fire({
+        title: "Gagal",
+        text:
+          error?.message ||
+          `Gagal menghapus data aksesoris ekspedisi dengan ID ${id}`,
+        icon: "error",
+        showConfirmButton: false,
+        timer: 1200,
+        timerProgressBar: true,
+      });
     }
   };
 
   const handleGetAllExpeditionAccessories = async () => {
-    const getDataExpeditionAccessories =
-      await PurchaseAksesorisEkspedisi.getAll();
-
-    if (getDataExpeditionAccessories.status === 200) {
-      const sortedData = getDataExpeditionAccessories.data.sort(
-        (a, b) => a.id - b.id
-      );
-      setExpeditionAccessories(sortedData);
+    try {
+      const res = await PurchaseAksesorisEkspedisi.getAll();
+      if (res?.status === 200) {
+        const sortedData = (res.data || res).slice().sort((a, b) => b.id - a.id);
+        setExpeditionAccessories(sortedData);
+        setCurrentPage(1);
+      } else {
+        const data = res?.data ?? res ?? [];
+        setExpeditionAccessories(Array.isArray(data) ? data : []);
+      }
+    } catch (err) {
+      console.error("Gagal ambil data aksesoris ekspedisi:", err);
+      setExpeditionAccessories([]);
     }
   };
 
@@ -80,6 +112,13 @@ export default function ExpeditionAccessoriesList() {
       handleGetAllExpeditionAccessories();
     }
   });
+
+  const goPrev = () => {
+    setCurrentPage((p) => Math.max(1, p - 1));
+  };
+  const goNext = () => {
+    setCurrentPage((p) => Math.min(totalPages(), p + 1));
+  };
 
   return (
     <FinanceMainLayout>
@@ -98,31 +137,53 @@ export default function ExpeditionAccessoriesList() {
           <thead>
             <tr class="bg-gray-200 text-left text-sm uppercase text-gray-700">
               <th class="py-2 px-4">No</th>
-              <th class="py-2 px-2">Nama aksesoris ekspedisi</th>
-              <th class="py-2 px-2">Aksi</th>
+              <th class="py-2 px-2">No Pembelian</th>
+              <th class="py-2 px-2">No SJ Supplier</th>
+              <th class="py-2 px-2">Tanggal SJ</th>
+              <th class="py-2 px-2">Supplier</th>
+              <th class="py-2 px-2">Tanggal Jatuh Tempo</th>
+              <th class="py-2 px-2 text-right">Kuantitas Jenis Barang</th>
+              <th class="py-2 px-2 text-center">Aksi</th>
             </tr>
           </thead>
           <tbody>
-            {paginatedData().map((expeditionAccessories, index) => (
-              <tr class="border-b" key={expeditionAccessories.id}>
-                <td class="py-2 px-4">
-                  {(currentPage() - 1) * pageSize + (index + 1)}
+            {paginatedData().map((ea, index) => (
+              <tr class="border-b" key={ea.id}>
+                <td class="py-2 px-4">{(currentPage() - 1) * pageSize + (index + 1)}</td>
+                <td class="py-2 px-4">{ea.no_pembelian ?? ea.sequence_number ?? "-"}</td>
+                <td class="py-2 px-4">{ea.no_sj_supplier ?? "-"}</td> 
+                <td class="py-2 px-4">{formatTanggal(ea.tanggal_sj ?? "-")}</td>
+                <td class="py-2 px-4">{ea.supplier_name ?? ea.supplier_kode ?? "-"}</td>
+                <td class="py-2 px-4">{formatTanggal(ea.tanggal_jatuh_tempo ?? "-")}</td>
+                <td class="py-2 px-4 text-right">
+                  {ea.summary?.kuantitas_jenis_barang ?? ea.summary?.kuantitas ?? "-"}
                 </td>
-                <td class="py-2 px-4">{expeditionAccessories.name}</td>
+
                 <td class="py-2 px-4 space-x-2">
                   <button
-                    class="text-blue-600 hover:underline"
+                    class="text-yellow-600 hover:underline mr-2"
                     onClick={() =>
-                      navigate(
-                        `/expedition-accessories/form?id=${expeditionAccessories.id}`
-                      )
+                      navigate(`/expedition-accessories/form?id=${ea.id}&view=true`)
                     }
+                    title="View"
+                  >
+                    <Eye size={25} />
+                  </button>
+
+                  <button
+                    class="text-blue-600 hover:underline mr-2"
+                    onClick={() =>
+                      navigate(`/expedition-accessories/form?id=${ea.id}`)
+                    }
+                    title="Edit"
                   >
                     <Edit size={25} />
                   </button>
+
                   <button
                     class="text-red-600 hover:underline"
-                    onClick={() => handleDelete(expeditionAccessories.id)}
+                    onClick={() => handleDelete(ea.id)}
+                    title="Delete"
                   >
                     <Trash size={25} />
                   </button>
@@ -132,20 +193,22 @@ export default function ExpeditionAccessoriesList() {
           </tbody>
         </table>
 
-        <div class="w-full mt-8 flex justify-between space-x-2">
+        <div class="w-full mt-8 flex justify-between items-center space-x-2">
           <button
             class="px-3 py-1 bg-gray-200 rounded min-w-[80px]"
-            onClick={() => setCurrentPage(currentPage() - 1)}
+            onClick={goPrev}
             disabled={currentPage() === 1}
           >
             Prev
           </button>
-          <span>
+
+          <div class="text-sm">
             Page {currentPage()} of {totalPages()}
-          </span>
+          </div>
+
           <button
             class="px-3 py-1 bg-gray-200 rounded min-w-[80px]"
-            onClick={() => setCurrentPage(currentPage() + 1)}
+            onClick={goNext}
             disabled={currentPage() === totalPages()}
           >
             Next
