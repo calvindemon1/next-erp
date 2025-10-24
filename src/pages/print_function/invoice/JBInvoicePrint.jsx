@@ -1,4 +1,4 @@
-import { createMemo, createEffect, For, Show } from "solid-js";
+import { createMemo, createEffect, For, Show, onMount } from "solid-js";
 import logoNavel from "../../../assets/img/navelLogo.png";
 import { splitIntoPagesWithOffsets, createStretch } from "../../../components/PrintUtils";
 
@@ -278,7 +278,7 @@ function PrintPage(props) {
         />
 
         <h1 className="text-xl uppercase font-bold">
-          Invoice Penjualan
+          Invoice Jual Beli
         </h1>
 
         <div className="w-full flex gap-2 text-sm">
