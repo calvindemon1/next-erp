@@ -1,13 +1,16 @@
 // FinanceMainLayout.jsx
 import { createEffect, createSignal, onCleanup } from "solid-js";
-import { A, useLocation } from "@solidjs/router";
+import { A, useLocation, useNavigate } from "@solidjs/router";
 import { ChevronLeft, ChevronRight, LogOut, ArrowLeft } from "lucide-solid";
+import Swal from "sweetalert2";
 import logoNavel from "../assets/img/navelLogo.png";
 import { User } from "../utils/financeAuth";
+import { logout } from "../utils/auth";
 
 export default function FinanceMainLayout(props) {
   const [sidebarOpen, setSidebarOpen] = createSignal(true);
   const user = User.getUser();
+  const navigate = useNavigate();
 
   // state buat toggle menu group
   const [isMasterOpen, setMasterOpen] = createSignal(false);
@@ -39,6 +42,8 @@ export default function FinanceMainLayout(props) {
       "/hutang-purchase-kain-jadi/form",
       "/hutang-purchase-jual-beli",
       "/hutang-purchase-jual-beli/form",
+      "/hutang-purchase-aksesoris-ekspedisi",
+      "/hutang-purchase-aksesoris-ekspedisi/form",
     ],
   };
 
@@ -92,6 +97,24 @@ export default function FinanceMainLayout(props) {
       clearTimeout(logoutTimer);
     });
   });
+
+  const handleLogout = () => {
+    Swal.fire({
+      icon: "warning",
+      title: "Logout",
+      text: "Apakah Anda yakin akan keluar?",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#6e7881",
+      confirmButtonText: "Ya",
+      cancelButtonText: "Tidak",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        logout();
+        navigate("/", { replace: true });
+      }
+    });
+  };
 
   return (
     <div class="flex h-screen font-mono">
@@ -315,6 +338,22 @@ export default function FinanceMainLayout(props) {
                     </A>
                   </li>
                 </ul>
+                <ul>
+                  <li>
+                    <A
+                      href="/hutang-purchase-aksesoris-ekspedisi"
+                      class={`block pl-8 pr-4 py-2 hover:bg-green-800 ${
+                        location.pathname.startsWith(
+                          "/hutang-purchase-aksesoris-ekspedisi"
+                        )
+                          ? "bg-green-800 text-white"
+                          : ""
+                      }`}
+                    >
+                      Pembayaran Hutang Purchase Aksesoris Ekspedisi
+                    </A>
+                  </li>
+                </ul>
               </li>
             </ul>
           </nav>
@@ -323,7 +362,9 @@ export default function FinanceMainLayout(props) {
         {/* Logout */}
         {sidebarOpen() && (
           <div class="p-4 border-t border-green-800">
-            <button class="w-full bg-red-600 py-2 rounded flex items-center justify-center gap-2 text-white">
+            <button 
+              onClick={handleLogout}
+              class="w-full bg-red-600 py-2 rounded flex items-center justify-center gap-2 text-white">
               <LogOut class="w-4 h-4" />
               Logout
             </button>
