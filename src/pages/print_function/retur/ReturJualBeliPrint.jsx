@@ -297,7 +297,7 @@ function PrintPage(props) {
                   <td hidden className="p-1 break-words">{item.konstruksi_kain}</td>
                   <td className="p-1 text-center break-words">{item.deskripsi_warna || "-"}</td>
                   <td className="p-1 text-center break-words">{formatAngkaNonDecimal(item.lebar_kain)}"</td>
-                  <td className="p-1 text-center break-words">{formatAngkaNonDecimal(item.gulung_awal)}</td>
+                  <td className="p-1 text-center break-words">{formatAngkaNonDecimal(item.gulung)}</td>
                   <td className="p-1 text-center break-words">{formatAngkaNonDecimal(item.lot)}</td>
                   <td colspan={2} className="p-1 text-center break-words">
                     {data.satuan_unit_name === 'Meter' 
