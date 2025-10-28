@@ -238,9 +238,9 @@ function PrintPage(props) {
                   <td className="px-2 break-words w-[65%]">{formatTanggal(data.created_at )}</td>
               </tr>
               <tr>
-                  <td className="font-bold px-2 w-[30%] whitespace-nowrap">No. SJ</td>
+                  <td className="font-bold px-2 w-[30%] whitespace-nowrap">Ex SJ Supplier</td>
                   <td className="w-[5%] text-center">:</td>
-                  <td className="px-2 break-words w-[65%]">{data.no_sj}</td>
+                  <td className="px-2 break-words w-[65%]">{data.no_sj_supplier}</td>
               </tr>
               <tr>
                   <td className="font-bold px-2 w-[30%] whitespace-nowrap">Alamat Kirim</td>
@@ -264,7 +264,7 @@ function PrintPage(props) {
 
         {/* ITEM TABLE */}
         <table ref={bind("tableRef")} className="w-full table-fixed border border-black text-[12px] border-collapse mt-3">
-          <thead ref={bind("theadRef")} className="bg-gray-200">
+          <thead ref={bind("theadRef")}>
             <tr>
               <th className="border border-black p-1 w-[6%]" rowSpan={2}>No</th>
               <th className="border border-black p-1 w-[10%]" rowSpan={2}>Kode</th>
