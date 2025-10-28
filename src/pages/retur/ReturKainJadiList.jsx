@@ -166,6 +166,7 @@ export default function ReturKainJadiList() {
               <th class="py-2 px-4">ID</th>
               <th class="py-2 px-2">No Retur</th>
               <th class="py-2 px-2">No Surat Penerimaan</th>
+              <th class="py-2 px-2">Ex SJ Supplier</th>
               <th class="py-2 px-2">Tanggal</th>
               <th class="py-2 px-2">Lot</th>
               <th class="py-2 px-2">Supplier</th>
@@ -185,6 +186,7 @@ export default function ReturKainJadiList() {
                   </td>
                   <td class="py-2 px-4">{row.no_retur}</td>
                   <td class="py-2 px-4">{row.no_sj}</td>
+                  <td class="py-2 px-4">{row.no_sj_supplier}</td>
                   <td class="py-2 px-4">{formatTanggalIndo(row.created_at)}</td>
                   <td class="py-2 px-4">
                     <span class="cursor-help" title={tooltip || undefined}>
