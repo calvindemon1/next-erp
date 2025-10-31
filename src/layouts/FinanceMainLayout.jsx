@@ -16,6 +16,7 @@ export default function FinanceMainLayout(props) {
   const [isMasterOpen, setMasterOpen] = createSignal(false);
   const [isPurchaseOpen, setPurchaseOpen] = createSignal(false);
   const [isPaymentOpen, setPaymentOpen] = createSignal(false);
+  const [isPiutangOpen, setPiutangOpen] = createSignal(false);
 
   const location = useLocation();
 
@@ -45,6 +46,12 @@ export default function FinanceMainLayout(props) {
       "/hutang-purchase-aksesoris-ekspedisi",
       "/hutang-purchase-aksesoris-ekspedisi/form",
     ],
+    piutang: [
+      "/piutang-jual-beli",
+      "/piutang-jual-beli/form",
+      "/piutang-sales",
+      "/piutang-sales/form",
+    ],
   };
 
   function getFinanceRouteType(pathname) {
@@ -56,6 +63,9 @@ export default function FinanceMainLayout(props) {
     }
     if (financeRoutes.payment.some((p) => pathname.startsWith(p))) {
       return "payment";
+    }
+    if (financeRoutes.piutang.some((p) => pathname.startsWith(p))) {
+      return "piutang";
     }
     return "unknown";
   }
@@ -71,6 +81,9 @@ export default function FinanceMainLayout(props) {
       case "payment":
         setPaymentOpen(true);
         break;
+      case "piutang":
+        setPiutangOpen(true);
+        break; 
     }
 
     let logoutTimer = null;
@@ -355,6 +368,52 @@ export default function FinanceMainLayout(props) {
                   </li>
                 </ul>
               </li>
+              {/* Piutang */}
+              <li>
+                <button
+                  class="w-full text-left p-4 font-semibold text-gray-300 uppercase hover:bg-green-800 flex justify-between items-center"
+                  onClick={() => setPiutangOpen(!isPiutangOpen())}
+                >
+                  Piutang
+                  <span class="text-xs">{isPiutangOpen() ? "▲" : "▼"}</span>
+                </button>
+              </li>
+              <li
+                class={`transition-all duration-300 ease-in-out overflow-hidden ${
+                  isPiutangOpen()
+                    ? "max-h-fit opacity-100"
+                    : "max-h-0 opacity-0"
+                }`}
+              >
+                <ul>
+                  <li>
+                    <A
+                      href="/piutang-jual-beli"
+                      class={`block pl-8 pr-4 py-2 hover:bg-green-800 ${
+                        location.pathname.startsWith("/piutang-jual-beli")
+                          ? "bg-green-800 text-white"
+                          : ""
+                      }`}
+                    >
+                      Penerimaan Piutang Jual Beli
+                    </A>
+                  </li>
+                </ul>
+                <ul>
+                  <li>
+                    <A
+                      href="/piutang-sales"
+                      class={`block pl-8 pr-4 py-2 hover:bg-green-800 ${
+                        location.pathname.startsWith("/piutang-sales")
+                          ? "bg-green-800 text-white"
+                          : ""
+                      }`}
+                    >
+                      Penerimaan Piutang Penjualan (Sales)
+                    </A>
+                  </li>
+                </ul>                
+              </li>  
             </ul>
           </nav>
         )}
