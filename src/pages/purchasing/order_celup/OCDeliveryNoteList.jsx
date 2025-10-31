@@ -9,6 +9,7 @@ import {
 } from "../../../utils/auth";
 import Swal from "sweetalert2";
 import { Edit, Trash, Eye } from "lucide-solid";
+import { formatCorak } from "../../../components/CorakKainList";
 
 export default function OCDeliveryNoteList() {
   const [packingOrders, setPackingOrders] = createSignal([]);
@@ -192,7 +193,10 @@ export default function OCDeliveryNoteList() {
               <th class="py-2 px-4">ID</th>
               <th class="py-2 px-2">No Surat Penerimaan</th>
               <th class="py-2 px-2">No Purchase Order</th>
+              <th class="py-2 px-2">No Surat Jalan Supplier</th>
               <th class="py-2 px-2">Tanggal</th>
+              <th class="py-2 px-2">Supplier</th>
+              <th class="py-2 px-2">Corak Kain</th>
               <th class="py-2 px-2 text-center">
                 <div>Qty by System</div>
                 <span class="text-xs text-gray-500">
@@ -211,7 +215,22 @@ export default function OCDeliveryNoteList() {
                 </td>
                 <td class="py-2 px-4">{sj.no_sj}</td>
                 <td class="py-2 px-4">{sj.no_po}</td>
+                <td class="py-2 px-4">{sj.no_sj_supplier}</td>
                 <td class="py-2 px-4">{formatTanggalIndo(sj.created_at)}</td>
+                <td class="py-2 px-4">{sj.supplier_name}</td>
+                <td class="py-2 px-4">
+                  {(() => {
+                    const { display, full } = formatCorak(sj.items, { maxShow: 3 });
+                    return (
+                      <span
+                        class="inline-block max-w-[260px] truncate align-middle"
+                        title={full}
+                      >
+                        {display}
+                      </span>
+                    );
+                  })()}
+                </td>
                 <td
                   className={`py-2 px-4 text-center ${
                     qtyCounterbySystem(sj, sj.satuan_unit_name) === "SELESAI"
