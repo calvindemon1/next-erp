@@ -477,14 +477,14 @@ function PrintPage(props) {
                 </td>
               </tr>
             </Show>
-              <tr>
+              {/* <tr>
                 <td colSpan={8} className="border border-black p-2 align-top">
                   <div className="font-bold mb-1">NOTE:</div>
                   <div className="whitespace-pre-wrap break-words italic">
                     {data.keterangan ?? "-"}
                   </div>
                 </td>
-              </tr>
+              </tr> */}
               <tr>
                 <td colSpan={8} className="border border-black">
                   <div className="w-full flex justify-between text-[13px] py-5 px-2">
@@ -513,11 +513,11 @@ function PrintPage(props) {
                 </td>
               </tr>
             </Show>
-            <tr>
+            {/* <tr>
               <td colSpan={8} className="border border-black px-2 py-1 text-right italic">
                 Halaman {pageNo} dari {pageCount}
               </td>
-            </tr>
+            </tr> */}
           </tfoot>
         </table>
       </div>
