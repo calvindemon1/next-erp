@@ -192,6 +192,7 @@ export default function JBDeliveryNoteList() {
               <th class="py-2 px-4">ID</th>
               <th class="py-2 px-2">No Surat Penerimaan</th>
               <th class="py-2 px-2">No Purchase Contract</th>
+              <th class="py-2 px-2">No SJ Supplier</th>              
               <th class="py-2 px-2">Tanggal</th>
               <th class="py-2 px-2 text-center">
                 <div>Qty by System</div>
@@ -239,6 +240,7 @@ export default function JBDeliveryNoteList() {
                 </td>
                 <td class="py-2 px-4">{sj.no_sj}</td>
                 <td class="py-2 px-4">{sj.no_jb}</td>
+                <td class="py-2 px-4">{sj.no_sj_supplier}</td>
                 <td class="py-2 px-4">{formatTanggalIndo(sj.created_at)}</td>
                 <td
                   className={`py-2 px-4 text-center ${
