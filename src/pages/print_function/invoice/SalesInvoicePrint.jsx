@@ -95,9 +95,18 @@ export default function SalesInvoicePrint(props) {
   const totalMeter = createMemo(() => Number(summary()?.total_meter ?? 0));
   const totalYard  = createMemo(() => Number(summary()?.total_yard ?? 0));
   const totalRolls = createMemo(() => {
-    const sum = Number(summary()?.jumlah_kain);
-    if (!Number.isNaN(sum) && sum > 0) return sum;
-    return (invoiceItems() ?? []).reduce((acc, it) => acc + ((it.rolls ?? []).length || 0), 0);
+    // const sum = Number(summary()?.jumlah_kain);
+    // if (!Number.isNaN(sum) && sum > 0) return sum;
+    
+    // Jumlahkan seluruh rolls dari semua item
+    return (invoiceItems() ?? []).reduce((acc, item) => {
+      const rolls = item?.rolls ?? [];
+      // Jika rolls adalah array, tambahkan jumlah roll-nya
+      if (Array.isArray(rolls)) {
+        return acc + rolls.length;
+      }
+      return acc;
+    }, 0);
   });
 
   const totals = createMemo(() => ({
@@ -483,12 +492,12 @@ function PrintPage(props) {
                   <td className="px-2 py-1 text-right">{formatRupiah(totals.grand)}</td>
                 </tr>
               </Show>
-              <tr>
+              {/* <tr>
                 <td colSpan={9} className="border border-black p-2 align-top">
                   <div className="font-bold mb-1">NOTE:</div>
                   <div className="whitespace-pre-wrap break-words italic">{data?.keterangan ?? "-"}</div>
                 </td>
-              </tr>
+              </tr> */}
               <tr>
                 <td colSpan={9} className="border border-black">
                   <div className="w-full flex justify-between text-[13px] py-5 px-2">
@@ -509,11 +518,11 @@ function PrintPage(props) {
               </tr>
             </Show>
 
-            <tr>
+            {/* <tr>
               <td colSpan={9} className="border border-black px-2 py-1 text-right italic">
                 Halaman {pageNo} dari {pageCount}
               </td>
-            </tr>
+            </tr> */}
           </tfoot>
         </table>
       </div>
