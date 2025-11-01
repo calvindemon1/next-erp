@@ -4,9 +4,12 @@ import MainLayout from "../layouts/MainLayout";
 import { getAllUsers, getUser, softDeleteUser } from "../utils/auth";
 import Swal from "sweetalert2";
 import { Edit, Trash } from "lucide-solid";
+import SearchSortFilter from "../components/SearchSortFilter";
 
 export default function UsersList() {
   const [users, setUsers] = createSignal([]);
+  const [filteredUsers, setFilteredUsers] = createSignal([]);
+
   const navigate = useNavigate();
   const user = getUser();
   const [currentPage, setCurrentPage] = createSignal(1);
@@ -52,10 +55,10 @@ export default function UsersList() {
           title: "Gagal",
           text: `Gagal menghapus data pengguna dengan ID ${id}`,
           icon: "error",
-          
- showConfirmButton: false,
-        timer: 1000,
-        timerProgressBar: true,
+
+          showConfirmButton: false,
+          timer: 1000,
+          timerProgressBar: true,
         });
       }
     }
@@ -87,6 +90,7 @@ export default function UsersList() {
     if (result.status === 200) {
       const sortedData = result.users.sort((a, b) => a.id - b.id);
       setUsers(sortedData);
+      setFilteredUsers(sortedData);
     } else if (result.status === 403) {
       await Swal.fire({
         title: "Tidak Ada Akses",
@@ -107,6 +111,42 @@ export default function UsersList() {
     }
   };
 
+  const handleFilterChange = ({ search, sortField, sortOrder, filter }) => {
+    let data = [...users()];
+
+    // Search
+    if (search) {
+      data = data.filter((u) =>
+        u.name.toLowerCase().includes(search.toLowerCase())
+      );
+    }
+
+    // Filter role
+    if (filter) {
+      if (filter === "Super Admin") {
+        data = data.filter((u) => u.role_name.toLowerCase().includes("admin"));
+      } else if (filter === "Staff") {
+        data = data.filter((u) =>
+          u.role_name.toLowerCase().startsWith("staff")
+        );
+      }
+    }
+
+    // Sorting
+    if (sortField) {
+      data.sort((a, b) => {
+        const valA = a[sortField].toString().toLowerCase();
+        const valB = b[sortField].toString().toLowerCase();
+        return sortOrder === "asc"
+          ? valA.localeCompare(valB)
+          : valB.localeCompare(valA);
+      });
+    }
+
+    setFilteredUsers(data);
+    setCurrentPage(1);
+  };
+
   createEffect(() => {
     if (user?.token) {
       handleGetAllUsers();
@@ -124,7 +164,18 @@ export default function UsersList() {
           + Tambah User
         </button>
       </div>
-
+      <SearchSortFilter
+        sortOptions={[
+          { label: "Nama", value: "name" },
+          { label: "Username", value: "username" },
+          { label: "Role", value: "role" },
+        ]}
+        filterOptions={[
+          { label: "Super Admin", value: "Super Admin" },
+          { label: "Staff", value: "Staff" },
+        ]}
+        onChange={handleFilterChange}
+      />
       <table class="w-full bg-white shadow rounded">
         <thead class="bg-gray-200 text-left text-sm uppercase text-gray-700">
           <tr>
@@ -136,28 +187,30 @@ export default function UsersList() {
           </tr>
         </thead>
         <tbody>
-          {paginatedData().map((user, index) => (
-            <tr class="border-b" key={user.id}>
-              <td class="py-2 px-4">{index + 1}</td>
-              <td class="py-2 px-4 capitalize">{user.name}</td>
-              <td class="py-2 px-4 capitalize">{user.username}</td>
-              <td class="py-2 px-4 capitalize">{user.role_name}</td>
-              <td class="py-2 px-4 space-x-2">
-                <button
-                  class="text-blue-600 hover:underline"
-                  onClick={() => navigate(`/users/form?id=${user.id}`)}
-                >
-                  <Edit size={25} />
-                </button>
-                <button
-                  class="text-red-600 hover:underline"
-                  onClick={() => handleDelete(user.id)}
-                >
-                  <Trash size={25}/>
-                </button>
-              </td>
-            </tr>
-          ))}
+          {filteredUsers()
+            .slice((currentPage() - 1) * pageSize, currentPage() * pageSize)
+            .map((user, index) => (
+              <tr class="border-b" key={user.id}>
+                <td class="py-2 px-4">{index + 1}</td>
+                <td class="py-2 px-4 capitalize">{user.name}</td>
+                <td class="py-2 px-4 capitalize">{user.username}</td>
+                <td class="py-2 px-4 capitalize">{user.role_name}</td>
+                <td class="py-2 px-4 space-x-2">
+                  <button
+                    class="text-blue-600 hover:underline"
+                    onClick={() => navigate(`/users/form?id=${user.id}`)}
+                  >
+                    <Edit size={25} />
+                  </button>
+                  <button
+                    class="text-red-600 hover:underline"
+                    onClick={() => handleDelete(user.id)}
+                  >
+                    <Trash size={25} />
+                  </button>
+                </td>
+              </tr>
+            ))}
         </tbody>
       </table>
       <div class="w-full mt-8 flex justify-between space-x-2">
