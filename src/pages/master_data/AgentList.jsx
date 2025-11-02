@@ -10,20 +10,25 @@ import {
 import Swal from "sweetalert2";
 import { Edit, Trash } from "lucide-solid";
 
+import SearchSortFilter from "../../components/SearchSortFilter";
+import useSimpleFilter from "../../utils/useSimpleFilter";
+
 export default function AgentList() {
   const [agent, setAgent] = createSignal([]);
+  const { filteredData, applyFilter } = useSimpleFilter(agent, ["agent_name"]);
+
   const navigate = useNavigate();
   const tokUser = getUser();
   const [currentPage, setCurrentPage] = createSignal(1);
   const pageSize = 20;
 
   const totalPages = createMemo(() => {
-    return Math.max(1, Math.ceil(agent().length / pageSize));
+    return Math.max(1, Math.ceil(filteredData().length / pageSize));
   });
 
   const paginatedData = () => {
     const startIndex = (currentPage() - 1) * pageSize;
-    return agent().slice(startIndex, startIndex + pageSize);
+    return filteredData().slice(startIndex, startIndex + pageSize);
   };
 
   const handleDelete = async (id) => {
@@ -54,14 +59,12 @@ export default function AgentList() {
       } catch (error) {
         Swal.fire({
           title: "Gagal",
-          text:
-            error.message ||
-            `Gagal menghapus data Agent dengan ID ${id}`,
+          text: error.message || `Gagal menghapus data Agent dengan ID ${id}`,
           icon: "error",
-          
-        showConfirmButton: false,
-        timer: 1000,
-        timerProgressBar: true,
+
+          showConfirmButton: false,
+          timer: 1000,
+          timerProgressBar: true,
         });
       }
     }
@@ -73,6 +76,7 @@ export default function AgentList() {
     if (result.status === 200) {
       const sortedData = result.data.sort((a, b) => a.id - b.id);
       setAgent(sortedData);
+      applyFilter({});
     } else if (result.status === 403) {
       await Swal.fire({
         title: "Tidak Ada Akses",
@@ -110,6 +114,11 @@ export default function AgentList() {
         </button>
       </div>
 
+      <SearchSortFilter
+        sortOptions={[{ label: "Nama", value: "agent_name" }]}
+        filterOptions={[]}
+        onChange={applyFilter}
+      />
       <div class="overflow-x-auto">
         <table class="min-w-full bg-white shadow-md rounded">
           <thead>
@@ -132,9 +141,7 @@ export default function AgentList() {
                   <td class="py-2 px-4 space-x-2">
                     <button
                       class="text-blue-600 hover:underline"
-                      onClick={() =>
-                        navigate(`/agent/form?id=${agent.id}`)
-                      }
+                      onClick={() => navigate(`/agent/form?id=${agent.id}`)}
                     >
                       <Edit size={25} />
                     </button>
@@ -142,7 +149,7 @@ export default function AgentList() {
                       class="text-red-600 hover:underline"
                       onClick={() => handleDelete(agent.id)}
                     >
-                    <Trash size={25} />
+                      <Trash size={25} />
                     </button>
                   </td>
                 )}
