@@ -48,7 +48,8 @@ export default function BanksDropdownSearch({
       const name = (b.name || "").toLowerCase();
       const id = String(b.id || "").toLowerCase();
       const kode = (b.kode || "").toLowerCase();
-      return name.includes(q) || id.includes(q) || kode.includes(q);
+      const bank_number = (b.bank_number || "").toLowerCase();
+      return name.includes(q) || id.includes(q) || kode.includes(q) || bank_number.includes(q);
     });
   });
 
@@ -66,6 +67,11 @@ export default function BanksDropdownSearch({
         console.error("BanksDropdownSearch: setForm failed", err);
       }
     }
+  };
+
+  const getBankDisplayText = (bank) => {
+    if (!bank) return "";
+    return bank.bank_number ? `${bank.name} - ${bank.bank_number}` : bank.name;
   };
 
   const selectItem = (item) => {
@@ -106,7 +112,7 @@ export default function BanksDropdownSearch({
                 class="p-2 hover:bg-blue-100 cursor-pointer whitespace-nowrap overflow-hidden text-ellipsis"
                 onClick={() => selectItem(b)}
               >
-                {b.name}
+                {getBankDisplayText(b)}
               </div>
             ))
           ) : (
