@@ -1,29 +1,34 @@
 import { createEffect, createMemo, createSignal } from "solid-js";
 import { useNavigate } from "@solidjs/router";
 import MainLayout from "../../layouts/MainLayout";
-import { 
-  getAllSOTypes, 
-  getUser, 
+import {
+  getAllSOTypes,
+  getUser,
   softDeleteSOType,
-  hasAllPermission
+  hasAllPermission,
 } from "../../utils/auth";
 import Swal from "sweetalert2";
 import { Edit, Trash } from "lucide-solid";
 
+import SearchSortFilter from "../../components/SearchSortFilter";
+import useSimpleFilter from "../../utils/useSimpleFilter";
+
 export default function SOTypesList() {
   const [soTypes, setSOTypes] = createSignal([]);
+  const { filteredData, applyFilter } = useSimpleFilter(soTypes, ["jenis"]);
+
   const navigate = useNavigate();
   const tokUser = getUser();
   const [currentPage, setCurrentPage] = createSignal(1);
   const pageSize = 20;
 
   const totalPages = createMemo(() => {
-    return Math.max(1, Math.ceil(soTypes().length / pageSize));
+    return Math.max(1, Math.ceil(filteredData().length / pageSize));
   });
 
   const paginatedData = () => {
     const startIndex = (currentPage() - 1) * pageSize;
-    return soTypes().slice(startIndex, startIndex + pageSize);
+    return filteredData().slice(startIndex, startIndex + pageSize);
   };
 
   const handleDelete = async (id) => {
@@ -57,10 +62,10 @@ export default function SOTypesList() {
           text:
             error.message || `Gagal menghapus data jenis SO dengan ID ${id}`,
           icon: "error",
-          
-        showConfirmButton: false,
-        timer: 1000,
-        timerProgressBar: true,
+
+          showConfirmButton: false,
+          timer: 1000,
+          timerProgressBar: true,
         });
       }
     }
@@ -71,8 +76,8 @@ export default function SOTypesList() {
 
     if (getDataSOTypes.status === 200) {
       const sortedData = getDataSOTypes.data.sort((a, b) => a.id - b.id);
-
       setSOTypes(sortedData);
+      applyFilter({});
     }
   };
 
@@ -93,6 +98,16 @@ export default function SOTypesList() {
         </button>
       </div>
 
+      <SearchSortFilter
+        sortOptions={[{ label: "Jenis", value: "jenis" }]}
+        filterOptions={
+          [
+            // { label: "Tipe (PT)", value: "PT" },
+            // { label: "Tipe (CV)", value: "CV" },
+          ]
+        }
+        onChange={applyFilter}
+      />
       <div class="overflow-x-auto">
         <table class="min-w-full bg-white shadow-md rounded">
           <thead>
@@ -123,7 +138,7 @@ export default function SOTypesList() {
                       class="text-red-600 hover:underline"
                       onClick={() => handleDelete(soType.id)}
                     >
-                    <Trash size={25} />
+                      <Trash size={25} />
                     </button>
                   </td>
                 )}
