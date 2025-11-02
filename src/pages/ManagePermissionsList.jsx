@@ -29,7 +29,6 @@ export default function ManagePermissionsList() {
   const handleGetAllRoles = async () => {
     try {
       const result = await getAllRoles(user?.token);
-      console.log("Roles fetched:", result);
 
       if (result.status === 200 && result.result) {
         const sortedData = result.result.sort((a, b) => a.id - b.id);

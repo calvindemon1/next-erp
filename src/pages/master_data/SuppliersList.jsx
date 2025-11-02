@@ -1,17 +1,29 @@
 import { createEffect, createMemo, createSignal } from "solid-js";
 import { useNavigate } from "@solidjs/router";
 import MainLayout from "../../layouts/MainLayout";
-import { 
-  getAllSuppliers, 
-  getUser, 
-  softDeleteSupplier, 
-  hasAllPermission
+import {
+  getAllSuppliers,
+  getUser,
+  softDeleteSupplier,
+  hasAllPermission,
 } from "../../utils/auth";
 import Swal from "sweetalert2";
 import { Edit, Trash } from "lucide-solid";
 
+import SearchSortFilter from "../../components/SearchSortFilter";
+import useSimpleFilter from "../../utils/useSimpleFilter";
+
 export default function SuppliersList() {
   const [suppliers, setSuppliers] = createSignal([]);
+  const { filteredData, applyFilter } = useSimpleFilter(
+    suppliers,
+    ["kode"],
+    ["nama"],
+    ["no_telp"],
+    ["no_hp"],
+    ["alamat"]
+  );
+
   const navigate = useNavigate();
   const tokUser = getUser();
   const [currentPage, setCurrentPage] = createSignal(1);
@@ -23,7 +35,7 @@ export default function SuppliersList() {
 
   const paginatedData = () => {
     const startIndex = (currentPage() - 1) * pageSize;
-    return suppliers().slice(startIndex, startIndex + pageSize);
+    return filteredData().slice(startIndex, startIndex + pageSize);
   };
 
   const handleDelete = async (id) => {
@@ -67,10 +79,10 @@ export default function SuppliersList() {
           text:
             error.message || `Gagal menghapus data supplier dengan ID ${id}`,
           icon: "error",
-          
-        showConfirmButton: false,
-        timer: 1000,
-        timerProgressBar: true,
+
+          showConfirmButton: false,
+          timer: 1000,
+          timerProgressBar: true,
         });
       }
     }
@@ -82,6 +94,7 @@ export default function SuppliersList() {
     if (getDataSuppliers.status === 200) {
       const sortedData = getDataSuppliers.suppliers.sort((a, b) => a.id - b.id);
       setSuppliers(sortedData);
+      applyFilter({});
     }
   };
 
@@ -112,6 +125,23 @@ export default function SuppliersList() {
         </button>
       </div>
 
+      <SearchSortFilter
+        sortOptions={[
+          { label: "Kode", value: "kode" },
+          { label: "Nama", value: "nama" },
+          { label: "No Telp", value: "no_telp" },
+          { label: "No HP", value: "no_hp" },
+          { label: "Alamat", value: "alamat" },
+        ]}
+        filterOptions={[
+          { label: "Kode", value: "kode" },
+          { label: "Nama", value: "nama" },
+          { label: "No Telp", value: "no_telp" },
+          { label: "No HP", value: "no_hp" },
+          { label: "Alamat", value: "alamat" },
+        ]}
+        onChange={applyFilter}
+      />
       {/* ✅ FIX #4: tambahin min-height biar table stabil walau data sedikit */}
       <div class="overflow-x-auto min-h-[400px]">
         <table class="min-w-full bg-white shadow-md rounded">
@@ -188,7 +218,7 @@ export default function SuppliersList() {
                       class="text-red-600 hover:underline"
                       onClick={() => handleDelete(supp.id)}
                     >
-                    <Trash size={25} />
+                      <Trash size={25} />
                     </button>
                   </td>
                 )}
