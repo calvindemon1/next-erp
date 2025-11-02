@@ -5,20 +5,27 @@ import Swal from "sweetalert2";
 import { Edit, Trash } from "lucide-solid";
 import FinanceMainLayout from "../../../layouts/FinanceMainLayout";
 
+import SearchSortFilter from "../../../components/SearchSortFilter";
+import useSimpleFilter from "../../../utils/useSimpleFilter";
+
 export default function JenisHutangList() {
   const [jenisHutang, setJenisHutang] = createSignal([]);
+    const { filteredData, applyFilter } = useSimpleFilter(jenisHutang, [
+      "name",
+    ]);
+
   const navigate = useNavigate();
   const tokUser = User.getUser();
   const [currentPage, setCurrentPage] = createSignal(1);
   const pageSize = 20;
 
   const totalPages = createMemo(() =>
-    Math.max(1, Math.ceil(jenisHutang().length / pageSize))
+    Math.max(1, Math.ceil(filteredData().length / pageSize))
   );
 
   const paginatedData = () => {
     const startIndex = (currentPage() - 1) * pageSize;
-    return jenisHutang().slice(startIndex, startIndex + pageSize);
+    return filteredData().slice(startIndex, startIndex + pageSize);
   };
 
   const handleDelete = async (id) => {
@@ -67,6 +74,7 @@ export default function JenisHutangList() {
     if (getDataJenisHutang.status === 200) {
       const sortedData = getDataJenisHutang.data.sort((a, b) => a.id - b.id);
       setJenisHutang(sortedData);
+      applyFilter({});
     }
   };
 
@@ -88,6 +96,16 @@ export default function JenisHutangList() {
         </button>
       </div>
 
+      <SearchSortFilter
+        sortOptions={[{ label: "Name", value: "name" }]}
+        filterOptions={
+          [
+            // { label: "Grade A", value: "A" },
+            // { label: "Grade B", value: "B" },
+          ]
+        }
+        onChange={applyFilter}
+      />
       <div class="overflow-x-auto">
         <table class="min-w-full bg-white shadow-md rounded">
           <thead>
