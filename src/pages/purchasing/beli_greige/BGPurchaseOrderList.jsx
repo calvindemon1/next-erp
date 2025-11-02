@@ -248,9 +248,10 @@ export default function BGPurchaseOrderList() {
         let valA, valB;
         
         switch (sortField) {
-          case "no_pc":
+          case "no_po":
             valA = a.no_po;
             valB = b.no_po;
+            break;
           case "no_pc":
             valA = a.no_pc;
             valB = b.no_pc;
