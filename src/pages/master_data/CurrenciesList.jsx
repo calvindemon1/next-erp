@@ -10,20 +10,25 @@ import {
 import Swal from "sweetalert2";
 import { Edit, Trash } from "lucide-solid";
 
+import SearchSortFilter from "../../components/SearchSortFilter";
+import useSimpleFilter from "../../utils/useSimpleFilter";
+
 export default function CurrenciesList() {
+  const [currencies, setCurrencies] = createSignal([]);
+  const { filteredData, applyFilter } = useSimpleFilter(currencies, ["name"]);
+
   const navigate = useNavigate();
   const tokUser = getUser();
-  const [currencies, setCurrencies] = createSignal([]);
   const [currentPage, setCurrentPage] = createSignal(1);
   const pageSize = 20;
 
   const totalPages = createMemo(() => {
-    return Math.max(1, Math.ceil(currencies().length / pageSize));
+    return Math.max(1, Math.ceil(filteredData().length / pageSize));
   });
 
   const paginatedData = () => {
     const startIndex = (currentPage() - 1) * pageSize;
-    return currencies().slice(startIndex, startIndex + pageSize);
+    return filteredData().slice(startIndex, startIndex + pageSize);
   };
 
   const handleDelete = async (id) => {
@@ -57,10 +62,10 @@ export default function CurrenciesList() {
           text:
             error.message || `Gagal menghapus data currency dengan ID ${id}`,
           icon: "error",
-          
-        showConfirmButton: false,
-        timer: 1000,
-        timerProgressBar: true,
+
+          showConfirmButton: false,
+          timer: 1000,
+          timerProgressBar: true,
         });
       }
     }
@@ -82,6 +87,8 @@ export default function CurrenciesList() {
     if (result.status === 200) {
       const sortedData = result.data.sort((a, b) => a.id - b.id);
       setCurrencies(sortedData);
+      console.log(sortedData);
+      applyFilter({});
     } else if (result.status === 403) {
       await Swal.fire({
         title: "Tidak Ada Akses",
@@ -119,6 +126,16 @@ export default function CurrenciesList() {
         </button>
       </div>
 
+      <SearchSortFilter
+        sortOptions={[{ label: "Name", value: "name" }]}
+        filterOptions={
+          [
+            // { label: "Tipe (PT)", value: "PT" },
+            // { label: "Tipe (CV)", value: "CV" },
+          ]
+        }
+        onChange={applyFilter}
+      />
       <div class="overflow-x-auto">
         <table class="min-w-full bg-white shadow-md rounded">
           <thead>
@@ -149,7 +166,7 @@ export default function CurrenciesList() {
                       class="text-red-600 hover:underline"
                       onClick={() => handleDelete(curr.id)}
                     >
-                    <Trash size={25} />
+                      <Trash size={25} />
                     </button>
                   </td>
                 )}
