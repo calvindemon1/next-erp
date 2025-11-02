@@ -5,20 +5,29 @@ import Swal from "sweetalert2";
 import { Edit, Trash } from "lucide-solid";
 import FinanceMainLayout from "../../../layouts/FinanceMainLayout";
 
+import SearchSortFilter from "../../../components/SearchSortFilter";
+import useSimpleFilter from "../../../utils/useSimpleFilter";
+
 export default function BanksList() {
   const [banks, setBanks] = createSignal([]);
+  const { filteredData, applyFilter } = useSimpleFilter(banks, [
+    "name",
+    "bank_number",
+    "bank_beneficiary_name",
+  ]);
+
   const navigate = useNavigate();
   const tokUser = User.getUser();
   const [currentPage, setCurrentPage] = createSignal(1);
   const pageSize = 20;
 
   const totalPages = createMemo(() =>
-    Math.max(1, Math.ceil(banks().length / pageSize))
+    Math.max(1, Math.ceil(filteredData().length / pageSize))
   );
 
   const paginatedData = () => {
     const startIndex = (currentPage() - 1) * pageSize;
-    return banks().slice(startIndex, startIndex + pageSize);
+    return filteredData().slice(startIndex, startIndex + pageSize);
   };
 
   const handleDelete = async (id) => {
@@ -65,6 +74,8 @@ export default function BanksList() {
     if (getDataBanks.status === 200) {
       const sortedData = getDataBanks.data.sort((a, b) => a.id - b.id);
       setBanks(sortedData);
+      applyFilter({});
+      console.log(sortedData);
     }
   };
 
@@ -86,6 +97,20 @@ export default function BanksList() {
         </button>
       </div>
 
+      <SearchSortFilter
+        sortOptions={[
+          { label: "Nama Bank", value: "name" },
+          { label: "Nomor Bank", value: "bank_number" },
+          { label: "Nama Beneficiary", value: "bank_beneficiary_name" },
+        ]}
+        filterOptions={
+          [
+            // { label: "Grade A", value: "A" },
+            // { label: "Grade B", value: "B" },
+          ]
+        }
+        onChange={applyFilter}
+      />
       <div class="overflow-x-auto">
         <table class="min-w-full bg-white shadow-md rounded">
           <thead>
