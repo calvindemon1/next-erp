@@ -12,8 +12,19 @@ import { Edit, Eye, Trash } from "lucide-solid";
 import { jwtDecode } from "jwt-decode";
 import { formatCorak } from "../../../components/CorakKainList";
 
+import SearchSortFilter from "../../../components/SearchSortFilter";
+import useSimpleFilter from "../../../utils/useSimpleFilter";
+
 export default function OCPurchaseOrderList() {
   const [orderCelups, setOrderCelups] = createSignal([]);
+  const { filteredData, applyFilter } = useSimpleFilter(orderCelups, [
+    "no_po",
+    "no_pc",
+    "supplier_name",
+    "items",
+    "satuan_unit_name",
+  ]);
+
   const [me, setMe] = createSignal(null);
   const navigate = useNavigate();
   const tokUser = getUser();
@@ -23,12 +34,12 @@ export default function OCPurchaseOrderList() {
   const u = getUser();
 
   const totalPages = createMemo(() => {
-    return Math.max(1, Math.ceil(orderCelups().length / pageSize));
+    return Math.max(1, Math.ceil(filteredData().length / pageSize));
   });
 
   const paginatedData = () => {
     const startIndex = (currentPage() - 1) * pageSize;
-    return orderCelups().slice(startIndex, startIndex + pageSize);
+    return filteredData().slice(startIndex, startIndex + pageSize);
   };
 
   const handleDelete = async (id) => {
@@ -67,10 +78,10 @@ export default function OCPurchaseOrderList() {
             error.message ||
             `Gagal menghapus data packing order dengan ID ${id}`,
           icon: "error",
-          
-        showConfirmButton: false,
-        timer: 1000,
-        timerProgressBar: true,
+
+          showConfirmButton: false,
+          timer: 1000,
+          timerProgressBar: true,
         });
       }
     }
@@ -82,6 +93,7 @@ export default function OCPurchaseOrderList() {
     if (result.status === 200) {
       const sortedData = result.orders.sort((a, b) => b.id - a.id);
       setOrderCelups(sortedData);
+      applyFilter({});
     } else if (result.status === 403) {
       await Swal.fire({
         title: "Tidak Ada Akses",
@@ -174,7 +186,24 @@ export default function OCPurchaseOrderList() {
           + Tambah Order Celup
         </button>
       </div>
-
+      <SearchSortFilter
+        sortOptions={[
+          // { label: "No PO", value: "no_po" },
+          // { label: "No PC", value: "no_pc" },
+          { label: "Nama Supplier", value: "supplier_name" },
+          { label: "Corak Kain", value: "items" },
+          { label: "Satuan Unit", value: "satuan_unit_name" },
+        ]}
+        filterOptions={[
+          { label: "Order (Pajak)", value: "/P/" },
+          { label: "Order (Non Pajak)", value: "/N/" },
+          { label: "Supplier (PT)", value: "PT" },
+          { label: "Supplier (CV)", value: "CV" },
+          { label: "Satuan Unit (Meter)", value: "Meter" },
+          { label: "Satuan Unit (Yard)", value: "Yard" },
+        ]}
+        onChange={applyFilter}
+      />
       <div class="w-full overflow-x-auto">
         <table class="w-full bg-white shadow-md rounded">
           <thead>
@@ -205,7 +234,9 @@ export default function OCPurchaseOrderList() {
                 <td class="py-2 px-4">{po.supplier_name}</td>
                 <td class="py-2 px-4">
                   {(() => {
-                    const { display, full } = formatCorak(po.items, { maxShow: 3 });
+                    const { display, full } = formatCorak(po.items, {
+                      maxShow: 3,
+                    });
                     return (
                       <span
                         class="inline-block max-w-[260px] truncate align-middle"
@@ -228,16 +259,23 @@ export default function OCPurchaseOrderList() {
                 </td>
                 <td class="py-2 px-4">{po.satuan_unit_name}</td>
                 <td class="py-2 px-4 space-x-2">
-                   <button
+                  <button
                     class="text-yellow-600 hover:underline"
                     onClick={() =>
-                      navigate(`/ordercelup-purchaseorder/form?id=${po.id}&view=true`)
+                      navigate(
+                        `/ordercelup-purchaseorder/form?id=${po.id}&view=true`
+                      )
                     }
                   >
                     <Eye size={25} />
                   </button>
                   {hasPermission("edit_purchase_celup_order") && (
-                    <button class="text-blue-600" onClick={() => navigate(`/ordercelup-purchaseorder/form?id=${po.id}`)}>
+                    <button
+                      class="text-blue-600"
+                      onClick={() =>
+                        navigate(`/ordercelup-purchaseorder/form?id=${po.id}`)
+                      }
+                    >
                       <Edit size={25} />
                     </button>
                   )}
