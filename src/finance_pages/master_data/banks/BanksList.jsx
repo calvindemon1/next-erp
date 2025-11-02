@@ -92,6 +92,8 @@ export default function BanksList() {
             <tr class="bg-gray-200 text-left text-sm uppercase text-gray-700">
               <th class="py-2 px-4">No</th>
               <th class="py-2 px-2">Nama Bank</th>
+              <th class="py-2 px-2">Nomor Bank</th>
+              <th class="py-2 px-2">Beneficiary Name</th>
               <th class="py-2 px-2">Aksi</th>
             </tr>
           </thead>
@@ -102,6 +104,8 @@ export default function BanksList() {
                   {(currentPage() - 1) * pageSize + (index + 1)}
                 </td>
                 <td class="py-2 px-4">{bank.name}</td>
+                <td class="py-2 px-4">{bank.bank_number}</td>
+                <td class="py-2 px-4">{bank.bank_beneficiary_name}</td>
                 <td class="py-2 px-4 space-x-2">
                   <button
                     class="text-blue-600 hover:underline"

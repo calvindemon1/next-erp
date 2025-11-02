@@ -8,6 +8,8 @@ export default function BanksForm() {
   const [form, setForm] = createSignal({
     id: "",
     name: "",
+    bank_number: "",
+    bank_beneficiary_name: "",
   });
   const [params] = useSearchParams();
   const isEdit = !!params.id;
@@ -19,6 +21,8 @@ export default function BanksForm() {
       setForm({
         id: params.id,
         name: bankData.data.name,
+        bank_number: bankData.data.bank_number,
+        bank_beneficiary_name: bankData.data.bank_beneficiary_name,
       });
     }
   });
@@ -42,9 +46,17 @@ export default function BanksForm() {
 
     try {
       if (!isEdit) {
-        await Banks.create({ name: form().name });
+        await Banks.create({ 
+          name: form().name,
+          bank_number: form().bank_number,
+          bank_beneficiary_name: form().bank_beneficiary_name, 
+        });
       } else {
-        await Banks.update(params.id, { name: form().name });
+        await Banks.update(params.id, { 
+          name: form().name,
+          bank_number: form().bank_number,
+          bank_beneficiary_name: form().bank_beneficiary_name,  
+        });
       }
 
       Swal.fire({
@@ -75,7 +87,7 @@ export default function BanksForm() {
     <FinanceMainLayout>
       <h1 class="text-2xl font-bold mb-4">{isEdit ? "Edit" : "Tambah"} Bank</h1>
       <form class="space-y-4" onSubmit={handleSubmit} onkeydown={handleKeyDown}>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-3 gap-4">
           <div>
             <label class="block mb-1 font-medium">Nama Bank</label>
             <input
@@ -83,6 +95,26 @@ export default function BanksForm() {
               class="w-full border p-2 rounded"
               value={form().name}
               onInput={(e) => setForm({ ...form(), name: e.target.value })}
+              required
+            />
+          </div>
+          <div>
+            <label class="block mb-1 font-medium">Nomor Bank</label>
+            <input
+              type="text"
+              class="w-full border p-2 rounded"
+              value={form().bank_number}
+              onInput={(e) => setForm({ ...form(), bank_number: e.target.value })}
+              required
+            />
+          </div>
+          <div>
+            <label class="block mb-1 font-medium">Beneficiary Name</label>
+            <input
+              type="text"
+              class="w-full border p-2 rounded"
+              value={form().bank_beneficiary_name}
+              onInput={(e) => setForm({ ...form(), bank_beneficiary_name: e.target.value })}
               required
             />
           </div>
