@@ -5,8 +5,13 @@ import { getAllRoles, getUser, deleteRole } from "../utils/auth";
 import Swal from "sweetalert2";
 import { Edit, Trash } from "lucide-solid";
 
+import SearchSortFilter from "../components/SearchSortFilter";
+import useSimpleFilter from "../utils/useSimpleFilter";
+
 export default function ManagePermissionsList() {
   const [roles, setRoles] = createSignal([]);
+  const { filteredData, applyFilter } = useSimpleFilter(roles, ["name"]);
+
   const navigate = useNavigate();
   const user = getUser();
   const [currentPage, setCurrentPage] = createSignal(1);
@@ -18,16 +23,18 @@ export default function ManagePermissionsList() {
 
   const paginatedData = () => {
     const startIndex = (currentPage() - 1) * pageSize;
-    return roles().slice(startIndex, startIndex + pageSize);
+    return filteredData().slice(startIndex, startIndex + pageSize);
   };
 
   const handleGetAllRoles = async () => {
     try {
       const result = await getAllRoles(user?.token);
+      console.log("Roles fetched:", result);
 
       if (result.status === 200 && result.result) {
         const sortedData = result.result.sort((a, b) => a.id - b.id);
         setRoles(sortedData);
+        applyFilter({});
       } else {
         throw new Error(result.message || "Struktur data roles tidak valid");
       }
@@ -52,7 +59,7 @@ export default function ManagePermissionsList() {
   };
 
   const handleDelete = async (roleId) => {
-      const result = await Swal.fire({
+    const result = await Swal.fire({
       title: "Hapus Role",
       text: `Apakah kamu yakin ingin menghapus Permission Role dengan ID ${roleId}?`,
       icon: "warning",
@@ -61,30 +68,30 @@ export default function ManagePermissionsList() {
       cancelButtonColor: "#aaa",
       confirmButtonText: "Ya, hapus",
       cancelButtonText: "Batal",
-      });
+    });
 
-      if (result.isConfirmed) {
+    if (result.isConfirmed) {
       try {
-          await deleteRole(roleId, user?.token);
+        await deleteRole(roleId, user?.token);
 
-          setRoles(roles().filter(role => role.id !== roleId));
+        setRoles(roles().filter((role) => role.id !== roleId));
 
-          Swal.fire({
+        Swal.fire({
           title: "Terhapus!",
           text: `Data Permission Role dengan ID ${roleId} berhasil dihapus.`,
           icon: "success",
           timer: 1000,
           showConfirmButton: false,
-          });
+        });
       } catch (error) {
-          Swal.fire({
+        Swal.fire({
           title: "Gagal",
           text: error.message || "Gagal menghapus role.",
           icon: "error",
-          });
-        }
+        });
       }
-  };  
+    }
+  };
 
   createEffect(() => {
     if (user?.token) {
@@ -103,7 +110,14 @@ export default function ManagePermissionsList() {
           + Tambah Role
         </button>
       </div>
-
+      <SearchSortFilter
+        sortOptions={[{ label: "Nama Role", value: "name" }]}
+        filterOptions={[
+          { label: "Super Admin", value: "admin" },
+          { label: "Staff", value: "staff" },
+        ]}
+        onChange={applyFilter}
+      />
       <table class="w-full bg-white shadow rounded">
         <thead class="bg-gray-200 text-left text-sm uppercase text-gray-700">
           <tr>
@@ -115,13 +129,17 @@ export default function ManagePermissionsList() {
         <tbody>
           {paginatedData().map((role, index) => (
             <tr class="border-b" key={role.id}>
-              <td class="py-2 px-4">{(currentPage() - 1) * pageSize + index + 1}</td>
+              <td class="py-2 px-4">
+                {(currentPage() - 1) * pageSize + index + 1}
+              </td>
               <td class="py-2 px-4 capitalize">{role.name}</td>
               <td class="py-2 px-4">
                 <div class="flex items-center space-x-2">
                   <button
                     class="text-blue-600 hover:text-blue-800"
-                    onClick={() => navigate(`/manage-permissions/form?role_id=${role.id}`)}
+                    onClick={() =>
+                      navigate(`/manage-permissions/form?role_id=${role.id}`)
+                    }
                   >
                     <Edit size={25} />
                   </button>
