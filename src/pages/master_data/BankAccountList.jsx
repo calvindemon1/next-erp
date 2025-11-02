@@ -10,20 +10,31 @@ import {
 import Swal from "sweetalert2";
 import { Edit, Trash } from "lucide-solid";
 
+import SearchSortFilter from "../../components/SearchSortFilter";
+import useSimpleFilter from "../../utils/useSimpleFilter";
+
 export default function BankAccountList() {
   const [bankAccount, setBankAccount] = createSignal([]);
+  const { filteredData, applyFilter } = useSimpleFilter(bankAccount, [
+    "bank_account_name",
+    "bank_account_number",
+    "beneficiary_name",
+    "bank_account_address",
+    "swift_code",
+  ]);
+
   const navigate = useNavigate();
   const tokUser = getUser();
   const [currentPage, setCurrentPage] = createSignal(1);
   const pageSize = 20;
 
   const totalPages = createMemo(() => {
-    return Math.max(1, Math.ceil(bankAccount().length / pageSize));
+    return Math.max(1, Math.ceil(filteredData().length / pageSize));
   });
 
   const paginatedData = () => {
     const startIndex = (currentPage() - 1) * pageSize;
-    return bankAccount().slice(startIndex, startIndex + pageSize);
+    return filteredData().slice(startIndex, startIndex + pageSize);
   };
 
   const handleDelete = async (id) => {
@@ -40,7 +51,10 @@ export default function BankAccountList() {
 
     if (result.isConfirmed) {
       try {
-        const deleteBankAccount = await softDeleteBankAccounts(id, tokUser?.token);
+        const deleteBankAccount = await softDeleteBankAccounts(
+          id,
+          tokUser?.token
+        );
 
         await Swal.fire({
           title: "Terhapus!",
@@ -58,10 +72,10 @@ export default function BankAccountList() {
             error.message ||
             `Gagal menghapus data Bank Account dengan ID ${id}`,
           icon: "error",
-          
-        showConfirmButton: false,
-        timer: 1000,
-        timerProgressBar: true,
+
+          showConfirmButton: false,
+          timer: 1000,
+          timerProgressBar: true,
         });
       }
     }
@@ -73,6 +87,7 @@ export default function BankAccountList() {
     if (result.status === 200) {
       const sortedData = result.data.sort((a, b) => a.id - b.id);
       setBankAccount(sortedData);
+      applyFilter({});
     } else if (result.status === 403) {
       await Swal.fire({
         title: "Tidak Ada Akses",
@@ -110,6 +125,17 @@ export default function BankAccountList() {
         </button>
       </div>
 
+      <SearchSortFilter
+        sortOptions={[
+          { label: "Nama Akun Bank", value: "bank_account_name" },
+          { label: "Nomor Akun Bank", value: "bank_account_number" },
+          { label: "Nama Beneficiary", value: "beneficiary_name" },
+          { label: "Alamat Bank", value: "bank_account_address" },
+          { label: "Swift Code", value: "swift_code" },
+        ]}
+        filterOptions={[{ label: "Nama Beneficiary", value: "PT" }]}
+        onChange={applyFilter}
+      />
       <div class="overflow-x-auto">
         <table class="min-w-full bg-white shadow-md rounded">
           <thead>
@@ -120,9 +146,10 @@ export default function BankAccountList() {
               <th class="py-2 px-2">Beneficiary Name</th>
               <th class="py-2 px-2">Alamat</th>
               <th class="py-2 px-2">Swift Code</th>
-              {hasAllPermission(["edit_bank_account", "delete_bank_account"]) && (
-                <th class="py-2 px-2">Aksi</th>
-              )}
+              {hasAllPermission([
+                "edit_bank_account",
+                "delete_bank_account",
+              ]) && <th class="py-2 px-2">Aksi</th>}
             </tr>
           </thead>
           <tbody>
@@ -136,7 +163,10 @@ export default function BankAccountList() {
                 <td class="py-2 px-4">{bankAccount.beneficiary_name}</td>
                 <td class="py-2 px-4">{bankAccount.bank_account_address}</td>
                 <td class="py-2 px-4">{bankAccount.swift_code}</td>
-                {hasAllPermission(["edit_bank_account", "delete_bank_account"]) && (
+                {hasAllPermission([
+                  "edit_bank_account",
+                  "delete_bank_account",
+                ]) && (
                   <td class="py-2 px-4 space-x-2">
                     <button
                       class="text-blue-600 hover:underline"
@@ -150,7 +180,7 @@ export default function BankAccountList() {
                       class="text-red-600 hover:underline"
                       onClick={() => handleDelete(bankAccount.id)}
                     >
-                    <Trash size={25} />
+                      <Trash size={25} />
                     </button>
                   </td>
                 )}
