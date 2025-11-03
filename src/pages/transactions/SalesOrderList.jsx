@@ -279,9 +279,8 @@ export default function SalesOrderList() {
                 </td>
                 <td class="py-2 px-4">{so.no_so}</td>
                 <td class="py-2 px-4">{formatTanggalIndo(so.created_at)}</td>
-                <td class="py-2 px-4">{so.no_so}</td>
-                <td class="py-2 px-4">{so.customer_name}</td>
                 <td class="py-2 px-4">{so.no_sc}</td>
+                <td class="py-2 px-4">{so.customer_name}</td>
                 <td class="py-2 px-4">{so.satuan_unit_name}</td>
                 <td class="py-2 px-4 text-red-500 text-center">
                   {/* {parseFloat(sc.summary.total_meter_kontrak || 0) -
