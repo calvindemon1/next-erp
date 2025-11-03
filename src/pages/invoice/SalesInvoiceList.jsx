@@ -340,7 +340,7 @@ export default function SalesInvoiceList() {
           { label: "No SJ", value: "no_sj" },
           { label: "Tanggal", value: "created_at" },
           { label: "No PL", value: "no_pl" },
-          { label: "Nama Customer", value: "supplier_name" },
+          { label: "Nama Customer", value: "customer_name" },
           { label: "Satuan Unit", value: "satuan_unit_name" },
           { label: "Status Invoice", value: "delivered_status" },
         ]}

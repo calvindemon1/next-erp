@@ -278,7 +278,7 @@ export default function JBInvoiceList() {
           { label: "No SJ", value: "no_sj" },
           { label: "Tanggal", value: "created_at" },
           { label: "No PC", value: "no_pc" },
-          { label: "Nama Customer", value: "supplier_name" },
+          { label: "Nama Customer", value: "customer_name" },
           { label: "Satuan Unit", value: "satuan_unit_name" },
           { label: "Status Invoice", value: "delivered_status" },
         ]}

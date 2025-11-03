@@ -10,8 +10,19 @@ import {
 import Swal from "sweetalert2";
 import { Eye, Edit, Trash } from "lucide-solid";
 
+import SearchSortFilter from "../../components/SearchSortFilter";
+import useSimpleFilter from "../../utils/useSimpleFilter";
+
 export default function ReturGreigeList() {
   const [returs, setReturs] = createSignal([]);
+  const { filteredData, applyFilter } = useSimpleFilter(returs, [
+    "no_retur",
+    "no_sj_supplier",
+    "created_at",
+    "supplier_name",
+    "satuan_unit_name",
+  ]);
+
   const navigate = useNavigate();
   const tokUser = getUser();
 
@@ -19,12 +30,12 @@ export default function ReturGreigeList() {
   const pageSize = 20;
 
   const totalPages = createMemo(() =>
-    Math.max(1, Math.ceil((returs().length || 0) / pageSize))
+    Math.max(1, Math.ceil((filteredData().length || 0) / pageSize))
   );
 
   const paginatedData = () => {
     const startIndex = (currentPage() - 1) * pageSize;
-    return returs().slice(startIndex, startIndex + pageSize);
+    return filteredData().slice(startIndex, startIndex + pageSize);
   };
 
   const handleGetAllData = async (tok) => {
@@ -34,6 +45,7 @@ export default function ReturGreigeList() {
       if (Array.isArray(result?.data)) {
         const sorted = result.data.sort((a, b) => b.id - a.id);
         setReturs(sorted);
+        applyFilter({});
         // jaga-jaga halaman tetap valid setelah refresh/hapus
         const newTotal = Math.max(1, Math.ceil(sorted.length / pageSize));
         if (currentPage() > newTotal) setCurrentPage(newTotal);
@@ -64,9 +76,11 @@ export default function ReturGreigeList() {
 
   const fmtNum = (n) => (Number(n) || 0).toLocaleString("id-ID");
   const totalCounter = (row) => {
-    const unit = String(row?.satuan_unit_name || row?.satuan_unit || "").toLowerCase();
+    const unit = String(
+      row?.satuan_unit_name || row?.satuan_unit || ""
+    ).toLowerCase();
     if (unit === "meter") return fmtNum(row?.summary?.total_meter ?? 0);
-    if (unit === "yard")  return fmtNum(row?.summary?.total_yard ?? 0);
+    if (unit === "yard") return fmtNum(row?.summary?.total_yard ?? 0);
     // fallback
     return fmtNum(row?.summary?.total_meter ?? 0);
   };
@@ -79,8 +93,18 @@ export default function ReturGreigeList() {
     if (!tanggalString) return "-";
     const t = new Date(tanggalString);
     const bulanIndo = [
-      "Januari","Februari","Maret","April","Mei","Juni",
-      "Juli","Agustus","September","Oktober","November","Desember",
+      "Januari",
+      "Februari",
+      "Maret",
+      "April",
+      "Mei",
+      "Juni",
+      "Juli",
+      "Agustus",
+      "September",
+      "Oktober",
+      "November",
+      "Desember",
     ];
     return `${t.getDate()} ${bulanIndo[t.getMonth()]} ${t.getFullYear()}`;
   }
@@ -140,7 +164,27 @@ export default function ReturGreigeList() {
           Tambah Retur Greige
         </button>
       </div>
-
+      <SearchSortFilter
+        sortOptions={[
+          { label: "No Retur", value: "no_retur" },
+          { label: "No Surat Penerimaan", value: "no_sj_supplier" },
+          { label: "Tanggal", value: "created_at" },
+          { label: "Nama Supplier", value: "supplier_name" },
+          { label: "Satuan Unit", value: "satuan_unit_name" },
+          { label: "Status Invoice", value: "delivered_status" },
+        ]}
+        filterOptions={[
+          { label: "Pembelian (Pajak)", value: "/P/" },
+          { label: "Pembelian (Non Pajak)", value: "/N/" },
+          { label: "Supplier (PT)", value: "PT" },
+          { label: "Supplier (Non-PT)", value: "NON_PT" },
+          { label: "Satuan Unit (Meter)", value: "Meter" },
+          { label: "Satuan Unit (Yard)", value: "Yard" },
+          { label: "Status Invoice (Sudah Print)", value: 1 },
+          { label: "Status Invoice (Belum Print)", value: 0 },
+        ]}
+        onChange={applyFilter}
+      />
       <div class="w-full overflow-x-auto">
         <table class="w-full bg-white shadow-md rounded">
           <thead>
@@ -163,11 +207,15 @@ export default function ReturGreigeList() {
                   {(currentPage() - 1) * pageSize + (index + 1)}
                 </td>
                 <td class="py-2 px-4">{row.no_retur}</td>
-                <td class="py-2 px-4">{row.no_sj || row.no_sj_supplier || "-"}</td>
+                <td class="py-2 px-4">
+                  {row.no_sj || row.no_sj_supplier || "-"}
+                </td>
                 <td class="py-2 px-4">{formatTanggalIndo(row.created_at)}</td>
                 <td class="py-2 px-4">{row.supplier_name}</td>
                 <td class="py-2 px-4">{totalCounter(row)}</td>
-                <td class="py-2 px-4">{row.satuan_unit_name || row.satuan_unit}</td>
+                <td class="py-2 px-4">
+                  {row.satuan_unit_name || row.satuan_unit}
+                </td>
 
                 <td class="py-2 px-4">
                   <button
@@ -197,7 +245,6 @@ export default function ReturGreigeList() {
                       <Trash size={25} />
                     </button>
                   </Show>
-
                 </td>
               </tr>
             ))}
@@ -212,7 +259,9 @@ export default function ReturGreigeList() {
           >
             Prev
           </button>
-          <span>Page {currentPage()} of {totalPages()}</span>
+          <span>
+            Page {currentPage()} of {totalPages()}
+          </span>
           <button
             class="px-3 py-1 bg-gray-200 rounded min-w-[80px]"
             onClick={() => setCurrentPage(currentPage() + 1)}
