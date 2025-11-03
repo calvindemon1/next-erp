@@ -13,8 +13,20 @@ import {
 import Swal from "sweetalert2";
 import { Eye, Printer, CheckCircle, XCircle, X } from "lucide-solid";
 
+import SearchSortFilter from "../../components/SearchSortFilter";
+import useSimpleFilter from "../../utils/useSimpleFilter";
+
 export default function JBInvoiceList() {
   const [packingOrders, setPackingOrders] = createSignal([]);
+  const { filteredData, applyFilter } = useSimpleFilter(packingOrders, [
+    "no_sj",
+    "created_at",
+    "no_pc",
+    "customer_name",
+    "satuan_unit_name",
+    "delivered_status",
+  ]);
+
   const navigate = useNavigate();
   const tokUser = getUser();
   const [currentPage, setCurrentPage] = createSignal(1);
@@ -32,12 +44,12 @@ export default function JBInvoiceList() {
   };
 
   const totalPages = createMemo(() => {
-    return Math.max(1, Math.ceil(packingOrders().length / pageSize));
+    return Math.max(1, Math.ceil(filteredData().length / pageSize));
   });
 
   const paginatedData = () => {
     const startIndex = (currentPage() - 1) * pageSize;
-    return packingOrders().slice(startIndex, startIndex + pageSize);
+    return filteredData().slice(startIndex, startIndex + pageSize);
   };
 
   const handleDelete = async (id) => {
@@ -54,7 +66,10 @@ export default function JBInvoiceList() {
 
     if (result.isConfirmed) {
       try {
-        const deleteCustomer = await softDeleteJBDeliveryNote(id, tokUser?.token);
+        const deleteCustomer = await softDeleteJBDeliveryNote(
+          id,
+          tokUser?.token
+        );
 
         await Swal.fire({
           title: "Terhapus!",
@@ -88,6 +103,7 @@ export default function JBInvoiceList() {
       if (result && Array.isArray(result.suratJalans)) {
         const sortedData = result.suratJalans.sort((a, b) => b.id - a.id);
         setPackingOrders(sortedData);
+        applyFilter({});
       } else if (result.status === 403) {
         await Swal.fire({
           title: "Tidak Ada Akses",
@@ -120,10 +136,10 @@ export default function JBInvoiceList() {
         Swal.fire("Error", "Data untuk preview tidak ditemukan.", "error");
         return;
       }
-      
+
       const detailForPreview = { ...detail, _previewMode: true };
       const encoded = encodeURIComponent(JSON.stringify(detailForPreview));
-      
+
       window.open(`/print/jualbeli-invoice#${encoded}`, "_blank");
     } catch (err) {
       console.error(err);
@@ -257,7 +273,27 @@ export default function JBInvoiceList() {
           + Tambah Surat Jalan
         </button>
       </div>
-
+      <SearchSortFilter
+        sortOptions={[
+          { label: "No SJ", value: "no_sj" },
+          { label: "Tanggal", value: "created_at" },
+          { label: "No PC", value: "no_pc" },
+          { label: "Nama Customer", value: "supplier_name" },
+          { label: "Satuan Unit", value: "satuan_unit_name" },
+          { label: "Status Invoice", value: "delivered_status" },
+        ]}
+        filterOptions={[
+          { label: "Pembelian (Pajak)", value: "/P/" },
+          { label: "Pembelian (Non Pajak)", value: "/N/" },
+          { label: "Supplier (PT)", value: "PT" },
+          { label: "Supplier (Non-PT)", value: "NON_PT" },
+          { label: "Satuan Unit (Meter)", value: "Meter" },
+          { label: "Satuan Unit (Yard)", value: "Yard" },
+          { label: "Status Invoice (Sudah Print)", value: 1 },
+          { label: "Status Invoice (Belum Print)", value: 0 },
+        ]}
+        onChange={applyFilter}
+      />
       <div class="w-full overflow-x-auto">
         <table class="w-full bg-white shadow-md rounded">
           <thead>
@@ -315,15 +351,23 @@ export default function JBInvoiceList() {
                 </td>
 
                 <td class="py-2 px-4 text-center">
-                    <button class="text-blue-600 hover:underline" onClick={() => handlePreview(sj)} title="Preview Invoice">
-                        <Eye size={25} />
-                    </button>
+                  <button
+                    class="text-blue-600 hover:underline"
+                    onClick={() => handlePreview(sj)}
+                    title="Preview Invoice"
+                  >
+                    <Eye size={25} />
+                  </button>
                 </td>
 
                 {/* Print Invoice */}
                 <td class="py-2 px-4 space-x-2 text-center">
                   <button
-                    class={sj.delivered_status ? "text-yellow-600 hover:underline" : "text-green-600 hover:underline"}
+                    class={
+                      sj.delivered_status
+                        ? "text-yellow-600 hover:underline"
+                        : "text-green-600 hover:underline"
+                    }
                     onClick={() => handlePrint(sj)}
                     title="Cetak / tandai sudah print"
                   >
@@ -335,12 +379,16 @@ export default function JBInvoiceList() {
                 <td class="py-2 px-4 text-center">
                   <button
                     class={
-                      hasPermission("unprint_invoice_jual_beli") && sj.delivered_status
+                      hasPermission("unprint_invoice_jual_beli") &&
+                      sj.delivered_status
                         ? "px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700"
                         : "px-2 py-1 bg-gray-300 text-gray-600 rounded cursor-not-allowed"
                     }
                     // Tombol nonaktif jika TIDAK punya izin ATAU belum di-print
-                    disabled={!hasPermission("unprint_invoice_jual_beli") || !sj.delivered_status}
+                    disabled={
+                      !hasPermission("unprint_invoice_jual_beli") ||
+                      !sj.delivered_status
+                    }
                     onClick={() => handleUnsetInvoice(sc)}
                     title={
                       !hasPermission("unprint_invoice_jual_beli")
