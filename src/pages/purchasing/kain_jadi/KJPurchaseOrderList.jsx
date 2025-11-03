@@ -11,8 +11,19 @@ import Swal from "sweetalert2";
 import { Edit, Eye, Trash } from "lucide-solid";
 import { formatCorak } from "../../../components/CorakKainList";
 
+import SearchSortFilter from "../../../components/SearchSortFilter";
+import useSimpleFilter from "../../../utils/useSimpleFilter";
+
 export default function KJPurchaseOrderList() {
   const [packingOrders, setPackingOrders] = createSignal([]);
+  const { filteredData, applyFilter } = useSimpleFilter(packingOrders, [
+    "no_po",
+    "no_pc",
+    "supplier_name",
+    "items",
+    "satuan_unit_name",
+  ]);
+
   const navigate = useNavigate();
   const tokUser = getUser();
   const [currentPage, setCurrentPage] = createSignal(1);
@@ -26,12 +37,12 @@ export default function KJPurchaseOrderList() {
   };
 
   const totalPages = createMemo(() => {
-    return Math.max(1, Math.ceil(packingOrders().length / pageSize));
+    return Math.max(1, Math.ceil(filteredData().length / pageSize));
   });
 
   const paginatedData = () => {
     const startIndex = (currentPage() - 1) * pageSize;
-    return packingOrders().slice(startIndex, startIndex + pageSize);
+    return filteredData().slice(startIndex, startIndex + pageSize);
   };
 
   const handleDelete = async (id) => {
@@ -48,7 +59,10 @@ export default function KJPurchaseOrderList() {
 
     if (result.isConfirmed) {
       try {
-        const deleteCustomer = await softDeleteKainJadiOrder(id, tokUser?.token);
+        const deleteCustomer = await softDeleteKainJadiOrder(
+          id,
+          tokUser?.token
+        );
 
         await Swal.fire({
           title: "Terhapus!",
@@ -67,10 +81,10 @@ export default function KJPurchaseOrderList() {
             error.message ||
             `Gagal menghapus data packing order dengan ID ${id}`,
           icon: "error",
-          
-        showConfirmButton: false,
-        timer: 1000,
-        timerProgressBar: true,
+
+          showConfirmButton: false,
+          timer: 1000,
+          timerProgressBar: true,
         });
       }
     }
@@ -82,6 +96,7 @@ export default function KJPurchaseOrderList() {
     if (result.status === 200) {
       const sortedData = result.orders.sort((a, b) => b.id - a.id);
       setPackingOrders(sortedData);
+      applyFilter({});
     } else if (result.status === 403) {
       Swal.fire({
         title: "Akses Ditolak",
@@ -163,11 +178,11 @@ export default function KJPurchaseOrderList() {
       const raw = Array.isArray(props.items)
         ? props.items
         : props.items
-          ? [props.items] // jaga-jaga kalau API kadang kirim object
-          : [];
+        ? [props.items] // jaga-jaga kalau API kadang kirim object
+        : [];
 
       const vals = raw
-        .map(it => (it?.corak_kain ?? "").toString().trim())
+        .map((it) => (it?.corak_kain ?? "").toString().trim())
         .filter(Boolean);
 
       return Array.from(new Set(vals)); // unik
@@ -190,7 +205,7 @@ export default function KJPurchaseOrderList() {
         {display()}
       </span>
     );
-  }   
+  }
 
   createEffect(() => {
     if (tokUser?.token) {
@@ -209,7 +224,24 @@ export default function KJPurchaseOrderList() {
           + Tambah Order Kain Jadi
         </button>
       </div>
-
+      <SearchSortFilter
+        sortOptions={[
+          // { label: "No PO", value: "no_po" },
+          // { label: "No PC", value: "no_pc" },
+          { label: "Nama Supplier", value: "supplier_name" },
+          { label: "Corak Kain", value: "items" },
+          { label: "Satuan Unit", value: "satuan_unit_name" },
+        ]}
+        filterOptions={[
+          { label: "Order (Pajak)", value: "/P/" },
+          { label: "Order (Non Pajak)", value: "/N/" },
+          { label: "Supplier (PT)", value: "PT" },
+          { label: "Supplier (CV)", value: "CV" },
+          { label: "Satuan Unit (Meter)", value: "Meter" },
+          { label: "Satuan Unit (Yard)", value: "Yard" },
+        ]}
+        onChange={applyFilter}
+      />
       <div class="w-full overflow-x-auto">
         <table class="w-full bg-white shadow-md rounded">
           <thead>
@@ -240,7 +272,9 @@ export default function KJPurchaseOrderList() {
                 <td class="py-2 px-4">{po.supplier_name}</td>
                 <td class="py-2 px-4">
                   {(() => {
-                    const { display, full } = formatCorak(po.items, { maxShow: 3 });
+                    const { display, full } = formatCorak(po.items, {
+                      maxShow: 3,
+                    });
                     return (
                       <span
                         class="inline-block max-w-[260px] truncate align-middle"
@@ -263,16 +297,23 @@ export default function KJPurchaseOrderList() {
                 </td>
                 <td class="py-2 px-4">{po.satuan_unit_name}</td>
                 <td class="py-2 px-4 space-x-2">
-                   <button
+                  <button
                     class="text-yellow-600 hover:underline"
                     onClick={() =>
-                      navigate(`/kainjadi-purchaseorder/form?id=${po.id}&view=true`)
+                      navigate(
+                        `/kainjadi-purchaseorder/form?id=${po.id}&view=true`
+                      )
                     }
                   >
                     <Eye size={25} />
                   </button>
                   {hasPermission("edit_purchase_finish_order") && (
-                    <button class="text-blue-600" onClick={() => navigate(`/kainjadi-purchaseorder/form?id=${po.id}`)}>
+                    <button
+                      class="text-blue-600"
+                      onClick={() =>
+                        navigate(`/kainjadi-purchaseorder/form?id=${po.id}`)
+                      }
+                    >
                       <Edit size={25} />
                     </button>
                   )}
