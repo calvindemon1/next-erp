@@ -127,9 +127,11 @@ export default function DeliveryNoteForm() {
             (item.rolls || []).flatMap((roll) => {
               const meterVal = parseFloat(roll.meter ?? 0);
               const yardVal = parseFloat(roll.yard ?? 0);
+              const kilogramVal = parseFloat(roll.kilogram ?? 0);
               if (
                 (isNaN(meterVal) || meterVal === 0) &&
-                (isNaN(yardVal) || yardVal === 0)
+                (isNaN(yardVal) || yardVal === 0) &&
+                (isNaN(kilogramVal || yardVal === 0))
               ) {
                 return []; // sembunyikan roll qty 0
               }
@@ -469,9 +471,11 @@ export default function DeliveryNoteForm() {
       (item.rolls || []).forEach((roll) => {
         const meterVal = parseFloat(roll.meter ?? 0);
         const yardVal = parseFloat(roll.yard ?? 0);
+        const kilogramVal = parseFloat(roll.kilogram ?? 0);
         if (
           (isNaN(meterVal) || meterVal === 0) &&
-          (isNaN(yardVal) || yardVal === 0)
+          (isNaN(yardVal) || yardVal === 0) &&
+          (isNaN(kilogramVal) || kilogramVal === 0)
         )
           return;
 
@@ -926,6 +930,14 @@ export default function DeliveryNoteForm() {
                           0
                         )
                         .toFixed(2);
+                    const subKg = () =>
+                      sg.rolls
+                        .reduce(
+                          (s, r) =>
+                            s + (r.checked ? parseFloat(r.kilogram || 0) : 0),
+                          0
+                        )
+                        .toFixed(2);
 
                     return (
                       <div class="border rounded mb-4">
@@ -965,6 +977,7 @@ export default function DeliveryNoteForm() {
                               <th class="border px-2 py-1 w-[6%]">Lot</th>
                               <th class="border px-2 py-1 w-[8%]">Meter</th>
                               <th class="border px-2 py-1 w-[8%]">Yard</th>
+                              <th class="border px-2 py-1 w-[8%]">Kilogram</th>
                               <th class="border px-2 py-1 text-center w-[20%]">
                                 {isView ? "Status" : "Pilih"}
                               </th>
@@ -996,6 +1009,9 @@ export default function DeliveryNoteForm() {
                                   </td>
                                   <td class="border px-2 py-1 text-right">
                                     {roll.yard}
+                                  </td>
+                                  <td class="border px-2 py-1 text-right">
+                                    {roll.kilogram}
                                   </td>
                                   <td class="border px-2 py-1 text-center">
                                     <Show
@@ -1050,6 +1066,9 @@ export default function DeliveryNoteForm() {
                               <td class="border px-2 py-1 text-right">
                                 {subYard()}
                               </td>
+                              <td class="border px-2 py-1 text-right">
+                                {subKg()}
+                              </td>
                               <td class="border px-2 py-1 text-center">
                                 TTL/PCS: {subPcs()}
                               </td>
@@ -1070,6 +1089,7 @@ export default function DeliveryNoteForm() {
                       <tr>
                         <th class="px-4 py-2 border">Total Meter</th>
                         <th class="px-4 py-2 border">Total Yard</th>
+                        <th class="px-4 py-2 border">Total Kilogram</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1092,6 +1112,15 @@ export default function DeliveryNoteForm() {
                             )
                             ?.toFixed(2)}
                         </td>
+                        <td class="px-4 py-2 border text-right">
+                          {currentGroup()
+                            ?.items?.reduce(
+                              (s, r) =>
+                                s + (r.checked ? parseFloat(r.kilogram || 0) : 0),
+                              0
+                            )
+                            ?.toFixed(2)}
+                        </td>                        
                       </tr>
                     </tbody>
                   </table>
@@ -1108,6 +1137,7 @@ export default function DeliveryNoteForm() {
               <tr>
                 <th class="px-4 py-2 border">Total Meter</th>
                 <th class="px-4 py-2 border">Total Yard</th>
+                <th class="px-4 py-2 border">Total Kilogram</th>
               </tr>
             </thead>
             <tbody>
@@ -1141,6 +1171,20 @@ export default function DeliveryNoteForm() {
                     )
                     ?.toFixed(2)}
                 </td>
+                <td class="px-4 py-2 border text-right">
+                  {form()
+                    .itemGroups?.reduce(
+                      (sum, group) =>
+                        sum +
+                        group.items?.reduce(
+                          (s, item) =>
+                            s + (item.checked ? parseFloat(item.kilogram || 0) : 0),
+                          0
+                        ),
+                      0
+                    )
+                    ?.toFixed(2)}
+                </td>                
               </tr>
             </tbody>
           </table>

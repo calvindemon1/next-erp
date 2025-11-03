@@ -231,6 +231,9 @@ export default function PackingListForm() {
 
   // Kolom per baris mengikuti ekspor/domestik
   const MAX_COL_PER_ROW = () => (isEkspor() ? 10 : 5);
+  
+  const isUnitKg = () => form().satuan_unit === "Kilogram";
+  const isUnitLinear = () => form().satuan_unit !== "Kilogram";
 
   // (4) Saat Sales Order berubah
   const handleSalesOrderChange = async (selectedSO) => {
@@ -372,7 +375,7 @@ export default function PackingListForm() {
       "",
     meter_total: 0,
     yard_total: 0,
-    kilogram_total: null,
+    kilogram_total: 0,
     rolls: [
       {
         row_num: 1,
@@ -387,7 +390,7 @@ export default function PackingListForm() {
         item: soItem.id,
         meter: "",
         yard: "",
-        kilogram: null,
+        kilogram: "",
         lot: null,
         no_bal: null,
       },
@@ -421,7 +424,7 @@ export default function PackingListForm() {
           col: "",
           meter_total: 0,
           yard_total: 0,
-          kilogram_total: null,
+          kilogram_total: 0,
           rolls: [
             {
               row_num: 1,
@@ -430,7 +433,7 @@ export default function PackingListForm() {
               item: "",
               meter: "",
               yard: "",
-              kilogram: null,
+              kilogram: "",
               lot: null,
               no_bal: null,
             },
@@ -503,6 +506,7 @@ export default function PackingListForm() {
         item: "",
         meter: "",
         yard: "",
+        kilogram: "",
       };
 
       const newRolls = Array.from({ length: count }, () => ({
@@ -510,6 +514,7 @@ export default function PackingListForm() {
         item: lastRoll.item || group.item || "",
         meter: lastRoll.meter || "",
         yard: lastRoll.yard || "",
+        kilogram: lastRoll.kilogram || "",
         lot: lastRoll.lot ?? null,
         no_bal: lastRoll.no_bal ?? null,
       }));
@@ -548,11 +553,17 @@ export default function PackingListForm() {
         0
       );
 
+      const kilogram_total = updatedRolls.reduce(
+        (s, r) => s + (hasQty(r) ? Number(r.kilogram || 0) : 0),
+        0
+      );
+
       copy[groupIndex] = {
         ...group,
         rolls: reindexRolls(updatedRolls),
         meter_total,
         yard_total,
+        kilogram_total,
       };
       return { ...prev, itemGroups: copy };
     });
@@ -844,9 +855,16 @@ export default function PackingListForm() {
       LOT_PCT(),
       ...Array.from({ length: MAX_COL_PER_ROW() }, () => `${ROLL_COL_PX()}px`),
       `${PCS_PX()}px`, // TTL/PCS
-      `${TOTAL_PX()}px`, // TTL/MTR
-      `${TOTAL_PX()}px`, // TTL/YARD
+        // `${TOTAL_PX()}px`, // TTL/MTR
+        // `${TOTAL_PX()}px`, // TTL/YARD
     ];
+
+    if(isUnitLinear()){
+      widths.push(`${TOTAL_PX()}px`); // TTL/MTR
+      widths.push(`${TOTAL_PX()}px`); // TTL/YARD
+    }else{
+      widths.push(`${TOTAL_PX()}px`); // TTL/KG
+    }
 
     return (
       <colgroup>
@@ -949,6 +967,7 @@ export default function PackingListForm() {
               {/* ← placeholder */}
               <option value="Meter">Meter</option>
               <option value="Yard">Yard</option>
+              <option value="Kilogram">Kilogram</option>
               {/* <option value="Kilogram">Kilogram</option> */}
             </select>
           </div>
@@ -982,12 +1001,15 @@ export default function PackingListForm() {
                 {(item) => {
                   const meterTotal = Number(item.meter_total ?? 0);
                   const yardTotal = Number(item.yard_total ?? 0);
+                  const kilogramTotal = Number(item.kilogram_total ?? 0);
                   const meterInProc = Number(item.meter_dalam_proses ?? 0);
                   const yardInProc = Number(item.yard_dalam_proses ?? 0);
+                  const kilogramInProc = Number(item.kilogram_dalam_proses ?? 0);
 
                   const sisaMeter = Math.max(meterTotal - meterInProc, 0);
                   const sisaYard = Math.max(yardTotal - yardInProc, 0);
-                  const habis = sisaMeter === 0 && sisaYard === 0;
+                  const sisaKilogram = Math.max(kilogramTotal - kilogramInProc, 0);
+                  const habis = sisaMeter === 0 && sisaYard === 0 && sisaKilogram === 0;
 
                   return (
                     <li class="text-sm list-disc">
@@ -1008,6 +1030,10 @@ export default function PackingListForm() {
                             <span class="text-gray-400">|</span>
                             <span class="font-bold text-blue-600 tabular-nums">
                               {formatNumberQty(sisaYard)} yd
+                            </span>
+                            <span class="text-gray-400">|</span>
+                            <span class="font-bold text-blue-600 tabular-nums">
+                              {formatNumberQty(sisaKilogram)} kg
                             </span>
                           </>
                         )}
@@ -1108,22 +1134,30 @@ export default function PackingListForm() {
                         <th class="border px-3 py-1 whitespace-nowrap">
                           TTL/PCS
                         </th>
-                        <th
-                          class="border px-3 py-1 whitespace-nowrap"
-                          classList={{
-                            "bg-gray-200": form().satuan_unit === "Yard",
-                          }}
-                        >
-                          TTL/MTR
-                        </th>
-                        <th
-                          class="border px-3 py-1 whitespace-nowrap"
-                          classList={{
-                            "bg-gray-200": form().satuan_unit === "Meter",
-                          }}
-                        >
-                          TTL/YARD
-                        </th>
+                        <Show when={isUnitLinear()}>
+                          <th
+                            class="border px-3 py-1 whitespace-nowrap"
+                            classList={{
+                              "bg-gray-200": form().satuan_unit === "Yard",
+                            }}
+                          >
+                            TTL/MTR
+                          </th>
+                          <th
+                            class="border px-3 py-1 whitespace-nowrap"
+                            classList={{
+                              "bg-gray-200": form().satuan_unit === "Meter",
+                            }}
+                          >
+                            TTL/YARD
+                          </th>
+                        </Show>
+
+                        <Show when={isUnitKg()}>
+                          <th class="border px-3 py-1 whitespace-nowrap">
+                            TTL/KG
+                          </th>
+                        </Show>
                       </tr>
                     </thead>
                     <tbody>
@@ -1326,42 +1360,59 @@ export default function PackingListForm() {
                                       .length
                                   }
                                 </td>
-                                <td
-                                  class="border text-right px-3 align-top"
-                                  classList={{
-                                    "bg-gray-200":
-                                      form().satuan_unit === "Yard",
-                                  }}
-                                >
-                                  {formatNumber(
-                                    rollChunk.reduce(
-                                      (sum, r) =>
-                                        sum +
-                                        (hasQty(r.roll)
-                                          ? Number(r.roll.meter || 0)
-                                          : 0),
-                                      0
-                                    )
-                                  )}
-                                </td>
-                                <td
-                                  class="border text-right px-3 align-top"
-                                  classList={{
-                                    "bg-gray-200":
-                                      form().satuan_unit === "Meter",
-                                  }}
-                                >
-                                  {formatNumber(
-                                    rollChunk.reduce(
-                                      (sum, r) =>
-                                        sum +
-                                        (hasQty(r.roll)
-                                          ? Number(r.roll.yard || 0)
-                                          : 0),
-                                      0
-                                    )
-                                  )}
-                                </td>
+                                <Show when={isUnitLinear()}>
+                                  <td
+                                    class="border text-center px-3 align-top"
+                                    classList={{
+                                      "bg-gray-200":
+                                        form().satuan_unit === "Yard",
+                                    }}
+                                  >
+                                    {formatNumber(
+                                      rollChunk.reduce(
+                                        (sum, r) =>
+                                          sum +
+                                          (hasQty(r.roll)
+                                            ? Number(r.roll.meter || 0)
+                                            : 0),
+                                        0
+                                      )
+                                    )}
+                                  </td>
+                                  <td
+                                    class="border text-center px-3 align-top"
+                                    classList={{
+                                      "bg-gray-200":
+                                        form().satuan_unit === "Meter",
+                                    }}
+                                  >
+                                    {formatNumber(
+                                      rollChunk.reduce(
+                                        (sum, r) =>
+                                          sum +
+                                          (hasQty(r.roll)
+                                            ? Number(r.roll.yard || 0)
+                                            : 0),
+                                        0
+                                      )
+                                    )}
+                                  </td>
+                                </Show>
+
+                                <Show when={isUnitKg()}>
+                                  <td class="border text-center px-3 align-top">
+                                    {formatNumber(
+                                      rollChunk.reduce(
+                                        (sum, r) =>
+                                          sum +
+                                          (hasQty(r.roll)
+                                            ? Number(r.roll.kilogram || 0)
+                                            : 0),
+                                        0
+                                      )
+                                    )}
+                                  </td>
+                                </Show>
                               </tr>
                             )
                           );
@@ -1375,39 +1426,54 @@ export default function PackingListForm() {
                         >
                           Sub Total
                         </td>
-                        <td class="border px-3 py-1 text-right">
+                        <td class="border px-3 py-1 text-center">
                           {group.rolls.filter(hasQty).length}
                         </td>
-                        <td
-                          class="border px-3 py-1 text-right"
-                          classList={{
-                            "bg-gray-200": form().satuan_unit === "Yard",
-                          }}
-                        >
-                          {formatNumber(
-                            group.rolls.reduce(
-                              (sum, r) =>
-                                sum + (hasQty(r) ? Number(r.meter || 0) : 0),
-                              0
-                            )
-                          )}{" "}
-                          m
-                        </td>
-                        <td
-                          class="border px-3 py-1 text-right"
-                          classList={{
-                            "bg-gray-200": form().satuan_unit === "Meter",
-                          }}
-                        >
-                          {formatNumber(
-                            group.rolls.reduce(
-                              (sum, r) =>
-                                sum + (hasQty(r) ? Number(r.yard || 0) : 0),
-                              0
-                            )
-                          )}{" "}
-                          yd
-                        </td>
+                        <Show when={isUnitLinear()}>
+                          <td
+                            class="border px-3 py-1 text-center"
+                            classList={{
+                              "bg-gray-200": form().satuan_unit === "Yard",
+                            }}
+                          >
+                            {formatNumber(
+                              group.rolls.reduce(
+                                (sum, r) =>
+                                  sum + (hasQty(r) ? Number(r.meter || 0) : 0),
+                                0
+                              )
+                            )}{" "}
+                            m
+                          </td>
+                          <td
+                            class="border px-3 py-1 text-center"
+                            classList={{
+                              "bg-gray-200": form().satuan_unit === "Meter",
+                            }}
+                          >
+                            {formatNumber(
+                              group.rolls.reduce(
+                                (sum, r) =>
+                                  sum + (hasQty(r) ? Number(r.yard || 0) : 0),
+                                0
+                              )
+                            )}{" "}
+                            yd
+                          </td>
+                        </Show>
+
+                        <Show when={isUnitKg()}>
+                          <td class="border px-3 py-1 text-center">
+                            {formatNumber(
+                              group.rolls.reduce(
+                                (sum, r) =>
+                                  sum + (hasQty(r) ? Number(r.kilogram || 0) : 0),
+                                0
+                              )
+                            )}{" "}
+                            kg
+                          </td>
+                        </Show>
                       </tr>
                     </tbody>
                   </table>
@@ -1470,36 +1536,53 @@ export default function PackingListForm() {
                   >
                     Total
                   </th>
-                  <th class="border px-2 py-1 text-right">
+                  <th class="border px-2 py-1 text-center">
                     {form().itemGroups.reduce(
                       (acc, g) => acc + g.rolls.filter(hasQty).length,
                       0
                     )}
                   </th>
-                  <th class="border px-2 py-1 text-right">
-                    {formatNumber(
-                      form()
-                        .itemGroups.flatMap((g) => g.rolls)
-                        .reduce(
-                          (sum, r) =>
-                            sum + (hasQty(r) ? Number(r.meter || 0) : 0),
-                          0
-                        )
-                    )}{" "}
-                    m
-                  </th>
-                  <th class="border px-2 py-1 text-right">
-                    {formatNumber(
-                      form()
-                        .itemGroups.flatMap((g) => g.rolls)
-                        .reduce(
-                          (sum, r) =>
-                            sum + (hasQty(r) ? Number(r.yard || 0) : 0),
-                          0
-                        )
-                    )}{" "}
-                    yd
-                  </th>
+                  <Show when={isUnitLinear()}>
+                    <th class="border px-2 py-1 text-center">
+                      {formatNumber(
+                        form()
+                          .itemGroups.flatMap((g) => g.rolls)
+                          .reduce(
+                            (sum, r) =>
+                              sum + (hasQty(r) ? Number(r.meter || 0) : 0),
+                            0
+                          )
+                      )}{" "}
+                      m
+                    </th>
+                    <th class="border px-2 py-1 text-center">
+                      {formatNumber(
+                        form()
+                          .itemGroups.flatMap((g) => g.rolls)
+                          .reduce(
+                            (sum, r) =>
+                              sum + (hasQty(r) ? Number(r.yard || 0) : 0),
+                            0
+                          )
+                      )}{" "}
+                      yd
+                    </th>
+                  </Show>
+
+                  <Show when={isUnitKg()}>
+                    <th class="border px-2 py-1 text-center">
+                      {formatNumber(
+                        form()
+                          .itemGroups.flatMap((g) => g.rolls)
+                          .reduce(
+                            (sum, r) =>
+                              sum + (hasQty(r) ? Number(r.kilogram || 0) : 0),
+                            0
+                          )
+                      )}{" "}
+                      kg
+                    </th>
+                  </Show>
                 </tr>
               </thead>
             </table>

@@ -38,7 +38,7 @@ export default function PackingOrderPrint(props) {
       maximumFractionDigits: decimals,
     }).format(n || 0);
   }
-  const hasQty = (m, y) => parseFloat(String(m ?? "0")) > 0 || parseFloat(String(y ?? "0")) > 0;
+  const hasQty = (m, y, kg) => parseFloat(String(m ?? "0")) > 0 || parseFloat(String(y ?? "0")) > 0 || parseFloat(String(kg ?? "0")) > 0;
 
   /* ========= Build rows ========= */
   const displayRows = createMemo(() => {
@@ -61,7 +61,7 @@ export default function PackingOrderPrint(props) {
     if (Array.isArray(root().packing_lists)) {
       return root().packing_lists.flatMap((pl) =>
         (pl.items || []).map((it) => {
-          const validRolls = (it.rolls || []).filter((r) => hasQty(r.meter, r.yard));
+          const validRolls = (it.rolls || []).filter((r) => hasQty(r.meter, r.yard, r.kilogram));
           const lotDisplay = it.lot && String(it.lot).trim() ? String(it.lot) : pickLotsFromRolls(validRolls);
           const balDisplay = it.no_bal && String(it.no_bal).trim() ? String(it.no_bal) : pickBalsFromRolls(validRolls);
 
@@ -75,6 +75,7 @@ export default function PackingOrderPrint(props) {
             rolls_count: validRolls.length,
             meter_total: parseFloat(it.meter_total || 0),
             yard_total: parseFloat(it.yard_total || 0),
+            kilogram_total: parseFloat(it.kilogram_total || 0),
           };
         })
       );
@@ -86,7 +87,7 @@ export default function PackingOrderPrint(props) {
         const by = new Map();
         for (const r of g.items || []) {
           if (r.checked === false) continue;
-          if (!hasQty(r.meter, r.yard)) continue;
+          if (!hasQty(r.meter, r.yard, r.kilogram)) continue;
 
           const key = r.packing_list_item_id ?? `${r.konstruksi_kain}|${r.lot || "-"}`;
           let acc = by.get(key);
@@ -100,6 +101,7 @@ export default function PackingOrderPrint(props) {
               no_bal_set: new Set(),
               meter_total: 0,
               yard_total: 0,
+              kilogram_total: 0,
               rolls_count: 0,
             };
             by.set(key, acc);
@@ -109,6 +111,7 @@ export default function PackingOrderPrint(props) {
 
           acc.meter_total += parseFloat(String(r.meter ?? "0"));
           acc.yard_total += parseFloat(String(r.yard ?? "0"));
+          acc.kilogram_total += parseFloat(String(r.kilogram ?? "0"));
           acc.rolls_count += 1;
         }
         for (const v of by.values()) {
@@ -127,6 +130,7 @@ export default function PackingOrderPrint(props) {
   const totalPCS   = createMemo(() => displayRows().reduce((s, it) => s + (parseFloat(String(it.rolls_count ?? "0")) || 0), 0));
   const totalMeter = createMemo(() => displayRows().reduce((s, it) => s + (parseFloat(String(it.meter_total ?? "0")) || 0), 0));
   const totalYard  = createMemo(() => displayRows().reduce((s, it) => s + (parseFloat(String(it.yard_total ?? "0")) || 0), 0));
+  const totalKilogram  = createMemo(() => displayRows().reduce((s, it) => s + (parseFloat(String(it.kilogram_total ?? "0")) || 0), 0));
 
   /* ========= Pagination ========= */
   const ROWS_FIRST_PAGE = 15;
@@ -298,7 +302,7 @@ export default function PackingOrderPrint(props) {
               pageCount={count}
               isPPN={isPPN()}
               isLast={isLast}
-              totals={{ totalPCS: totalPCS(), totalMeter: totalMeter(), totalYard: totalYard() }}
+              totals={{ totalPCS: totalPCS(), totalMeter: totalMeter(), totalYard: totalYard(), totalKilogram: totalKilogram() }}
               formatters={{ formatTanggal, formatAngka }}
               unit={unit()}
               logoNavel={logoNavel}
@@ -315,6 +319,9 @@ export default function PackingOrderPrint(props) {
 function PrintPage(props) {
   const { data, items, startIndex, pageNo, pageCount, isPPN, isLast, totals, formatters, logoNavel, isContinuous } = props;
   const { formatTanggal, formatAngka } = formatters;
+
+  const isUnitKg = () => props.unit === "Kilogram";
+  const isUnitLinear = () => props.unit !== "Kilogram";
 
   const { extraRows, bind, recalc } = createStretch({ fudge: 24 });
 
@@ -344,7 +351,13 @@ function PrintPage(props) {
               <td class="p-1 text-center"></td>
               <td class="p-1 text-center"></td>
               <td class="p-1 text-center"></td>
-              <td class="p-1 text-right"></td>
+              <Show when={isUnitLinear()}>
+                <td class="p-1 text-right"></td>
+                <td class="p-1 text-right"></td>
+              </Show>
+              <Show when={isUnitKg}>
+                <td class="p-1 text-right"></td>
+              </Show>
             </tr>
           </tbody>
         </table>
@@ -436,8 +449,13 @@ function PrintPage(props) {
               <col style="width:6ch" />
               <col style="width:6ch" />
               <col style="width:7ch" />
-              <col style="width:10ch" />
-              <col style="width:10ch" />
+              <Show when={isUnitLinear()}>
+                <col style="width:10ch" />
+                <col style="width:10ch" />
+              </Show>
+              <Show when={isUnitKg()}>
+                <col style="width:20ch"/>
+              </Show>
             </colgroup>
           )}
 
@@ -454,8 +472,13 @@ function PrintPage(props) {
               <th className="border border-black p-1 text-center" colSpan={2}>Quantity</th>
             </tr>
             <tr>
-              <th className="border border-black p-1">Meter</th>
-              <th className="border border-black p-1">Yard</th>
+              <Show when={isUnitLinear()}>
+                <th className="border border-black p-1">Meter</th>
+                <th className="border border-black p-1">Yard</th>
+              </Show>
+              <Show when={isUnitKg()}>
+                <th className="border border-black p-1" colSpan={2}>Kilogram</th>
+              </Show>
             </tr>
           </thead>
 
@@ -471,8 +494,13 @@ function PrintPage(props) {
                   <td className="p-1 text-center"><span>{it.lebar}"</span></td>
                   <td className="p-1 text-center">{it.grade}</td>
                   <td className="p-1 text-center">{it.rolls_count}</td>
-                  <td className="p-1 text-center">{formatAngka(it.meter_total)}</td>
-                  <td className="p-1 text-center">{formatAngka(it.yard_total)}</td>
+                  <Show when={isUnitLinear()}>
+                    <td className="p-1 text-center">{formatAngka(it.meter_total)}</td>
+                    <td className="p-1 text-center">{formatAngka(it.yard_total)}</td>
+                  </Show>
+                  <Show when={isUnitKg()}>
+                    <td className="p-1 text-center" colSpan={2}>{formatAngka(it.kilogram_total)}</td>
+                  </Show>
                 </tr>
               )}
             </For>
@@ -500,8 +528,13 @@ function PrintPage(props) {
               <tr>
                 <td colSpan={7} className="border border-black text-right font-bold px-2 py-1">TOTAL</td>
                 <td className="border border-black px-2 py-1 text-center">{formatAngka(totals.totalPCS, 0)}</td>
-                <td className="border border-black px-2 py-1 text-center">{formatAngka(totals.totalMeter)}</td>
-                <td className="border border-black px-2 py-1 text-center">{formatAngka(totals.totalYard)}</td>
+                <Show when={isUnitLinear()}>
+                  <td className="border border-black px-2 py-1 text-center">{formatAngka(totals.totalMeter)}</td>
+                  <td className="border border-black px-2 py-1 text-center">{formatAngka(totals.totalYard)}</td>
+                </Show>
+                <Show when={isUnitKg()}>
+                  <td className="border border-black px-2 py-1 text-center" colSpan={2}>{formatAngka(totals.totalKilogram)}</td>
+                </Show>
               </tr>
               <tr>
                 <td colSpan={10} className="border border-black p-2 align-top">

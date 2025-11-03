@@ -54,7 +54,14 @@ export default function PackingListPrint(props) {
       .toString()
       .toLowerCase()
   );
-  const ROLL_KEY = createMemo(() => (unit() === "yard" ? "yard" : "meter"));
+  const ROLL_KEY = createMemo(() => {
+    const map = {
+      yard: "yard",
+      meter: "meter",
+      kilogram: "kilogram",
+    };
+    return map[unit()] || "meter"; // default ke meter kalau tidak ditemukan
+  });
 
   const todayStr = createMemo(() =>
     new Date().toLocaleDateString("id-ID", { day: "2-digit", month: "long", year: "numeric" })
@@ -107,6 +114,7 @@ export default function PackingListPrint(props) {
       const gPcs = rolls.filter((r) => Number(r?.[ROLL_KEY()]) > 0).length;
       const gMtr = rolls.reduce((s, r) => s + (parseFloat(r.meter) || 0), 0);
       const gYrd = rolls.reduce((s, r) => s + (parseFloat(r.yard) || 0), 0);
+      const gKg = rolls.reduce((s, r) => s + (parseFloat(r.kilogram) || 0), 0);
 
       for (let rowIdx = 0; rowIdx < rowCount; rowIdx++) {
         const start = rowIdx * MAX_COL();
@@ -119,6 +127,7 @@ export default function PackingListPrint(props) {
         const pcsRow = rowRolls.filter((r) => Number(r?.[ROLL_KEY()]) > 0).length;
         const mRow = rowRolls.reduce((s, r) => s + (parseFloat(r.meter) || 0), 0);
         const yRow = rowRolls.reduce((s, r) => s + (parseFloat(r.yard) || 0), 0);
+        const kgRow = rowRolls.reduce((s, r) => s + (parseFloat(r.kilogram) || 0), 0);
 
         rows.push({
           type: "row",
@@ -133,6 +142,7 @@ export default function PackingListPrint(props) {
           pcsRow,
           mRow,
           yRow,
+          kgRow,
         });
       }
 
@@ -142,6 +152,7 @@ export default function PackingListPrint(props) {
         gPcs,
         gMtr,
         gYrd,
+        gKg,
       });
     });
     return rows;
@@ -149,15 +160,16 @@ export default function PackingListPrint(props) {
 
   /* ===== Grand totals ===== */
   const grandTotals = createMemo(() => {
-    let pcs = 0, m = 0, y = 0;
+    let pcs = 0, m = 0, y = 0, kg = 0;
     (data()?.itemGroups || []).forEach((g) => {
       (g.rolls || []).forEach((r) => {
         if (Number(r?.[ROLL_KEY()]) > 0) pcs += 1;
         m += parseFloat(r.meter || 0);
         y += parseFloat(r.yard || 0);
+        kg += parseFloat(r.kilogram || 0);
       });
     });
-    return { pcs, m, y };
+    return { pcs, m, y, kg };
   });
 
   /* ===== Pagination ===== */
@@ -314,6 +326,9 @@ export default function PackingListPrint(props) {
 function PrintPage(props) {
   const { data, items, pageNo, pageCount, isLast, todayStr, createdShort, unitKey, maxCol, totals, isPPN, isContinuous } = props;
 
+  const isUnitKg = () => unitKey === "kilogram";
+  const isUnitLinear = () => unitKey !== "kilogram";
+
   // Auto-stretch row kosong agar footer/halaman rapi
   const { extraRows, bind, recalc } = createStretch({ fudge: 56 });
 
@@ -343,7 +358,8 @@ function PrintPage(props) {
       }
     }
 
-    const fixedPct = W_NO + W_BAL + W_COL + W_ITEM + W_LOT + (W_TTL * 3);
+    const numTotalCols = isUnitLinear() ? 3 : 2;
+    const fixedPct = W_NO + W_BAL + W_COL + W_ITEM + W_LOT + (W_TTL * numTotalCols);
     const rollPct  = Math.max(0, 100 - fixedPct);
     const eachRoll = rollPct / maxCol;
 
@@ -358,8 +374,13 @@ function PrintPage(props) {
           {() => <col style={`width:${eachRoll}%`} />}
         </For>
         <col style={`width:${W_TTL}%`} />
-        <col style={`width:${W_TTL}%`} />
-        <col style={`width:${W_TTL}%`} />
+        <Show when={isUnitLinear()}>
+          <col style={`width:${W_TTL}%`} />
+          <col style={`width:${W_TTL}%`} />
+        </Show>
+        <Show when={isUnitKg()}>
+          <col style={`width:${W_TTL}%`} />
+        </Show>
       </colgroup>
     );
   };
@@ -381,8 +402,13 @@ function PrintPage(props) {
                 {() => <td class="p-1 text-right"></td>}
               </For>
               <td class="p-1 text-right"></td>
-              <td class="p-1 text-right"></td>
-              <td class="p-1 text-right"></td>
+              <Show when={isUnitLinear()}>
+                <td class="p-1 text-right"></td> {/* TTL/MTR */}
+                <td class="p-1 text-right"></td> {/* TTL/YARD */}
+              </Show>
+              <Show when={isUnitKg()}>
+                <td class="p-1 text-right"></td> {/* TTL/KG */}
+              </Show>
             </tr>
           </tbody>
         </table>
@@ -456,8 +482,13 @@ function PrintPage(props) {
                   {(_, i) => <th>{i() + 1}</th>}
                 </For>
                 <th rowSpan={2}>TTL/PCS</th>
-                <th rowSpan={2}>TTL/MTR</th>
-                <th rowSpan={2}>TTL/YARD</th>
+                <Show when={isUnitLinear()}>
+                  <th rowSpan={2}>TTL/MTR</th>
+                  <th rowSpan={2}>TTL/YARD</th>
+                </Show>
+                <Show when={isUnitKg()}>
+                  <th rowSpan={2}>TTL/KG</th>
+                </Show>
               </tr>
               <tr></tr>
             </thead>
@@ -473,8 +504,13 @@ function PrintPage(props) {
                         <td colSpan={5} className="text-center"><b>SUB TOTAL</b></td>
                         <For each={Array.from({ length: maxCol })}>{() => <td></td>}</For>
                         <td className="text-right"><b>{fmt2Blank(row.gPcs)}</b></td>
-                        <td className="text-right"><b>{fmt2Blank(row.gMtr)}</b></td>
-                        <td className="text-right"><b>{fmt2Blank(row.gYrd)}</b></td>
+                        <Show when={isUnitLinear()}>
+                          <td className="text-right"><b>{fmt2Blank(row.gMtr)}</b></td>
+                          <td className="text-right"><b>{fmt2Blank(row.gYrd)}</b></td>
+                        </Show>
+                        <Show when={isUnitKg()}>
+                          <td className="text-right"><b>{fmt2Blank(row.gKg)}</b></td>
+                        </Show>
                       </tr>
                     }
                   >
@@ -495,8 +531,13 @@ function PrintPage(props) {
                       </For>
 
                       <td className="text-right">{fmt2Blank(row.pcsRow)}</td>
-                      <td className="text-right">{fmt2Blank(row.mRow)}</td>
-                      <td className="text-right">{fmt2Blank(row.yRow)}</td>
+                      <Show when={isUnitLinear()}>
+                        <td className="text-right">{fmt2Blank(row.mRow)}</td>
+                        <td className="text-right">{fmt2Blank(row.yRow)}</td>
+                      </Show>
+                      <Show when={isUnitKg()}>
+                        <td className="text-right">{fmt2Blank(row.kgRow)}</td>
+                      </Show>
                     </tr>
                   </Show>
                 )}
@@ -528,12 +569,17 @@ function PrintPage(props) {
                   <td colSpan={5} className="text-center"><b>TOTAL</b></td>
                   <For each={Array.from({ length: maxCol })}>{() => <td></td>}</For>
                   <td className="text-right"><b>{fmt2Blank(totals.pcs)}</b></td>
-                  <td className="text-right"><b>{fmt2Blank(totals.m)}</b></td>
-                  <td className="text-right"><b>{fmt2Blank(totals.y)}</b></td>
+                  <Show when={isUnitLinear()}>
+                    <td className="text-right"><b>{fmt2Blank(totals.m)}</b></td>
+                    <td className="text-right"><b>{fmt2Blank(totals.y)}</b></td>
+                  </Show>
+                  <Show when={isUnitKg()}>
+                    <td className="text-right"><b>{fmt2Blank(totals.kg)}</b></td>
+                  </Show>
                 </tr>
               </Show>
               <tr>
-                <td colSpan={5 + maxCol + 3} className="no-border text-right" style={{ borderTop: "1px solid #000" }}>
+                <td colSpan={5 + maxCol + (isUnitLinear() ? 3 : 2)} className="no-border text-right" style={{ borderTop: "1px solid #000" }}>
                   <i>Halaman {pageNo} dari {pageCount}</i>
                 </td>
               </tr>
