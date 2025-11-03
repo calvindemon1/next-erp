@@ -10,20 +10,31 @@ import {
 import Swal from "sweetalert2";
 import { Edit, Eye, Trash } from "lucide-solid";
 
+import SearchSortFilter from "../../components/SearchSortFilter";
+import useSimpleFilter from "../../utils/useSimpleFilter";
+
 export default function SalesOrderList() {
   const [salesOrders, setSalesOrders] = createSignal([]);
+  const { filteredData, applyFilter } = useSimpleFilter(salesOrders, [
+    "no_so",
+    "created_at",
+    "no_sc",
+    "customer_name",
+    "satuan_unit_name",
+  ]);
+
   const navigate = useNavigate();
   const tokUser = getUser();
   const [currentPage, setCurrentPage] = createSignal(1);
   const pageSize = 20;
 
   const totalPages = createMemo(() => {
-    return Math.max(1, Math.ceil(salesOrders().length / pageSize));
+    return Math.max(1, Math.ceil(filteredData().length / pageSize));
   });
 
   const paginatedData = () => {
     const startIndex = (currentPage() - 1) * pageSize;
-    return salesOrders().slice(startIndex, startIndex + pageSize);
+    return filteredData().slice(startIndex, startIndex + pageSize);
   };
 
   const handleDelete = async (id) => {
@@ -58,10 +69,10 @@ export default function SalesOrderList() {
           text:
             error.message || `Gagal menghapus data sales order dengan ID ${id}`,
           icon: "error",
-          
-        showConfirmButton: false,
-        timer: 1000,
-        timerProgressBar: true,
+
+          showConfirmButton: false,
+          timer: 1000,
+          timerProgressBar: true,
         });
       }
     }
@@ -82,6 +93,7 @@ export default function SalesOrderList() {
     if (result.status === 200) {
       const sortedData = result.orders.sort((a, b) => b.id - a.id);
       setSalesOrders(sortedData);
+      applyFilter({});
     } else if (result.status === 403) {
       await Swal.fire({
         title: "Tidak Ada Akses",
@@ -216,7 +228,24 @@ export default function SalesOrderList() {
           + Tambah Sales Order
         </button>
       </div>
-
+      <SearchSortFilter
+        sortOptions={[
+          { label: "No SO", value: "no_so" },
+          { label: "No SC", value: "no_sc" },
+          { label: "Tanngal", value: "created_at" },
+          { label: "Nama Customer", value: "customer_name" },
+          { label: "Satuan Unit", value: "satuan_unit_name" },
+        ]}
+        filterOptions={[
+          { label: "Pembelian (Pajak)", value: "/P/" },
+          { label: "Pembelian (Non Pajak)", value: "/N/" },
+          { label: "Customer (PT)", value: "PT" },
+          { label: "Customer (Non-PT)", value: "NON_PT" },
+          { label: "Satuan Unit (Meter)", value: "Meter" },
+          { label: "Satuan Unit (Yard)", value: "Yard" },
+        ]}
+        onChange={applyFilter}
+      />
       <div class="w-full overflow-x-auto">
         <table class="w-full bg-white shadow-md rounded">
           <thead>
@@ -250,8 +279,9 @@ export default function SalesOrderList() {
                 </td>
                 <td class="py-2 px-4">{so.no_so}</td>
                 <td class="py-2 px-4">{formatTanggalIndo(so.created_at)}</td>
-                <td class="py-2 px-4">{so.no_sc}</td>
+                <td class="py-2 px-4">{so.no_so}</td>
                 <td class="py-2 px-4">{so.customer_name}</td>
+                <td class="py-2 px-4">{so.no_sc}</td>
                 <td class="py-2 px-4">{so.satuan_unit_name}</td>
                 <td class="py-2 px-4 text-red-500 text-center">
                   {/* {parseFloat(sc.summary.total_meter_kontrak || 0) -
@@ -267,7 +297,9 @@ export default function SalesOrderList() {
                 <td class="py-2 px-4 space-x-2">
                   <button
                     class="text-yellow-600 hover:underline"
-                    onClick={() => navigate(`/salesorder/form?id=${so.id}&view=true`)}
+                    onClick={() =>
+                      navigate(`/salesorder/form?id=${so.id}&view=true`)
+                    }
                   >
                     <Eye size={25} />
                   </button>
