@@ -11,20 +11,32 @@ import Swal from "sweetalert2";
 import { Edit, Trash, Eye } from "lucide-solid";
 import { formatCorak } from "../../../components/CorakKainList";
 
+import SearchSortFilter from "../../../components/SearchSortFilter";
+import useSimpleFilter from "../../../utils/useSimpleFilter";
+
 export default function OCDeliveryNoteList() {
   const [packingOrders, setPackingOrders] = createSignal([]);
+  const { filteredData, applyFilter } = useSimpleFilter(packingOrders, [
+    "no_po",
+    "no_sj_supplier",
+    "created_at",
+    "supplier_name",
+    "items",
+    "satuan_unit_name",
+  ]);
+
   const navigate = useNavigate();
   const tokUser = getUser();
   const [currentPage, setCurrentPage] = createSignal(1);
   const pageSize = 20;
 
   const totalPages = createMemo(() => {
-    return Math.max(1, Math.ceil(packingOrders().length / pageSize));
+    return Math.max(1, Math.ceil(filteredData().length / pageSize));
   });
 
   const paginatedData = () => {
     const startIndex = (currentPage() - 1) * pageSize;
-    return packingOrders().slice(startIndex, startIndex + pageSize);
+    return filteredData().slice(startIndex, startIndex + pageSize);
   };
 
   const handleDelete = async (id) => {
@@ -41,7 +53,10 @@ export default function OCDeliveryNoteList() {
 
     if (result.isConfirmed) {
       try {
-        const deleteCustomer = await softDeleteOCDeliveryNote(id, tokUser?.token);
+        const deleteCustomer = await softDeleteOCDeliveryNote(
+          id,
+          tokUser?.token
+        );
 
         await Swal.fire({
           title: "Terhapus!",
@@ -60,10 +75,10 @@ export default function OCDeliveryNoteList() {
             error.message ||
             `Gagal menghapus data surat penerimaan order celup dengan ID ${id}`,
           icon: "error",
-          
-        showConfirmButton: false,
-        timer: 1000,
-        timerProgressBar: true,
+
+          showConfirmButton: false,
+          timer: 1000,
+          timerProgressBar: true,
         });
       }
     }
@@ -92,6 +107,7 @@ export default function OCDeliveryNoteList() {
       if (result && Array.isArray(result.suratJalans)) {
         const sortedData = result.suratJalans.sort((a, b) => b.id - a.id);
         setPackingOrders(sortedData);
+        applyFilter({});
       } else if (result.status === 403) {
         await Swal.fire({
           title: "Tidak Ada Akses",
@@ -103,7 +119,9 @@ export default function OCDeliveryNoteList() {
       } else {
         Swal.fire({
           title: "Gagal",
-          text: result.message || "Gagal mengambil data Surat Penerimaan Order Celup",
+          text:
+            result.message ||
+            "Gagal mengambil data Surat Penerimaan Order Celup",
           icon: "error",
           showConfirmButton: false,
           timer: 1000,
@@ -112,7 +130,10 @@ export default function OCDeliveryNoteList() {
         setPackingOrders([]);
       }
     } catch (error) {
-      console.error("Gagal mengambil data Surat Penerimaan Order Celup:", error);
+      console.error(
+        "Gagal mengambil data Surat Penerimaan Order Celup:",
+        error
+      );
       setPackingOrders([]);
     }
   };
@@ -166,20 +187,22 @@ export default function OCDeliveryNoteList() {
     const tahun = tanggal.getFullYear();
 
     return `${tanggalNum} ${bulan} ${tahun}`;
-  }  
+  }
 
   const formatKodeWarna = (items, options = { maxShow: 3 }) => {
     if (!items || !Array.isArray(items) || items.length === 0) {
       return { display: "-", full: "-" };
     }
 
-    const uniqueWarna = [...new Set(items.map(item => item.kode_warna))];
+    const uniqueWarna = [...new Set(items.map((item) => item.kode_warna))];
     const displayed = uniqueWarna.slice(0, options.maxShow);
-    const full = uniqueWarna.join(', ');
-    const display = displayed.join(', ') + (uniqueWarna.length > options.maxShow ? `, ...` : '');
+    const full = uniqueWarna.join(", ");
+    const display =
+      displayed.join(", ") +
+      (uniqueWarna.length > options.maxShow ? `, ...` : "");
 
     return { display, full };
-  };  
+  };
 
   createEffect(() => {
     if (tokUser?.token) {
@@ -198,7 +221,25 @@ export default function OCDeliveryNoteList() {
           + Tambah Surat Penerimaan
         </button>
       </div>
-
+      <SearchSortFilter
+        sortOptions={[
+          { label: "No PO", value: "no_po" },
+          { label: "No SJ Supplier", value: "no_sj_supplier" },
+          { label: "Tanggal", value: "created_at" },
+          { label: "Nama Supplier", value: "supplier_name" },
+          { label: "Corak Kain", value: "items" },
+          { label: "Satuan Unit", value: "satuan_unit_name" },
+        ]}
+        filterOptions={[
+          { label: "Pembelian (Pajak)", value: "/P/" },
+          { label: "Pembelian (Non Pajak)", value: "/N/" },
+          { label: "Supplier (PT)", value: "PT" },
+          { label: "Supplier (Non-PT)", value: "NON_PT" },
+          { label: "Satuan Unit (Meter)", value: "Meter" },
+          { label: "Satuan Unit (Yard)", value: "Yard" },
+        ]}
+        onChange={applyFilter}
+      />
       <div class="w-full overflow-x-auto">
         <table class="w-full bg-white shadow-md rounded">
           <thead>
@@ -234,7 +275,9 @@ export default function OCDeliveryNoteList() {
                 <td class="py-2 px-4">{sj.supplier_name}</td>
                 <td class="py-2 px-4">
                   {(() => {
-                    const { display, full } = formatCorak(sj.items, { maxShow: 3 });
+                    const { display, full } = formatCorak(sj.items, {
+                      maxShow: 3,
+                    });
                     return (
                       <span
                         class="inline-block max-w-[260px] truncate align-middle"
@@ -247,7 +290,9 @@ export default function OCDeliveryNoteList() {
                 </td>
                 <td class="py-2 px-4">
                   {(() => {
-                    const { display, full } = formatKodeWarna(sj.items, { maxShow: 3 });
+                    const { display, full } = formatKodeWarna(sj.items, {
+                      maxShow: 3,
+                    });
                     return (
                       <span
                         class="inline-block max-w-[200px] truncate align-middle"
@@ -267,12 +312,14 @@ export default function OCDeliveryNoteList() {
                 >
                   {qtyCounterbySystem(sj, sj.satuan_unit_name)}
                 </td>
-              <td class="py-2 px-4">{sj.satuan_unit_name}</td>
+                <td class="py-2 px-4">{sj.satuan_unit_name}</td>
                 <td class="py-2 px-4 space-x-2">
                   <button
                     class="text-yellow-600 hover:underline"
                     onClick={() =>
-                      navigate(`/ordercelup-deliverynote/form?id=${sj.id}&view=true`)
+                      navigate(
+                        `/ordercelup-deliverynote/form?id=${sj.id}&view=true`
+                      )
                     }
                   >
                     <Eye size={25} />
@@ -280,7 +327,9 @@ export default function OCDeliveryNoteList() {
                   {hasPermission("edit_purchase_celup_surat_jalan") && (
                     <button
                       class="text-blue-600 hover:underline"
-                      onClick={() => navigate(`/ordercelup-deliverynote/form?id=${sj.id}`)}
+                      onClick={() =>
+                        navigate(`/ordercelup-deliverynote/form?id=${sj.id}`)
+                      }
                     >
                       <Edit size={25} />
                     </button>
