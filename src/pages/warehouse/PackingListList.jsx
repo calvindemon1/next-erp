@@ -10,20 +10,30 @@ import {
 import Swal from "sweetalert2";
 import { Edit, Trash, Eye } from "lucide-solid";
 
+import SearchSortFilter from "../../components/SearchSortFilter";
+import useSimpleFilter from "../../utils/useSimpleFilter";
+
 export default function PackingListList() {
   const [packingLists, setPackingLists] = createSignal([]);
+  const { filteredData, applyFilter } = useSimpleFilter(packingLists, [
+    "no_pl",
+    "no_so",
+    "customer_name",
+    "satuan_unit_name",
+  ]);
+
   const navigate = useNavigate();
   const tokUser = getUser();
   const [currentPage, setCurrentPage] = createSignal(1);
   const pageSize = 20;
 
   const totalPages = createMemo(() => {
-    return Math.max(1, Math.ceil(packingLists().length / pageSize));
+    return Math.max(1, Math.ceil(filteredData().length / pageSize));
   });
 
   const paginatedData = () => {
     const startIndex = (currentPage() - 1) * pageSize;
-    return packingLists().slice(startIndex, startIndex + pageSize);
+    return filteredData().slice(startIndex, startIndex + pageSize);
   };
 
   const handleDelete = async (id) => {
@@ -59,10 +69,10 @@ export default function PackingListList() {
             error.message ||
             `Gagal menghapus data packing list dengan ID ${id}`,
           icon: "error",
-          
-        showConfirmButton: false,
-        timer: 1000,
-        timerProgressBar: true,
+
+          showConfirmButton: false,
+          timer: 1000,
+          timerProgressBar: true,
         });
       }
     }
@@ -91,6 +101,7 @@ export default function PackingListList() {
       if (result && Array.isArray(result.packing_lists)) {
         const sortedData = result.packing_lists.sort((a, b) => b.id - a.id);
         setPackingLists(sortedData);
+        applyFilter({});
       } else if (result.status === 403) {
         await Swal.fire({
           title: "Tidak Ada Akses",
@@ -188,7 +199,23 @@ export default function PackingListList() {
           + Tambah Packing list
         </button>
       </div>
-
+      <SearchSortFilter
+        sortOptions={[
+          { label: "No PL", value: "no_pl" },
+          { label: "No SO", value: "no_so" },
+          { label: "Nama Customer", value: "customer_name" },
+          { label: "Satuan Unit", value: "satuan_unit_name" },
+        ]}
+        filterOptions={[
+          { label: "Pembelian (Pajak)", value: "/P/" },
+          { label: "Pembelian (Non Pajak)", value: "/N/" },
+          { label: "Customer (PT)", value: "PT" },
+          { label: "Customer (Non-PT)", value: "NON_PT" },
+          { label: "Satuan Unit (Meter)", value: "Meter" },
+          { label: "Satuan Unit (Yard)", value: "Yard" },
+        ]}
+        onChange={applyFilter}
+      />
       <div class="w-full overflow-x-auto">
         <table class="w-full bg-white shadow-md rounded">
           <thead>
@@ -229,7 +256,9 @@ export default function PackingListList() {
                 <td class="py-2 px-4 space-x-2">
                   <button
                     class="text-yellow-600 hover:underline"
-                    onClick={() => navigate(`/packinglist/form?id=${pl.id}&view=true`)}
+                    onClick={() =>
+                      navigate(`/packinglist/form?id=${pl.id}&view=true`)
+                    }
                   >
                     <Eye size={25} />
                   </button>
