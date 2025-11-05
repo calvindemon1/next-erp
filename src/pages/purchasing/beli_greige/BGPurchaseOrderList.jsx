@@ -11,22 +11,29 @@ import Swal from "sweetalert2";
 import { Edit, Eye, Trash } from "lucide-solid";
 import { formatCorak } from "../../../components/CorakKainList";
 import SearchSortFilter from "../../../components/SearchSortFilter";
+import useSimpleFilter from "../../../utils/useSimpleFilter";
 
 export default function BGPurchaseOrderList() {
   const [packingOrders, setPackingOrders] = createSignal([]);
-  const [filtered, setFiltered] = createSignal([]);
+  const { filteredData, applyFilter } = useSimpleFilter(packingOrders, [
+    "no_po",
+    "no_pc",
+    "supplier_name",
+    "items",
+    "satuan_unit_name",
+  ]);
   const navigate = useNavigate();
   const tokUser = getUser();
   const [currentPage, setCurrentPage] = createSignal(1);
   const pageSize = 20;
 
   const totalPages = createMemo(() => {
-    return Math.max(1, Math.ceil(filtered().length / pageSize));
+    return Math.max(1, Math.ceil(filteredData().length / pageSize));
   });
 
   const paginatedData = () => {
     const startIndex = (currentPage() - 1) * pageSize;
-    return filtered().slice(startIndex, startIndex + pageSize);
+    return filteredData().slice(startIndex, startIndex + pageSize);
   };
 
   const handleDelete = async (id) => {
@@ -93,6 +100,7 @@ export default function BGPurchaseOrderList() {
     if (result.status === 200) {
       const sortedData = result.orders.sort((a, b) => b.id - a.id);
       setPackingOrders(sortedData);
+      applyFilter({});
     } else if (result.status === 403) {
       await Swal.fire({
         title: "Tidak Ada Akses",
@@ -205,92 +213,92 @@ export default function BGPurchaseOrderList() {
     );
   }
 
-  const handleFilterChange = ({ search, sortField, sortOrder, filter }) => {
-    let data = [...packingOrders()];
+  // const handleFilterChange = ({ search, sortField, sortOrder, filter }) => {
+  //   let data = [...packingOrders()];
 
-    // Search/Filter berdasarkan kata kunci
-    if (search) {
-      const lowerSearch = search.toLowerCase();
-      data = data.filter((po) => {
-        // Cek di no_pc (No Pembelian)
-        if (po.no_po?.toLowerCase().includes(lowerSearch)) return true;
+  //   // Search/Filter berdasarkan kata kunci
+  //   if (search) {
+  //     const lowerSearch = search.toLowerCase();
+  //     data = data.filter((po) => {
+  //       // Cek di no_pc (No Pembelian)
+  //       if (po.no_po?.toLowerCase().includes(lowerSearch)) return true;
 
-        if (po.no_pc?.toLowerCase().includes(lowerSearch)) return true;
+  //       if (po.no_pc?.toLowerCase().includes(lowerSearch)) return true;
         
-        // Cek di supplier_name
-        if (po.supplier_name?.toLowerCase().includes(lowerSearch)) return true;
+  //       // Cek di supplier_name
+  //       if (po.supplier_name?.toLowerCase().includes(lowerSearch)) return true;
         
-        // Cek di corak kain dari items
-        if (po.items && Array.isArray(po.items)) {
-          const hasMatchingCorak = po.items.some(item => 
-            item.corak_kain?.toLowerCase().includes(lowerSearch)
-          );
-          if (hasMatchingCorak) return true;
-        }
+  //       // Cek di corak kain dari items
+  //       if (po.items && Array.isArray(po.items)) {
+  //         const hasMatchingCorak = po.items.some(item => 
+  //           item.corak_kain?.toLowerCase().includes(lowerSearch)
+  //         );
+  //         if (hasMatchingCorak) return true;
+  //       }
         
-        return false;
-      });
-    }
+  //       return false;
+  //     });
+  //   }
 
-    // Filter tambahan jika diperlukan (misal: berdasarkan satuan unit)
-    if (filter) {
-      data = data.filter((po) => {
-        if (filter === "Meter") return po.satuan_unit_id === 1;
-        if (filter === "Yard") return po.satuan_unit_id === 2;
-        if (filter === "Kilogram") return po.satuan_unit_id === 3;
-        return true;
-      });
-    }
+  //   // Filter tambahan jika diperlukan (misal: berdasarkan satuan unit)
+  //   if (filter) {
+  //     data = data.filter((po) => {
+  //       if (filter === "Meter") return po.satuan_unit_id === 1;
+  //       if (filter === "Yard") return po.satuan_unit_id === 2;
+  //       if (filter === "Kilogram") return po.satuan_unit_id === 3;
+  //       return true;
+  //     });
+  //   }
 
-    // Sorting
-    if (sortField) {
-      data.sort((a, b) => {
-        let valA, valB;
+  //   // Sorting
+  //   if (sortField) {
+  //     data.sort((a, b) => {
+  //       let valA, valB;
         
-        switch (sortField) {
-          case "no_po":
-            valA = a.no_po;
-            valB = b.no_po;
-            break;
-          case "no_pc":
-            valA = a.no_pc;
-            valB = b.no_pc;
-            break;
-          case "supplier":
-            valA = a.supplier_name;
-            valB = b.supplier_name;
-            break;
-          case "corak_kain":
-            // Ambil corak kain pertama untuk sorting
-            valA = a.items && a.items.length > 0 ? a.items[0].corak_kain : "";
-            valB = b.items && b.items.length > 0 ? b.items[0].corak_kain : "";
-            break;
-          case "tanggal":
-            valA = new Date(a.created_at);
-            valB = new Date(b.created_at);
-            break;
-          default:
-            valA = a[sortField];
-            valB = b[sortField];
-        }
+  //       switch (sortField) {
+  //         case "no_po":
+  //           valA = a.no_po;
+  //           valB = b.no_po;
+  //           break;
+  //         case "no_pc":
+  //           valA = a.no_pc;
+  //           valB = b.no_pc;
+  //           break;
+  //         case "supplier":
+  //           valA = a.supplier_name;
+  //           valB = b.supplier_name;
+  //           break;
+  //         case "corak_kain":
+  //           // Ambil corak kain pertama untuk sorting
+  //           valA = a.items && a.items.length > 0 ? a.items[0].corak_kain : "";
+  //           valB = b.items && b.items.length > 0 ? b.items[0].corak_kain : "";
+  //           break;
+  //         case "tanggal":
+  //           valA = new Date(a.created_at);
+  //           valB = new Date(b.created_at);
+  //           break;
+  //         default:
+  //           valA = a[sortField];
+  //           valB = b[sortField];
+  //       }
         
-        // Handle perbandingan untuk string dan date
-        if (sortField === "tanggal") {
-          return sortOrder === "asc" ? valA - valB : valB - valA;
-        }
+  //       // Handle perbandingan untuk string dan date
+  //       if (sortField === "tanggal") {
+  //         return sortOrder === "asc" ? valA - valB : valB - valA;
+  //       }
         
-        valA = valA?.toString().toLowerCase() || "";
-        valB = valB?.toString().toLowerCase() || "";
+  //       valA = valA?.toString().toLowerCase() || "";
+  //       valB = valB?.toString().toLowerCase() || "";
         
-        return sortOrder === "asc" 
-          ? valA.localeCompare(valB) 
-          : valB.localeCompare(valA);
-      });
-    }
+  //       return sortOrder === "asc" 
+  //         ? valA.localeCompare(valB) 
+  //         : valB.localeCompare(valA);
+  //     });
+  //   }
 
-    setFiltered(data);
-    setCurrentPage(1);
-  };  
+  //   setFiltered(data);
+  //   setCurrentPage(1);
+  // };  
 
   createEffect(() => {
     if (tokUser?.token) {
@@ -298,9 +306,9 @@ export default function BGPurchaseOrderList() {
     }
   });
 
-  createEffect(() => {
-    setFiltered(packingOrders());
-  });    
+  // createEffect(() => {
+  //   setFiltered(packingOrders());
+  // });    
 
   return (
     <MainLayout>
@@ -314,7 +322,7 @@ export default function BGPurchaseOrderList() {
         </button>
       </div>
 
-      <SearchSortFilter
+      {/* <SearchSortFilter
         sortOptions={[
           { label: "No PO", value: "no_po" },
           { label: "No PC", value: "no_pc" },
@@ -330,7 +338,26 @@ export default function BGPurchaseOrderList() {
         ]}
         onChange={handleFilterChange}
         placeholder="Cari berdasarkan No PO, No PC, Supplier, atau Corak Kain..."
-      />       
+      />        */}
+
+      <SearchSortFilter
+        sortOptions={[
+          // { label: "No PO", value: "no_po" },
+          // { label: "No PC", value: "no_pc" },
+          { label: "Nama Supplier", value: "supplier_name" },
+          { label: "Corak Kain", value: "items" },
+          { label: "Satuan Unit", value: "satuan_unit_name" },
+        ]}
+        filterOptions={[
+          { label: "Order (Pajak)", value: "/P/" },
+          { label: "Order (Non Pajak)", value: "/N/" },
+          { label: "Supplier (PT)", value: "PT" },
+          { label: "Supplier (CV)", value: "CV" },
+          { label: "Satuan Unit (Meter)", value: "Meter" },
+          { label: "Satuan Unit (Yard)", value: "Yard" },
+        ]}
+        onChange={applyFilter}
+      />
 
       <div class="w-full overflow-x-auto">
         <table class="w-full bg-white shadow-md rounded">
@@ -352,7 +379,7 @@ export default function BGPurchaseOrderList() {
             </tr>
           </thead>
           <tbody>
-          {paginatedData().length === 0 ? (
+          {/* {paginatedData().length === 0 ? (
             <tr>
               <td colSpan="8" class="py-4 px-4 text-center text-gray-500">
                 {packingOrders().length === 0 
@@ -363,6 +390,8 @@ export default function BGPurchaseOrderList() {
             </tr>
           ) : (
             paginatedData().map((po, index) => (
+              <tr class="border-b" key={po.id}> */}
+            {paginatedData().map((po, index) => (
               <tr class="border-b" key={po.id}>
                 <td class="py-2 px-4">
                   {(currentPage() - 1) * pageSize + (index + 1)}
@@ -423,7 +452,7 @@ export default function BGPurchaseOrderList() {
                   )}
                 </td>
               </tr>
-            )))}
+            ))}
           </tbody>
         </table>
         <div class="w-full mt-8 flex justify-between space-x-2">
