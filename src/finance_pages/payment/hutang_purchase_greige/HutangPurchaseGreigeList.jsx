@@ -206,9 +206,9 @@ export default function HutangPurchaseGreigeList() {
           filterOptions={[
             { label: "Order (Pajak)", value: "/P/" },
             { label: "Order (Non Pajak)", value: "/N/" },
-            { label: "Payment Method (Cash)", value: "Cash" },
-            { label: "Payment Method (Hutang)", value: "Hutang" },
-            { label: "Payment Method (Transfer)", value: "Transfer" },
+            // { label: "Payment Method (Cash)", value: "Cash" },
+            // { label: "Payment Method (Hutang)", value: "Hutang" },
+            // { label: "Payment Method (Transfer)", value: "Transfer" },
           ]}
           onChange={handleFilterChange}
         />
