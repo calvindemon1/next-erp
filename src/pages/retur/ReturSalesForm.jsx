@@ -18,6 +18,7 @@ import {
   createSalesRetur,
   updateDataSalesRetur,
   getSalesRetur,
+  hasAnyPermission,
 } from "../../utils/auth";
 import SuratJalanDropdownSearch from "../../components/SuratJalanDropdownSearch";
 import { Printer } from "lucide-solid";
@@ -44,6 +45,8 @@ export default function ReturSalesForm() {
 
   const [loading, setLoading] = createSignal(true);
   const [sjDetail, setSjDetail] = createSignal(null);
+  const [returData, setReturData] = createSignal(null);
+  const [showFinance, setShowFinance] = createSignal(false);
 
   // Map<sji_roll_id, boolean> — true = dicentang (akan DIRETUR)
   const [returChecked, setReturChecked] = createSignal(new Map());
@@ -85,6 +88,80 @@ export default function ReturSalesForm() {
       .replace(/\s+/g, "")
       .replace(/[-–—]/g, "-")
       .toUpperCase();
+
+  // Ganti fungsi formatIDR dengan yang menampilkan 2 desimal
+  const formatIDR = (amount) => {
+    if (!amount && amount !== 0) return "Rp 0";
+    return new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount);
+  };
+
+  // Perbaiki fungsi calculateGroupSubtotal
+  const calculateGroupSubtotal = (group) => {
+    if (!group || !group.harga) return 0;
+    
+    // Ambil satuan dari data retur, default ke "Meter"
+    const satuan = returData()?.satuan_unit || "Meter";
+    let totalQuantity = 0;
+    
+    // Hitung total quantity dari semua roll dalam group
+    group.rolls.forEach(roll => {
+      if (satuan.toLowerCase() === "meter") {
+        totalQuantity += parseFloat(roll.meter) || 0;
+      } else {
+        totalQuantity += parseFloat(roll.yard) || 0;
+      }
+    });
+    
+    const harga = parseFloat(group.harga) || 0;
+    return harga * totalQuantity;
+  };
+
+  // Perbaiki fungsi calculateTotalSubtotal
+  const calculateTotalSubtotal = () => {
+    const returDataValue = returData();
+    if (!returDataValue || !returDataValue.items) return 0;
+    
+    // Ambil satuan dari data retur, default ke "Meter"
+    const satuan = returDataValue.satuan_unit || "Meter";
+    let total = 0;
+    
+    returDataValue.items.forEach(item => {
+      let quantity = 0;
+      
+      if (satuan.toLowerCase() === "meter") {
+        quantity = parseFloat(item.meter_total) || 0;
+      } else {
+        quantity = parseFloat(item.yard_total) || 0;
+      }
+      
+      const harga = parseFloat(item.harga) || 0;
+      total += harga * quantity;
+    });
+    
+    return total;
+  };
+
+  const calculateTotalReturFromDisplay = () => {
+    const detail = sjDetail();
+    if (!detail) return 0;
+    
+    let total = 0;
+    const pls = detail?.packing_lists || [];
+    
+    pls.forEach(pl => {
+      const groups = groupBySOItemFiltered(pl);
+      groups.forEach(group => {
+        total += calculateGroupSubtotal(group);
+      });
+    });
+    
+    return total;
+  };  
 
   function normalizeReturResponse(resp) {
     if (resp && Array.isArray(resp.data)) return resp.data[0] || null;
@@ -137,34 +214,150 @@ export default function ReturSalesForm() {
     return withFlags;
   }
 
+  // onMount(async () => {
+  //   try {
+  //     setLoading(true);
+
+  //     // 1) Ambil semua SJ (yang delivered saja) untuk dropdown
+  //     const res = await getAllDeliveryNotes(user?.token);
+  //     const list = Array.isArray(res?.surat_jalan_list)
+  //       ? res.surat_jalan_list
+  //       : Array.isArray(res?.suratJalans)
+  //       ? res.suratJalans
+  //       : Array.isArray(res?.data)
+  //       ? res.data
+  //       : [];
+
+  //     const delivered = list.filter(
+  //       (sj) => Number(sj.delivered_status ?? 0) === 1
+  //     );
+  //     const enriched = await enrichSJOptions(delivered); // ← hitung full returned via sj_roll_selected_status
+  //     setSjOptions(enriched);
+
+  //     // 2) Jika buka View/Edit (punya ?id=...), load data retur
+  //     if (hasId) {
+  //       const rRaw = await getSalesRetur(returId, user?.token);
+
+  //       //console.log("Data Sales Retur per ID: ", JSON.stringify(rRaw, null, 2));
+
+  //       const r = normalizeReturResponse(rRaw);
+  //       if (!r) throw new Error("Data retur kosong.");;
+
+  //       const rollsSet = new Set();
+  //       const mapByItem = new Map();
+  //       const itemIdBySj = new Map();
+  //       const srRollIdBySji = new Map();
+
+  //       (r?.items || []).forEach((it) => {
+  //         const sjItemId = toNum(it?.sj_item_id);
+  //         const srItemId = toNum(it?.id);
+  //         if (sjItemId && srItemId) itemIdBySj.set(sjItemId, srItemId);
+
+  //         const s = mapByItem.get(sjItemId) || new Set();
+  //         (it?.rolls || []).forEach((rr) => {
+  //           const sji = toNum(rr?.sji_roll_id);
+  //           const sr = toNum(rr?.id);
+  //           if (sji && isSelected(rr)) {
+  //             rollsSet.add(sji);
+  //             s.add(sji);
+  //             if (sr) srRollIdBySji.set(sji, sr);
+  //           }
+  //         });
+  //         if (sjItemId) mapByItem.set(sjItemId, s);
+  //       });
+
+  //       setReturExistingRollIds(rollsSet);
+  //       setReturExistingByItem(mapByItem);
+  //       setReturItemIdBySjItemId(itemIdBySj);
+  //       setReturSrRollIdBySjiRollId(srRollIdBySji);
+
+  //       // pre-check checkbox di EDIT
+  //       setReturChecked(() => {
+  //         const m = new Map();
+  //         rollsSet.forEach((rid) => m.set(rid, true));
+  //         return m;
+  //       });
+
+  //       // === Cari SJ ID ===
+  //       let sjId =
+  //         toNum(r?.sj_id) ??
+  //         toNum(r?.surat_jalan_id) ??
+  //         toNum(r?.delivery_note_id) ??
+  //         toNum(r?.surat_jalan?.id) ??
+  //         toNum(r?.delivery_note?.id);
+
+  //       if (!sjId) {
+  //         const noFromRetur =
+  //           getNoSJ(r) ??
+  //           getNoSJ(r?.surat_jalan) ??
+  //           getNoSJ(r?.delivery_note) ??
+  //           r?.no_surat_jalan ??
+  //           r?.surat_jalan_no ??
+  //           r?.delivery_note_no;
+
+  //         if (noFromRetur) {
+  //           const target = normNo(noFromRetur);
+  //           const found = (delivered || []).find(
+  //             (sj) => normNo(getNoSJ(sj)) === target
+  //           );
+  //           sjId = toNum(found?.id);
+  //         }
+  //       }
+
+  //       if (sjId) {
+  //         setSelectedSJId(sjId);
+  //         await loadSJDetailById(sjId);
+
+  //         if (isEdit && returId && sjDetail()) {
+  //           const mapChecked = buildCheckedFromSJDetailForThisRetur(
+  //             sjDetail(),
+  //             returId
+  //           );
+  //           setReturChecked(mapChecked);
+  //         }
+  //       }
+
+  //       // header form dari data retur
+  //       setForm((p) => ({
+  //         ...p,
+  //         no_retur: r?.no_retur || "",
+  //         tanggal_surat_jalan:
+  //           r?.tanggal_surat_jalan || r?.tanggal || p.tanggal_surat_jalan || "",
+  //         customer_name:
+  //           r?.customer_name || r?.customer || p.customer_name || "",
+  //         no_mobil: r?.no_mobil || p.no_mobil || "",
+  //         sopir: r?.sopir || p.sopir || "",
+  //         keterangan: r?.keterangan_retur || r?.keterangan || "",
+  //       }));
+  //     }
+  //   } catch (err) {
+  //     console.error(err);
+  //     Swal.fire("Error", err?.message || "Gagal memuat data.", "error");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // });
+
   onMount(async () => {
     try {
       setLoading(true);
 
-      // 1) Ambil semua SJ (yang delivered saja) untuk dropdown
-      const res = await getAllDeliveryNotes(user?.token);
-      const list = Array.isArray(res?.surat_jalan_list)
-        ? res.surat_jalan_list
-        : Array.isArray(res?.suratJalans)
-        ? res.suratJalans
-        : Array.isArray(res?.data)
-        ? res.data
-        : [];
+      // Set permission finance terlebih dahulu
+      const canAccessFinance = hasAnyPermission([
+        "view_bank",
+        "view_payment_methods",
+        "view_jenis_potongan",
+        "view_jenis_hutang",
+      ]);
+      setShowFinance(canAccessFinance);
 
-      const delivered = list.filter(
-        (sj) => Number(sj.delivered_status ?? 0) === 1
-      );
-      const enriched = await enrichSJOptions(delivered); // ← hitung full returned via sj_roll_selected_status
-      setSjOptions(enriched);
-
-      // 2) Jika buka View/Edit (punya ?id=...), load data retur
+      // 2) Jika buka View/Edit (punya ?id=...), load data retur saja
       if (hasId) {
         const rRaw = await getSalesRetur(returId, user?.token);
-
-        //console.log("Data Sales Retur per ID: ", JSON.stringify(rRaw, null, 2));
-
         const r = normalizeReturResponse(rRaw);
         if (!r) throw new Error("Data retur kosong.");
+
+        setReturData(r);
 
         const rollsSet = new Set();
         const mapByItem = new Map();
@@ -195,11 +388,13 @@ export default function ReturSalesForm() {
         setReturSrRollIdBySjiRollId(srRollIdBySji);
 
         // pre-check checkbox di EDIT
-        setReturChecked(() => {
-          const m = new Map();
-          rollsSet.forEach((rid) => m.set(rid, true));
-          return m;
-        });
+        if (isEdit) {
+          setReturChecked(() => {
+            const m = new Map();
+            rollsSet.forEach((rid) => m.set(rid, true));
+            return m;
+          });
+        }
 
         // === Cari SJ ID ===
         let sjId =
@@ -219,10 +414,10 @@ export default function ReturSalesForm() {
             r?.delivery_note_no;
 
           if (noFromRetur) {
+            // Untuk VIEW/EDIT, kita hanya perlu memuat SJ yang spesifik, tidak semua
             const target = normNo(noFromRetur);
-            const found = (delivered || []).find(
-              (sj) => normNo(getNoSJ(sj)) === target
-            );
+            // Coba cari dari cache dulu, jika tidak ada baru fetch
+            const found = await findSJByNo(target);
             sjId = toNum(found?.id);
           }
         }
@@ -230,14 +425,6 @@ export default function ReturSalesForm() {
         if (sjId) {
           setSelectedSJId(sjId);
           await loadSJDetailById(sjId);
-
-          if (isEdit && returId && sjDetail()) {
-            const mapChecked = buildCheckedFromSJDetailForThisRetur(
-              sjDetail(),
-              returId
-            );
-            setReturChecked(mapChecked);
-          }
         }
 
         // header form dari data retur
@@ -252,7 +439,24 @@ export default function ReturSalesForm() {
           sopir: r?.sopir || p.sopir || "",
           keterangan: r?.keterangan_retur || r?.keterangan || "",
         }));
+      } else {
+        // CREATE mode - hanya load SJ yang delivered
+        const res = await getAllDeliveryNotes(user?.token);
+        const list = Array.isArray(res?.surat_jalan_list)
+          ? res.surat_jalan_list
+          : Array.isArray(res?.suratJalans)
+          ? res.suratJalans
+          : Array.isArray(res?.data)
+          ? res.data
+          : [];
+
+        const delivered = list.filter(
+          (sj) => Number(sj.delivered_status ?? 0) === 1
+        );
+        const enriched = await enrichSJOptions(delivered);
+        setSjOptions(enriched);
       }
+
     } catch (err) {
       console.error(err);
       Swal.fire("Error", err?.message || "Gagal memuat data.", "error");
@@ -260,6 +464,37 @@ export default function ReturSalesForm() {
       setLoading(false);
     }
   });
+
+  // Tambahkan fungsi helper untuk mencari SJ by nomor
+  async function findSJByNo(noSJ) {
+    // Coba cari di cache dulu
+    const cached = sjOptions().find(sj => normNo(getNoSJ(sj)) === normNo(noSJ));
+    if (cached) return cached;
+    
+    // Jika tidak ada di cache, fetch dari API
+    try {
+      const res = await getAllDeliveryNotes(user?.token);
+      const list = Array.isArray(res?.surat_jalan_list)
+        ? res.surat_jalan_list
+        : Array.isArray(res?.suratJalans)
+        ? res.suratJalans
+        : Array.isArray(res?.data)
+        ? res.data
+        : [];
+
+      const delivered = list.filter(
+        (sj) => Number(sj.delivered_status ?? 0) === 1
+      );
+      
+      // Update cache
+      setSjOptions(delivered);
+      
+      return delivered.find(sj => normNo(getNoSJ(sj)) === normNo(noSJ));
+    } catch (error) {
+      console.error("Gagal fetch SJ:", error);
+      return null;
+    }
+  }
 
   /* ================== Numbering helpers ================== */
   const getPPNFromSJ = (sj) =>
@@ -410,6 +645,30 @@ export default function ReturSalesForm() {
     await autoGenerateNoReturIfNeeded(detail);
   }
 
+  // const handleSJChange = async (sj) => {
+  //   try {
+  //     setSelectedSJId(sj?.id ?? null);
+  //     if (!sj?.id) {
+  //       setSjDetail(null);
+  //       setReturChecked(new Map());
+  //       setReturExistingRollIds(new Set());
+  //       setReturExistingByItem(new Map());
+  //       return;
+  //     }
+  //     setLoading(false);
+  //     await loadSJDetailById(sj.id);
+  //   } catch (err) {
+  //     console.error(err);
+  //     Swal.fire(
+  //       "Error",
+  //       err?.message || "Gagal memuat detail Surat Jalan.",
+  //       "error"
+  //     );
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
   const handleSJChange = async (sj) => {
     try {
       setSelectedSJId(sj?.id ?? null);
@@ -420,8 +679,13 @@ export default function ReturSalesForm() {
         setReturExistingByItem(new Map());
         return;
       }
-      setLoading(false);
-      await loadSJDetailById(sj.id);
+      
+      // Untuk CREATE mode, load detail SJ
+      if (!hasId) {
+        setLoading(true);
+        await loadSJDetailById(sj.id);
+      }
+      // Untuk VIEW/EDIT, kita sudah punya data dari retur
     } catch (err) {
       console.error(err);
       Swal.fire(
@@ -524,12 +788,71 @@ export default function ReturSalesForm() {
     return null;
   }
 
+  // function groupBySOItemFiltered(pl) {
+  //   const map = new Map();
+
+  //   for (const it of pl?.items || []) {
+  //     const key = it.pl_item_id ?? it.id;
+  //     if (!map.has(key)) {
+  //       map.set(key, {
+  //         pl_item_id: key,
+  //         sj_item_id: sjItemIdFromItem(it),
+  //         kode_warna:
+  //           it.so_kode_warna ?? it.kode_warna ?? it.pl_kode_warna ?? "",
+  //         deskripsi_warna:
+  //           it.so_deskripsi_warna ??
+  //           it.deskripsi_warna ??
+  //           it.pl_deskripsi_warna ??
+  //           it.keterangan_warna ??
+  //           "",
+  //         corak_kain: it.corak_kain ?? "",
+  //         rolls: [],
+  //       });
+  //     }
+  //     const g = map.get(key);
+
+  //     for (const r of it.rolls || []) {
+  //       const rid = Number(r?.id);
+
+  //       if (isView) {
+  //         // VIEW: tampilkan hanya roll yang memang milik retur ini (flag 1 di getSalesRetur)
+  //         if (!returExistingRollIds().has(rid)) continue;
+  //       } else {
+  //         // CREATE/EDIT: sembunyikan roll yang sudah diretur
+  //         if (isReturnedRoll(r)) continue;
+  //       }
+
+  //       g.rolls.push({
+  //         id: r.id,
+  //         pli_roll_id: r.pli_roll_id,
+  //         row_num: r.row_num,
+  //         col_num: r.col_num,
+  //         no_bal: r.no_bal,
+  //         lot: r.lot ?? it.lot ?? "-",
+  //         meter: Number(r.meter || 0),
+  //         yard: Number(r.yard || 0),
+  //         kilogram: Number(r.kilogram || 0),
+  //       });
+  //     }
+  //   }
+
+  //   return Array.from(map.values()).filter((g) => g.rolls.length > 0);
+  // }
+
   function groupBySOItemFiltered(pl) {
     const map = new Map();
 
     for (const it of pl?.items || []) {
       const key = it.pl_item_id ?? it.id;
       if (!map.has(key)) {
+        // Cari harga dari data retur jika ada
+        let harga = 0;
+        if (returData() && returData().items) {
+          const returItem = returData().items.find(
+            retItem => Number(retItem.sj_item_id) === Number(sjItemIdFromItem(it))
+          );
+          harga = returItem ? parseFloat(returItem.harga) || 0 : 0;
+        }
         map.set(key, {
           pl_item_id: key,
           sj_item_id: sjItemIdFromItem(it),
@@ -542,6 +865,8 @@ export default function ReturSalesForm() {
             it.keterangan_warna ??
             "",
           corak_kain: it.corak_kain ?? "",
+          // Tambahkan harga dari item retur
+          harga: it.harga ? parseFloat(it.harga) : 0,
           rolls: [],
         });
       }
@@ -1216,29 +1541,29 @@ export default function ReturSalesForm() {
                           </div>
 
                           <table class="w-full border border-gray-300 text-sm">
-                            <thead class="bg-gray-100">
-                              <tr>
-                                <th class="border px-2 py-1 w-[6%]">#</th>
-                                <th class="border px-2 py-1 w-[8%]">Bal</th>
-                                <th class="border px-2 py-1 w-[18%]">Col</th>
-                                <th class="border px-2 py-1 w-[18%]">
-                                  Corak Kain
-                                </th>
-                                <th class="border px-2 py-1 w-[10%]">Lot</th>
-                                <th class="border px-2 py-1 w-[10%]">Meter</th>
-                                <th class="border px-2 py-1 w-[10%]">Yard</th>
-                                <Show when={!isView}>
-                                  <th class="border px-2 py-1 w-[10%]">
-                                    Retur
-                                  </th>
-                                </Show>
-                                <Show when={isView}>
-                                  <th class="border px-2 py-1 w-[12%]">
-                                    Status
-                                  </th>
-                                </Show>
-                              </tr>
-                            </thead>
+                          <thead class="bg-gray-100">
+                            <tr>
+                              <th class="border px-2 py-1 w-[5%]">#</th>
+                              <th class="border px-2 py-1 w-[7%]">Bal</th>
+                              <th class="border px-2 py-1 w-[15%]">Col</th>
+                              <th class="border px-2 py-1 w-[15%]">Corak Kain</th>
+                              <th class="border px-2 py-1 w-[8%]">Lot</th>
+                              <th class="border px-2 py-1 w-[8%]">Meter</th>
+                              <th class="border px-2 py-1 w-[8%]">Yard</th>
+                              {/* Hanya tampilkan kolom Retur untuk CREATE/EDIT, dan Status untuk VIEW */}
+                              <Show when={!isView}>
+                                <th class="border px-2 py-1 w-[8%]">Retur</th>
+                              </Show>
+                              <Show when={isView}>
+                                <th class="border px-2 py-1 w-[10%]">Status</th>
+                              </Show>
+                              {/* Kolom harga hanya untuk VIEW dengan finance */}
+                              <Show when={isView && showFinance()}>
+                                <th class="border px-2 py-1 w-[12%]">Harga</th>
+                                <th class="border px-2 py-1 w-[12%]">Subtotal</th>
+                              </Show>
+                            </tr>
+                          </thead>
                             <tbody>
                               <For each={g.rolls}>
                                 {(r, i) => (
@@ -1286,6 +1611,17 @@ export default function ReturSalesForm() {
                                         Retur
                                       </td>
                                     </Show>
+                                    <Show when={isView && showFinance()}>
+                                      {/* Hanya tampilkan di baris pertama setiap group */}
+                                      <Show when={i() === 0}>
+                                        <td class="border px-2 py-1 text-right" rowSpan={g.rolls.length}>
+                                          {formatIDR(g.harga)}
+                                        </td>
+                                        <td class="border px-2 py-1 text-right" rowSpan={g.rolls.length}>
+                                          {formatIDR(calculateGroupSubtotal(g))}
+                                        </td>
+                                      </Show>
+                                    </Show>
                                   </tr>
                                 )}
                               </For>
@@ -1306,6 +1642,7 @@ export default function ReturSalesForm() {
                                 <td class="border px-2 py-1 text-center">
                                   TTL/PCS: {subSel().pcs}
                                 </td>
+
                               </tr>
                             </tbody>
                           </table>
@@ -1327,12 +1664,17 @@ export default function ReturSalesForm() {
                 <tr>
                   <th class="px-4 py-2 border">Total Meter</th>
                   <th class="px-4 py-2 border">Total Yard</th>
+                  <Show when={isView && showFinance()}>
+                    <th class="px-4 py-2 border">Total Harga Retur</th>
+                  </Show>
                 </tr>
               </thead>
               <tbody>
                 <tr>
                   {(() => {
                     const t = calcAllSelected(sjDetail());
+                    const totalHarga = calculateTotalReturFromDisplay();
+
                     return (
                       <>
                         <td class="px-4 py-2 border text-right">
@@ -1341,6 +1683,11 @@ export default function ReturSalesForm() {
                         <td class="px-4 py-2 border text-right">
                           {formatNumber(t.y)}
                         </td>
+                        <Show when={isView && showFinance()}>
+                          <td class="px-4 py-2 border text-right">
+                            {formatIDR(totalHarga)}
+                          </td>
+                        </Show>
                       </>
                     );
                   })()}
