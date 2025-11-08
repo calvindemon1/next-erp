@@ -350,7 +350,7 @@ export default function ExpeditionAccessoriesForm() {
             />
           </div>
 
-          <div>
+          {/* <div>
             <label class="block mb-1 font-medium">Jenis Hutang</label>
               <JenisHutangDropdownSearch
                 jenisHutangs={jenisHutangOptions}
@@ -367,7 +367,7 @@ export default function ExpeditionAccessoriesForm() {
                 disabled={isView}
               />
             <input type="hidden" value={form().jenis_hutang_id} required />
-          </div>
+          </div> */}
 
           <div>
             <label class="block mb-1 font-medium">Supplier</label>

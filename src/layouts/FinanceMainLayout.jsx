@@ -226,7 +226,7 @@ export default function FinanceMainLayout(props) {
                       Jenis Potongan
                     </A>
                   </li>
-                  <li>
+                  {/* <li>
                     <A
                       href="/jenis-hutang"
                       class={`block pl-8 pr-4 py-2 hover:bg-green-800 ${
@@ -237,7 +237,7 @@ export default function FinanceMainLayout(props) {
                     >
                       Jenis Hutang
                     </A>
-                  </li>
+                  </li> */}
                 </ul>
               </li>
 
