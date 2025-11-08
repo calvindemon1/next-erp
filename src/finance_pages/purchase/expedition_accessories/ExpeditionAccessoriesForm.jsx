@@ -337,7 +337,7 @@ export default function ExpeditionAccessoriesForm() {
             />
           </div>
 
-          <div>
+          {/* <div>
             <label class="block mb-1 font-medium">No PO</label>
             <input
               type="text"
@@ -348,7 +348,7 @@ export default function ExpeditionAccessoriesForm() {
               disabled={isView}
               classList={{ "bg-gray-200" : isView}}
             />
-          </div>
+          </div> */}
 
           {/* <div>
             <label class="block mb-1 font-medium">Jenis Hutang</label>
