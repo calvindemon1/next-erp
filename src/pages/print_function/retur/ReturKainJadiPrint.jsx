@@ -262,11 +262,13 @@ function PrintPage(props) {
           <thead ref={bind("theadRef")}>
             <tr>
               <th className="border border-black p-1 w-[6%]" rowSpan={2}>No</th>
-              <th className="border border-black p-1 w-[10%]" rowSpan={2}>Kode</th>
+              <th className="border border-black p-1 w-[10%]" rowSpan={2}>Kain</th>
               <th hidden className="border border-black p-1 w-[18%]" rowSpan={2}>Jenis Kain</th>
-              <th className="border border-black p-1 w-[18%]" rowSpan={2}>Warna</th>
-              <th className="border border-black p-1 w-[10%]" rowSpan={2}>Lebar Greige</th>
-              <th className="border border-black p-1 w-[10%]" rowSpan={2}>Lebar Finish</th>
+              <th className="border border-black p-1 w-[10%]" rowSpan={2}>Kode Warna</th>
+              <th className="border border-black p-1 w-[15%]" rowSpan={2}>Warna</th>
+              <th className="border border-black p-1 w-[18%]" rowSpan={2}>Keterangan Warna</th>
+              {/* <th className="border border-black p-1 w-[10%]" rowSpan={2}>Lebar Greige</th>
+              <th className="border border-black p-1 w-[10%]" rowSpan={2}>Lebar Finish</th> */}
               <th className="border border-black p-1 w-[10%]" rowSpan={2}>Gulung</th>
               <th className="border border-black p-1 w-[10%]" rowSpan={2}>Lot</th>
               <th className="border border-black p-1 w-[20%] text-center" colSpan={2}>
@@ -291,9 +293,11 @@ function PrintPage(props) {
                   <td className="p-1 text-center break-words">{startIndex + i() + 1}</td>
                   <td className="p-1 text-center break-words">{item.corak_kain || "-"}</td>
                   <td hidden className="p-1 text-center break-words">{item.konstruksi_kain}</td>
+                  <td className="p-1 text-center break-words">{item.kode_warna || "-"}</td>
                   <td className="p-1 text-center break-words">{item.deskripsi_warna || "-"}</td>
-                  <td className="p-1 text-center break-words">{formatAngkaNonDecimal(item.lebar_greige || "-")}"</td>
-                  <td className="p-1 text-center break-words">{formatAngkaNonDecimal(item.lebar_finish || "-")}"</td>
+                  <td className="p-1 text-center break-words">{item.keterangan_warna || "-"}</td>
+                  {/* <td className="p-1 text-center break-words">{formatAngkaNonDecimal(item.lebar_greige || "-")}"</td>
+                  <td className="p-1 text-center break-words">{formatAngkaNonDecimal(item.lebar_finish || "-")}"</td> */}
                   <td className="p-1 text-center break-words">{formatAngkaNonDecimal(item.gulung || "-")}</td>
                   <td className="p-1 text-center break-words">{formatAngkaNonDecimal(item.lot || "-")}</td>
                   <td colspan={2} className="p-1 text-center break-words">
