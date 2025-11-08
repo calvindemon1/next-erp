@@ -46,6 +46,7 @@ export default function KJPurchaseOrderForm() {
     satuanUnitOptions().filter((u) => u.satuan.toLowerCase() !== "kilogram");
   const [contractItems, setContractItems] = createSignal([]);
   const [purchaseContractData, setPurchaseContractData] = createSignal(null);
+  const [availablePCItems, setAvailablePCItems] = createSignal([]);
 
   const payload = (() => {
     try {
@@ -156,6 +157,128 @@ export default function KJPurchaseOrderForm() {
     return `${formatNumber(Number(num), { decimals: 2 })} %`;
   };
 
+  // onMount(async () => {
+  //   setLoading(true);
+  //   const [bgc, poTypes, suppliers, units, fabrics, colors] = await Promise.all(
+  //     [
+  //       getAllKainJadis(user?.token),
+  //       getAllSOTypes(user?.token),
+  //       getAllSuppliers(user?.token),
+  //       getAllSatuanUnits(user?.token),
+  //       getAllFabrics(user?.token),
+  //       getAllColors(user?.token),
+  //     ]
+  //   );
+
+  //   setPurchaseContracts(bgc.contracts);
+  //   setJenisPOOptions(poTypes.data);
+  //   setSupplierOptions(suppliers.suppliers);
+  //   setSatuanUnitOptions(units.data);
+  //   setFabricOptions(fabrics.kain);
+  //   setColorOptions(colors?.warna || ["Pilih"]);
+
+  //   if (isEdit) {
+  //     const res = await getKainJadiOrders(params.id, user?.token);
+  //     const data = res.order;
+  //     const dataItems = res.order.items;
+
+  //     //console.log("Data PO Kain Jadi:", JSON.stringify(data, null, 2));
+
+  //     const fullPrintData = {
+  //       ...data,
+  //     };
+  //     // Simpan ke dalam signal
+  //     setPurchaseContractData(fullPrintData);
+
+  //     if (!data) return;
+
+  //     const normalizedItems = (dataItems || []).map((item) => {
+  //       return {
+  //         // Data asli disimpan untuk display Quantity
+  //         meter_total: item.meter_total,
+  //         yard_total: item.yard_total,
+  //         meter_dalam_proses: item.meter_dalam_proses,
+  //         yard_dalam_proses: item.yard_dalam_proses,
+  //         corak_kain: item.corak_kain,
+  //         konstruksi_kain: item.konstruksi_kain,
+
+  //         pc_item_id: item.pc_item_id,
+  //         fabric_id: item.kain_id,
+  //         kain_id: item.kain_id,
+  //         lebar_greige: item.lebar_greige,
+  //         lebar_finish: item.lebar_finish,
+  //         warna_id: item.warna_id,
+  //         // Field Keterangan untuk warna
+  //         keterangan_warna: item.keterangan_warna || "",
+
+  //         std_susutValue:
+  //           item.std_susut != null ? parseFloat(item.std_susut) : 0,
+  //         std_susut:
+  //           item.std_susut != null
+  //             ? formatPercent(parseFloat(item.std_susut))
+  //             : "",
+
+  //         meter: item.meter_total,
+  //         yard: item.yard_total,
+  //         harga_greige: item.harga_greige,
+  //         harga_celup: item.harga_celup,
+  //         subtotal: 0,
+  //         subtotalFormatted:
+  //           item.subtotal > 0
+  //             ? new Intl.NumberFormat("id-ID", {
+  //                 style: "currency",
+  //                 currency: "IDR",
+  //                 maximumFractionDigits: 0,
+  //               }).format(item.subtotal)
+  //             : "",
+  //       };
+  //     });
+
+  //     handlePurchaseContractChange(data.pc_id, normalizedItems);
+
+  //     setForm((prev) => ({
+  //       ...prev,
+  //       //jenis_po_id: data.jenis_po_id ?? "",
+  //       pc_id: Number(data.pc_id) ?? "",
+  //       sequence_number: data.no_po ?? "",
+  //       no_seq: data.sequence_number ?? 0,
+  //       supplier_id: data.supplier_id ?? "",
+  //       satuan_unit_id: data.satuan_unit_id ?? "",
+  //       termin: data.termin ?? "",
+  //       ppn: data.ppn_percent ?? "",
+  //       keterangan: data.keterangan ?? "",
+  //       instruksi_kain: data.instruksi_kain ?? "",
+  //       tanggal: data.created_at
+  //         ? new Date(data.created_at).toISOString().substring(0, 10) // ⬅️ ambil created_at dari API
+  //         : prev.tanggal,
+  //       //items: normalizedItems,
+  //     }));
+  //   } else {
+  //     const lastSeq = await getLastSequence(
+  //       user?.token,
+  //       "kj_o",
+  //       "domestik",
+  //       form().ppn
+  //     );
+
+  //     setForm((prev) => ({
+  //       ...prev,
+  //       sequence_number: lastSeq?.no_sequence + 1 || "",
+  //     }));
+
+  //     form().items.forEach((item, index) => {
+  //       // Panggil ulang handleItemChange untuk field-field penting
+  //       handleItemChange(index, "meter", item.meter);
+  //       handleItemChange(index, "yard", item.yard);
+  //       handleItemChange(index, "harga_greige", item.harga_greige);
+  //       handleItemChange(index, "harga_maklun", item.harga_maklun);
+  //       handleItemChange(index, "lebar_greige", item.lebar_greige);
+  //       handleItemChange(index, "lebar_finish", item.lebar_finish);
+  //     });
+  //   }
+  //   setLoading(false);
+  // });
+
   onMount(async () => {
     setLoading(true);
     const [bgc, poTypes, suppliers, units, fabrics, colors] = await Promise.all(
@@ -233,7 +356,8 @@ export default function KJPurchaseOrderForm() {
         };
       });
 
-      handlePurchaseContractChange(data.pc_id, normalizedItems);
+      // Panggil dengan overrideItems untuk mode edit
+      await handlePurchaseContractChange(data.pc_id, normalizedItems);
 
       setForm((prev) => ({
         ...prev,
@@ -265,6 +389,11 @@ export default function KJPurchaseOrderForm() {
         sequence_number: lastSeq?.no_sequence + 1 || "",
       }));
 
+      // Jika ada pc_id di form awal, panggil handlePurchaseContractChange tanpa items
+      if (form().pc_id) {
+        await handlePurchaseContractChange(form().pc_id, []);
+      }
+
       form().items.forEach((item, index) => {
         // Panggil ulang handleItemChange untuk field-field penting
         handleItemChange(index, "meter", item.meter);
@@ -277,6 +406,139 @@ export default function KJPurchaseOrderForm() {
     }
     setLoading(false);
   });
+
+  // const handlePurchaseContractChange = async (contractId, overrideItems) => {
+  //   // Ambil dari cache
+  //   let selectedContract = purchaseContracts().find(
+  //     (sc) => sc.id == contractId
+  //   );
+
+  //   // SELALU fetch detail agar qty/lebar/harga lengkap
+  //   try {
+  //     const detail = await getKainJadis(contractId, user?.token);
+  //     if (detail?.contract) selectedContract = detail.contract;
+  //   } catch (e) {
+  //     console.warn("[KJ] gagal fetch detail PC, pakai cache:", e);
+  //   }
+  //   if (!selectedContract) return;
+
+  //   const {
+  //     supplier_id,
+  //     satuan_unit_id,
+  //     termin,
+  //     ppn_percent,
+  //     items = [],
+  //   } = selectedContract;
+
+  //   const sourceItems = overrideItems ?? items;
+
+  //   const mappedItems = sourceItems.map((ci0) => {
+  //     // kalau override (data dari PO), cari item kontrak aslinya pakai pc_item_id
+  //     const base = overrideItems
+  //       ? (selectedContract.items || []).find(
+  //           (it) => String(it.id) === String(ci0.pc_item_id)
+  //         )
+  //       : null;
+
+  //     const ci = overrideItems ? ci0 : { ...ci0, pc_item_id: ci0.id };
+
+  //     // Pastikan fabric_id valid (bukan corak_kain)
+  //     const fabricId =
+  //       ci.kain_id ??
+  //       ci.fabric_id ??
+  //       base?.kain_id ??
+  //       base?.fabric_id ??
+  //       base?.kain?.id ??
+  //       ci.kain?.id ??
+  //       null;
+
+  //     const meterNum = parseFloat(ci.meter_total ?? ci.meter ?? 0) || 0;
+  //     const yardNum = parseFloat(ci.yard_total ?? ci.yard ?? 0) || 0;
+
+  //     const hargaGreige =
+  //       parseFloat(ci.harga_greige ?? ci.harga_greige ?? 0) || 0;
+  //     const hargaMaklun =
+  //       parseFloat(ci.harga_maklun ?? ci.harga_maklun ?? 0) || 0;
+
+  //     const qty = String(satuan_unit_id) === "2" ? yardNum : meterNum;
+  //     const subtotal = (hargaGreige + hargaMaklun) * qty;
+
+  //     const stdSusut = ci.std_susut ?? null;
+
+  //     return {
+  //       // Panel "Quantity Kain"
+  //       meter_total: parseFloat(ci.meter_total ?? ci.meter ?? 0) || 0,
+  //       yard_total: parseFloat(ci.yard_total ?? ci.yard ?? 0) || 0,
+  //       meter_dalam_proses: parseFloat(ci.meter_dalam_proses ?? 0) || 0,
+  //       yard_dalam_proses: parseFloat(ci.yard_dalam_proses ?? 0) || 0,
+  //       corak_kain:
+  //         ci.corak_kain ?? base.corak_kain ?? ci.kain?.corak_kain ?? "-",
+  //       konstruksi_kain:
+  //         ci.konstruksi_kain ??
+  //         base.konstruksi_kain ??
+  //         ci.kain?.konstruksi_kain ??
+  //         "-",
+
+  //       // Kunci referensi / dropdown
+  //       id: ci.id ?? null,
+  //       pc_item_id: ci.pc_item_id ?? ci.id ?? null,
+
+  //       fabric_id: fabricId,
+  //       kain_id: fabricId,
+
+  //       warna_id: ci.warna_id ?? null,
+  //       lebar_greige: String(ci.lebar_greige ?? base.lebar_greige ?? ""),
+  //       lebar_finish: String(ci.lebar_finish ?? base.lebar_finish ?? ""),
+  //       keterangan_warna: ci.keterangan_warna ?? "",
+
+  //       std_susutValue: ci.std_susut != null ? parseFloat(ci.std_susut) : 0,
+  //       std_susut:
+  //         ci.std_susut != null ? formatPercent(parseFloat(ci.std_susut)) : "",
+
+  //       // Qty tampilan + value mentah
+  //       meter: formatNumber(meterNum, { decimals: 2 }),
+  //       meterValue: meterNum,
+  //       yard: formatNumber(yardNum, { decimals: 2 }),
+  //       yardValue: yardNum,
+
+  //       // Harga dari kontrak
+  //       harga_greige: hargaGreige,
+  //       harga_greigeValue: hargaGreige,
+  //       harga_greigeFormatted: formatIDR(hargaGreige),
+
+  //       harga_maklun: hargaMaklun,
+  //       harga_maklunValue: hargaMaklun,
+  //       harga_maklunFormatted: formatIDR(hargaMaklun),
+
+  //       subtotal,
+  //       subtotalFormatted: formatIDR(subtotal),
+
+  //       readOnly: false,
+  //     };
+  //   });
+
+  //   const lastSeq = await getLastSequence(
+  //     user?.token,
+  //     "kj_o",
+  //     "domestik",
+  //     form().ppn
+  //   );
+
+  //   setForm((prev) => ({
+  //     ...prev,
+  //     pc_id: contractId,
+  //     supplier_id: supplier_id ?? prev.supplier_id,
+  //     satuan_unit_id: satuan_unit_id ?? prev.satuan_unit_id,
+  //     termin: termin ?? prev.termin,
+  //     ppn: ppn_percent ?? prev.ppn,
+  //     keterangan: prev.keterangan || "",
+  //     instruksi_kain: prev.instruksi_kain || "",
+  //     items: mappedItems,
+  //     sequence_number: prev.sequence_number || lastSeq?.no_sequence + 1 || "",
+  //   }));
+
+  //   setContractItems(selectedContract.items || []);
+  // };
 
   const handlePurchaseContractChange = async (contractId, overrideItems) => {
     // Ambil dari cache
@@ -301,7 +563,10 @@ export default function KJPurchaseOrderForm() {
       items = [],
     } = selectedContract;
 
-    const sourceItems = overrideItems ?? items;
+    // SET AVAILABLE ITEMS untuk dropdown - SELALU update available items
+    setAvailablePCItems(items || []);
+
+    const sourceItems = overrideItems ?? [];
 
     const mappedItems = sourceItems.map((ci0) => {
       // kalau override (data dari PO), cari item kontrak aslinya pakai pc_item_id
@@ -343,10 +608,10 @@ export default function KJPurchaseOrderForm() {
         meter_dalam_proses: parseFloat(ci.meter_dalam_proses ?? 0) || 0,
         yard_dalam_proses: parseFloat(ci.yard_dalam_proses ?? 0) || 0,
         corak_kain:
-          ci.corak_kain ?? base.corak_kain ?? ci.kain?.corak_kain ?? "-",
+          ci.corak_kain ?? base?.corak_kain ?? ci.kain?.corak_kain ?? "-",
         konstruksi_kain:
           ci.konstruksi_kain ??
-          base.konstruksi_kain ??
+          base?.konstruksi_kain ??
           ci.kain?.konstruksi_kain ??
           "-",
 
@@ -358,8 +623,8 @@ export default function KJPurchaseOrderForm() {
         kain_id: fabricId,
 
         warna_id: ci.warna_id ?? null,
-        lebar_greige: String(ci.lebar_greige ?? base.lebar_greige ?? ""),
-        lebar_finish: String(ci.lebar_finish ?? base.lebar_finish ?? ""),
+        lebar_greige: String(ci.lebar_greige ?? base?.lebar_greige ?? ""),
+        lebar_finish: String(ci.lebar_finish ?? base?.lebar_finish ?? ""),
         keterangan_warna: ci.keterangan_warna ?? "",
 
         std_susutValue: ci.std_susut != null ? parseFloat(ci.std_susut) : 0,
@@ -404,7 +669,7 @@ export default function KJPurchaseOrderForm() {
       ppn: ppn_percent ?? prev.ppn,
       keterangan: prev.keterangan || "",
       instruksi_kain: prev.instruksi_kain || "",
-      items: mappedItems,
+      items: mappedItems, // Untuk edit: pakai mappedItems, untuk create: array kosong
       sequence_number: prev.sequence_number || lastSeq?.no_sequence + 1 || "",
     }));
 
@@ -491,37 +756,50 @@ export default function KJPurchaseOrderForm() {
     };
   };
 
-  const addItem = async () => {
-    const pcId = form().pc_id;
-    if (!pcId) {
-      Swal.fire(
-        "Peringatan",
-        "Silakan pilih Purchase Contract terlebih dahulu.",
-        "warning"
-      );
-      return;
-    }
+  // const addItem = async () => {
+  //   const pcId = form().pc_id;
+  //   if (!pcId) {
+  //     Swal.fire(
+  //       "Peringatan",
+  //       "Silakan pilih Purchase Contract terlebih dahulu.",
+  //       "warning"
+  //     );
+  //     return;
+  //   }
 
-    let baseItems = contractItems();
+  //   let baseItems = contractItems();
 
-    let contractSatuan = form().satuan_unit_id;
-    if (!baseItems || baseItems.length === 0) {
-      const detail = await getOrderCelups(pcId, user?.token);
-      baseItems = detail?.contract?.items || [];
-      contractSatuan = detail?.contract?.satuan_unit_id || contractSatuan;
-    }
+  //   let contractSatuan = form().satuan_unit_id;
+  //   if (!baseItems || baseItems.length === 0) {
+  //     const detail = await getOrderCelups(pcId, user?.token);
+  //     baseItems = detail?.contract?.items || [];
+  //     contractSatuan = detail?.contract?.satuan_unit_id || contractSatuan;
+  //   }
 
-    if (!baseItems.length) {
-      Swal.fire("Info", "Item pada Purchase Contract tidak ditemukan.", "info");
-      return;
-    }
+  //   if (!baseItems.length) {
+  //     Swal.fire("Info", "Item pada Purchase Contract tidak ditemukan.", "info");
+  //     return;
+  //   }
 
-    const satuanId = contractSatuan || form().satuan_unit_id; // 1=Meter, 2=Yard
-    const paketBaru = baseItems.map((ci) =>
-      templateFromKJContractItem(ci, satuanId)
-    );
+  //   const satuanId = contractSatuan || form().satuan_unit_id; // 1=Meter, 2=Yard
+  //   const paketBaru = baseItems.map((ci) =>
+  //     templateFromKJContractItem(ci, satuanId)
+  //   );
 
-    setForm((prev) => ({ ...prev, items: [...prev.items, ...paketBaru] }));
+  //   setForm((prev) => ({ ...prev, items: [...prev.items, ...paketBaru] }));
+  // };
+
+  const addItemFromPC = (pcItemId) => {
+    const selectedItem = availablePCItems().find(item => item.id == pcItemId);
+    if (!selectedItem) return;
+
+    const satuanId = form().satuan_unit_id;
+    const newItem = templateFromKJContractItem(selectedItem, satuanId);
+
+    setForm((prev) => ({ 
+      ...prev, 
+      items: [...prev.items, newItem] 
+    }));
   };
 
   const removeItem = (index) => {
@@ -944,7 +1222,7 @@ export default function KJPurchaseOrderForm() {
           </div>
         </div>
 
-        <Show when={form().items && form().items.length > 0}>
+        {/* <Show when={form().items && form().items.length > 0}>
           <div class="border p-3 rounded my-4 bg-gray-50">
             <h3 class="text-md font-bold mb-2 text-gray-700">Quantity Kain:</h3>
             <ul class="space-y-1 pl-5">
@@ -978,18 +1256,80 @@ export default function KJPurchaseOrderForm() {
               </For>
             </ul>
           </div>
+        </Show> */}
+
+        <Show when={form().items && form().items.length > 0}>
+          <div class="border p-3 rounded my-4 bg-gray-50">
+            <h3 class="text-md font-bold mb-2 text-gray-700">Quantity Kain:</h3>
+            <ul class="space-y-1 pl-5">
+              <For each={availablePCItems()}>
+                {(item) => {
+                  const unit = form().satuan_unit_id == 1 ? "Meter" : "Yard";
+                  const sisa =
+                    unit === "Meter"
+                      ? Number(item.meter_total) -
+                        Number(item.meter_dalam_proses || 0)
+                      : Number(item.yard_total) -
+                        Number(item.yard_dalam_proses || 0);
+
+                  return (
+                    <li class="text-sm list-disc">
+                      <span class="font-semibold">
+                        {item.corak_kain} | {item.konstruksi_kain}
+                      </span>{" "}
+                      - Quantity:{" "}
+                      {sisa > 0 ? (
+                        <span class="font-bold text-blue-600">
+                          {formatNumberQty(sisa)}{" "}
+                          {unit === "Meter" ? "m" : "yd"}
+                        </span>
+                      ) : (
+                        <span class="font-bold text-red-600">HABIS</span>
+                      )}
+                    </li>
+                  );
+                }}
+              </For>
+            </ul>
+          </div>
         </Show>
 
         <h2 class="text-lg font-bold mt-6 mb-2">Items</h2>
 
-        <button
+        {/* <button
           type="button"
           class="bg-green-600 text-white px-3 py-2 rounded hover:bg-green-700 mb-4"
           onClick={addItem}
           hidden={isView || (isEdit && isStrictColorEdit())}
         >
           + Tambah Item
-        </button>
+        </button> */}
+
+        <div class="mb-4" hidden={isView || (isEdit && isStrictColorEdit())}>
+          <label class="block mb-1 font-medium">Pilih Item dari Purchase Contract</label>
+          <select
+            class="border p-2 rounded w-full max-w-md"
+            onChange={(e) => {
+              const selectedId = e.target.value;
+              if (selectedId) {
+                addItemFromPC(selectedId);
+                e.target.value = ""; // reset dropdown
+              }
+            }}
+            disabled={!form().pc_id}
+          >
+            <option value="">Pilih Item</option>
+            <For each={availablePCItems()}>
+              {(item) => (
+                <option value={item.id}>
+                  {`${item.corak_kain || item.kain?.corak_kain || 'Kain'} - ${
+                    item.konstruksi_kain || item.kain?.konstruksi_kain || ''
+                  }`}
+                </option>
+              )}
+            </For>
+          </select>
+        </div>
 
         <table class="w-full text-sm border border-gray-300 mb-4">
           <thead class="bg-gray-100">
