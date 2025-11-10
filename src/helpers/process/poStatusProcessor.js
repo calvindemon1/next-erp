@@ -5,7 +5,7 @@ async function safeDetailCall(fn, id, token) {
   try { return await fn(id, token); } catch { try { return await fn(token, id); } catch { return null; } }
 }
 
-const unitName = (po) => po?.satuan_unit_name || "Meter";
+const unitName = (po) => po?.satuan_unit_name || po?.satuan_unit || "Meter";
 const totalsByUnit = (po) => {
   const u = unitName(po);
   const s = po?.summary || {};
