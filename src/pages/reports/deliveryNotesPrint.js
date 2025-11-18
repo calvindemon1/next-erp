@@ -60,6 +60,7 @@ const openPrintWindow = (title, processedData, block, filterLabel) => {
         grade: r.grade ?? r.grade_name ?? '-',
         meter: Number.isFinite(Number(r.meter)) ? Number(r.meter) : (Number.isFinite(Number(r.meter_total)) ? Number(r.meter_total) : 0),
         yard: Number.isFinite(Number(r.yard)) ? Number(r.yard) : (Number.isFinite(Number(r.yard_total)) ? Number(r.yard_total) : 0),
+        kilogram: Number.isFinite(Number(r.kilogram)) ? Number(r.kilogram) : (Number.isFinite(Number(r.kilogram_total)) ? Number(r.kilogram_total) : 0),
         harga1: Number.isFinite(Number(r.harga1)) ? Number(r.harga1) : (Number.isFinite(Number(r.harga)) ? Number(r.harga) : 0),
         harga2: Number.isFinite(Number(r.harga2)) ? Number(r.harga2) : (Number.isFinite(Number(r.harga_maklun)) ? Number(r.harga_maklun) : null),
         total: Number.isFinite(Number(r.total)) ? Number(r.total) : 0,
@@ -109,7 +110,7 @@ const openPrintWindow = (title, processedData, block, filterLabel) => {
   const headers = ['No', 'Tgl', 'No. SJ', 'No. Ref', isSales ? 'Customer' : 'Supplier'];
   if (!isGreige) headers.push('Warna');
   if (isSales) headers.push('Grade');
-  headers.push('Kain', 'Total Meter', 'Total Yard');
+  headers.push('Kain', 'Total Meter', 'Total Yard', 'Total Kg');
   if (isKainJadi) {
     headers.push('Harga Greige', 'Harga Maklun');
   } else {
@@ -142,6 +143,7 @@ const openPrintWindow = (title, processedData, block, filterLabel) => {
       <td>${first.kain}</td>
       <td style="text-align:right;">${fmt2(first.meter)}</td>
       <td style="text-align:right;">${fmt2(first.yard)}</td>
+      <td style="text-align:right;">${fmt2(first.kilogram)}</td>
       ${isKainJadi
         ? `<td style="text-align:right;">${fmtRp(first.harga1)}</td><td style="text-align:right;">${fmtRp(first.harga2)}</td>`
         : `<td style="text-align:right;">${fmtRp(first.harga1)}</td>`
@@ -157,6 +159,7 @@ const openPrintWindow = (title, processedData, block, filterLabel) => {
         <td>${it.kain}</td>
         <td style="text-align:right;">${fmt2(it.meter)}</td>
         <td style="text-align:right;">${fmt2(it.yard)}</td>
+        <td style="text-align:right;">${fmt2(it.kilogram)}</td>
         ${isKainJadi
           ? `<td style="text-align:right;">${fmtRp(it.harga1)}</td><td style="text-align:right;">${fmtRp(it.harga2)}</td>`
           : `<td style="text-align:right;">${fmtRp(it.harga1)}</td>`

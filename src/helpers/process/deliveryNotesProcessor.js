@@ -128,6 +128,9 @@ export async function processDeliveryNotesData({ baseRows, block, token, custome
             const totalYard = Array.isArray(item.rolls)
               ? item.rolls.reduce((s, r) => s + parseNum(r.yard), 0)
               : parseNum(item.yard_total) || parseNum(item.yard);
+            const totalKilogram = Array.isArray(item.rolls)
+              ? item.rolls.reduce((s, r) => s + parseNum(r.kilogram), 0)
+              : parseNum(item.kilogram_total) || parseNum(item.kilogram);
 
             const unitLower = String(mainData.unit || "").toLowerCase();
             const quantity = unitLower === "yard" ? totalYard : totalMeter;
@@ -142,6 +145,7 @@ export async function processDeliveryNotesData({ baseRows, block, token, custome
               grade: pick(item.grade_name, item.grade, "-"),
               meter: totalMeter,
               yard: totalYard,
+              kilogram: totalKilogram,
               harga1,
               harga2,
               total,
@@ -169,6 +173,7 @@ export async function processDeliveryNotesData({ baseRows, block, token, custome
           const isKainJadi = block.key === "kain_jadi";
           const meter = parseNum(item.meter_total ?? item.meter);
           const yard = parseNum(item.yard_total ?? item.yard);
+          const kilogram = parseNum(item.kilogram_total ?? item.kilogram);
 
           const unitLower = String(mainDataPurchase.unit || "").toLowerCase();
           const quantity = unitLower === "yard" ? yard : meter;
@@ -193,6 +198,7 @@ export async function processDeliveryNotesData({ baseRows, block, token, custome
             grade: pick(item.grade_name, item.grade, "-"),
             meter: meter,
             yard: yard,
+            kilogram: kilogram,
             quantity: quantity,
             harga1: harga1,
             harga2: harga2,

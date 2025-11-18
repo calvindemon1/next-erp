@@ -116,9 +116,12 @@ export async function processPOStatusData({ poRows, status, block, token, PO_DET
           if (unit === 'Yard') {
             totalPO = +(item.yard_total || 0);
             masukPO = +(item.yard_dalam_proses || 0);
-          } else {
+          } else if(unit === 'Meter') {
             totalPO = +(item.meter_total || 0);
             masukPO = +(item.meter_dalam_proses || 0);
+          }else{
+            totalPO = +(item.kilogram_total || 0);
+            masukPO = +(item.kilogram_dalam_proses || 0);
           }
           const sisaPO = Math.max(0, +(totalPO - masukPO).toFixed(4));
           
