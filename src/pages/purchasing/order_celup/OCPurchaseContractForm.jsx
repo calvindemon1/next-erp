@@ -37,6 +37,19 @@ export default function OCPurchaseContractForm() {
     satuanUnitOptions().filter((u) => u.satuan.toLowerCase() !== "kilogram");
   const [purchaseContractData, setPurchaseContractData] = createSignal(null);
 
+  // Fungsi konversi presisi dengan pembulatan
+  const preciseMeterToYard = (meter) => {
+    return Math.round(meter * 1.093613 * 100) / 100;
+  };
+
+  const preciseYardToMeter = (yard) => {
+    return Math.round(yard * 0.9144 * 100) / 100;
+  };
+
+  const roundToTwoDecimals = (num) => {
+    return Math.round(num * 100) / 100;
+  };
+
   const [form, setForm] = createSignal({
     sequence_number: "",
     tanggal: new Date().toISOString().substring(0, 10),
@@ -289,14 +302,15 @@ export default function OCPurchaseContractForm() {
           item[field] = formatNumber(numValue, { decimals });
         }
 
+        // Gunakan fungsi konversi presisi dengan pembulatan
         if (satuanId === 1 && field === "meter") {
-          item.yardValue = numValue * 1.093613;
+          item.yardValue = preciseMeterToYard(numValue);
           item.yard = formatNumber(item.yardValue, {
             decimals: 2,
             showZero: true,
           });
         } else if (satuanId === 2 && field === "yard") {
-          item.meterValue = numValue * 0.9144;
+          item.meterValue = preciseYardToMeter(numValue);
           item.meter = formatNumber(item.meterValue, {
             decimals: 2,
             showZero: true,
@@ -309,7 +323,8 @@ export default function OCPurchaseContractForm() {
       if (satuanId === 1) qtyValue = item.meterValue || 0;
       else if (satuanId === 2) qtyValue = item.yardValue || 0;
 
-      const subtotal = qtyValue * hargaValue;
+      // Gunakan pembulatan untuk subtotal
+      const subtotal = roundToTwoDecimals(qtyValue * hargaValue);
       item.subtotal = subtotal;
       item.subtotalFormatted = formatIDR(subtotal);
 
@@ -336,8 +351,15 @@ export default function OCPurchaseContractForm() {
     e.preventDefault();
 
     try {
-      // Kirim raw value ke API
-      const payloadItems = form().items.map((i) => ({
+      // Normalisasi items dengan pembulatan sebelum kirim ke API
+      const normalizedItems = form().items.map(item => ({
+        ...item,
+        meterValue: roundToTwoDecimals(item.meterValue || 0),
+        yardValue: roundToTwoDecimals(item.yardValue || 0)
+      }));
+
+      // Kirim raw value ke API dengan nilai yang sudah dinormalisasi
+      const payloadItems = normalizedItems.map((i) => ({
         kain_id: Number(i.fabric_id),
         lebar_greige: i.lebar_greigeValue || 0,
         lebar_finish: i.lebar_finishValue || 0,
@@ -392,11 +414,6 @@ export default function OCPurchaseContractForm() {
       });
     }
   };
-
-  // function handlePrint() {
-  //   const encodedData = encodeURIComponent(JSON.stringify(form()));
-  //   window.open(`/print/ordercelup/contract?data=${encodedData}`, "_blank");
-  // }
 
   function handlePrint() {
     if (!purchaseContractData()) {
