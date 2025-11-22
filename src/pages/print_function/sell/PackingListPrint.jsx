@@ -173,8 +173,8 @@ export default function PackingListPrint(props) {
   });
 
   /* ===== Pagination ===== */
-  const ROWS_FIRST_PAGE = 40;
-  const ROWS_OTHER_PAGES = 40;
+  const ROWS_FIRST_PAGE = 33;
+  const ROWS_OTHER_PAGES = 33;
   const pagesWithOffsets = createMemo(() =>
     splitIntoPagesWithOffsets(flattenedRows(), ROWS_FIRST_PAGE, ROWS_OTHER_PAGES)
   );
@@ -192,6 +192,7 @@ export default function PackingListPrint(props) {
           --content-w: ${PAGE_MM().contentW}mm;
           --logo-size: 16mm;
           --gap-after-info: ${paperType() === 'CONTINUOUS95' ? '5mm' : '6mm'};
+          --content-max-h: calc(var(--page-h) - var(--safe-t) - var(--safe-b) - 10mm);
         }
 
         @page { size: ${PAGE_MM().w}mm ${PAGE_MM().h}mm; margin: 0; }
@@ -203,16 +204,36 @@ export default function PackingListPrint(props) {
           font-family: ${paperType() === 'CONTINUOUS95' ? "'Arial', monospace" : "Arial, sans-serif"};
         }
 
-        .page { width: var(--page-w); height: var(--page-h); display:flex; }
-        .safe  { width:100%; height:100%;
-                padding: var(--safe-t) var(--safe-r) var(--safe-b) var(--safe-l); }
+        .page { 
+          width: var(--page-w); 
+          height: var(--page-h); 
+          display:flex; 
+          position: relative;
+          overflow: hidden;
+          page-break-inside: avoid;
+          box-sizing: border-box;
+        }
+
+        .safe  { 
+          width:100%; 
+          height:100%;
+          padding: var(--safe-t) var(--safe-r) var(--safe-b) var(--safe-l); 
+          position: relative;
+          overflow: hidden;
+        }
 
         /* kunci lebar tabel agar tidak shrink */
-        table { width: var(--content-w); margin: 0 auto; border-collapse: collapse; page-break-inside:auto; }
+        table { 
+          width: var(--content-w); 
+          margin: 0 auto; 
+          border-collapse: collapse; 
+          page-break-inside:auto;
+          table-layout: fixed;
+        }
 
         th, td {
           border: 1.2pt solid #000; padding: 1px 2px;
-          font-size: ${paperType() === 'CONTINUOUS95' ? '12px' : '11px'};
+          font-size: ${paperType() === 'CONTINUOUS95' ? '14px' : '13px'};
           font-weight: ${paperType() === 'CONTINUOUS95' ? 600 : 500};
         }
         th { text-align:center; }
@@ -223,8 +244,13 @@ export default function PackingListPrint(props) {
 
         .content{
           width: var(--content-w);
+          max-height: var(--content-max-h); /* BATASI TINGGI MAKSIMAL */
           margin: 0 auto;
           box-sizing: border-box;
+          position: relative;
+          z-index: 1;
+          display: flex;
+          flex-direction: column;
         }
 
         /* HEADER selalu center */
@@ -239,10 +265,10 @@ export default function PackingListPrint(props) {
           margin: 0 0 4px 0;
         }
         .header-center .title{
-          margin: 4px 0 2px 0;
+          margin: 4px 0 10px 0;
           font-weight: 700;
           text-transform: uppercase;
-          font-size: 18px;
+          font-size: 23px;
           line-height: 1.1;
         }
 
@@ -255,7 +281,7 @@ export default function PackingListPrint(props) {
         .info-table td{
           border: none !important;
           padding: 0 2px;
-          font-size: 11px;
+          font-size: 15px;
         }
 
         /* ======= Styling angka: dipisah A4 vs Continuous ======= */
@@ -281,6 +307,39 @@ export default function PackingListPrint(props) {
           letter-spacing: 0;
           padding: 1px 2px;
           color: #000;                   /* pastikan hitam */
+        }
+
+        .roll-number {
+          font-size: 15px !important;
+          font-weight: 500 !important;
+        }
+
+        /* Untuk Continuous */
+        body[data-paper="CONTINUOUS95"] .roll-number {
+          font-size: 16px !important;
+          font-weight: 500 !important;
+          -webkit-text-stroke: 0.15px;
+        }
+
+        /* Untuk A4 */
+        body[data-paper="A4"] .roll-number {
+          font-size: 15px !important;
+          font-weight: 500 !important;
+        }
+
+        .total-number {
+          font-size: 15px !important;
+          font-weight: 500 !important;
+        }
+
+        .format-number{
+          font-size: 15px !important;
+          font-weight: 500 !important;
+        }
+
+        .subtotal-total-number{
+          font-size: 13px !important;
+          font-weight: 600 !important;
         }
 
         /* Table compact: HANYA untuk continuous 10 kolom (dipasang via className) */
@@ -344,17 +403,17 @@ function PrintPage(props) {
   const ColGroup = () => {
     // default 5 kolom
     let W_NO  = 3,  W_BAL = 5,  W_COL = 9,  W_ITEM = 8,  W_LOT = 5;
-    let W_TTL = isContinuous ? 9.5 : 8;
+    let W_TTL = isContinuous ? 11.5 : 10.5;
 
     if (maxCol === 10) {
       if (isContinuous) {
         // Continuous 10 kolom (rangkap 3) — ini yang tadi sudah OK
         W_NO = 2.8; W_BAL = 4.0; W_COL = 6.8; W_ITEM = 8; W_LOT = 4;
-        W_TTL = 8.5;              // TTL cukup
+        W_TTL = 10.5;              // TTL cukup
       } else {
         // A4 10 kolom — TTL dibikin lebar, non-roll dikompres moderat
         W_NO = 3; W_BAL = 4.5; W_COL = 7; W_ITEM = 8; W_LOT = 4;
-        W_TTL = 9; 
+        W_TTL = 10; 
       }
     }
 
@@ -484,7 +543,7 @@ function PrintPage(props) {
                 <th rowSpan={2}>TTL/PCS</th>
                 <Show when={isUnitLinear()}>
                   <th rowSpan={2}>TTL/MTR</th>
-                  <th rowSpan={2}>TTL/YARD</th>
+                  <th rowSpan={2}>TTL/YD</th>
                 </Show>
                 <Show when={isUnitKg()}>
                   <th rowSpan={2}>TTL/KG</th>
@@ -503,40 +562,40 @@ function PrintPage(props) {
                       <tr>
                         <td colSpan={5} className="text-center"><b>SUB TOTAL</b></td>
                         <For each={Array.from({ length: maxCol })}>{() => <td></td>}</For>
-                        <td className="text-right"><b>{fmt2Blank(row.gPcs)}</b></td>
+                        <td className="text-right subtotal-total-number"><b>{fmt2Blank(row.gPcs)}</b></td>
                         <Show when={isUnitLinear()}>
-                          <td className="text-right"><b>{fmt2Blank(row.gMtr)}</b></td>
-                          <td className="text-right"><b>{fmt2Blank(row.gYrd)}</b></td>
+                          <td className="text-right subtotal-total-number"><b>{fmt2Blank(row.gMtr)}</b></td>
+                          <td className="text-right subtotal-total-number"><b>{fmt2Blank(row.gYrd)}</b></td>
                         </Show>
                         <Show when={isUnitKg()}>
-                          <td className="text-right"><b>{fmt2Blank(row.gKg)}</b></td>
+                          <td className="text-right subtotal-total-number"><b>{fmt2Blank(row.gKg)}</b></td>
                         </Show>
                       </tr>
                     }
                   >
                     <tr>
-                      <td className="text-center">{row.isFirst ? (row.gi + 1) : ""}</td>
-                      <td className="text-center">{row.bal ?? ""}</td>
+                      <td className="text-center format-number">{row.isFirst ? (row.gi + 1) : ""}</td>
+                      <td className="text-center format-number">{row.bal ?? ""}</td>
                       <td className="text-center">{row.isFirst ? (row.colorDesc ?? "") : ""}</td>
                       <td className="text-center">{row.isFirst ? (row.itemName ?? "-") : ""}</td>
-                      <td className="text-center">{row.lot ?? ""}</td>
+                      <td className="text-center format-number">{row.lot ?? ""}</td>
 
                       {/* kolom roll dinamis */}
                       <For each={Array.from({ length: maxCol })}>
                         {(_, ci) => (
-                          <td className="num roll-cell">
+                          <td className="num roll-cell roll-number">
                             {fmt2Blank(row.rowRolls[ci()]?.[unitKey])}
                           </td>
                         )}
                       </For>
 
-                      <td className="text-right">{fmt2Blank(row.pcsRow)}</td>
+                      <td className="text-right total-number">{fmt2Blank(row.pcsRow)}</td>
                       <Show when={isUnitLinear()}>
-                        <td className="text-right">{fmt2Blank(row.mRow)}</td>
-                        <td className="text-right">{fmt2Blank(row.yRow)}</td>
+                        <td className="text-right total-number">{fmt2Blank(row.mRow)}</td>
+                        <td className="text-right total-number">{fmt2Blank(row.yRow)}</td>
                       </Show>
                       <Show when={isUnitKg()}>
-                        <td className="text-right">{fmt2Blank(row.kgRow)}</td>
+                        <td className="text-right total-number">{fmt2Blank(row.kgRow)}</td>
                       </Show>
                     </tr>
                   </Show>
@@ -568,13 +627,13 @@ function PrintPage(props) {
                 <tr>
                   <td colSpan={5} className="text-center"><b>TOTAL</b></td>
                   <For each={Array.from({ length: maxCol })}>{() => <td></td>}</For>
-                  <td className="text-right"><b>{fmt2Blank(totals.pcs)}</b></td>
+                  <td className="text-right subtotal-total-number"><b>{fmt2Blank(totals.pcs)}</b></td>
                   <Show when={isUnitLinear()}>
-                    <td className="text-right"><b>{fmt2Blank(totals.m)}</b></td>
-                    <td className="text-right"><b>{fmt2Blank(totals.y)}</b></td>
+                    <td className="text-right subtotal-total-number"><b>{fmt2Blank(totals.m)}</b></td>
+                    <td className="text-right subtotal-total-number"><b>{fmt2Blank(totals.y)}</b></td>
                   </Show>
                   <Show when={isUnitKg()}>
-                    <td className="text-right"><b>{fmt2Blank(totals.kg)}</b></td>
+                    <td className="text-right subtotal-total-number"><b>{fmt2Blank(totals.kg)}</b></td>
                   </Show>
                 </tr>
               </Show>
