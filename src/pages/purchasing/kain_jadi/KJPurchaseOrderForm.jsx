@@ -367,6 +367,7 @@ export default function KJPurchaseOrderForm() {
         no_seq: data.sequence_number ?? 0,
         supplier_id: data.supplier_id ?? "",
         satuan_unit_id: data.satuan_unit_id ?? "",
+        //satuan_unit_name: data.satuan_unit_name ?? "",
         termin: data.termin ?? "",
         ppn: data.ppn_percent ?? "",
         keterangan: data.keterangan ?? "",
@@ -1044,6 +1045,22 @@ export default function KJPurchaseOrderForm() {
     window.open(printUrl, "_blank");
   }
 
+  const getActiveSatuan = () => {
+    const formData = form();
+    
+    // Cek dari satuan_unit_name dulu (jika ada)
+    if (formData.satuan_unit_name) {
+      return formData.satuan_unit_name.toLowerCase();
+    }
+    
+    // Fallback ke satuan_unit_id
+    const satuanId = parseInt(formData.satuan_unit_id);
+    if (satuanId === 1) return "meter";
+    if (satuanId === 2) return "yard";
+    
+    return "meter"; // default
+  };
+
   return (
     <MainLayout>
       {loading() && (
@@ -1359,10 +1376,10 @@ export default function KJPurchaseOrderForm() {
               <th class="border p-2 w-[7%]">Std Susut</th>
               <th class="border p-2 w-[12%]">Warna</th>
               <th class="border p-2 w-[18%]">Keterangan Warna</th>
-              <Show when={parseInt(form().satuan_unit_id) === 1}>
+              <Show when={getActiveSatuan() === "meter"}>
                 <th class="border p-2 w-[10%]">Meter</th>
               </Show>
-              <Show when={parseInt(form().satuan_unit_id) === 2}>
+              <Show when={getActiveSatuan() === "yard"}>
                 <th class="border p-2 w-[10%]">Yard</th>
               </Show>
               <th class="border p-2 w-[12%]" hidden>
@@ -1451,7 +1468,7 @@ export default function KJPurchaseOrderForm() {
                       placeholder="Keterangan warna..."
                     />
                   </td>
-                  <Show when={parseInt(form().satuan_unit_id) === 1}>
+                  <Show when={getActiveSatuan() === "meter"}>
                     <td class="border p-2">
                       <input
                         type="text"
@@ -1459,28 +1476,21 @@ export default function KJPurchaseOrderForm() {
                         class="border p-1 rounded w-48"
                         readOnly={
                           isView ||
-                          !canEditQty() ||
-                          parseInt(form().satuan_unit_id) === 2
+                          !canEditQty() 
                         }
                         classList={{
-                          "bg-gray-200":
-                            isView ||
-                            !canEditQty() ||
-                            parseInt(form().satuan_unit_id) === 2,
+                          "bg-gray-200": isView || !canEditQty()
                         }}
-                        value={item.meter}
+                        value={item.meter || ""}
                         onBlur={(e) => {
-                          if (
-                            parseInt(form().satuan_unit_id) === 1 &&
-                            canEditQty()
-                          ) {
+                          if (getActiveSatuan() === "meter" && canEditQty()) {
                             handleItemChange(i(), "meter", e.target.value);
                           }
                         }}
                       />
                     </td>
                   </Show>
-                  <Show when={parseInt(form().satuan_unit_id) === 2}>
+                  <Show when={getActiveSatuan() === "yard"}>
                     <td class="border p-2">
                       <input
                         type="text"
@@ -1488,21 +1498,14 @@ export default function KJPurchaseOrderForm() {
                         class="border p-1 rounded w-48"
                         readOnly={
                           isView ||
-                          !canEditQty() ||
-                          parseInt(form().satuan_unit_id) === 1
+                          !canEditQty() 
                         }
                         classList={{
-                          "bg-gray-200":
-                            isView ||
-                            !canEditQty() ||
-                            parseInt(form().satuan_unit_id) === 1,
+                          "bg-gray-200": isView || !canEditQty()
                         }}
-                        value={item.yard}
+                        value={item.yard || ""}
                         onBlur={(e) => {
-                          if (
-                            parseInt(form().satuan_unit_id) === 2 &&
-                            canEditQty()
-                          ) {
+                          if (getActiveSatuan() === "yard" && canEditQty()) {
                             handleItemChange(i(), "yard", e.target.value);
                           }
                         }}
@@ -1566,15 +1569,13 @@ export default function KJPurchaseOrderForm() {
           </tbody>
           <tfoot>
             <tr class="font-bold bg-gray-100">
-              <td colSpan="6" class="text-right p-2">
-                TOTAL
-              </td>
-              <Show when={parseInt(form().satuan_unit_id) === 1}>
+              <td colSpan="6" class="text-right p-2">TOTAL</td>
+              <Show when={getActiveSatuan() === "meter"}>
                 <td class="border p-2">
                   {formatNumber(totalMeter(), { decimals: 2 })}
                 </td>
               </Show>
-              <Show when={parseInt(form().satuan_unit_id) === 2}>
+              <Show when={getActiveSatuan() === "yard"}>
                 <td class="border p-2">
                   {formatNumber(totalYard(), { decimals: 2 })}
                 </td>
