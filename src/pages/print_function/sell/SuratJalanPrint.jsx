@@ -1,10 +1,36 @@
-import { createMemo, createEffect, For, Show } from "solid-js";
+import { createMemo, createEffect, For, Show, createSignal } from "solid-js";
 import logoNavel from "../../../assets/img/navelLogo.png";
-import { splitIntoPagesWithOffsets, createStretch } from "../../../components/PrintUtils";
+import {
+  splitIntoPagesWithOffsets,
+  createStretch,
+} from "../../../components/PrintUtils";
+
+import { get } from "idb-keyval";
 
 export default function PackingOrderPrint(props) {
-  const root = createMemo(() => props.data?.order ?? props.data ?? { items: [], summary: {} });
-  const unit = createMemo(() => root().satuan_unit || root().satuan_unit_name || "Meter");
+  const [loadedData, setLoadedData] = createSignal(null);
+
+  createEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const key = params.get("key");
+    if (!key) return;
+
+    get(key).then((data) => {
+      if (data) setLoadedData(data);
+    });
+  });
+
+  // const root = createMemo(
+  //   () => props.data?.order ?? props.data ?? { items: [], summary: {} }
+  // );
+  const root = createMemo(() => {
+    const d = loadedData() ?? props.data ?? {};
+    return d.order ?? d.packing_order ?? d ?? {};
+  });
+
+  const unit = createMemo(
+    () => root().satuan_unit || root().satuan_unit_name || "Meter"
+  );
   const isPPN = createMemo(() => Number(root().ppn ?? root().ppn_percent) > 0);
 
   // ==== DETEKSI DOT-MATRIX/CONTINUOUS ====
@@ -38,32 +64,57 @@ export default function PackingOrderPrint(props) {
       maximumFractionDigits: decimals,
     }).format(n || 0);
   }
-  const hasQty = (m, y, kg) => parseFloat(String(m ?? "0")) > 0 || parseFloat(String(y ?? "0")) > 0 || parseFloat(String(kg ?? "0")) > 0;
+  const hasQty = (m, y, kg) =>
+    parseFloat(String(m ?? "0")) > 0 ||
+    parseFloat(String(y ?? "0")) > 0 ||
+    parseFloat(String(kg ?? "0")) > 0;
 
   /* ========= Build rows ========= */
   const displayRows = createMemo(() => {
-    const getLot = (r) => r?.lot ?? r?.Lot ?? r?.lot_no ?? r?.LotNo ?? r?.lotNo ?? null;
-    const getBal = (r) => r?.no_bal ?? r?.bal ?? r?.Bal ?? r?.noBal ?? r?.noBAL ?? null;
+    const getLot = (r) =>
+      r?.lot ?? r?.Lot ?? r?.lot_no ?? r?.LotNo ?? r?.lotNo ?? null;
+    const getBal = (r) =>
+      r?.no_bal ?? r?.bal ?? r?.Bal ?? r?.noBal ?? r?.noBAL ?? null;
 
     const pickLotsFromRolls = (rolls) => {
       const set = new Set(
-        (rolls || []).map(getLot).filter((v) => v !== undefined && v !== null && String(v).trim() !== "")
+        (rolls || [])
+          .map(getLot)
+          .filter(
+            (v) => v !== undefined && v !== null && String(v).trim() !== ""
+          )
       );
       return set.size ? Array.from(set).join(", ") : "-";
     };
     const pickBalsFromRolls = (rolls) => {
       const set = new Set(
-        (rolls || []).map(getBal).filter((v) => v !== undefined && v !== null && String(v).trim() !== "")
+        (rolls || [])
+          .map(getBal)
+          .filter(
+            (v) => v !== undefined && v !== null && String(v).trim() !== ""
+          )
       );
-      return set.size ? Array.from(set).sort((a, b) => Number(a) - Number(b)).join(", ") : "-";
+      return set.size
+        ? Array.from(set)
+            .sort((a, b) => Number(a) - Number(b))
+            .join(", ")
+        : "-";
     };
 
     if (Array.isArray(root().packing_lists)) {
       return root().packing_lists.flatMap((pl) =>
         (pl.items || []).map((it) => {
-          const validRolls = (it.rolls || []).filter((r) => hasQty(r.meter, r.yard, r.kilogram));
-          const lotDisplay = it.lot && String(it.lot).trim() ? String(it.lot) : pickLotsFromRolls(validRolls);
-          const balDisplay = it.no_bal && String(it.no_bal).trim() ? String(it.no_bal) : pickBalsFromRolls(validRolls);
+          const validRolls = (it.rolls || []).filter((r) =>
+            hasQty(r.meter, r.yard, r.kilogram)
+          );
+          const lotDisplay =
+            it.lot && String(it.lot).trim()
+              ? String(it.lot)
+              : pickLotsFromRolls(validRolls);
+          const balDisplay =
+            it.no_bal && String(it.no_bal).trim()
+              ? String(it.no_bal)
+              : pickBalsFromRolls(validRolls);
 
           return {
             kode: it.corak_kain ?? "-",
@@ -89,7 +140,8 @@ export default function PackingOrderPrint(props) {
           if (r.checked === false) continue;
           if (!hasQty(r.meter, r.yard, r.kilogram)) continue;
 
-          const key = r.packing_list_item_id ?? `${r.konstruksi_kain}|${r.lot || "-"}`;
+          const key =
+            r.packing_list_item_id ?? `${r.konstruksi_kain}|${r.lot || "-"}`;
           let acc = by.get(key);
           if (!acc) {
             acc = {
@@ -107,7 +159,8 @@ export default function PackingOrderPrint(props) {
             by.set(key, acc);
           }
           if (r.lot) acc.lot_set.add(r.lot);
-          if (r.no_bal !== undefined && r.no_bal !== null && r.no_bal !== "") acc.no_bal_set.add(r.no_bal);
+          if (r.no_bal !== undefined && r.no_bal !== null && r.no_bal !== "")
+            acc.no_bal_set.add(r.no_bal);
 
           acc.meter_total += parseFloat(String(r.meter ?? "0"));
           acc.yard_total += parseFloat(String(r.yard ?? "0"));
@@ -116,7 +169,11 @@ export default function PackingOrderPrint(props) {
         }
         for (const v of by.values()) {
           v.lot = v.lot_set.size ? Array.from(v.lot_set).join(", ") : "-";
-          v.no_bal = v.no_bal_set.size ? Array.from(v.no_bal_set).sort((a, b) => Number(a) - Number(b)).join(", ") : "-";
+          v.no_bal = v.no_bal_set.size
+            ? Array.from(v.no_bal_set)
+                .sort((a, b) => Number(a) - Number(b))
+                .join(", ")
+            : "-";
           delete v.lot_set;
           delete v.no_bal_set;
           out.push(v);
@@ -127,15 +184,37 @@ export default function PackingOrderPrint(props) {
     return [];
   });
 
-  const totalPCS   = createMemo(() => displayRows().reduce((s, it) => s + (parseFloat(String(it.rolls_count ?? "0")) || 0), 0));
-  const totalMeter = createMemo(() => displayRows().reduce((s, it) => s + (parseFloat(String(it.meter_total ?? "0")) || 0), 0));
-  const totalYard  = createMemo(() => displayRows().reduce((s, it) => s + (parseFloat(String(it.yard_total ?? "0")) || 0), 0));
-  const totalKilogram  = createMemo(() => displayRows().reduce((s, it) => s + (parseFloat(String(it.kilogram_total ?? "0")) || 0), 0));
+  const totalPCS = createMemo(() =>
+    displayRows().reduce(
+      (s, it) => s + (parseFloat(String(it.rolls_count ?? "0")) || 0),
+      0
+    )
+  );
+  const totalMeter = createMemo(() =>
+    displayRows().reduce(
+      (s, it) => s + (parseFloat(String(it.meter_total ?? "0")) || 0),
+      0
+    )
+  );
+  const totalYard = createMemo(() =>
+    displayRows().reduce(
+      (s, it) => s + (parseFloat(String(it.yard_total ?? "0")) || 0),
+      0
+    )
+  );
+  const totalKilogram = createMemo(() =>
+    displayRows().reduce(
+      (s, it) => s + (parseFloat(String(it.kilogram_total ?? "0")) || 0),
+      0
+    )
+  );
 
   /* ========= Pagination ========= */
   const ROWS_FIRST_PAGE = 15;
   const ROWS_OTHER_PAGES = 15;
-  const pagesWithOffsets = createMemo(() => splitIntoPagesWithOffsets(displayRows(), ROWS_FIRST_PAGE, ROWS_OTHER_PAGES));
+  const pagesWithOffsets = createMemo(() =>
+    splitIntoPagesWithOffsets(displayRows(), ROWS_FIRST_PAGE, ROWS_OTHER_PAGES)
+  );
 
   // ==== CSS DINAMIS UNTUK KERTAS ====
   const dynamicPageCss = createMemo(() => {
@@ -143,7 +222,7 @@ export default function PackingOrderPrint(props) {
       const formWidthIn = 9.5;
       // 1. Definisikan tinggi KERTAS FISIK agar selalu portrait
       //    Gunakan tinggi standar seperti 11 inch. (11 > 9.5, jadi pasti portrait)
-      const physicalPageHeightIn = 11; 
+      const physicalPageHeightIn = 11;
 
       // 2. Definisikan tinggi AREA KONTEN LOGIS Anda (setengah dari tinggi form)
       const logicalContentHeightIn = formHeightIn() / 2;
@@ -184,7 +263,7 @@ export default function PackingOrderPrint(props) {
       }
     `;
   });
-  
+
   return (
     <>
       <style>{`
@@ -302,7 +381,12 @@ export default function PackingOrderPrint(props) {
               pageCount={count}
               isPPN={isPPN()}
               isLast={isLast}
-              totals={{ totalPCS: totalPCS(), totalMeter: totalMeter(), totalYard: totalYard(), totalKilogram: totalKilogram() }}
+              totals={{
+                totalPCS: totalPCS(),
+                totalMeter: totalMeter(),
+                totalYard: totalYard(),
+                totalKilogram: totalKilogram(),
+              }}
               formatters={{ formatTanggal, formatAngka }}
               unit={unit()}
               logoNavel={logoNavel}
@@ -317,7 +401,19 @@ export default function PackingOrderPrint(props) {
 
 /* ========= Single Page ========= */
 function PrintPage(props) {
-  const { data, items, startIndex, pageNo, pageCount, isPPN, isLast, totals, formatters, logoNavel, isContinuous } = props;
+  const {
+    data,
+    items,
+    startIndex,
+    pageNo,
+    pageCount,
+    isPPN,
+    isLast,
+    totals,
+    formatters,
+    logoNavel,
+    isContinuous,
+  } = props;
   const { formatTanggal, formatAngka } = formatters;
 
   const isUnitKg = () => props.unit === "Kilogram";
@@ -326,11 +422,12 @@ function PrintPage(props) {
   const { extraRows, bind, recalc } = createStretch({ fudge: 24 });
 
   createEffect(() => {
-    (items?.length ?? 0);
+    items?.length ?? 0;
     isLast;
     isPPN;
     const go = () => requestAnimationFrame(recalc);
-    if (document.fonts?.ready) document.fonts.ready.then(go); else go();
+    if (document.fonts?.ready) document.fonts.ready.then(go);
+    else go();
   });
 
   const a4Class = !isContinuous ? "a4" : "";
@@ -338,7 +435,10 @@ function PrintPage(props) {
 
   return (
     <div ref={bind("pageRef")} className={`page ${a4Class}`}>
-      <div className="safe" style={{ "flex-grow": 1, display: "flex", "flex-direction": "column" }}>
+      <div
+        className="safe"
+        style={{ "flex-grow": 1, display: "flex", "flex-direction": "column" }}
+      >
         {/* Measurer */}
         <table style="position:absolute; top:-10000px; left:-10000px; visibility:hidden;">
           <tbody>
@@ -371,29 +471,49 @@ function PrintPage(props) {
             onLoad={recalc}
             style={{ display: isPPN ? "block" : "none" }}
           />
-          <h1 className={`${dmClass} text-lg uppercase font-bold`}>Surat Jalan</h1>
+          <h1 className={`${dmClass} text-lg uppercase font-bold`}>
+            Surat Jalan
+          </h1>
         </div>
 
         {/* Header dua kolom */}
         <div className="w-full grid gap-2 grid-cols-[50%_50%]">
           {/* Kiri */}
-          <table className={`border-2 border-black table-fixed ${isContinuous ? "dm info-box" : "a4-customer"}`}>
+          <table
+            className={`border-2 border-black table-fixed ${
+              isContinuous ? "dm info-box" : "a4-customer"
+            }`}
+          >
             <tbody>
               <tr>
-                <td className={`px-2 pt-1 max-w-[280px] break-words whitespace-pre-wrap ${isContinuous ? "" : "a4-label"}`} colSpan={2}>
+                <td
+                  className={`px-2 pt-1 max-w-[280px] break-words whitespace-pre-wrap ${
+                    isContinuous ? "" : "a4-label"
+                  }`}
+                  colSpan={2}
+                >
                   Kepada Yth:
                 </td>
               </tr>
               <tr>
-                <td className="px-2 max-w-[280px] break-words whitespace-pre-wrap" colSpan={2}>
-                  <span className={isContinuous ? "" : "font-semibold"}>{data.customer_name}</span>
+                <td
+                  className="px-2 max-w-[280px] break-words whitespace-pre-wrap"
+                  colSpan={2}
+                >
+                  <span className={isContinuous ? "" : "font-semibold"}>
+                    {data.customer_name}
+                  </span>
                 </td>
               </tr>
             </tbody>
           </table>
 
           {/* Kanan */}
-          <table className={`border-2 border-black table-fixed w-full leading-tight ${isContinuous ? "dm info-box" : "a4-info"}`}>
+          <table
+            className={`border-2 border-black table-fixed w-full leading-tight ${
+              isContinuous ? "dm info-box" : "a4-info"
+            }`}
+          >
             <colgroup>
               <col style="width:18%" />
               <col style="width:5%" />
@@ -401,31 +521,65 @@ function PrintPage(props) {
             </colgroup>
             <tbody>
               <tr>
-                <td className={`px-2 py-1 whitespace-nowrap ${isContinuous ? "" : "a4-label"}`}>No. SJ</td>
+                <td
+                  className={`px-2 py-1 whitespace-nowrap ${
+                    isContinuous ? "" : "a4-label"
+                  }`}
+                >
+                  No. SJ
+                </td>
                 <td className="text-center whitespace-nowrap">:</td>
                 <td className="px-2 py-1 break-words">
-                  <span className={isContinuous ? "" : "font-semibold"}>{data.no_sj || data.sequence_number}</span>
+                  <span className={isContinuous ? "" : "font-semibold"}>
+                    {data.no_sj || data.sequence_number}
+                  </span>
                 </td>
               </tr>
               <tr>
-                <td className={`px-2 py-1 whitespace-nowrap ${isContinuous ? "" : "a4-label"}`}>Tanggal</td>
+                <td
+                  className={`px-2 py-1 whitespace-nowrap ${
+                    isContinuous ? "" : "a4-label"
+                  }`}
+                >
+                  Tanggal
+                </td>
                 <td className="text-center whitespace-nowrap">:</td>
                 <td className="px-2 py-1 break-words">
-                  <span className={isContinuous ? "" : "font-semibold"}>{formatTanggal(data.tanggal_surat_jalan || data.created_at)}</span>
+                  <span className={isContinuous ? "" : "font-semibold"}>
+                    {formatTanggal(data.tanggal_surat_jalan || data.created_at)}
+                  </span>
                 </td>
               </tr>
               <tr>
-                <td className={`px-2 py-1 whitespace-nowrap ${isContinuous ? "" : "a4-label"}`}>No. SO</td>
+                <td
+                  className={`px-2 py-1 whitespace-nowrap ${
+                    isContinuous ? "" : "a4-label"
+                  }`}
+                >
+                  No. SO
+                </td>
                 <td className="text-center whitespace-nowrap">:</td>
                 <td className="px-2 py-1 break-words">{data.no_so}</td>
               </tr>
               <tr>
-                <td className={`px-2 py-1 whitespace-nowrap ${isContinuous ? "" : "a4-label"}`}>No. Mobil</td>
+                <td
+                  className={`px-2 py-1 whitespace-nowrap ${
+                    isContinuous ? "" : "a4-label"
+                  }`}
+                >
+                  No. Mobil
+                </td>
                 <td className="text-center whitespace-nowrap">:</td>
                 <td className="px-2 py-1 break-words">{data.no_mobil}</td>
               </tr>
               <tr>
-                <td className={`px-2 py-1 whitespace-nowrap ${isContinuous ? "" : "a4-label"}`}>Sopir</td>
+                <td
+                  className={`px-2 py-1 whitespace-nowrap ${
+                    isContinuous ? "" : "a4-label"
+                  }`}
+                >
+                  Sopir
+                </td>
                 <td className="text-center whitespace-nowrap">:</td>
                 <td className="px-2 py-1 break-words">{data.sopir}</td>
               </tr>
@@ -437,7 +591,7 @@ function PrintPage(props) {
         <table
           ref={bind("tableRef")}
           className={`w-full table-fixed border border-black border-collapse mt-1 items-table ${dmClass}`}
-          style={{ "flex-grow": 1 }} 
+          style={{ "flex-grow": 1 }}
         >
           {isContinuous && (
             <colgroup>
@@ -454,22 +608,40 @@ function PrintPage(props) {
                 <col style="width:10ch" />
               </Show>
               <Show when={isUnitKg()}>
-                <col style="width:20ch"/>
+                <col style="width:20ch" />
               </Show>
             </colgroup>
           )}
 
           <thead ref={bind("theadRef")}>
             <tr>
-              <th className="border border-black p-1" rowSpan={2}>No</th>
-              <th className="border border-black p-1" rowSpan={2}>Bal</th>
-              <th className="border border-black p-1" rowSpan={2}>Jenis Kain</th>
-              <th className="border border-black p-1" rowSpan={2}>Lot</th>
-              <th className="border border-black p-1" rowSpan={2}>Warna</th>
-              <th className="border border-black p-1" rowSpan={2}>Lebar</th>
-              <th className="border border-black p-1" rowSpan={2}>Grade</th>
-              <th className="border border-black p-1" rowSpan={2}>TTL/PCS</th>
-              <th className="border border-black p-1 text-center" colSpan={2}>Quantity</th>
+              <th className="border border-black p-1" rowSpan={2}>
+                No
+              </th>
+              <th className="border border-black p-1" rowSpan={2}>
+                Bal
+              </th>
+              <th className="border border-black p-1" rowSpan={2}>
+                Jenis Kain
+              </th>
+              <th className="border border-black p-1" rowSpan={2}>
+                Lot
+              </th>
+              <th className="border border-black p-1" rowSpan={2}>
+                Warna
+              </th>
+              <th className="border border-black p-1" rowSpan={2}>
+                Lebar
+              </th>
+              <th className="border border-black p-1" rowSpan={2}>
+                Grade
+              </th>
+              <th className="border border-black p-1" rowSpan={2}>
+                TTL/PCS
+              </th>
+              <th className="border border-black p-1 text-center" colSpan={2}>
+                Quantity
+              </th>
             </tr>
             <tr>
               <Show when={isUnitLinear()}>
@@ -477,7 +649,9 @@ function PrintPage(props) {
                 <th className="border border-black p-1">Yard</th>
               </Show>
               <Show when={isUnitKg()}>
-                <th className="border border-black p-1" colSpan={2}>Kilogram</th>
+                <th className="border border-black p-1" colSpan={2}>
+                  Kilogram
+                </th>
               </Show>
             </tr>
           </thead>
@@ -491,15 +665,23 @@ function PrintPage(props) {
                   <td className="p-1 text-center">{it.kode}</td>
                   <td className="p-1 text-center">{it.lot}</td>
                   <td className="p-1 text-center">{it.warna}</td>
-                  <td className="p-1 text-center"><span>{it.lebar}"</span></td>
+                  <td className="p-1 text-center">
+                    <span>{it.lebar}"</span>
+                  </td>
                   <td className="p-1 text-center">{it.grade}</td>
                   <td className="p-1 text-center">{it.rolls_count}</td>
                   <Show when={isUnitLinear()}>
-                    <td className="p-1 text-center">{formatAngka(it.meter_total)}</td>
-                    <td className="p-1 text-center">{formatAngka(it.yard_total)}</td>
+                    <td className="p-1 text-center">
+                      {formatAngka(it.meter_total)}
+                    </td>
+                    <td className="p-1 text-center">
+                      {formatAngka(it.yard_total)}
+                    </td>
                   </Show>
                   <Show when={isUnitKg()}>
-                    <td className="p-1 text-center" colSpan={2}>{formatAngka(it.kilogram_total)}</td>
+                    <td className="p-1 text-center" colSpan={2}>
+                      {formatAngka(it.kilogram_total)}
+                    </td>
                   </Show>
                 </tr>
               )}
@@ -526,20 +708,38 @@ function PrintPage(props) {
           <tfoot ref={bind("tfootRef")}>
             <Show when={isLast}>
               <tr>
-                <td colSpan={7} className="border border-black text-right font-bold px-2 py-1">TOTAL</td>
-                <td className="border border-black px-2 py-1 text-center">{formatAngka(totals.totalPCS, 0)}</td>
+                <td
+                  colSpan={7}
+                  className="border border-black text-right font-bold px-2 py-1"
+                >
+                  TOTAL
+                </td>
+                <td className="border border-black px-2 py-1 text-center">
+                  {formatAngka(totals.totalPCS, 0)}
+                </td>
                 <Show when={isUnitLinear()}>
-                  <td className="border border-black px-2 py-1 text-center">{formatAngka(totals.totalMeter)}</td>
-                  <td className="border border-black px-2 py-1 text-center">{formatAngka(totals.totalYard)}</td>
+                  <td className="border border-black px-2 py-1 text-center">
+                    {formatAngka(totals.totalMeter)}
+                  </td>
+                  <td className="border border-black px-2 py-1 text-center">
+                    {formatAngka(totals.totalYard)}
+                  </td>
                 </Show>
                 <Show when={isUnitKg()}>
-                  <td className="border border-black px-2 py-1 text-center" colSpan={2}>{formatAngka(totals.totalKilogram)}</td>
+                  <td
+                    className="border border-black px-2 py-1 text-center"
+                    colSpan={2}
+                  >
+                    {formatAngka(totals.totalKilogram)}
+                  </td>
                 </Show>
               </tr>
               <tr>
                 <td colSpan={10} className="border border-black p-2 align-top">
                   <div className="font-bold mb-1">Keterangan:</div>
-                  <div className="whitespace-pre-wrap break-words italic">{data.keterangan ?? "-"}</div>
+                  <div className="whitespace-pre-wrap break-words italic">
+                    {data.keterangan ?? "-"}
+                  </div>
                 </td>
               </tr>
               <tr>
@@ -551,16 +751,39 @@ function PrintPage(props) {
                         : "w-full flex justify-between sign-block px-3"
                     }
                   >
-                    <div className="text-center w-1/4">Yang Menerima<br/><br/><br/>( ...................... )</div>
-                    <div className="text-center w-1/4">Menyetujui<br/><br/><br/>( ...................... )</div>
-                    <div className="text-center w-1/4">Yang Membuat<br/><br/><br/>( ...................... )</div>
-                    <div className="text-center w-1/4">Sopir<br/><br/><br/>( ...................... )</div>
+                    <div className="text-center w-1/4">
+                      Yang Menerima
+                      <br />
+                      <br />
+                      <br />( ...................... )
+                    </div>
+                    <div className="text-center w-1/4">
+                      Menyetujui
+                      <br />
+                      <br />
+                      <br />( ...................... )
+                    </div>
+                    <div className="text-center w-1/4">
+                      Yang Membuat
+                      <br />
+                      <br />
+                      <br />( ...................... )
+                    </div>
+                    <div className="text-center w-1/4">
+                      Sopir
+                      <br />
+                      <br />
+                      <br />( ...................... )
+                    </div>
                   </div>
                 </td>
               </tr>
             </Show>
             <tr>
-              <td colSpan={10} className="border border-black px-2 py-1 text-right italic">
+              <td
+                colSpan={10}
+                className="border border-black px-2 py-1 text-right italic"
+              >
                 Halaman {pageNo} dari {pageCount}
               </td>
             </tr>

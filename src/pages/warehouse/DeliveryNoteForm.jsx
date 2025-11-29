@@ -18,6 +18,8 @@ import PackingListDropdownSearch from "../../components/PackingListDropdownSearc
 import IndeterminateCheckbox from "../../components/Indeterminate";
 import { Printer, Trash2 } from "lucide-solid";
 
+import { set, get } from "idb-keyval";
+
 export default function DeliveryNoteForm() {
   const [params] = useSearchParams();
   const isEdit = !!params.id;
@@ -131,7 +133,7 @@ export default function DeliveryNoteForm() {
               if (
                 (isNaN(meterVal) || meterVal === 0) &&
                 (isNaN(yardVal) || yardVal === 0) &&
-                (isNaN(kilogramVal || yardVal === 0))
+                isNaN(kilogramVal || yardVal === 0)
               ) {
                 return []; // sembunyikan roll qty 0
               }
@@ -653,28 +655,52 @@ export default function DeliveryNoteForm() {
     }
   };
 
-  function openPrint({ continuous = false } = {}) {
-    if (!deliveryNoteData()) {
-      Swal.fire(
-        "Gagal",
-        "Data untuk mencetak tidak tersedia. Pastikan Anda dalam mode Edit/View.",
-        "error"
-      );
+  // function openPrint({ continuous = false } = {}) {
+  //   const data = deliveryNoteData();
+
+  //   if (!data) {
+  //     Swal.fire(
+  //       "Gagal",
+  //       "Data untuk mencetak tidak tersedia. Pastikan Anda dalam mode Edit/View.",
+  //       "error"
+  //     );
+  //     return;
+  //   }
+
+  //   // 1️⃣ Simpan data ke sessionStorage
+  //   const key = "sj_" + Date.now();
+  //   sessionStorage.setItem(key, JSON.stringify(data));
+
+  //   // 2️⃣ Build query
+  //   const qs = [];
+  //   if (continuous) {
+  //     qs.push("paper=CONTINUOUS95", "dm=1");
+  //   }
+  //   qs.push(`key=${key}`); // selalu ada
+
+  //   const query = `?${qs.join("&")}`;
+
+  //   // 3️⃣ Buka tab aman TANPA hash JSON
+  //   window.open(`/print/suratjalan${query}`, "_blank");
+  // }
+
+  async function openPrint({ continuous = false } = {}) {
+    const data = deliveryNoteData();
+
+    if (!data) {
+      Swal.fire("Gagal", "Data tidak tersedia.", "error");
       return;
     }
 
-    const dataToPrint = { ...deliveryNoteData() };
-    const encodedData = encodeURIComponent(JSON.stringify(dataToPrint));
+    // Simpan data ke IndexedDB — bisa besar
+    const key = "sj_" + Date.now();
+    await set(key, data);
 
-    // build query untuk halaman print
     const qs = [];
-    if (continuous) {
-      // kertas continuous 9.5" + mode dot-matrix (tebal)
-      qs.push("paper=CONTINUOUS95", "dm=1");
-    }
-    const query = qs.length ? `?${qs.join("&")}` : "";
+    if (continuous) qs.push("paper=CONTINUOUS95", "dm=1");
+    qs.push(`key=${key}`);
 
-    window.open(`/print/suratjalan${query}#${encodedData}`, "_blank");
+    window.open(`/print/suratjalan?${qs.join("&")}`, "_blank");
   }
 
   // versi ringkas yang dipanggil tombol:
@@ -1116,11 +1142,12 @@ export default function DeliveryNoteForm() {
                           {currentGroup()
                             ?.items?.reduce(
                               (s, r) =>
-                                s + (r.checked ? parseFloat(r.kilogram || 0) : 0),
+                                s +
+                                (r.checked ? parseFloat(r.kilogram || 0) : 0),
                               0
                             )
                             ?.toFixed(2)}
-                        </td>                        
+                        </td>
                       </tr>
                     </tbody>
                   </table>
@@ -1178,13 +1205,14 @@ export default function DeliveryNoteForm() {
                         sum +
                         group.items?.reduce(
                           (s, item) =>
-                            s + (item.checked ? parseFloat(item.kilogram || 0) : 0),
+                            s +
+                            (item.checked ? parseFloat(item.kilogram || 0) : 0),
                           0
                         ),
                       0
                     )
                     ?.toFixed(2)}
-                </td>                
+                </td>
               </tr>
             </tbody>
           </table>
