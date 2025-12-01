@@ -208,6 +208,24 @@ export default function SalesInvoiceList() {
     }
   }
 
+  // async function handlePreview(sc) {
+  //   try {
+  //     const detail = await getDeliveryNotes(sc.id, tokUser?.token);
+  //     if (!detail) {
+  //       Swal.fire("Error", "Data untuk preview tidak ditemukan.", "error");
+  //       return;
+  //     }
+
+  //     const detailForPreview = { ...detail, _previewMode: true };
+  //     const encoded = encodeURIComponent(JSON.stringify(detailForPreview));
+
+  //     window.open(`/print/deliverynote-invoice#${encoded}`, "_blank");
+  //   } catch (err) {
+  //     console.error(err);
+  //     Swal.fire("Error", err.message || "Gagal memproses preview", "error");
+  //   }
+  // }
+
   async function handlePreview(sc) {
     try {
       const detail = await getDeliveryNotes(sc.id, tokUser?.token);
@@ -216,10 +234,12 @@ export default function SalesInvoiceList() {
         return;
       }
 
-      const detailForPreview = { ...detail, _previewMode: true };
-      const encoded = encodeURIComponent(JSON.stringify(detailForPreview));
+      // Simpan ke IndexedDB sama seperti handlePrint
+      const key = "dn_preview_" + Date.now();
+      await set(key, detail);
 
-      window.open(`/print/deliverynote-invoice#${encoded}`, "_blank");
+      // Buka window preview berdasarkan key
+      window.open(`/print/deliverynote-invoice?key=${key}&preview=true`, "_blank");
     } catch (err) {
       console.error(err);
       Swal.fire("Error", err.message || "Gagal memproses preview", "error");

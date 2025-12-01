@@ -7,11 +7,16 @@ export default function SalesInvoiceDummyPrint() {
 
   onMount(async () => {
     let parsedData = null;
+    let isPreview = false; // Variabel untuk menampung status preview dari URL
 
     try {
-      // Ambil KEY dari URL ?key=xxxxx
+      // Ambil KEY dan PREVIEW status dari URL
       const url = new URL(window.location.href);
       const key = url.searchParams.get("key");
+      
+      // Cek apakah ada param &preview=true di URL
+      isPreview = url.searchParams.get("preview") === "true"; 
+
       if (!key) throw new Error("Missing key");
 
       // Ambil data besar dari IndexedDB
@@ -21,13 +26,14 @@ export default function SalesInvoiceDummyPrint() {
       setData(parsedData);
     } catch (e) {
       console.error("Gagal load data print:", e);
-      alert("Data print tidak valid.");
+      // alert("Data print tidak valid."); // Optional: disable alert agar tidak mengganggu
       window.close();
       return;
     }
 
-    // Kalau bukan PDF mode dan bukan preview → auto-print
-    if (!parsedData._pdfMode && !parsedData._previewMode) {
+    // Cek apakah mode PDF (dari data) atau mode Preview (dari URL)
+    // Jika BUKAN pdfMode dan BUKAN isPreview, baru lakukan print otomatis.
+    if (!parsedData._pdfMode && !isPreview) {
       const closeAfterPrint = () => window.close();
       window.addEventListener("afterprint", closeAfterPrint);
 
@@ -39,7 +45,7 @@ export default function SalesInvoiceDummyPrint() {
       }, 500);
 
       // fallback auto close
-      setTimeout(() => window.close(), 5000);
+      // setTimeout(() => window.close(), 5000); // Optional: bisa di-comment kalau ingin tab tetap terbuka jika user cancel print
 
       onCleanup(() =>
         window.removeEventListener("afterprint", closeAfterPrint)
@@ -49,7 +55,8 @@ export default function SalesInvoiceDummyPrint() {
 
   return (
     <div class="p-6 print:p-0">
-      <SalesInvoicePrint data={data()} />
+      {/* Pastikan data ada sebelum render komponen print */}
+      {data() && <SalesInvoicePrint data={data()} />}
     </div>
   );
 }
