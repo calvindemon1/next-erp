@@ -89,8 +89,12 @@ export default function ExpeditionAccessoriesForm() {
   const formatQty = (val) => {
     const n = Number(val) || 0;
     if (n === 0) return "";
-    const intVal = Math.floor(n);
-    return String(intVal).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    
+    // Format dengan pemisah ribuan dan support desimal
+    return new Intl.NumberFormat("id-ID", {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    }).format(n);
   };
 
   const normalizeId = (v) => {
@@ -128,11 +132,13 @@ export default function ExpeditionAccessoriesForm() {
         const raw = res.data ?? res;
         const data = Array.isArray(raw) && raw.length ? raw[0] : raw;
 
+        //console.log("Data yang dimuat untuk edit/view:", JSON.stringify(data, null, 2));
+
         // FIXED: Normalisasi items dengan benar
         const normalizedItems = (data.items || []).map((it) => {
           // Gunakan nilai langsung dari database, jangan parseNumber
           const hargaVal = parseFloat(it.harga || it.harga_value || 0);
-          const kuant = parseInt(it.kuantitas ?? it.quantity ?? 0, 10) || 0;
+          const kuant = parseFloat(it.kuantitas ?? it.quantity ?? 0, 10) || 0;
           const subtotal = hargaVal * kuant;
           
           return {
@@ -228,8 +234,16 @@ export default function ExpeditionAccessoriesForm() {
       const item = { ...items[index] };
 
       if (field === "kuantitas") {
-        const intVal = parseInt(String(value).replace(/[^0-9]/g, ""), 10) || 0;
-        item.kuantitas = intVal;
+        let numVal;
+        if (typeof value === 'string') {
+          // Ganti koma dengan titik untuk parsing desimal
+          const cleaned = value.replace(/\./g, "").replace(",", ".");
+          numVal = parseFloat(cleaned) || 0;
+        } else {
+          numVal = value || 0;
+        }
+        
+        item.kuantitas = numVal;
       } else if (field === "harga") {
         const num = parseNumber(value);
         item.hargaValue = num;
@@ -251,6 +265,17 @@ export default function ExpeditionAccessoriesForm() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!form().sequence_number) {
+      Swal.fire({
+        icon: "warning",
+        title: "Peringatan",
+        text: "Harap generate nomor pembelian terlebih dahulu sebelum melakukan submit",
+        confirmButtonText: "OK"
+      });
+      return;
+    }
+
     setLoading(false);
 
     try {
@@ -276,8 +301,10 @@ export default function ExpeditionAccessoriesForm() {
       };
 
       if (isEdit) {
+        //console.log("Payload untuk update:", JSON.stringify(payload, null, 2));
         await PurchaseAksesorisEkspedisi.update(params.id, payload);
       } else {
+        //console.log("Payload untuk create:", JSON.stringify(payload, null, 2));
         await PurchaseAksesorisEkspedisi.create(payload);
       }
 
