@@ -87,6 +87,7 @@ export default function PackingListForm() {
   const [colDraft, setColDraft] = createSignal({}); // key per group
   const colKey = (gIdx) => `g-${gIdx}`;
   const [soColors, setSoColors] = createSignal([]);
+  const [selectedItemId, setSelectedItemId] = createSignal("");
 
   const [form, setForm] = createSignal({
     type: "",
@@ -244,6 +245,7 @@ export default function PackingListForm() {
     setOpenStates([]); // tutup semua accordion/row state lama
     setGroupRollCounts([]); // reset input jumlah roll per group
     setSoColors([]); // akan diisi ulang dari SO baru
+    setSelectedItemId("");
 
     let selectedOrder;
 
@@ -409,6 +411,30 @@ export default function PackingListForm() {
         ...items.map((soItem) => soItemToGroup(soItem)),
       ],
     }));
+  };
+
+  const addSingleItemFromDropdown = () => {
+    const itemId = selectedItemId();
+    if (!itemId) return;
+    
+    const soItem = (form().sales_order_items?.items || []).find(
+      item => String(item.id) === String(itemId)
+    );
+    
+    if (!soItem) return;
+    
+    const newGroup = soItemToGroup(soItem);
+    setForm(prev => ({
+      ...prev,
+      itemGroups: [...prev.itemGroups, newGroup]
+    }));
+    
+    // Tambahkan state untuk group baru
+    setOpenStates(prev => [...prev, false]);
+    setGroupRollCounts(prev => [...prev, null]);
+    
+    // Reset dropdown
+    setSelectedItemId("");
   };
 
   // ==========================
@@ -1047,7 +1073,7 @@ export default function PackingListForm() {
         </Show>
 
         {/* Tombol global untuk menyalin SEMUA item dari SO */}
-        <div class="mt-3">
+        {/* <div class="mt-3">
           <button
             type="button"
             onClick={addGroupsFromSO}
@@ -1056,6 +1082,78 @@ export default function PackingListForm() {
           >
             + Tambah Item Group
           </button>
+        </div> */}
+
+        <div class="mt-3 flex flex-wrap items-center gap-2">
+          {/* Tombol Tambah Semua Item (tetap ada) */}
+          <button
+            type="button"
+            onClick={addGroupsFromSO}
+            class="bg-green-600 text-white px-3 py-2 rounded hover:bg-green-700"
+            hidden={isView || isStrictWarehouseEdit()}
+            disabled={!form().sales_order_id}
+            classList={{
+              "opacity-50 cursor-not-allowed": !form().sales_order_id
+            }}
+          >
+            + Tambah Semua Item dari SO
+          </button>
+          
+          <span class="text-gray-500">atau</span>
+          
+          {/* Dropdown untuk memilih item satu per satu */}
+          <div class="flex items-center gap-2">
+            <select
+              class="border p-2 rounded min-w-[300px]"
+              value={selectedItemId()}
+              onChange={(e) => setSelectedItemId(e.currentTarget.value)}
+              disabled={isView || isStrictWarehouseEdit() || !form().sales_order_id}
+              classList={{
+                "bg-gray-200": isView || isStrictWarehouseEdit() || !form().sales_order_id
+              }}
+            >
+              <option value="">Pilih Item dari Sales Order</option>
+              <For each={form().sales_order_items?.items || []}>
+                {(item) => {
+                  const meterTotal = Number(item.meter_total ?? 0);
+                  const yardTotal = Number(item.yard_total ?? 0);
+                  const kilogramTotal = Number(item.kilogram_total ?? 0);
+                  const meterInProc = Number(item.meter_dalam_proses ?? 0);
+                  const yardInProc = Number(item.yard_dalam_proses ?? 0);
+                  const kilogramInProc = Number(item.kilogram_dalam_proses ?? 0);
+                  
+                  const sisaMeter = Math.max(meterTotal - meterInProc, 0);
+                  const sisaYard = Math.max(yardTotal - yardInProc, 0);
+                  const sisaKilogram = Math.max(kilogramTotal - kilogramInProc, 0);
+                  const habis = sisaMeter === 0 && sisaYard === 0 && sisaKilogram === 0;
+                  
+                  return (
+                    <option 
+                      value={item.id} 
+                      disabled={habis}
+                      classList={{ "text-gray-400": habis }}
+                    >
+                      {item.corak_kain} | {item.konstruksi_kain} | {item.kode_warna}
+                      {habis ? ' (HABIS)' : ''}
+                      {!habis ? ` (Sisa: ${formatNumberQty(sisaMeter)}m / ${formatNumberQty(sisaYard)}yd / ${formatNumberQty(sisaKilogram)}kg)` : ''}
+                    </option>
+                  );
+                }}
+              </For>
+            </select>
+            
+            <button
+              type="button"
+              onClick={addSingleItemFromDropdown}
+              class="bg-blue-600 text-white px-3 py-2 rounded hover:bg-blue-700"
+              disabled={isView || isStrictWarehouseEdit() || !selectedItemId()}
+              classList={{
+                "opacity-50 cursor-not-allowed": isView || isStrictWarehouseEdit() || !selectedItemId()
+              }}
+            >
+              + Tambah Item
+            </button>
+          </div>
         </div>
 
         <div>
