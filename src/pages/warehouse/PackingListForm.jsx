@@ -621,18 +621,18 @@ export default function PackingListForm() {
         } else {
           if (form().satuan_unit === "Yard") {
             r.yard = numeric;
-            r.meter = numeric * 0.9144;
+            r.meter = Number((numeric * 0.9144).toFixed(2));
           } else {
             // default Meter
             r.meter = numeric;
-            r.yard = numeric * 1.093613;
+            r.yard = Number((numeric * 1.093613).toFixed(2));
           }
         }
         rolls[rollIndex] = r;
       } else if (field === "kilogram") {
         // KG berdiri sendiri (tanpa konversi m/yd)
         const numeric = parseNumeric(value);
-        r.kilogram = numeric > 0 ? numeric : null;
+        r.kilogram = numeric > 0 ? Number(numeric.toFixed(2)) : null;
         rolls[rollIndex] = r;
       } else if (field === "no_bal") {
         const rowNum =
@@ -672,9 +672,9 @@ export default function PackingListForm() {
         rolls.reduce((s, x) => s + (Number(x?.kilogram) || 0), 0) || null;
 
       g.rolls = rolls;
-      g.meter_total = meter_total;
-      g.yard_total = yard_total;
-      g.kilogram_total = kilogram_total; // <<— simpan total KG ke group
+      g.meter_total = Number(meter_total.toFixed(2));
+      g.yard_total = Number(yard_total.toFixed(2));
+      g.kilogram_total = kilogram_total ? Number(kilogram_total.toFixed(2)) : null
 
       groups[groupIndex] = g;
       return { ...prev, itemGroups: groups };
@@ -702,65 +702,102 @@ export default function PackingListForm() {
     e.preventDefault();
 
     try {
+      // 1. Helper: Proses setiap roll agar angkanya pasti 2 desimal
+      const processRolls = (rolls) => {
+        return rolls.map((r, idx) => {
+          const row_num = Math.floor(idx / MAX_COL_PER_ROW()) + 1;
+          const col_num = (idx % MAX_COL_PER_ROW()) + 1;
+
+          // Pastikan Meter 2 desimal
+          const meterVal = r.meter ? Number(Number(r.meter).toFixed(2)) : 0;
+
+          // Pastikan Yard 2 desimal (hitung ulang jika kosong tapi ada meter)
+          let rawYard = Number(r.yard);
+          if (!rawYard && meterVal > 0) {
+            rawYard = meterVal * 1.093613;
+          }
+          const yardVal = rawYard ? Number(rawYard.toFixed(2)) : 0;
+
+          // Pastikan KG 2 desimal
+          const kgVal = r.kilogram
+            ? Number(Number(r.kilogram).toFixed(2))
+            : null;
+
+          const rollObj = {
+            row_num,
+            col_num,
+            meter: meterVal,
+            yard: yardVal,
+            kilogram: kgVal,
+            lot: r.lot !== undefined && r.lot !== "" ? Number(r.lot) : null,
+            no_bal:
+              r.no_bal !== undefined && r.no_bal !== ""
+                ? Number(r.no_bal)
+                : null,
+          };
+
+          // Penting: Bawa roll_id jika ini edit data lama
+          if (r.roll_id) rollObj.id = r.roll_id;
+          
+          return rollObj;
+        });
+      };
+
+      // 2. Helper: Hitung Total menggunakan INTEGER MATH (dikalikan 100)
+      // Ini mencegah error "0.1 + 0.2 = 0.300000004"
+      const calcTotals = (processedRolls) => {
+        // Hitung total Meter
+        const totalMeterInt = processedRolls.reduce((acc, r) => {
+          const val = r.meter > 0 ? r.meter : 0;
+          return acc + Math.round(val * 100); // Bulatkan ke integer terdekat
+        }, 0);
+
+        // Hitung total Yard
+        const totalYardInt = processedRolls.reduce((acc, r) => {
+          const val = r.yard > 0 ? r.yard : 0;
+          return acc + Math.round(val * 100);
+        }, 0);
+
+        // Hitung total KG
+        const totalKgInt = processedRolls.reduce((acc, r) => {
+          const val = r.kilogram > 0 ? r.kilogram : 0;
+          return acc + Math.round(val * 100);
+        }, 0);
+
+        return {
+          meter_total: totalMeterInt / 100, // Kembalikan ke desimal
+          yard_total: totalYardInt / 100,
+          kilogram_total: totalKgInt > 0 ? totalKgInt / 100 : null,
+        };
+      };
+
       if (isEdit) {
-        // EDIT: kirim SEMUA roll, yang kosong -> 0
+        // === MODE EDIT ===
         const payload = {
           no_pl: form().no_pl,
           so_id: Number(form().sales_order_id),
           keterangan: form().keterangan,
           satuan_unit_pl_id: unitId(),
           items: form().itemGroups.map((g) => {
-            const rollsWithIndex = g.rolls.map((r, idx) => {
-              const row_num = Math.floor(idx / MAX_COL_PER_ROW()) + 1;
-              const col_num = (idx % MAX_COL_PER_ROW()) + 1;
-
-              const meterVal = Number(r.meter) || 0;
-              const yardVal =
-                Number(r.yard) || (meterVal > 0 ? meterVal * 1.093613 : 0);
-
-              const roll = {
-                row_num,
-                col_num,
-                meter: meterVal,
-                yard: yardVal,
-                kilogram: r.kilogram ? Number(r.kilogram) : null,
-                lot: r.lot !== undefined && r.lot !== "" ? Number(r.lot) : null,
-                no_bal:
-                  r.no_bal !== undefined && r.no_bal !== ""
-                    ? Number(r.no_bal)
-                    : null,
-              };
-              if (r.roll_id) roll.id = r.roll_id;
-              return roll;
-            });
-
-            const meter_total = rollsWithIndex.reduce(
-              (sum, r) => sum + (r.meter > 0 ? r.meter : 0),
-              0
-            );
-            const yard_total = rollsWithIndex.reduce(
-              (sum, r) => sum + (r.yard > 0 ? r.yard : 0),
-              0
-            );
-            const kilogram_total =
-              rollsWithIndex.reduce((sum, r) => sum + (r.kilogram || 0), 0) ||
-              null;
+            const rollsWithIndex = processRolls(g.rolls);
+            const totals = calcTotals(rollsWithIndex);
 
             const first = g.rolls[0] || {};
             return {
               id: g.id,
               so_item_id: Number(g.item || first.item || 0),
               col: Number(g.col || first.col || 0),
-              meter_total,
-              yard_total,
-              kilogram_total,
+              meter_total: totals.meter_total,
+              yard_total: totals.yard_total,
+              kilogram_total: totals.kilogram_total,
               rolls: rollsWithIndex,
             };
           }),
         };
+        
         await updateDataPackingList(user?.token, params.id, payload);
       } else {
-        // CREATE: juga kirim SEMUA roll, yang kosong -> 0
+        // === MODE CREATE ===
         const payload = {
           type:
             form().type === "D"
@@ -773,47 +810,16 @@ export default function PackingListForm() {
           keterangan: form().keterangan,
           satuan_unit_pl_id: unitId(),
           items: form().itemGroups.map((g) => {
-            const rollsWithIndex = g.rolls.map((r, idx) => {
-              const row_num = Math.floor(idx / MAX_COL_PER_ROW()) + 1;
-              const col_num = (idx % MAX_COL_PER_ROW()) + 1;
-
-              const meterVal = Number(r.meter) || 0;
-              const yardVal =
-                Number(r.yard) || (meterVal > 0 ? meterVal * 1.093613 : 0);
-
-              return {
-                row_num,
-                col_num,
-                meter: meterVal,
-                yard: yardVal,
-                kilogram: r.kilogram ? Number(r.kilogram) : null,
-                lot: r.lot !== undefined && r.lot !== "" ? Number(r.lot) : null,
-                no_bal:
-                  r.no_bal !== undefined && r.no_bal !== ""
-                    ? Number(r.no_bal)
-                    : null,
-              };
-            });
-
-            const meter_total = rollsWithIndex.reduce(
-              (sum, r) => sum + (r.meter > 0 ? r.meter : 0),
-              0
-            );
-            const yard_total = rollsWithIndex.reduce(
-              (sum, r) => sum + (r.yard > 0 ? r.yard : 0),
-              0
-            );
-            const kilogram_total =
-              rollsWithIndex.reduce((sum, r) => sum + (r.kilogram || 0), 0) ||
-              null;
+            const rollsWithIndex = processRolls(g.rolls);
+            const totals = calcTotals(rollsWithIndex);
 
             const first = g.rolls[0] || {};
             return {
               so_item_id: Number(g.item || first.item || 0),
               col: Number(g.col || first.col || 0),
-              meter_total,
-              yard_total,
-              kilogram_total,
+              meter_total: totals.meter_total,
+              yard_total: totals.yard_total,
+              kilogram_total: totals.kilogram_total,
               rolls: rollsWithIndex,
             };
           }),
@@ -831,6 +837,7 @@ export default function PackingListForm() {
         navigate("/packinglist");
       });
     } catch (error) {
+      console.error(error);
       Swal.fire({
         icon: "error",
         title: "Gagal",
