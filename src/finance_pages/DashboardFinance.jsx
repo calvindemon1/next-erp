@@ -46,8 +46,12 @@ import { printPenerimaanPiutangJualBeli } from "../pages/reports/finance/printPe
 // IMPORT COMPONENTS FILTER
 import FinanceFilterModal from "../components/finance/FinanceFilterModal";
 import FinancePreviewModal from "../components/finance/FinancePreviewModal";
+import SaldoPiutangTable from "./dashboard_components/SaldoPiutangTable";
+import SaldoHutangTable from "./dashboard_components/SaldoHutangTable";
+import SaldoPiutangService from "../services/SaldoPiutangService";
+import SaldoHutangService from "../services/SaldoHutangService";
 
-const [activeTab, setActiveTab] = createSignal("purchase");
+const [activeTab, setActiveTab] = createSignal("saldo_piutang");
 
 export default function DashboardFinance() {
   const user = User.getUser();
@@ -65,10 +69,22 @@ export default function DashboardFinance() {
     if (!tanggalString) return "-";
     const tanggal = new Date(tanggalString);
     const bulanIndo = [
-      "Januari", "Februari", "Maret", "April", "Mei", "Juni",
-      "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+      "Januari",
+      "Februari",
+      "Maret",
+      "April",
+      "Mei",
+      "Juni",
+      "Juli",
+      "Agustus",
+      "September",
+      "Oktober",
+      "November",
+      "Desember",
     ];
-    return `${tanggal.getDate()} ${bulanIndo[tanggal.getMonth()]} ${tanggal.getFullYear()}`;
+    return `${tanggal.getDate()} ${
+      bulanIndo[tanggal.getMonth()]
+    } ${tanggal.getFullYear()}`;
   };
 
   const normalizeDate = (d) => {
@@ -80,6 +96,28 @@ export default function DashboardFinance() {
 
   // ==== LAYOUT CONFIG ====
   const SECTIONS = [
+    {
+      key: "saldo_piutang",
+      title: "Laporan Saldo Piutang",
+      blocks: [
+        {
+          key: "laporan_saldo_piutang",
+          label: "Laporan Saldo Piutang",
+          // filterConfig: { type: "saldo_piutang" },
+        },
+      ],
+    },
+    {
+      key: "saldo_hutang",
+      title: "Laporan Saldo Hutang",
+      blocks: [
+        {
+          key: "laporan_saldo_hutang",
+          label: "Laporan Saldo Hutang",
+          // filterConfig: { type: "saldo_hutang" },
+        },
+      ],
+    },
     {
       key: "purchase",
       title: "Laporan Purchase Aksesoris Ekspedisi",
@@ -143,7 +181,7 @@ export default function DashboardFinance() {
           label: "Penerimaan Piutang Jual Beli",
           filterConfig: { type: "penerimaan_piutang" },
           //perm: "",
-        }
+        },
       ],
     },
   ];
@@ -175,39 +213,59 @@ export default function DashboardFinance() {
   const handlePreviewFilter = async (block, filter) => {
     try {
       setApplyLoading(true);
-      
+
       let data = [];
       const filterParams = {
         startDate: startDate(),
         endDate: endDate(),
-        ...filter
+        ...filter,
       };
 
       // Load data berdasarkan tipe block
-      if (block.key === "purchase_aksesoris_ekspedisi") {
-        data = await PurchaseAksesorisEkspedisiService.getAllWithDetails(filterParams);
+      if (block.key === "laporan_saldo_piutang") {
+        data = await SaldoPiutangService.getAllWithDetails(filterParams);
+      } else if (block.key === "laporan_saldo_hutang") {
+        data = await SaldoHutangService.getAllWithDetails(filterParams);
+      } else if (block.key === "purchase_aksesoris_ekspedisi") {
+        data = await PurchaseAksesorisEkspedisiService.getAllWithDetails(
+          filterParams
+        );
       } else if (block.key === "payment_hutang_purchase_greige") {
-        data = await PaymentHutangPurchaseGreigeService.getAllWithDetails(filterParams);
+        data = await PaymentHutangPurchaseGreigeService.getAllWithDetails(
+          filterParams
+        );
       } else if (block.key === "payment_hutang_purchase_celup") {
-        data = await PaymentHutangPurchaseCelupService.getAllWithDetails(filterParams);
+        data = await PaymentHutangPurchaseCelupService.getAllWithDetails(
+          filterParams
+        );
       } else if (block.key === "payment_hutang_purchase_finish") {
-        data = await PaymentHutangPurchaseFinishService.getAllWithDetails(filterParams);
+        data = await PaymentHutangPurchaseFinishService.getAllWithDetails(
+          filterParams
+        );
       } else if (block.key === "payment_hutang_purchase_jual_beli") {
-        data = await PaymentHutangPurchaseJualBeliService.getAllWithDetails(filterParams);
+        data = await PaymentHutangPurchaseJualBeliService.getAllWithDetails(
+          filterParams
+        );
       } else if (block.key === "payment_hutang_aksesoris_ekspedisi") {
-        data = await PaymentHutangAksesorisEkspedisiService.getAllWithDetails(filterParams);
+        data = await PaymentHutangAksesorisEkspedisiService.getAllWithDetails(
+          filterParams
+        );
       } else if (block.key === "penerimaan_piutang_sales") {
-        data = await PenerimaanPiutangSalesService.getAllWithDetails(filterParams);
+        data = await PenerimaanPiutangSalesService.getAllWithDetails(
+          filterParams
+        );
       } else if (block.key === "penerimaan_piutang_jual_beli") {
-        data = await PenerimaanPiutangJualBeliService.getAllWithDetails(filterParams);
+        data = await PenerimaanPiutangJualBeliService.getAllWithDetails(
+          filterParams
+        );
       }
 
       setPreviewData(Array.isArray(data) ? data : []);
       setShowPreviewModal(true);
       setShowFilterModal(false);
     } catch (error) {
-      console.error('Error preview filter:', error);
-      Swal.fire('Error', 'Gagal memuat data preview', 'error');
+      console.error("Error preview filter:", error);
+      Swal.fire("Error", "Gagal memuat data preview", "error");
     } finally {
       setApplyLoading(false);
     }
@@ -216,27 +274,27 @@ export default function DashboardFinance() {
   const handleApplyFilter = async () => {
     try {
       setApplyLoading(true);
-      
+
       // Update filter untuk block yang sedang aktif
-      const updatedSections = sectionsData().map(section => ({
+      const updatedSections = sectionsData().map((section) => ({
         ...section,
-        blocks: section.blocks.map(block => 
-          block.key === currentBlock().key 
+        blocks: section.blocks.map((block) =>
+          block.key === currentBlock().key
             ? { ...block, filter: currentFilter() }
             : block
-        )
+        ),
       }));
-      
+
       setSectionsData(updatedSections);
       setShowPreviewModal(false);
-      
+
       // Reload data dengan filter baru
       await reloadData();
-      
-      Swal.fire('Sukses', 'Filter berhasil diterapkan', 'success');
+
+      Swal.fire("Sukses", "Filter berhasil diterapkan", "success");
     } catch (error) {
-      console.error('Error applying filter:', error);
-      Swal.fire('Error', 'Gagal menerapkan filter', 'error');
+      console.error("Error applying filter:", error);
+      Swal.fire("Error", "Gagal menerapkan filter", "error");
     } finally {
       setApplyLoading(false);
     }
@@ -249,46 +307,131 @@ export default function DashboardFinance() {
 
     for (const sec of SECTIONS) {
       const blocks = [];
-      
+
       for (const b of sec.blocks) {
         const filterParams = {
           startDate: startDate(),
           endDate: endDate(),
-          ...(b.filter || {})
+          ...(b.filter || {}),
         };
+
+        // === LAPORAN SALDO PIUTANG ===
+        if (b.key === "laporan_saldo_piutang") {
+          try {
+            const dataWithDetails = await SaldoPiutangService.getAllWithDetails(
+              filterParams
+            );
+
+            // Pastikan data adalah array
+            const safeData = Array.isArray(dataWithDetails)
+              ? dataWithDetails
+              : [];
+
+            // const totals =
+            //   PurchaseAksesorisEkspedisiService.calculateTotals(safeData);
+            // const status =
+            //   PurchaseAksesorisEkspedisiService.calculateStatus(safeData);
+
+            blocks.push({
+              ...b,
+              data: safeData,
+              // totals: totals,
+              // status: status
+            });
+          } catch (error) {
+            console.error("Error loading laporan saldo piutang:", error);
+            blocks.push({
+              ...b,
+              data: [],
+              totals: { totalSuratJalan: 0, totalNilai: 0 },
+              status: { belumJatuhTempo: 0, lewatJatuhTempo: 0 },
+              chart: {
+                series: [0, 0],
+                categories: ["Belum Jatuh Tempo", "Lewat Jatuh Tempo"],
+              },
+            });
+          }
+          continue;
+        }
+
+        // === LAPORAN SALDO HUTANG ===
+        if (b.key === "laporan_saldo_hutang") {
+          try {
+            const dataWithDetails = await SaldoHutangService.getAllWithDetails(
+              filterParams
+            );
+
+            // Pastikan data adalah array
+            const safeData = Array.isArray(dataWithDetails)
+              ? dataWithDetails
+              : [];
+
+            // const totals =
+            //   PurchaseAksesorisEkspedisiService.calculateTotals(safeData);
+            // const status =
+            //   PurchaseAksesorisEkspedisiService.calculateStatus(safeData);
+
+            blocks.push({
+              ...b,
+              data: safeData,
+              // totals: totals,
+              // status: status
+            });
+          } catch (error) {
+            console.error("Error loading laporan saldo hutang:", error);
+            blocks.push({
+              ...b,
+              data: [],
+              totals: { totalSuratJalan: 0, totalNilai: 0 },
+              status: { belumJatuhTempo: 0, lewatJatuhTempo: 0 },
+              chart: {
+                series: [0, 0],
+                categories: ["Belum Jatuh Tempo", "Lewat Jatuh Tempo"],
+              },
+            });
+          }
+          continue;
+        }
 
         // === PURCHASE AKSESORIS EKSPEDISI ===
         if (b.key === "purchase_aksesoris_ekspedisi") {
           try {
-            const dataWithDetails = await PurchaseAksesorisEkspedisiService.getAllWithDetails(filterParams);
-            
+            const dataWithDetails =
+              await PurchaseAksesorisEkspedisiService.getAllWithDetails(
+                filterParams
+              );
+
             // Pastikan data adalah array
-            const safeData = Array.isArray(dataWithDetails) ? dataWithDetails : [];
-            
-            const totals = PurchaseAksesorisEkspedisiService.calculateTotals(safeData);
-            const status = PurchaseAksesorisEkspedisiService.calculateStatus(safeData);
-            
+            const safeData = Array.isArray(dataWithDetails)
+              ? dataWithDetails
+              : [];
+
+            const totals =
+              PurchaseAksesorisEkspedisiService.calculateTotals(safeData);
+            const status =
+              PurchaseAksesorisEkspedisiService.calculateStatus(safeData);
+
             blocks.push({
               ...b,
               data: safeData,
               totals: totals,
               status: status,
               chart: {
-                series: [ status.belumJatuhTempo, status.lewatJatuhTempo],
-                categories: [ "Belum Jatuh Tempo", "Lewat Jatuh Tempo"],
-              }
+                series: [status.belumJatuhTempo, status.lewatJatuhTempo],
+                categories: ["Belum Jatuh Tempo", "Lewat Jatuh Tempo"],
+              },
             });
           } catch (error) {
-            console.error('Error loading purchase aksesoris ekspedisi:', error);
+            console.error("Error loading purchase aksesoris ekspedisi:", error);
             blocks.push({
               ...b,
               data: [],
               totals: { totalSuratJalan: 0, totalNilai: 0 },
               status: { belumJatuhTempo: 0, lewatJatuhTempo: 0 },
-              chart: { 
-                series: [ 0, 0], 
-                categories: ["Belum Jatuh Tempo", "Lewat Jatuh Tempo"] 
-              }
+              chart: {
+                series: [0, 0],
+                categories: ["Belum Jatuh Tempo", "Lewat Jatuh Tempo"],
+              },
             });
           }
           continue;
@@ -297,20 +440,29 @@ export default function DashboardFinance() {
         // === PAYMENT HUTANG PURCHASE GREIGE ===
         if (b.key === "payment_hutang_purchase_greige") {
           try {
-            const dataWithDetails = await PaymentHutangPurchaseGreigeService.getAllWithDetails(filterParams);
-            
-            const safeData = Array.isArray(dataWithDetails) ? dataWithDetails : [];
-            
-            const totals = PaymentHutangPurchaseGreigeService.calculateTotals(safeData);
-            const status = PaymentHutangPurchaseGreigeService.calculateStatus(safeData);
-            
-            const totalPembayaran = typeof status.totalPembayaran === 'string' 
-              ? parseFloat(status.totalPembayaran) 
-              : (status.totalPembayaran || 0);
-            
-            const totalPotongan = typeof status.totalPotongan === 'string'
-              ? parseFloat(status.totalPotongan)
-              : (status.totalPotongan || 0);
+            const dataWithDetails =
+              await PaymentHutangPurchaseGreigeService.getAllWithDetails(
+                filterParams
+              );
+
+            const safeData = Array.isArray(dataWithDetails)
+              ? dataWithDetails
+              : [];
+
+            const totals =
+              PaymentHutangPurchaseGreigeService.calculateTotals(safeData);
+            const status =
+              PaymentHutangPurchaseGreigeService.calculateStatus(safeData);
+
+            const totalPembayaran =
+              typeof status.totalPembayaran === "string"
+                ? parseFloat(status.totalPembayaran)
+                : status.totalPembayaran || 0;
+
+            const totalPotongan =
+              typeof status.totalPotongan === "string"
+                ? parseFloat(status.totalPotongan)
+                : status.totalPotongan || 0;
 
             blocks.push({
               ...b,
@@ -320,25 +472,28 @@ export default function DashboardFinance() {
               chart: {
                 series: [totalPembayaran, totalPotongan],
                 categories: ["Total Pembayaran", "Total Potongan"],
-              }
+              },
             });
           } catch (error) {
-            console.error('Error loading payment hutang purchase greige:', error);
+            console.error(
+              "Error loading payment hutang purchase greige:",
+              error
+            );
             blocks.push({
               ...b,
               data: [],
-              totals: { 
-                totalSuratJalan: 0, 
-                totalNilai: 0 
+              totals: {
+                totalSuratJalan: 0,
+                totalNilai: 0,
               },
-              status: { 
-                totalPembayaran: 0, 
-                totalPotongan: 0 
+              status: {
+                totalPembayaran: 0,
+                totalPotongan: 0,
               },
-              chart: { 
-                series: [ 0, 0 ], 
-                categories: ["Total Pembayaran", "Total Potongan"] 
-              }
+              chart: {
+                series: [0, 0],
+                categories: ["Total Pembayaran", "Total Potongan"],
+              },
             });
           }
           continue;
@@ -347,20 +502,29 @@ export default function DashboardFinance() {
         // === PAYMENT HUTANG PURCHASE CELUP ===
         if (b.key === "payment_hutang_purchase_celup") {
           try {
-            const dataWithDetails = await PaymentHutangPurchaseCelupService.getAllWithDetails(filterParams);
-            
-            const safeData = Array.isArray(dataWithDetails) ? dataWithDetails : [];
-            
-            const totals = PaymentHutangPurchaseCelupService.calculateTotals(safeData);
-            const status = PaymentHutangPurchaseCelupService.calculateStatus(safeData);
-            
-            const totalPembayaran = typeof status.totalPembayaran === 'string' 
-              ? parseFloat(status.totalPembayaran) 
-              : (status.totalPembayaran || 0);
-            
-            const totalPotongan = typeof status.totalPotongan === 'string'
-              ? parseFloat(status.totalPotongan)
-              : (status.totalPotongan || 0);
+            const dataWithDetails =
+              await PaymentHutangPurchaseCelupService.getAllWithDetails(
+                filterParams
+              );
+
+            const safeData = Array.isArray(dataWithDetails)
+              ? dataWithDetails
+              : [];
+
+            const totals =
+              PaymentHutangPurchaseCelupService.calculateTotals(safeData);
+            const status =
+              PaymentHutangPurchaseCelupService.calculateStatus(safeData);
+
+            const totalPembayaran =
+              typeof status.totalPembayaran === "string"
+                ? parseFloat(status.totalPembayaran)
+                : status.totalPembayaran || 0;
+
+            const totalPotongan =
+              typeof status.totalPotongan === "string"
+                ? parseFloat(status.totalPotongan)
+                : status.totalPotongan || 0;
 
             blocks.push({
               ...b,
@@ -370,25 +534,28 @@ export default function DashboardFinance() {
               chart: {
                 series: [totalPembayaran, totalPotongan],
                 categories: ["Total Pembayaran", "Total Potongan"],
-              }
+              },
             });
           } catch (error) {
-            console.error('Error loading payment hutang purchase celup:', error);
+            console.error(
+              "Error loading payment hutang purchase celup:",
+              error
+            );
             blocks.push({
               ...b,
               data: [],
-              totals: { 
-                totalSuratJalan: 0, 
-                totalNilai: 0 
+              totals: {
+                totalSuratJalan: 0,
+                totalNilai: 0,
               },
-              status: { 
-                totalPembayaran: 0, 
-                totalPotongan: 0 
+              status: {
+                totalPembayaran: 0,
+                totalPotongan: 0,
               },
-              chart: { 
-                series: [ 0, 0 ], 
-                categories: ["Total Pembayaran", "Total Potongan"] 
-              }
+              chart: {
+                series: [0, 0],
+                categories: ["Total Pembayaran", "Total Potongan"],
+              },
             });
           }
           continue;
@@ -397,20 +564,29 @@ export default function DashboardFinance() {
         // === PAYMENT HUTANG PURCHASE FINISH ===
         if (b.key === "payment_hutang_purchase_finish") {
           try {
-            const dataWithDetails = await PaymentHutangPurchaseFinishService.getAllWithDetails(filterParams);
-            
-            const safeData = Array.isArray(dataWithDetails) ? dataWithDetails : [];
-            
-            const totals = PaymentHutangPurchaseFinishService.calculateTotals(safeData);
-            const status = PaymentHutangPurchaseFinishService.calculateStatus(safeData);
-            
-            const totalPembayaran = typeof status.totalPembayaran === 'string' 
-              ? parseFloat(status.totalPembayaran) 
-              : (status.totalPembayaran || 0);
-            
-            const totalPotongan = typeof status.totalPotongan === 'string'
-              ? parseFloat(status.totalPotongan)
-              : (status.totalPotongan || 0);
+            const dataWithDetails =
+              await PaymentHutangPurchaseFinishService.getAllWithDetails(
+                filterParams
+              );
+
+            const safeData = Array.isArray(dataWithDetails)
+              ? dataWithDetails
+              : [];
+
+            const totals =
+              PaymentHutangPurchaseFinishService.calculateTotals(safeData);
+            const status =
+              PaymentHutangPurchaseFinishService.calculateStatus(safeData);
+
+            const totalPembayaran =
+              typeof status.totalPembayaran === "string"
+                ? parseFloat(status.totalPembayaran)
+                : status.totalPembayaran || 0;
+
+            const totalPotongan =
+              typeof status.totalPotongan === "string"
+                ? parseFloat(status.totalPotongan)
+                : status.totalPotongan || 0;
 
             blocks.push({
               ...b,
@@ -420,25 +596,28 @@ export default function DashboardFinance() {
               chart: {
                 series: [totalPembayaran, totalPotongan],
                 categories: ["Total Pembayaran", "Total Potongan"],
-              }
+              },
             });
           } catch (error) {
-            console.error('Error loading payment hutang purchase finish:', error);
+            console.error(
+              "Error loading payment hutang purchase finish:",
+              error
+            );
             blocks.push({
               ...b,
               data: [],
-              totals: { 
-                totalSuratJalan: 0, 
-                totalNilai: 0 
+              totals: {
+                totalSuratJalan: 0,
+                totalNilai: 0,
               },
-              status: { 
-                totalPembayaran: 0, 
-                totalPotongan: 0 
+              status: {
+                totalPembayaran: 0,
+                totalPotongan: 0,
               },
-              chart: { 
-                series: [ 0, 0 ], 
-                categories: ["Total Pembayaran", "Total Potongan"] 
-              }
+              chart: {
+                series: [0, 0],
+                categories: ["Total Pembayaran", "Total Potongan"],
+              },
             });
           }
           continue;
@@ -447,20 +626,29 @@ export default function DashboardFinance() {
         // === PAYMENT HUTANG PURCHASE JUAL BELI ===
         if (b.key === "payment_hutang_purchase_jual_beli") {
           try {
-            const dataWithDetails = await PaymentHutangPurchaseJualBeliService.getAllWithDetails(filterParams);
-            
-            const safeData = Array.isArray(dataWithDetails) ? dataWithDetails : [];
-            
-            const totals = PaymentHutangPurchaseJualBeliService.calculateTotals(safeData);
-            const status = PaymentHutangPurchaseJualBeliService.calculateStatus(safeData);
-            
-            const totalPembayaran = typeof status.totalPembayaran === 'string' 
-              ? parseFloat(status.totalPembayaran) 
-              : (status.totalPembayaran || 0);
-            
-            const totalPotongan = typeof status.totalPotongan === 'string'
-              ? parseFloat(status.totalPotongan)
-              : (status.totalPotongan || 0);
+            const dataWithDetails =
+              await PaymentHutangPurchaseJualBeliService.getAllWithDetails(
+                filterParams
+              );
+
+            const safeData = Array.isArray(dataWithDetails)
+              ? dataWithDetails
+              : [];
+
+            const totals =
+              PaymentHutangPurchaseJualBeliService.calculateTotals(safeData);
+            const status =
+              PaymentHutangPurchaseJualBeliService.calculateStatus(safeData);
+
+            const totalPembayaran =
+              typeof status.totalPembayaran === "string"
+                ? parseFloat(status.totalPembayaran)
+                : status.totalPembayaran || 0;
+
+            const totalPotongan =
+              typeof status.totalPotongan === "string"
+                ? parseFloat(status.totalPotongan)
+                : status.totalPotongan || 0;
 
             blocks.push({
               ...b,
@@ -470,25 +658,28 @@ export default function DashboardFinance() {
               chart: {
                 series: [totalPembayaran, totalPotongan],
                 categories: ["Total Pembayaran", "Total Potongan"],
-              }
+              },
             });
           } catch (error) {
-            console.error('Error loading payment hutang purchase jual beli:', error);
+            console.error(
+              "Error loading payment hutang purchase jual beli:",
+              error
+            );
             blocks.push({
               ...b,
               data: [],
-              totals: { 
-                totalSuratJalan: 0, 
-                totalNilai: 0 
+              totals: {
+                totalSuratJalan: 0,
+                totalNilai: 0,
               },
-              status: { 
-                totalPembayaran: 0, 
-                totalPotongan: 0 
+              status: {
+                totalPembayaran: 0,
+                totalPotongan: 0,
               },
-              chart: { 
-                series: [ 0, 0 ], 
-                categories: ["Total Pembayaran", "Total Potongan"] 
-              }
+              chart: {
+                series: [0, 0],
+                categories: ["Total Pembayaran", "Total Potongan"],
+              },
             });
           }
           continue;
@@ -497,20 +688,29 @@ export default function DashboardFinance() {
         // === PAYMENT HUTANG AKSESORIS EKSPEDISI ===
         if (b.key === "payment_hutang_aksesoris_ekspedisi") {
           try {
-            const dataWithDetails = await PaymentHutangAksesorisEkspedisiService.getAllWithDetails(filterParams);
-            
-            const safeData = Array.isArray(dataWithDetails) ? dataWithDetails : [];
-            
-            const totals = PaymentHutangAksesorisEkspedisiService.calculateTotals(safeData);
-            const status = PaymentHutangAksesorisEkspedisiService.calculateStatus(safeData);
-            
-            const totalPembayaran = typeof status.totalPembayaran === 'string' 
-              ? parseFloat(status.totalPembayaran) 
-              : (status.totalPembayaran || 0);
-            
-            const totalPotongan = typeof status.totalPotongan === 'string'
-              ? parseFloat(status.totalPotongan)
-              : (status.totalPotongan || 0);
+            const dataWithDetails =
+              await PaymentHutangAksesorisEkspedisiService.getAllWithDetails(
+                filterParams
+              );
+
+            const safeData = Array.isArray(dataWithDetails)
+              ? dataWithDetails
+              : [];
+
+            const totals =
+              PaymentHutangAksesorisEkspedisiService.calculateTotals(safeData);
+            const status =
+              PaymentHutangAksesorisEkspedisiService.calculateStatus(safeData);
+
+            const totalPembayaran =
+              typeof status.totalPembayaran === "string"
+                ? parseFloat(status.totalPembayaran)
+                : status.totalPembayaran || 0;
+
+            const totalPotongan =
+              typeof status.totalPotongan === "string"
+                ? parseFloat(status.totalPotongan)
+                : status.totalPotongan || 0;
 
             blocks.push({
               ...b,
@@ -520,25 +720,28 @@ export default function DashboardFinance() {
               chart: {
                 series: [totalPembayaran, totalPotongan],
                 categories: ["Total Pembayaran", "Total Potongan"],
-              }
+              },
             });
           } catch (error) {
-            console.error('Error loading payment hutang aksesoris ekspedisi:', error);
+            console.error(
+              "Error loading payment hutang aksesoris ekspedisi:",
+              error
+            );
             blocks.push({
               ...b,
               data: [],
-              totals: { 
-                totalSuratJalan: 0, 
-                totalNilai: 0 
+              totals: {
+                totalSuratJalan: 0,
+                totalNilai: 0,
               },
-              status: { 
-                totalPembayaran: 0, 
-                totalPotongan: 0 
+              status: {
+                totalPembayaran: 0,
+                totalPotongan: 0,
               },
-              chart: { 
-                series: [ 0, 0 ], 
-                categories: ["Total Pembayaran", "Total Potongan"] 
-              }
+              chart: {
+                series: [0, 0],
+                categories: ["Total Pembayaran", "Total Potongan"],
+              },
             });
           }
           continue;
@@ -547,20 +750,29 @@ export default function DashboardFinance() {
         // === PENERIMAAN PIUTANG SALES ===
         if (b.key === "penerimaan_piutang_sales") {
           try {
-            const dataWithDetails = await PenerimaanPiutangSalesService.getAllWithDetails(filterParams);
-            
-            const safeData = Array.isArray(dataWithDetails) ? dataWithDetails : [];
-            
-            const totals = PenerimaanPiutangSalesService.calculateTotals(safeData);
-            const status = PenerimaanPiutangSalesService.calculateStatus(safeData);
-            
-            const totalPenerimaan = typeof status.totalPenerimaan === 'string' 
-              ? parseFloat(status.totalPenerimaan) 
-              : (status.totalPenerimaan || 0);
-            
-            const totalPotongan = typeof status.totalPotongan === 'string'
-              ? parseFloat(status.totalPotongan)
-              : (status.totalPotongan || 0);
+            const dataWithDetails =
+              await PenerimaanPiutangSalesService.getAllWithDetails(
+                filterParams
+              );
+
+            const safeData = Array.isArray(dataWithDetails)
+              ? dataWithDetails
+              : [];
+
+            const totals =
+              PenerimaanPiutangSalesService.calculateTotals(safeData);
+            const status =
+              PenerimaanPiutangSalesService.calculateStatus(safeData);
+
+            const totalPenerimaan =
+              typeof status.totalPenerimaan === "string"
+                ? parseFloat(status.totalPenerimaan)
+                : status.totalPenerimaan || 0;
+
+            const totalPotongan =
+              typeof status.totalPotongan === "string"
+                ? parseFloat(status.totalPotongan)
+                : status.totalPotongan || 0;
 
             blocks.push({
               ...b,
@@ -570,25 +782,25 @@ export default function DashboardFinance() {
               chart: {
                 series: [totalPenerimaan, totalPotongan],
                 categories: ["Total Penerimaan", "Total Potongan"],
-              }
+              },
             });
           } catch (error) {
-            console.error('Error loading penerimaan piutang sales:', error);
+            console.error("Error loading penerimaan piutang sales:", error);
             blocks.push({
               ...b,
               data: [],
-              totals: { 
-                totalSuratJalan: 0, 
-                totalNilai: 0 
+              totals: {
+                totalSuratJalan: 0,
+                totalNilai: 0,
               },
-              status: { 
-                totalPenerimaan: 0, 
-                totalPotongan: 0 
+              status: {
+                totalPenerimaan: 0,
+                totalPotongan: 0,
               },
-              chart: { 
-                series: [ 0, 0 ], 
-                categories: ["Total Penerimaan", "Total Potongan"] 
-              }
+              chart: {
+                series: [0, 0],
+                categories: ["Total Penerimaan", "Total Potongan"],
+              },
             });
           }
           continue;
@@ -597,20 +809,29 @@ export default function DashboardFinance() {
         // === PENERIMAAN PIUTANG JUAL BELI ===
         if (b.key === "penerimaan_piutang_jual_beli") {
           try {
-            const dataWithDetails = await PenerimaanPiutangJualBeliService.getAllWithDetails(filterParams);
-            
-            const safeData = Array.isArray(dataWithDetails) ? dataWithDetails : [];
-            
-            const totals = PenerimaanPiutangJualBeliService.calculateTotals(safeData);
-            const status = PenerimaanPiutangJualBeliService.calculateStatus(safeData);
-            
-            const totalPenerimaan = typeof status.totalPenerimaan === 'string' 
-              ? parseFloat(status.totalPenerimaan) 
-              : (status.totalPenerimaan || 0);
-            
-            const totalPotongan = typeof status.totalPotongan === 'string'
-              ? parseFloat(status.totalPotongan)
-              : (status.totalPotongan || 0);
+            const dataWithDetails =
+              await PenerimaanPiutangJualBeliService.getAllWithDetails(
+                filterParams
+              );
+
+            const safeData = Array.isArray(dataWithDetails)
+              ? dataWithDetails
+              : [];
+
+            const totals =
+              PenerimaanPiutangJualBeliService.calculateTotals(safeData);
+            const status =
+              PenerimaanPiutangJualBeliService.calculateStatus(safeData);
+
+            const totalPenerimaan =
+              typeof status.totalPenerimaan === "string"
+                ? parseFloat(status.totalPenerimaan)
+                : status.totalPenerimaan || 0;
+
+            const totalPotongan =
+              typeof status.totalPotongan === "string"
+                ? parseFloat(status.totalPotongan)
+                : status.totalPotongan || 0;
 
             blocks.push({
               ...b,
@@ -620,32 +841,33 @@ export default function DashboardFinance() {
               chart: {
                 series: [totalPenerimaan, totalPotongan],
                 categories: ["Total Penerimaan", "Total Potongan"],
-              }
+              },
             });
           } catch (error) {
-            console.error('Error loading penerimaan piutang jual belu:', error);
+            console.error("Error loading penerimaan piutang jual belu:", error);
             blocks.push({
               ...b,
               data: [],
-              totals: { 
-                totalSuratJalan: 0, 
-                totalNilai: 0 
+              totals: {
+                totalSuratJalan: 0,
+                totalNilai: 0,
               },
-              status: { 
-                totalPenerimaan: 0, 
-                totalPotongan: 0 
+              status: {
+                totalPenerimaan: 0,
+                totalPotongan: 0,
               },
-              chart: { 
-                series: [ 0, 0 ], 
-                categories: ["Total Penerimaan", "Total Potongan"] 
-              }
+              chart: {
+                series: [0, 0],
+                categories: ["Total Penerimaan", "Total Potongan"],
+              },
             });
           }
           continue;
         }
       }
-      
-      if (blocks.length) assembled.push({ key: sec.key, title: sec.title, blocks });
+
+      if (blocks.length)
+        assembled.push({ key: sec.key, title: sec.title, blocks });
     }
 
     setSectionsData(assembled);
@@ -719,45 +941,413 @@ export default function DashboardFinance() {
     if (type === "purchase") {
       exportPurchaseAksesorisEkspedisiToExcel({
         startDate: startDate(),
-        endDate: endDate()
+        endDate: endDate(),
       });
     } else if (type === "payment_hutang_aksesoris") {
       exportPaymentHutangAksesorisEkspedisiToExcel({
         startDate: startDate(),
-        endDate: endDate()
+        endDate: endDate(),
       });
     } else if (type === "payment_hutang_greige") {
       exportPaymenntHutangPurchaseGreigeToExcel({
         startDate: startDate(),
-        endDate: endDate()
+        endDate: endDate(),
       });
     } else if (type === "payment_hutang_celup") {
       exportPaymenntHutangPurchaseCelupToExcel({
         startDate: startDate(),
-        endDate: endDate()
+        endDate: endDate(),
       });
     } else if (type === "payment_hutang_finish") {
       exportPaymenntHutangPurchaseFinishToExcel({
         startDate: startDate(),
-        endDate: endDate()
+        endDate: endDate(),
       });
     } else if (type === "payment_hutang_jual_beli") {
       exportPaymenntHutangPurchaseJualBeliToExcel({
         startDate: startDate(),
-        endDate: endDate()
+        endDate: endDate(),
       });
-    } else if (type === "penerimaan_piutang_sales"){
+    } else if (type === "penerimaan_piutang_sales") {
       exportPenerimaanPiutangSalesToExcel({
         startDate: startDate(),
         endDate: endDate(),
-      })
-    } else if (type === "penerimaan_piutang_jual_beli"){
+      });
+    } else if (type === "penerimaan_piutang_jual_beli") {
       exportPenerimaanPiutangJualBeliToExcel({
         startDate: startDate(),
         endDate: endDate(),
-      })
+      });
     }
   };
+
+  // DUMMY DATA
+
+  const dataSaldoPiutang = [
+    {
+      customer: "PT Maju Jaya",
+      saldo_awal: 1200000,
+      jual: 500000,
+      retur: 20000,
+      pot_pemb: 10000,
+      bayar: 300000,
+      cash_disc: 15000,
+      saldo_akhir: 1420000,
+      giro_mundur: 0,
+      saldo_sth_gm: 1420000,
+    },
+    {
+      customer: "CV Sinar Abadi",
+      saldo_awal: 800000,
+      jual: 300000,
+      retur: 0,
+      pot_pemb: 15000,
+      bayar: 200000,
+      cash_disc: 8000,
+      saldo_akhir: 877000,
+      giro_mundur: 10000,
+      saldo_sth_gm: 887000,
+    },
+    {
+      customer: "Toko Berkah",
+      saldo_awal: 500000,
+      jual: 250000,
+      retur: 10000,
+      pot_pemb: 5000,
+      bayar: 100000,
+      cash_disc: 7000,
+      saldo_akhir: 638000,
+      giro_mundur: 0,
+      saldo_sth_gm: 638000,
+    },
+    {
+      customer: "PT Mandiri Solusi",
+      saldo_awal: 1500000,
+      jual: 700000,
+      retur: 30000,
+      pot_pemb: 20000,
+      bayar: 500000,
+      cash_disc: 12000,
+      saldo_akhir: 1658000,
+      giro_mundur: 50000,
+      saldo_sth_gm: 1708000,
+    },
+    {
+      customer: "UD Sejahtera",
+      saldo_awal: 300000,
+      jual: 150000,
+      retur: 5000,
+      pot_pemb: 2000,
+      bayar: 50000,
+      cash_disc: 3000,
+      saldo_akhir: 398000,
+      giro_mundur: 0,
+      saldo_sth_gm: 398000,
+    },
+    {
+      customer: "CV Bumi Raya",
+      saldo_awal: 950000,
+      jual: 400000,
+      retur: 20000,
+      pot_pemb: 10000,
+      bayar: 250000,
+      cash_disc: 9000,
+      saldo_akhir: 1161000,
+      giro_mundur: 0,
+      saldo_sth_gm: 1161000,
+    },
+    {
+      customer: "PT Mega Utama",
+      saldo_awal: 700000,
+      jual: 200000,
+      retur: 10000,
+      pot_pemb: 5000,
+      bayar: 150000,
+      cash_disc: 5000,
+      saldo_akhir: 750000,
+      giro_mundur: 0,
+      saldo_sth_gm: 750000,
+    },
+    {
+      customer: "Toko Sumber Rezeki",
+      saldo_awal: 420000,
+      jual: 180000,
+      retur: 0,
+      pot_pemb: 4000,
+      bayar: 80000,
+      cash_disc: 3000,
+      saldo_akhir: 519000,
+      giro_mundur: 12000,
+      saldo_sth_gm: 531000,
+    },
+    {
+      customer: "CV Sentosa Makmur",
+      saldo_awal: 1100000,
+      jual: 450000,
+      retur: 20000,
+      pot_pemb: 10000,
+      bayar: 300000,
+      cash_disc: 10000,
+      saldo_akhir: 1530000,
+      giro_mundur: 0,
+      saldo_sth_gm: 1530000,
+    },
+    {
+      customer: "PT Jaya Bersama",
+      saldo_awal: 600000,
+      jual: 220000,
+      retur: 5000,
+      pot_pemb: 3000,
+      bayar: 100000,
+      cash_disc: 7000,
+      saldo_akhir: 724000,
+      giro_mundur: 0,
+      saldo_sth_gm: 724000,
+    },
+    {
+      customer: "UD Makmur Lestari",
+      saldo_awal: 350000,
+      jual: 120000,
+      retur: 3000,
+      pot_pemb: 2000,
+      bayar: 90000,
+      cash_disc: 2000,
+      saldo_akhir: 377000,
+      giro_mundur: 0,
+      saldo_sth_gm: 377000,
+    },
+    {
+      customer: "PT Bintang Timur",
+      saldo_awal: 2000000,
+      jual: 900000,
+      retur: 40000,
+      pot_pemb: 20000,
+      bayar: 700000,
+      cash_disc: 15000,
+      saldo_akhir: 2355000,
+      giro_mundur: 80000,
+      saldo_sth_gm: 2435000,
+    },
+    {
+      customer: "CV Cahaya Baru",
+      saldo_awal: 480000,
+      jual: 160000,
+      retur: 8000,
+      pot_pemb: 4000,
+      bayar: 60000,
+      cash_disc: 5000,
+      saldo_akhir: 571000,
+      giro_mundur: 5000,
+      saldo_sth_gm: 576000,
+    },
+    {
+      customer: "Toko Barokah",
+      saldo_awal: 250000,
+      jual: 100000,
+      retur: 0,
+      pot_pemb: 2000,
+      bayar: 30000,
+      cash_disc: 2000,
+      saldo_akhir: 320000,
+      giro_mundur: 0,
+      saldo_sth_gm: 320000,
+    },
+    {
+      customer: "PT Prima Mandiri",
+      saldo_awal: 1300000,
+      jual: 600000,
+      retur: 25000,
+      pot_pemb: 10000,
+      bayar: 400000,
+      cash_disc: 9000,
+      saldo_akhir: 1716000,
+      giro_mundur: 0,
+      saldo_sth_gm: 1716000,
+    },
+  ];
+
+  const dataSaldoHutang = [
+    {
+      supplier: "PT Maju Jaya",
+      saldo_awal: 1200000,
+      jual: 500000,
+      retur: 20000,
+      pot_pemb: 10000,
+      bayar: 300000,
+      cash_disc: 15000,
+      saldo_akhir: 1420000,
+      giro_mundur: 0,
+      saldo_sth_gm: 1420000,
+    },
+    {
+      supplier: "CV Sinar Abadi",
+      saldo_awal: 800000,
+      jual: 300000,
+      retur: 0,
+      pot_pemb: 15000,
+      bayar: 200000,
+      cash_disc: 8000,
+      saldo_akhir: 877000,
+      giro_mundur: 10000,
+      saldo_sth_gm: 887000,
+    },
+    {
+      supplier: "Toko Berkah",
+      saldo_awal: 500000,
+      jual: 250000,
+      retur: 10000,
+      pot_pemb: 5000,
+      bayar: 100000,
+      cash_disc: 7000,
+      saldo_akhir: 638000,
+      giro_mundur: 0,
+      saldo_sth_gm: 638000,
+    },
+    {
+      supplier: "PT Mandiri Solusi",
+      saldo_awal: 1500000,
+      jual: 700000,
+      retur: 30000,
+      pot_pemb: 20000,
+      bayar: 500000,
+      cash_disc: 12000,
+      saldo_akhir: 1658000,
+      giro_mundur: 50000,
+      saldo_sth_gm: 1708000,
+    },
+    {
+      supplier: "UD Sejahtera",
+      saldo_awal: 300000,
+      jual: 150000,
+      retur: 5000,
+      pot_pemb: 2000,
+      bayar: 50000,
+      cash_disc: 3000,
+      saldo_akhir: 398000,
+      giro_mundur: 0,
+      saldo_sth_gm: 398000,
+    },
+    {
+      supplier: "CV Bumi Raya",
+      saldo_awal: 950000,
+      jual: 400000,
+      retur: 20000,
+      pot_pemb: 10000,
+      bayar: 250000,
+      cash_disc: 9000,
+      saldo_akhir: 1161000,
+      giro_mundur: 0,
+      saldo_sth_gm: 1161000,
+    },
+    {
+      supplier: "PT Mega Utama",
+      saldo_awal: 700000,
+      jual: 200000,
+      retur: 10000,
+      pot_pemb: 5000,
+      bayar: 150000,
+      cash_disc: 5000,
+      saldo_akhir: 750000,
+      giro_mundur: 0,
+      saldo_sth_gm: 750000,
+    },
+    {
+      supplier: "Toko Sumber Rezeki",
+      saldo_awal: 420000,
+      jual: 180000,
+      retur: 0,
+      pot_pemb: 4000,
+      bayar: 80000,
+      cash_disc: 3000,
+      saldo_akhir: 519000,
+      giro_mundur: 12000,
+      saldo_sth_gm: 531000,
+    },
+    {
+      supplier: "CV Sentosa Makmur",
+      saldo_awal: 1100000,
+      jual: 450000,
+      retur: 20000,
+      pot_pemb: 10000,
+      bayar: 300000,
+      cash_disc: 10000,
+      saldo_akhir: 1530000,
+      giro_mundur: 0,
+      saldo_sth_gm: 1530000,
+    },
+    {
+      supplier: "PT Jaya Bersama",
+      saldo_awal: 600000,
+      jual: 220000,
+      retur: 5000,
+      pot_pemb: 3000,
+      bayar: 100000,
+      cash_disc: 7000,
+      saldo_akhir: 724000,
+      giro_mundur: 0,
+      saldo_sth_gm: 724000,
+    },
+    {
+      supplier: "UD Makmur Lestari",
+      saldo_awal: 350000,
+      jual: 120000,
+      retur: 3000,
+      pot_pemb: 2000,
+      bayar: 90000,
+      cash_disc: 2000,
+      saldo_akhir: 377000,
+      giro_mundur: 0,
+      saldo_sth_gm: 377000,
+    },
+    {
+      supplier: "PT Bintang Timur",
+      saldo_awal: 2000000,
+      jual: 900000,
+      retur: 40000,
+      pot_pemb: 20000,
+      bayar: 700000,
+      cash_disc: 15000,
+      saldo_akhir: 2355000,
+      giro_mundur: 80000,
+      saldo_sth_gm: 2435000,
+    },
+    {
+      supplier: "CV Cahaya Baru",
+      saldo_awal: 480000,
+      jual: 160000,
+      retur: 8000,
+      pot_pemb: 4000,
+      bayar: 60000,
+      cash_disc: 5000,
+      saldo_akhir: 571000,
+      giro_mundur: 5000,
+      saldo_sth_gm: 576000,
+    },
+    {
+      supplier: "Toko Barokah",
+      saldo_awal: 250000,
+      jual: 100000,
+      retur: 0,
+      pot_pemb: 2000,
+      bayar: 30000,
+      cash_disc: 2000,
+      saldo_akhir: 320000,
+      giro_mundur: 0,
+      saldo_sth_gm: 320000,
+    },
+    {
+      supplier: "PT Prima Mandiri",
+      saldo_awal: 1300000,
+      jual: 600000,
+      retur: 25000,
+      pot_pemb: 10000,
+      bayar: 400000,
+      cash_disc: 9000,
+      saldo_akhir: 1716000,
+      giro_mundur: 0,
+      saldo_sth_gm: 1716000,
+    },
+  ];
 
   // ==== UI ====
   return (
@@ -796,6 +1386,26 @@ export default function DashboardFinance() {
 
       {/* Tabs */}
       <div class="flex gap-2 mb-6 border-b">
+        <button
+          class={`px-4 py-2 ${
+            activeTab() === "saldo_piutang"
+              ? "border-b-2 border-blue-600 font-bold text-blue-600"
+              : "text-gray-500 hover:text-gray-700"
+          }`}
+          onClick={() => setActiveTab("saldo_piutang")}
+        >
+          Laporan Saldo Piutang
+        </button>
+        <button
+          class={`px-4 py-2 ${
+            activeTab() === "saldo_hutang"
+              ? "border-b-2 border-blue-600 font-bold text-blue-600"
+              : "text-gray-500 hover:text-gray-700"
+          }`}
+          onClick={() => setActiveTab("saldo_hutang")}
+        >
+          Laporan Saldo Hutang
+        </button>
         <button
           class={`px-4 py-2 ${
             activeTab() === "purchase"
@@ -839,6 +1449,52 @@ export default function DashboardFinance() {
 
             <For each={section.blocks}>
               {(block) => {
+                // === LAPORAN SALDO PIUTANG ===
+                if (block.key === "laporan_saldo_piutang") {
+                  return (
+                    <div class="bg-white rounded shadow mb-8">
+                      <div class="p-6 border-b flex justify-between items-center">
+                        <h3 class="text-lg font-semibold">{block.label}</h3>
+                        <button
+                          class="px-3 py-1 rounded border border-gray-300 hover:bg-gray-50 flex items-center gap-2"
+                          // onClick={() => handleOpenFilter(block)}
+                          title="Filter Data"
+                        >
+                          <Filter size={16} />
+                          Filter
+                        </button>
+                      </div>
+
+                      <div class="p-6">
+                        <SaldoPiutangTable data={dataSaldoPiutang} />
+                      </div>
+                    </div>
+                  );
+                }
+
+                // === LAPORAN SALDO HUTANG ===
+                if (block.key === "laporan_saldo_hutang") {
+                  return (
+                    <div class="bg-white rounded shadow mb-8">
+                      <div class="p-6 border-b flex justify-between items-center">
+                        <h3 class="text-lg font-semibold">{block.label}</h3>
+                        <button
+                          class="px-3 py-1 rounded border border-gray-300 hover:bg-gray-50 flex items-center gap-2"
+                          // onClick={() => handleOpenFilter(block)}
+                          title="Filter Data"
+                        >
+                          <Filter size={16} />
+                          Filter
+                        </button>
+                      </div>
+
+                      <div class="p-6">
+                        <SaldoHutangTable data={dataSaldoHutang} />
+                      </div>
+                    </div>
+                  );
+                }
+
                 // === PURCHASE AKSESORIS EKSPEDISI ===
                 if (block.key === "purchase_aksesoris_ekspedisi") {
                   return (
@@ -862,11 +1518,11 @@ export default function DashboardFinance() {
                           options={{
                             labels: block.chart.categories,
                             legend: { position: "bottom" },
-                            dataLabels: { 
+                            dataLabels: {
                               enabled: true,
-                              formatter: (val) => `${val.toFixed(1)}%`
+                              formatter: (val) => `${val.toFixed(1)}%`,
                             },
-                            colors: ['#10B981', '#EF4444']
+                            colors: ["#10B981", "#EF4444"],
                           }}
                         />
                       </div>
@@ -875,14 +1531,18 @@ export default function DashboardFinance() {
                         {/* Kartu Total Surat Jalan */}
                         <div class="bg-white p-6 rounded shadow relative border">
                           <p class="text-sm text-gray-500">Total Pembelian</p>
-                          <p class="text-3xl font-bold text-blue-600">{block.totals.totalSuratJalan}</p>
+                          <p class="text-3xl font-bold text-blue-600">
+                            {block.totals.totalSuratJalan}
+                          </p>
                           <button
                             class="absolute top-4 right-4 text-gray-500 hover:text-blue-600"
                             title="Cetak Laporan"
-                            onClick={() => printPurchaseAksesorisEkspedisi({
-                              startDate: startDate(),
-                              endDate: endDate()
-                            })}
+                            onClick={() =>
+                              printPurchaseAksesorisEkspedisi({
+                                startDate: startDate(),
+                                endDate: endDate(),
+                              })
+                            }
                           >
                             <Printer size={20} />
                           </button>
@@ -890,18 +1550,22 @@ export default function DashboardFinance() {
 
                         {/* Kartu Total Nilai */}
                         <div class="bg-white p-6 rounded shadow relative border">
-                          <p class="text-sm text-gray-500">Total Nilai Pembelian</p>
+                          <p class="text-sm text-gray-500">
+                            Total Nilai Pembelian
+                          </p>
                           <p class="text-3xl font-bold text-green-600">
                             {new Intl.NumberFormat("id-ID", {
                               style: "currency",
                               currency: "IDR",
-                              minimumFractionDigits: 0
+                              minimumFractionDigits: 0,
                             }).format(block.totals.totalNilai)}
                           </p>
                           <button
                             class="absolute top-4 right-4 text-gray-500 hover:text-blue-600"
                             title="Export Excel"
-                            onClick={() => exportToExcel(block.data, "purchase")}
+                            onClick={() =>
+                              exportToExcel(block.data, "purchase")
+                            }
                           >
                             <FileText size={20} />
                           </button>
@@ -909,15 +1573,25 @@ export default function DashboardFinance() {
 
                         {/* Kartu Status Pembayaran */}
                         <div class="bg-white p-6 rounded shadow border">
-                          <p class="text-sm text-gray-500 mb-2">Status Pembayaran</p>
+                          <p class="text-sm text-gray-500 mb-2">
+                            Status Pembayaran
+                          </p>
                           <div class="space-y-1 text-sm">
                             <div class="flex justify-between">
-                              <span class="text-green-600">Belum Jatuh Tempo:</span>
-                              <span class="font-semibold">{block.status.belumJatuhTempo}</span>
+                              <span class="text-green-600">
+                                Belum Jatuh Tempo:
+                              </span>
+                              <span class="font-semibold">
+                                {block.status.belumJatuhTempo}
+                              </span>
                             </div>
                             <div class="flex justify-between">
-                              <span class="text-red-600">Lewat Jatuh Tempo:</span>
-                              <span class="font-semibold">{block.status.lewatJatuhTempo}</span>
+                              <span class="text-red-600">
+                                Lewat Jatuh Tempo:
+                              </span>
+                              <span class="font-semibold">
+                                {block.status.lewatJatuhTempo}
+                              </span>
                             </div>
                           </div>
                         </div>
@@ -949,11 +1623,11 @@ export default function DashboardFinance() {
                           options={{
                             labels: block.chart.categories,
                             legend: { position: "bottom" },
-                            dataLabels: { 
+                            dataLabels: {
                               enabled: true,
-                              formatter: (val) => `${val.toFixed(1)}%` // UBAH KE PERSENTASE
+                              formatter: (val) => `${val.toFixed(1)}%`, // UBAH KE PERSENTASE
                             },
-                            colors: ['#3B82F6', '#10B981']
+                            colors: ["#3B82F6", "#10B981"],
                           }}
                         />
                       </div>
@@ -961,15 +1635,21 @@ export default function DashboardFinance() {
                       <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
                         {/* Kartu Total Laporan Pembayaran Hutang */}
                         <div class="bg-white p-6 rounded shadow relative border">
-                          <p class="text-sm text-gray-500">Total Laporan Pembayaran Hutang</p>
-                          <p class="text-3xl font-bold text-blue-600">{block.totals.totalSuratJalan}</p>
+                          <p class="text-sm text-gray-500">
+                            Total Laporan Pembayaran Hutang
+                          </p>
+                          <p class="text-3xl font-bold text-blue-600">
+                            {block.totals.totalSuratJalan}
+                          </p>
                           <button
                             class="absolute top-4 right-4 text-gray-500 hover:text-blue-600"
                             title="Cetak Laporan"
-                            onClick={() => printPaymentHutangPurchaseGreige({
-                              startDate: startDate(),
-                              endDate: endDate()
-                            })}
+                            onClick={() =>
+                              printPaymentHutangPurchaseGreige({
+                                startDate: startDate(),
+                                endDate: endDate(),
+                              })
+                            }
                           >
                             <Printer size={20} />
                           </button>
@@ -977,18 +1657,22 @@ export default function DashboardFinance() {
 
                         {/* Kartu Total Pembayaran Hutang */}
                         <div class="bg-white p-6 rounded shadow relative border">
-                          <p class="text-sm text-gray-500">Total Pembayaran Hutang</p>
+                          <p class="text-sm text-gray-500">
+                            Total Pembayaran Hutang
+                          </p>
                           <p class="text-3xl font-bold text-green-600">
                             {new Intl.NumberFormat("id-ID", {
                               style: "currency",
                               currency: "IDR",
-                              minimumFractionDigits: 0
+                              minimumFractionDigits: 0,
                             }).format(block.totals.totalNilai)}
                           </p>
                           <button
                             class="absolute top-4 right-4 text-gray-500 hover:text-blue-600"
                             title="Export Excel"
-                            onClick={() => exportToExcel(block.data, "payment_hutang_greige")}
+                            onClick={() =>
+                              exportToExcel(block.data, "payment_hutang_greige")
+                            }
                           >
                             <FileText size={20} />
                           </button>
@@ -1021,11 +1705,11 @@ export default function DashboardFinance() {
                           options={{
                             labels: block.chart.categories,
                             legend: { position: "bottom" },
-                            dataLabels: { 
+                            dataLabels: {
                               enabled: true,
-                              formatter: (val) => `${val.toFixed(1)}%` // UBAH KE PERSENTASE
+                              formatter: (val) => `${val.toFixed(1)}%`, // UBAH KE PERSENTASE
                             },
-                            colors: ['#3B82F6', '#10B981']
+                            colors: ["#3B82F6", "#10B981"],
                           }}
                         />
                       </div>
@@ -1033,15 +1717,21 @@ export default function DashboardFinance() {
                       <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
                         {/* Kartu Total Laporan Pembayaran Hutang */}
                         <div class="bg-white p-6 rounded shadow relative border">
-                          <p class="text-sm text-gray-500">Total Laporan Pembayaran Hutang</p>
-                          <p class="text-3xl font-bold text-blue-600">{block.totals.totalSuratJalan}</p>
+                          <p class="text-sm text-gray-500">
+                            Total Laporan Pembayaran Hutang
+                          </p>
+                          <p class="text-3xl font-bold text-blue-600">
+                            {block.totals.totalSuratJalan}
+                          </p>
                           <button
                             class="absolute top-4 right-4 text-gray-500 hover:text-blue-600"
                             title="Cetak Laporan"
-                            onClick={() => printPaymentHutangPurchaseCelup({
-                              startDate: startDate(),
-                              endDate: endDate()
-                            })}
+                            onClick={() =>
+                              printPaymentHutangPurchaseCelup({
+                                startDate: startDate(),
+                                endDate: endDate(),
+                              })
+                            }
                           >
                             <Printer size={20} />
                           </button>
@@ -1049,18 +1739,22 @@ export default function DashboardFinance() {
 
                         {/* Kartu Total Pembayaran Hutang */}
                         <div class="bg-white p-6 rounded shadow relative border">
-                          <p class="text-sm text-gray-500">Total Pembayaran Hutang</p>
+                          <p class="text-sm text-gray-500">
+                            Total Pembayaran Hutang
+                          </p>
                           <p class="text-3xl font-bold text-green-600">
                             {new Intl.NumberFormat("id-ID", {
                               style: "currency",
                               currency: "IDR",
-                              minimumFractionDigits: 0
+                              minimumFractionDigits: 0,
                             }).format(block.totals.totalNilai)}
                           </p>
                           <button
                             class="absolute top-4 right-4 text-gray-500 hover:text-blue-600"
                             title="Export Excel"
-                            onClick={() => exportToExcel(block.data, "payment_hutang_celup")}
+                            onClick={() =>
+                              exportToExcel(block.data, "payment_hutang_celup")
+                            }
                           >
                             <FileText size={20} />
                           </button>
@@ -1093,11 +1787,11 @@ export default function DashboardFinance() {
                           options={{
                             labels: block.chart.categories,
                             legend: { position: "bottom" },
-                            dataLabels: { 
+                            dataLabels: {
                               enabled: true,
-                              formatter: (val) => `${val.toFixed(1)}%` // UBAH KE PERSENTASE
+                              formatter: (val) => `${val.toFixed(1)}%`, // UBAH KE PERSENTASE
                             },
-                            colors: ['#3B82F6', '#10B981']
+                            colors: ["#3B82F6", "#10B981"],
                           }}
                         />
                       </div>
@@ -1105,15 +1799,21 @@ export default function DashboardFinance() {
                       <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
                         {/* Kartu Total Laporan Pembayaran Hutang */}
                         <div class="bg-white p-6 rounded shadow relative border">
-                          <p class="text-sm text-gray-500">Total Laporan Pembayaran Hutang</p>
-                          <p class="text-3xl font-bold text-blue-600">{block.totals.totalSuratJalan}</p>
+                          <p class="text-sm text-gray-500">
+                            Total Laporan Pembayaran Hutang
+                          </p>
+                          <p class="text-3xl font-bold text-blue-600">
+                            {block.totals.totalSuratJalan}
+                          </p>
                           <button
                             class="absolute top-4 right-4 text-gray-500 hover:text-blue-600"
                             title="Cetak Laporan"
-                            onClick={() => printPaymentHutangPurchaseFinish({
-                              startDate: startDate(),
-                              endDate: endDate()
-                            })}
+                            onClick={() =>
+                              printPaymentHutangPurchaseFinish({
+                                startDate: startDate(),
+                                endDate: endDate(),
+                              })
+                            }
                           >
                             <Printer size={20} />
                           </button>
@@ -1121,18 +1821,22 @@ export default function DashboardFinance() {
 
                         {/* Kartu Total Pembayaran Hutang */}
                         <div class="bg-white p-6 rounded shadow relative border">
-                          <p class="text-sm text-gray-500">Total Pembayaran Hutang</p>
+                          <p class="text-sm text-gray-500">
+                            Total Pembayaran Hutang
+                          </p>
                           <p class="text-3xl font-bold text-green-600">
                             {new Intl.NumberFormat("id-ID", {
                               style: "currency",
                               currency: "IDR",
-                              minimumFractionDigits: 0
+                              minimumFractionDigits: 0,
                             }).format(block.totals.totalNilai)}
                           </p>
                           <button
                             class="absolute top-4 right-4 text-gray-500 hover:text-blue-600"
                             title="Export Excel"
-                            onClick={() => exportToExcel(block.data, "payment_hutang_finish")}
+                            onClick={() =>
+                              exportToExcel(block.data, "payment_hutang_finish")
+                            }
                           >
                             <FileText size={20} />
                           </button>
@@ -1165,11 +1869,11 @@ export default function DashboardFinance() {
                           options={{
                             labels: block.chart.categories,
                             legend: { position: "bottom" },
-                            dataLabels: { 
+                            dataLabels: {
                               enabled: true,
-                              formatter: (val) => `${val.toFixed(1)}%` // UBAH KE PERSENTASE
+                              formatter: (val) => `${val.toFixed(1)}%`, // UBAH KE PERSENTASE
                             },
-                            colors: ['#3B82F6', '#10B981']
+                            colors: ["#3B82F6", "#10B981"],
                           }}
                         />
                       </div>
@@ -1177,15 +1881,21 @@ export default function DashboardFinance() {
                       <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
                         {/* Kartu Total Laporan Pembayaran Hutang */}
                         <div class="bg-white p-6 rounded shadow relative border">
-                          <p class="text-sm text-gray-500">Total Laporan Pembayaran Hutang</p>
-                          <p class="text-3xl font-bold text-blue-600">{block.totals.totalSuratJalan}</p>
+                          <p class="text-sm text-gray-500">
+                            Total Laporan Pembayaran Hutang
+                          </p>
+                          <p class="text-3xl font-bold text-blue-600">
+                            {block.totals.totalSuratJalan}
+                          </p>
                           <button
                             class="absolute top-4 right-4 text-gray-500 hover:text-blue-600"
                             title="Cetak Laporan"
-                            onClick={() => printPaymentHutangPurchaseJualBeli({
-                              startDate: startDate(),
-                              endDate: endDate()
-                            })}
+                            onClick={() =>
+                              printPaymentHutangPurchaseJualBeli({
+                                startDate: startDate(),
+                                endDate: endDate(),
+                              })
+                            }
                           >
                             <Printer size={20} />
                           </button>
@@ -1193,18 +1903,25 @@ export default function DashboardFinance() {
 
                         {/* Kartu Total Pembayaran Hutang */}
                         <div class="bg-white p-6 rounded shadow relative border">
-                          <p class="text-sm text-gray-500">Total Pembayaran Hutang</p>
+                          <p class="text-sm text-gray-500">
+                            Total Pembayaran Hutang
+                          </p>
                           <p class="text-3xl font-bold text-green-600">
                             {new Intl.NumberFormat("id-ID", {
                               style: "currency",
                               currency: "IDR",
-                              minimumFractionDigits: 0
+                              minimumFractionDigits: 0,
                             }).format(block.totals.totalNilai)}
                           </p>
                           <button
                             class="absolute top-4 right-4 text-gray-500 hover:text-blue-600"
                             title="Export Excel"
-                            onClick={() => exportToExcel(block.data, "payment_hutang_jual_beli")}
+                            onClick={() =>
+                              exportToExcel(
+                                block.data,
+                                "payment_hutang_jual_beli"
+                              )
+                            }
                           >
                             <FileText size={20} />
                           </button>
@@ -1237,11 +1954,11 @@ export default function DashboardFinance() {
                           options={{
                             labels: block.chart.categories,
                             legend: { position: "bottom" },
-                            dataLabels: { 
+                            dataLabels: {
                               enabled: true,
-                              formatter: (val) => `${val.toFixed(1)}%` // UBAH KE PERSENTASE
+                              formatter: (val) => `${val.toFixed(1)}%`, // UBAH KE PERSENTASE
                             },
-                            colors: ['#3B82F6', '#10B981']
+                            colors: ["#3B82F6", "#10B981"],
                           }}
                         />
                       </div>
@@ -1249,15 +1966,21 @@ export default function DashboardFinance() {
                       <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
                         {/* Kartu Total Laporan Pembayaran Hutang */}
                         <div class="bg-white p-6 rounded shadow relative border">
-                          <p class="text-sm text-gray-500">Total Laporan Pembayaran Hutang</p>
-                          <p class="text-3xl font-bold text-blue-600">{block.totals.totalSuratJalan}</p>
+                          <p class="text-sm text-gray-500">
+                            Total Laporan Pembayaran Hutang
+                          </p>
+                          <p class="text-3xl font-bold text-blue-600">
+                            {block.totals.totalSuratJalan}
+                          </p>
                           <button
                             class="absolute top-4 right-4 text-gray-500 hover:text-blue-600"
                             title="Cetak Laporan"
-                            onClick={() => printPaymentHutangAksesorisEkspedisi({
-                              startDate: startDate(),
-                              endDate: endDate()
-                            })}
+                            onClick={() =>
+                              printPaymentHutangAksesorisEkspedisi({
+                                startDate: startDate(),
+                                endDate: endDate(),
+                              })
+                            }
                           >
                             <Printer size={20} />
                           </button>
@@ -1265,18 +1988,25 @@ export default function DashboardFinance() {
 
                         {/* Kartu Total Pembayaran Hutang */}
                         <div class="bg-white p-6 rounded shadow relative border">
-                          <p class="text-sm text-gray-500">Total Pembayaran Hutang</p>
+                          <p class="text-sm text-gray-500">
+                            Total Pembayaran Hutang
+                          </p>
                           <p class="text-3xl font-bold text-green-600">
                             {new Intl.NumberFormat("id-ID", {
                               style: "currency",
                               currency: "IDR",
-                              minimumFractionDigits: 0
+                              minimumFractionDigits: 0,
                             }).format(block.totals.totalNilai)}
                           </p>
                           <button
                             class="absolute top-4 right-4 text-gray-500 hover:text-blue-600"
                             title="Export Excel"
-                            onClick={() => exportToExcel(block.data, "payment_hutang_aksesoris")}
+                            onClick={() =>
+                              exportToExcel(
+                                block.data,
+                                "payment_hutang_aksesoris"
+                              )
+                            }
                           >
                             <FileText size={20} />
                           </button>
@@ -1309,11 +2039,11 @@ export default function DashboardFinance() {
                           options={{
                             labels: block.chart.categories,
                             legend: { position: "bottom" },
-                            dataLabels: { 
+                            dataLabels: {
                               enabled: true,
-                              formatter: (val) => `${val.toFixed(1)}%`
+                              formatter: (val) => `${val.toFixed(1)}%`,
                             },
-                            colors: ['#3B82F6', '#10B981']
+                            colors: ["#3B82F6", "#10B981"],
                           }}
                         />
                       </div>
@@ -1321,15 +2051,21 @@ export default function DashboardFinance() {
                       <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
                         {/* Kartu Total Laporan Penerimaan Piutang */}
                         <div class="bg-white p-6 rounded shadow relative border">
-                          <p class="text-sm text-gray-500">Total Laporan Penerimaan Piutang</p>
-                          <p class="text-3xl font-bold text-blue-600">{block.totals.totalSuratJalan}</p>
+                          <p class="text-sm text-gray-500">
+                            Total Laporan Penerimaan Piutang
+                          </p>
+                          <p class="text-3xl font-bold text-blue-600">
+                            {block.totals.totalSuratJalan}
+                          </p>
                           <button
                             class="absolute top-4 right-4 text-gray-500 hover:text-blue-600"
                             title="Cetak Laporan"
-                            onClick={() => printPenerimaanPiutangSales({
-                              startDate: startDate(),
-                              endDate: endDate()
-                            })}
+                            onClick={() =>
+                              printPenerimaanPiutangSales({
+                                startDate: startDate(),
+                                endDate: endDate(),
+                              })
+                            }
                           >
                             <Printer size={20} />
                           </button>
@@ -1337,18 +2073,25 @@ export default function DashboardFinance() {
 
                         {/* Kartu Total Penerimaan Piutang */}
                         <div class="bg-white p-6 rounded shadow relative border">
-                          <p class="text-sm text-gray-500">Total Penerimaan Piutang</p>
+                          <p class="text-sm text-gray-500">
+                            Total Penerimaan Piutang
+                          </p>
                           <p class="text-3xl font-bold text-green-600">
                             {new Intl.NumberFormat("id-ID", {
                               style: "currency",
                               currency: "IDR",
-                              minimumFractionDigits: 0
+                              minimumFractionDigits: 0,
                             }).format(block.totals.totalNilai)}
                           </p>
                           <button
                             class="absolute top-4 right-4 text-gray-500 hover:text-blue-600"
                             title="Export Excel"
-                            onClick={() => exportToExcel(block.data, "penerimaan_piutang_sales")}
+                            onClick={() =>
+                              exportToExcel(
+                                block.data,
+                                "penerimaan_piutang_sales"
+                              )
+                            }
                           >
                             <FileText size={20} />
                           </button>
@@ -1381,11 +2124,11 @@ export default function DashboardFinance() {
                           options={{
                             labels: block.chart.categories,
                             legend: { position: "bottom" },
-                            dataLabels: { 
+                            dataLabels: {
                               enabled: true,
-                              formatter: (val) => `${val.toFixed(1)}%`
+                              formatter: (val) => `${val.toFixed(1)}%`,
                             },
-                            colors: ['#3B82F6', '#10B981']
+                            colors: ["#3B82F6", "#10B981"],
                           }}
                         />
                       </div>
@@ -1393,15 +2136,21 @@ export default function DashboardFinance() {
                       <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
                         {/* Kartu Total Laporan Penerimaan Piutang */}
                         <div class="bg-white p-6 rounded shadow relative border">
-                          <p class="text-sm text-gray-500">Total Laporan Penerimaan Piutang</p>
-                          <p class="text-3xl font-bold text-blue-600">{block.totals.totalSuratJalan}</p>
+                          <p class="text-sm text-gray-500">
+                            Total Laporan Penerimaan Piutang
+                          </p>
+                          <p class="text-3xl font-bold text-blue-600">
+                            {block.totals.totalSuratJalan}
+                          </p>
                           <button
                             class="absolute top-4 right-4 text-gray-500 hover:text-blue-600"
                             title="Cetak Laporan"
-                            onClick={() => printPenerimaanPiutangJualBeli({
-                              startDate: startDate(),
-                              endDate: endDate()
-                            })}
+                            onClick={() =>
+                              printPenerimaanPiutangJualBeli({
+                                startDate: startDate(),
+                                endDate: endDate(),
+                              })
+                            }
                           >
                             <Printer size={20} />
                           </button>
@@ -1409,18 +2158,25 @@ export default function DashboardFinance() {
 
                         {/* Kartu Total Penerimaan Piutang */}
                         <div class="bg-white p-6 rounded shadow relative border">
-                          <p class="text-sm text-gray-500">Total Penerimaan Piutang</p>
+                          <p class="text-sm text-gray-500">
+                            Total Penerimaan Piutang
+                          </p>
                           <p class="text-3xl font-bold text-green-600">
                             {new Intl.NumberFormat("id-ID", {
                               style: "currency",
                               currency: "IDR",
-                              minimumFractionDigits: 0
+                              minimumFractionDigits: 0,
                             }).format(block.totals.totalNilai)}
                           </p>
                           <button
                             class="absolute top-4 right-4 text-gray-500 hover:text-blue-600"
                             title="Export Excel"
-                            onClick={() => exportToExcel(block.data, "penerimaan_piutang_jual_beli")}
+                            onClick={() =>
+                              exportToExcel(
+                                block.data,
+                                "penerimaan_piutang_jual_beli"
+                              )
+                            }
                           >
                             <FileText size={20} />
                           </button>
