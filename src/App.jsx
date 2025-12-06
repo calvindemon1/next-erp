@@ -26,6 +26,12 @@ import OrderCelupPurchaseOrderForm from "./pages/purchasing/order_celup/OCPurcha
 import OrderCelupDeliveryNoteList from "./pages/purchasing/order_celup/OCDeliveryNoteList";
 import OrderCelupDeliveryNoteForm from "./pages/purchasing/order_celup/OCDeliveryNoteForm";
 import OrderCelupDeliveryNoteFormV2 from "./pages/purchasing/order_celup/OCDeliveryNoteFormV2";
+// // ORDER CELUP X
+import OrderCelupXPurchaseOrderList from "./pages/purchasing/order_celup_x/OCXPurchaseOrderList";
+import OrderCelupXPurchaseOrderForm from "./pages/purchasing/order_celup_x/OCXPurchaseOrderForm";
+import OrderCelupXDeliveryNoteList from "./pages/purchasing/order_celup_x/OCXDeliveryNoteList";
+import OrderCelupXDeliveryNoteForm from "./pages/purchasing/order_celup_x/OCXDeliveryNoteForm";
+import OrderCelupXDeliveryNoteFormV2 from "./pages/purchasing/order_celup_x/OCXDeliveryNoteFormV2";
 // // KAIN JADI/FINISH
 import KainJadiPurchaseContractList from "./pages/purchasing/kain_jadi/KJPurchaseContractList";
 import KainJadiPurchaseContractForm from "./pages/purchasing/kain_jadi/KJPurchaseContractForm";
@@ -262,6 +268,26 @@ function App() {
         component={OrderCelupDeliveryNoteFormV2}
       />
       {/* ORDER CELUP */}
+
+      {/* ORDER CELUP X */}
+      <Route
+        path="/ordercelup-purchaseorderx"
+        component={OrderCelupXPurchaseOrderList}
+      />
+      <Route
+        path="/ordercelup-purchaseorderx/form"
+        component={OrderCelupXPurchaseOrderForm}
+      />
+
+      <Route
+        path="/ordercelup-deliverynotex"
+        component={OrderCelupXDeliveryNoteList}
+      />
+      <Route
+        path="/ordercelup-deliverynotex/form"
+        component={OrderCelupXDeliveryNoteFormV2}
+      />
+      {/* ORDER CELUP X */}
 
       {/* KAIN JADI */}
       <Route
@@ -507,25 +533,13 @@ function App() {
       {/* PIUTANG */}
 
       {/* Jual Beli */}
-      <Route
-        path="/piutang-jual-beli"
-        component={PiutangJualBeliList}
-      />
-      <Route
-        path="/piutang-jual-beli/form"
-        component={PiutangJualBeliForm}
-      />
+      <Route path="/piutang-jual-beli" component={PiutangJualBeliList} />
+      <Route path="/piutang-jual-beli/form" component={PiutangJualBeliForm} />
       {/* Jual Beli */}
 
       {/* Sales */}
-      <Route
-        path="/piutang-sales"
-        component={PiutangSalesList}
-      />
-      <Route
-        path="/piutang-sales/form"
-        component={PiutangSalesForm}
-      />
+      <Route path="/piutang-sales" component={PiutangSalesList} />
+      <Route path="/piutang-sales/form" component={PiutangSalesForm} />
       {/* Sales */}
 
       {/* PIUTANG */}

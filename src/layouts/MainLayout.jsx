@@ -23,6 +23,7 @@ export default function MainLayout(props) {
   const [isPurchasingIsOpen, setPurchasingIsOpen] = createSignal(false);
   const [isGreigeOpen, setGreigeIsOpen] = createSignal(false);
   const [isCelupOpen, setCelupIsOpen] = createSignal(false);
+  const [isCelupXOpen, setCelupXIsOpen] = createSignal(false);
   const [isFinishOpen, setFinishIsOpen] = createSignal(false);
   const [isJualBeliOpen, setJualBeliIsOpen] = createSignal(false);
   const [isWarehouseTransactionOpen, setWarehouseTransactionIsOpen] =
@@ -141,7 +142,7 @@ export default function MainLayout(props) {
           "/agent",
           "/agent/form",
           "/bank-account",
-          "/bank-account/form"
+          "/bank-account/form",
         ].some((p) => pathname.startsWith(p))
       ) {
         return "master";
@@ -770,6 +771,67 @@ export default function MainLayout(props) {
                     </li>
                   </ul>
                   <ul>
+                    {/* Submenu Level 2: Order Celup */}
+                    {hasAllPermission([
+                      "view_purchase_celup_contract",
+                      "view_purchase_celup_order",
+                    ]) && (
+                      <li>
+                        <button
+                          class="w-full text-left pl-8 pr-4 py-2 font-semibold text-gray-400 hover:bg-gray-700 flex justify-between items-center"
+                          onClick={() => setCelupXIsOpen(!isCelupXOpen())}
+                        >
+                          Pembelian Order Celup X
+                          <span class="text-xs">
+                            {isCelupXOpen() ? "▲" : "▼"}
+                          </span>
+                        </button>
+                      </li>
+                    )}
+
+                    {/* Submenu Items inside Order Celup */}
+                    <li
+                      class={`transition-all duration-300 ease-in-out overflow-hidden ${
+                        isCelupXOpen()
+                          ? "max-h-fit opacity-100"
+                          : "max-h-0 opacity-0"
+                      }`}
+                    >
+                      <ul>
+                        {/* <li>
+                          <A
+                            href="/ordercelup-purchasecontract"
+                            class={`block pl-12 pr-4 py-2 hover:bg-gray-700 ${
+                              location.pathname ===
+                                "/ordercelup-purchasecontract" ||
+                              location.pathname ===
+                                "/ordercelup-purchasecontract/form"
+                                ? "bg-gray-700 text-white"
+                                : ""
+                            }`}
+                          >
+                            Kontrak Proses
+                          </A>
+                        </li> */}
+                        <li>
+                          <A
+                            href="/ordercelup-purchaseorderx"
+                            class={`block pl-12 pr-4 py-2 hover:bg-gray-700 ${
+                              location.pathname ===
+                                "/ordercelup-purchaseorderx" ||
+                              location.pathname ===
+                                "/ordercelup-purchaseorderx/form"
+                                ? "bg-gray-700 text-white"
+                                : ""
+                            }`}
+                          >
+                            Order Celup X
+                          </A>
+                        </li>
+                      </ul>
+                    </li>
+                  </ul>
+                  <ul>
                     {/* Submenu Level 2: Kain Jadi */}
                     {hasAllPermission([
                       "view_purchase_finish_contract",
@@ -882,12 +944,13 @@ export default function MainLayout(props) {
                   "view_sales_orders",
                   "create_sales_contracts",
                   "create_sales_orders",
-                ]) || hasAnyPermission([
-                  "view_bank",
-                  "view_payment_methods",
-                  "view_jenis_potongan",
-                  "view_jenis_hutang",
-                ])) && (
+                ]) ||
+                  hasAnyPermission([
+                    "view_bank",
+                    "view_payment_methods",
+                    "view_jenis_potongan",
+                    "view_jenis_hutang",
+                  ])) && (
                   <li>
                     <button
                       class="w-full text-left p-4 font-semibold text-gray-400 uppercase hover:bg-gray-700 flex justify-between items-center"
@@ -936,7 +999,8 @@ export default function MainLayout(props) {
                               href="/expor/salescontract"
                               class={`block pl-8 pr-4 py-2 hover:bg-gray-700 ${
                                 location.pathname === "/expor/salescontract" ||
-                                location.pathname === "/expor/salescontract/form"
+                                location.pathname ===
+                                  "/expor/salescontract/form"
                                   ? "bg-gray-700 text-white"
                                   : ""
                               }`}
@@ -1069,7 +1133,10 @@ export default function MainLayout(props) {
                   </ul>
                   <ul>
                     {/* Submenu Level 2: Pembelian Greige */}
-                    {hasAllPermission(["view_purchase_greige_surat_jalan", "create_purchase_greige_surat_jalan"]) && (
+                    {hasAllPermission([
+                      "view_purchase_greige_surat_jalan",
+                      "create_purchase_greige_surat_jalan",
+                    ]) && (
                       <li>
                         <button
                           class="w-full text-left pl-8 pr-4 py-2 font-semibold text-gray-400 hover:bg-gray-700 flex justify-between items-center"
@@ -1114,7 +1181,10 @@ export default function MainLayout(props) {
                   </ul>
                   <ul>
                     {/* Submenu Level 2: Order Celup */}
-                    {hasAllPermission(["view_purchase_celup_surat_jalan", "create_purchase_celup_surat_jalan"]) && (
+                    {hasAllPermission([
+                      "view_purchase_celup_surat_jalan",
+                      "create_purchase_celup_surat_jalan",
+                    ]) && (
                       <li>
                         <button
                           class="w-full text-left pl-8 pr-4 py-2 font-semibold text-gray-400 hover:bg-gray-700 flex justify-between items-center"
@@ -1159,7 +1229,10 @@ export default function MainLayout(props) {
                   </ul>
                   <ul>
                     {/* Submenu Level 2: Kain Jadi */}
-                    {hasAllPermission(["view_purchase_finish_surat_jalan", "create_purchase_finish_surat_jalan"]) && (
+                    {hasAllPermission([
+                      "view_purchase_finish_surat_jalan",
+                      "create_purchase_finish_surat_jalan",
+                    ]) && (
                       <li>
                         <button
                           class="w-full text-left pl-8 pr-4 py-2 font-semibold text-gray-400 hover:bg-gray-700 flex justify-between items-center"
@@ -1203,7 +1276,10 @@ export default function MainLayout(props) {
                   </ul>
                   <ul>
                     {/* Submenu Level 2: Kain Jadi */}
-                    {hasAllPermission(["view_jual_beli_surat_jalan", "create_jual_beli_surat_jalan"]) && (
+                    {hasAllPermission([
+                      "view_jual_beli_surat_jalan",
+                      "create_jual_beli_surat_jalan",
+                    ]) && (
                       <li>
                         <button
                           class="w-full text-left pl-8 pr-4 py-2 font-semibold text-gray-400 hover:bg-gray-700 flex justify-between items-center"
