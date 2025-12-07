@@ -77,6 +77,8 @@ export default function MainLayout(props) {
     transaction: [
       "/packinglist",
       "/packinglist/form",
+      "/packinglistvia",
+      "/packinglistvia/form",
       "/deliverynote",
       "/deliverynote/form",
     ],
@@ -159,6 +161,8 @@ export default function MainLayout(props) {
           "/expor/salescontract/form",
           "/salesorder",
           "/salesorder/form",
+          "/salesordervia",
+          "/salesordervia/form",
         ].some((p) => pathname.startsWith(p))
       ) {
         return "transaction";
@@ -1047,6 +1051,26 @@ export default function MainLayout(props) {
                             Sales Order
                           </A>
                         </li>
+                        {hasAnyPermission([
+                          "view_bank",
+                          "view_payment_methods",
+                          "view_jenis_potongan",
+                          "view_jenis_hutang",
+                        ]) && (
+                          <li>
+                            <A
+                              href="/salesordervia"
+                              class={`block pl-8 pr-4 py-2 hover:bg-gray-700 ${
+                                location.pathname === "/salesordervia" ||
+                                location.pathname === "/salesordervia/form"
+                                  ? "bg-gray-700 text-white"
+                                  : ""
+                              }`}
+                            >
+                              Sales Order (VIA)
+                            </A>
+                          </li>
+                        )}
                       </>
                     )}
                   </ul>
@@ -1119,6 +1143,26 @@ export default function MainLayout(props) {
                             Packing List
                           </A>
                         </li>
+                        {hasAnyPermission([
+                          "view_bank",
+                          "view_payment_methods",
+                          "view_jenis_potongan",
+                          "view_jenis_hutang",
+                        ]) && (
+                          <li>
+                            <A
+                              href="/packinglistvia"
+                              class={`block pl-8 pr-4 py-2 hover:bg-gray-700 ${
+                                location.pathname === "/packinglistvia" ||
+                                location.pathname === "/packinglistvia/form"
+                                  ? "bg-gray-700 text-white"
+                                  : ""
+                              }`}
+                            >
+                              Packing List (VIA)
+                            </A>
+                          </li>
+                        )}
                         <li>
                           <A
                             href="/deliverynote"
@@ -1132,6 +1176,26 @@ export default function MainLayout(props) {
                             Surat Jalan
                           </A>
                         </li>
+                        {hasAnyPermission([
+                          "view_bank",
+                          "view_payment_methods",
+                          "view_jenis_potongan",
+                          "view_jenis_hutang",
+                        ]) && (
+                          <li>
+                            <A
+                              href="/deliverynotevia"
+                              class={`block pl-8 pr-4 py-2 hover:bg-gray-700 ${
+                                location.pathname === "/deliverynotevia" ||
+                                location.pathname === "/deliverynotevia/form"
+                                  ? "bg-gray-700 text-white"
+                                  : ""
+                              }`}
+                            >
+                              Surat Jalan (VIA)
+                            </A>
+                          </li>
+                        )}
                       </ul>
                     </li>
                   </ul>
@@ -1368,7 +1432,7 @@ export default function MainLayout(props) {
                         Invoice Penjualan
                       </A>
                     </li>
-                    {/* <li>
+                    <li>
                       <A
                         href="/invoice-via"
                         class={`block pl-8 pr-4 py-2 hover:bg-gray-700 ${
@@ -1380,7 +1444,7 @@ export default function MainLayout(props) {
                       >
                         Invoice Penjualan (VIA)
                       </A>
-                    </li> */}
+                    </li>
                     <li>
                       <A
                         href="/jualbeli-invoice"
