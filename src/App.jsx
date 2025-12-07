@@ -28,7 +28,7 @@ import OrderCelupDeliveryNoteForm from "./pages/purchasing/order_celup/OCDeliver
 import OrderCelupDeliveryNoteFormV2 from "./pages/purchasing/order_celup/OCDeliveryNoteFormV2";
 // // ORDER CELUP X
 import OrderCelupXPurchaseOrderList from "./pages/purchasing/order_celup_x/OCXPurchaseOrderList";
-import OrderCelupXPurchaseOrderForm from "./pages/purchasing/order_celup_x/OCXPurchaseOrderForm";
+import OCXPurchaseOrderForm from "./pages/purchasing/order_celup_x/OCXPurchaseOrderForm";
 import OrderCelupXDeliveryNoteList from "./pages/purchasing/order_celup_x/OCXDeliveryNoteList";
 import OrderCelupXDeliveryNoteForm from "./pages/purchasing/order_celup_x/OCXDeliveryNoteForm";
 import OrderCelupXDeliveryNoteFormV2 from "./pages/purchasing/order_celup_x/OCXDeliveryNoteFormV2";
@@ -139,6 +139,10 @@ import ReturKainJadiPrint from "./utils/retur/ReturKainJadiDummyPrint";
 import ReturJualBeliPrint from "./utils/retur/ReturJualBeliDummyPrint";
 import ReturSalesPrint from "./utils/retur/ReturSalesDummyPrint";
 
+// MEMO
+import MemoOrderMatchingList from "./pages/memo/MemoOrderMatchingList";
+import MemoOrderMatchingForm from "./pages/memo/MemoOrderMatchingForm";
+
 // FINANCE
 import FinanceMainLayout from "./layouts/FinanceMainLayout";
 import BanksList from "./finance_pages/master_data/banks/BanksList";
@@ -171,8 +175,8 @@ function App() {
   return (
     <Router>
       <Route path="/" component={LoginPage} />
-      {/* <Route path="/dashboard-finance" component={DashboardFinance} /> */}
-      <Route path="/dashboard-finance" component={FinanceMainLayout} />
+      <Route path="/dashboard-finance" component={DashboardFinance} />
+      {/* <Route path="/dashboard-finance" component={FinanceMainLayout} /> */}
       <Route path="/users" component={UsersList} />
       <Route path="/users/form" component={UserForm} />
 
@@ -292,7 +296,7 @@ function App() {
       />
       <Route
         path="/ordercelup-purchaseocx/form"
-        component={OrderCelupXPurchaseOrderForm}
+        component={OCXPurchaseOrderForm}
       />
 
       <Route
@@ -427,6 +431,10 @@ function App() {
       <Route path="/print/retur-jualbeli" component={ReturJualBeliPrint} />
       <Route path="/print/retur-sales" component={ReturSalesPrint} />
       {/* PRINT RETUR */}
+
+      {/* MEMO */}
+      <Route path="memo-order-matching" component={MemoOrderMatchingList}/>
+      <Route path="memo-order-matching/form" component={MemoOrderMatchingForm}/>
 
       {/* MASTER DATA */}
       <Route path="/suppliers" component={SuppliersList} />
