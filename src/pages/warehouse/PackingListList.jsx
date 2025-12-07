@@ -30,7 +30,7 @@ export default function PackingListList() {
   const transactionType = createMemo(() =>
     filteredData().filter(
       (c) =>
-        (c.is_via === 0 || c.is_via === false)
+        (c.is_via === 0 || c.is_via === false || c.is_via == null)
     )
   );
 

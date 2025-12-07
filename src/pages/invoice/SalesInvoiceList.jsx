@@ -34,6 +34,13 @@ export default function SalesInvoiceList() {
   const [currentPage, setCurrentPage] = createSignal(1);
   const pageSize = 20;
 
+  const transactionType = createMemo(() =>
+    filteredData().filter(
+      (c) =>
+        (c.is_via === 0 || c.is_via === false || c.is_via == null)
+    )
+  );
+
   const formatNumber = (num, decimals = 2) => {
     if (num === null || num === undefined) return "0";
     const numValue = Number(num);
@@ -64,12 +71,12 @@ export default function SalesInvoiceList() {
   });
 
   const totalPages = createMemo(() => {
-    return Math.max(1, Math.ceil(filteredData().length / pageSize));
+    return Math.max(1, Math.ceil(transactionType().length / pageSize));
   });
 
   const paginatedData = () => {
     const startIndex = (currentPage() - 1) * pageSize;
-    return filteredData().slice(startIndex, startIndex + pageSize);
+    return transactionType().slice(startIndex, startIndex + pageSize);
   };
 
   const handleDelete = async (id) => {

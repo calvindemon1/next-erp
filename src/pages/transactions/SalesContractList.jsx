@@ -29,11 +29,12 @@ export default function SalesContractList() {
   const [currentPage, setCurrentPage] = createSignal(1);
   const pageSize = 20;
 
-  const transactionType = createMemo(() =>
+const transactionType = createMemo(() =>
     filteredData().filter(
       (c) =>
         (c.transaction_type || "").toLowerCase() === "domestik" &&
-        (c.is_via === 0 || c.is_via === false)
+        // Izinkan jika 0, false, atau fieldnya tidak ada (null/undefined)
+        (c.is_via === 0 || c.is_via === false || c.is_via == null)
     )
   );
 

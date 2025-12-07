@@ -32,7 +32,7 @@ export default function SuratJalanList() {
   const transactionType = createMemo(() =>
     filteredData().filter(
       (c) =>
-        (c.is_via === 0 || c.is_via === false)
+        (c.is_via === 0 || c.is_via === false || c.is_via == null)
     )
   );
 
