@@ -50,6 +50,7 @@ export default function SaldoPiutangTable(props) {
             <th class="p-2 border">Saldo Akhir</th>
             <th class="p-2 border">Giro Mundur</th>
             <th class="p-2 border">Saldo sth GM</th>
+            <th class="border p-2 w-32 text-center">Aksi</th>
           </tr>
         </thead>
 
@@ -67,6 +68,22 @@ export default function SaldoPiutangTable(props) {
                 <td class="p-2 border text-right">{row.saldo_akhir}</td>
                 <td class="p-2 border text-right">{row.giro_mundur}</td>
                 <td class="p-2 border text-right">{row.saldo_sth_gm}</td>
+                <td class="border p-2 text-center">
+                  <div class="flex justify-center gap-2">
+                    <button
+                      class="bg-yellow-500 text-white px-2 py-1 rounded hover:bg-yellow-600"
+                      onClick={() => props.onEdit(item)}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      class="bg-red-600 text-white px-2 py-1 rounded hover:bg-red-700"
+                      onClick={() => props.onDelete(item)}
+                    >
+                      Del
+                    </button>
+                  </div>
+                </td>
               </tr>
             )}
           </For>

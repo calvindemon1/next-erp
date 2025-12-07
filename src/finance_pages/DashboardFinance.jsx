@@ -2,7 +2,7 @@
 import FinanceMainLayout from "../layouts/FinanceMainLayout";
 import { onMount, createSignal, For, Show } from "solid-js";
 import ApexChart from "../components/ApexChart";
-import { Printer, FileText, Filter } from "lucide-solid";
+import { Printer, FileText, Filter, Plus } from "lucide-solid";
 import Litepicker from "litepicker";
 import Swal from "sweetalert2";
 
@@ -50,6 +50,7 @@ import SaldoPiutangTable from "./dashboard_components/SaldoPiutangTable";
 import SaldoHutangTable from "./dashboard_components/SaldoHutangTable";
 import SaldoPiutangService from "../services/SaldoPiutangService";
 import SaldoHutangService from "../services/SaldoHutangService";
+import FormSaldoModal from "../components/finance/FormSaldoModal";
 
 const [activeTab, setActiveTab] = createSignal("saldo_piutang");
 
@@ -981,6 +982,52 @@ export default function DashboardFinance() {
     }
   };
 
+  // SALDO LOGIC
+
+  const [showForm, setShowForm] = createSignal(false);
+  const [editingItem, setEditingItem] = createSignal(null);
+
+  const handleOpenCreate = () => {
+    setEditingItem(null);
+    setShowForm(true);
+  };
+
+  const handleEditData = (item) => {
+    setEditingItem(item);
+    setShowForm(true);
+  };
+
+  const handleDeleteData = (item) => {
+    Swal.fire({
+      title: "Hapus?",
+      text: `Yakin hapus data "${item.nama}"?`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Hapus",
+    }).then((res) => {
+      if (res.isConfirmed) {
+        const updated = previewData().filter((d) => d.id !== item.id);
+        setPreviewData(updated);
+        Swal.fire("Terhapus!", "", "success");
+      }
+    });
+  };
+
+  const handleSubmitForm = (form) => {
+    if (form.id) {
+      // edit
+      const updated = previewData().map((d) =>
+        d.id === form.id ? { ...d, nama: form.nama } : d
+      );
+      setPreviewData(updated);
+    } else {
+      // create
+      setPreviewData([...previewData(), { id: Date.now(), nama: form.nama }]);
+    }
+
+    setShowForm(false);
+  };
+
   // DUMMY DATA
 
   const dataSaldoPiutang = [
@@ -1455,14 +1502,19 @@ export default function DashboardFinance() {
                     <div class="bg-white rounded shadow mb-8">
                       <div class="p-6 border-b flex justify-between items-center">
                         <h3 class="text-lg font-semibold">{block.label}</h3>
-                        <button
-                          class="px-3 py-1 rounded border border-gray-300 hover:bg-gray-50 flex items-center gap-2"
-                          // onClick={() => handleOpenFilter(block)}
-                          title="Filter Data"
-                        >
-                          <Filter size={16} />
-                          Filter
-                        </button>
+
+                        <div class="flex gap-2">
+                          <button
+                            class="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-1"
+                            onClick={() => handleOpenCreate(block)}
+                          >
+                            <Plus size={16} /> Tambah
+                          </button>
+
+                          <button class="px-3 py-1 border rounded hover:bg-gray-50 flex items-center gap-2">
+                            <Filter size={16} /> Filter
+                          </button>
+                        </div>
                       </div>
 
                       <div class="p-6">
@@ -1478,14 +1530,19 @@ export default function DashboardFinance() {
                     <div class="bg-white rounded shadow mb-8">
                       <div class="p-6 border-b flex justify-between items-center">
                         <h3 class="text-lg font-semibold">{block.label}</h3>
-                        <button
-                          class="px-3 py-1 rounded border border-gray-300 hover:bg-gray-50 flex items-center gap-2"
-                          // onClick={() => handleOpenFilter(block)}
-                          title="Filter Data"
-                        >
-                          <Filter size={16} />
-                          Filter
-                        </button>
+
+                        <div class="flex gap-2">
+                          <button
+                            class="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-1"
+                            onClick={() => handleOpenCreate(block)}
+                          >
+                            <Plus size={16} /> Tambah
+                          </button>
+
+                          <button class="px-3 py-1 border rounded hover:bg-gray-50 flex items-center gap-2">
+                            <Filter size={16} /> Filter
+                          </button>
+                        </div>
                       </div>
 
                       <div class="p-6">
@@ -2221,6 +2278,16 @@ export default function DashboardFinance() {
           onApply={handleApplyFilter}
           onCancel={() => setShowPreviewModal(false)}
           applyLoading={applyLoading()}
+        />
+      </Show>
+
+      {/* Form Satuan Modal */}
+      <Show when={showForm()}>
+        <FormSaldoModal
+          show={showForm()}
+          initialData={editingItem()}
+          onClose={() => setShowForm(false)}
+          onSubmit={handleSubmitForm}
         />
       </Show>
     </FinanceMainLayout>
