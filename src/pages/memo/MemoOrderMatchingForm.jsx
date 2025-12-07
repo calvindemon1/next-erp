@@ -92,7 +92,7 @@ export default function MemoOrderMatchingForm() {
             title: "Data tidak ditemukan",
             text: "Tidak dapat mengambil data Memo Order Matching.",
           });
-          navigate("/mom");
+          navigate("/memo-order-matching");
           return;
         }
 
@@ -213,7 +213,7 @@ export default function MemoOrderMatchingForm() {
         timerProgressBar: true,
       });
 
-      navigate("/mom");
+      navigate("/memo-order-matching");
     } catch (err) {
       console.error(err);
       Swal.fire({
@@ -253,7 +253,7 @@ export default function MemoOrderMatchingForm() {
         <button
           type="button"
           class="flex gap-2 items-center bg-blue-600 text-white px-3 py-2 rounded hover:bg-blue-700"
-          onClick={() => navigate("/mom")}
+          onClick={() => navigate("/memo-order-matching")}
         >
           Kembali
         </button>

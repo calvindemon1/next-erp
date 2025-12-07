@@ -197,7 +197,7 @@ export default function MemoOrderMatchingList() {
                 <td class="py-2 px-4 space-x-2">
                   <button
                     class="text-yellow-600 hover:underline"
-                    onClick={() => navigate(`/mom/form?id=${mom.id}&view=true`)}
+                    onClick={() => navigate(`/memo-order-matching/form?id=${mom.id}&view=true`)}
                   >
                     <Eye size={25} />
                   </button>
@@ -205,7 +205,7 @@ export default function MemoOrderMatchingList() {
                   {hasPermission("edit_order_matching") && (
                     <button
                       class="text-blue-600 hover:underline"
-                      onClick={() => navigate(`/mom/form?id=${mom.id}`)}
+                      onClick={() => navigate(`/memo-order-matching/form?id=${mom.id}`)}
                     >
                       <Edit size={25} />
                     </button>
