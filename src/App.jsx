@@ -165,8 +165,8 @@ function App() {
   return (
     <Router>
       <Route path="/" component={LoginPage} />
-      <Route path="/dashboard-finance" component={DashboardFinance} />
-      {/* <Route path="/dashboard-finance" component={FinanceMainLayout} /> */}
+      {/* <Route path="/dashboard-finance" component={DashboardFinance} /> */}
+      <Route path="/dashboard-finance" component={FinanceMainLayout} />
       <Route path="/users" component={UsersList} />
       <Route path="/users/form" component={UserForm} />
 
