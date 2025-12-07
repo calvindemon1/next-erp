@@ -33,6 +33,8 @@ export default function MainLayout(props) {
   const [isWarehouseFinishOpen, setWarehouseFinishIsOpen] = createSignal(false);
   const [isWarehouseJualBeliOpen, setWarehouseJualBeliIsOpen] =
     createSignal(false);
+  const [isMemoIsOpen, setMemoIsOpen] = createSignal(false);
+
   const [sidebarOpen, setSidebarOpen] = createSignal(true);
 
   // INVOICE

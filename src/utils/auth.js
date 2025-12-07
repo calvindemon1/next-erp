@@ -61,8 +61,8 @@ export async function register(
 ) {
   try {
     const response = await fetch(
-        //"https://nexttechenterprise.site/api/register",
-        `${import.meta.env.VITE_API_URL}/register`,
+      //"https://nexttechenterprise.site/api/register",
+      `${import.meta.env.VITE_API_URL}/register`,
       {
         method: "POST",
         headers: {
@@ -95,8 +95,8 @@ export async function register(
 export async function getTokenStatus(token) {
   try {
     const response = await fetch(
-        "https://nexttechenterprise.site/api/token-status",
-        `${import.meta.env.VITE_API_URL}/token-status`,
+      "https://nexttechenterprise.site/api/token-status",
+      `${import.meta.env.VITE_API_URL}/token-status`,
       {
         method: "GET",
         headers: {
@@ -126,8 +126,8 @@ export async function getTokenStatus(token) {
 export async function getDataUser(id, token) {
   try {
     const response = await fetch(
-       //`https://nexttechenterprise.site/api/users/${id}`,
-        `${import.meta.env.VITE_API_URL}/users/${id}`,
+      //`https://nexttechenterprise.site/api/users/${id}`,
+      `${import.meta.env.VITE_API_URL}/users/${id}`,
       {
         method: "GET",
         headers: {
@@ -204,7 +204,6 @@ export async function getAllUsers(token) {
   }
 }
 
-
 export async function updateUser(
   userId,
   name,
@@ -216,8 +215,8 @@ export async function updateUser(
 ) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/update-user/${userId}`,
-        `${import.meta.env.VITE_API_URL}/update-user/${userId}`,
+      //`https://nexttechenterprise.site/api/update-user/${userId}`,
+      `${import.meta.env.VITE_API_URL}/update-user/${userId}`,
       {
         method: "PUT",
         headers: {
@@ -253,8 +252,8 @@ export async function updateUser(
 export async function softDeleteUser(userId, token) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/delete-user/${userId}`,
-        `${import.meta.env.VITE_API_URL}/delete-user/${userId}`,
+      //`https://nexttechenterprise.site/api/delete-user/${userId}`,
+      `${import.meta.env.VITE_API_URL}/delete-user/${userId}`,
       {
         method: "DELETE",
         headers: {
@@ -347,7 +346,7 @@ export async function getRoleById(roleId, token) {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`,
+        Authorization: `Bearer ${token}`,
         "ngrok-skip-browser-warning": "any-value",
       },
     });
@@ -355,7 +354,9 @@ export async function getRoleById(roleId, token) {
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.message || `Gagal mengambil data untuk role ID ${roleId}.`);
+      throw new Error(
+        data.message || `Gagal mengambil data untuk role ID ${roleId}.`
+      );
     }
 
     return data;
@@ -373,7 +374,7 @@ export async function createRole(name, permissionIds, token) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`,
+        Authorization: `Bearer ${token}`,
         "ngrok-skip-browser-warning": "any-value",
       },
       body: JSON.stringify({
@@ -402,7 +403,7 @@ export async function deleteRole(roleId, token) {
     const response = await fetch(apiUrl, {
       method: "DELETE",
       headers: {
-        "Authorization": `Bearer ${token}`,
+        Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
         "ngrok-skip-browser-warning": "any-value",
       },
@@ -410,9 +411,11 @@ export async function deleteRole(roleId, token) {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `Gagal menghapus role ID ${roleId}.`);
+      throw new Error(
+        errorData.message || `Gagal menghapus role ID ${roleId}.`
+      );
     }
-    
+
     return { success: true, message: "Role berhasil dihapus." };
   } catch (error) {
     console.error(`Error pada deleteRole untuk ID ${roleId}:`, error);
@@ -467,8 +470,8 @@ export async function createSupplier(
 ) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/create-supplier`,
-        `${import.meta.env.VITE_API_URL}/create-supplier`,
+      //`https://nexttechenterprise.site/api/create-supplier`,
+      `${import.meta.env.VITE_API_URL}/create-supplier`,
       {
         method: "POST",
         headers: {
@@ -501,8 +504,8 @@ export async function createSupplier(
 export async function getAllSuppliers(token) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/suppliers`,
-        `${import.meta.env.VITE_API_URL}/suppliers`,
+      //`https://nexttechenterprise.site/api/suppliers`,
+      `${import.meta.env.VITE_API_URL}/suppliers`,
       {
         method: "GET",
         headers: {
@@ -528,8 +531,8 @@ export async function getAllSuppliers(token) {
 export async function getSupplier(id, token) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/suppliers/${id}`,
-        `${import.meta.env.VITE_API_URL}/suppliers/${id}`,
+      //`https://nexttechenterprise.site/api/suppliers/${id}`,
+      `${import.meta.env.VITE_API_URL}/suppliers/${id}`,
       {
         method: "GET",
         headers: {
@@ -565,8 +568,8 @@ export async function updateDataSupplier(
 ) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/update-supplier/${id}`,
-        `${import.meta.env.VITE_API_URL}/update-supplier/${id}`,
+      //`https://nexttechenterprise.site/api/update-supplier/${id}`,
+      `${import.meta.env.VITE_API_URL}/update-supplier/${id}`,
       {
         method: "PUT",
         headers: {
@@ -599,8 +602,8 @@ export async function updateDataSupplier(
 export async function softDeleteSupplier(id, token) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/delete-supplier/${id}`,
-        `${import.meta.env.VITE_API_URL}/delete-supplier/${id}`,
+      //`https://nexttechenterprise.site/api/delete-supplier/${id}`,
+      `${import.meta.env.VITE_API_URL}/delete-supplier/${id}`,
       {
         method: "DELETE",
         headers: {
@@ -643,8 +646,8 @@ export async function createCustomer(
 ) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/create-customer`,
-        `${import.meta.env.VITE_API_URL}/create-customer`,
+      //`https://nexttechenterprise.site/api/create-customer`,
+      `${import.meta.env.VITE_API_URL}/create-customer`,
       {
         method: "POST",
         headers: {
@@ -681,8 +684,8 @@ export async function createCustomer(
 export async function getAllCustomers(token) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/customers`,
-        `${import.meta.env.VITE_API_URL}/customers`,
+      //`https://nexttechenterprise.site/api/customers`,
+      `${import.meta.env.VITE_API_URL}/customers`,
       {
         method: "GET",
         headers: {
@@ -708,8 +711,8 @@ export async function getAllCustomers(token) {
 export async function getCustomer(id, token) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/customers/${id}`,
-        `${import.meta.env.VITE_API_URL}/customers/${id}`,
+      //`https://nexttechenterprise.site/api/customers/${id}`,
+      `${import.meta.env.VITE_API_URL}/customers/${id}`,
       {
         method: "GET",
         headers: {
@@ -749,8 +752,8 @@ export async function updateDataCustomer(
 ) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/update-customer/${id}`,
-        `${import.meta.env.VITE_API_URL}/update-customer/${id}`,
+      //`https://nexttechenterprise.site/api/update-customer/${id}`,
+      `${import.meta.env.VITE_API_URL}/update-customer/${id}`,
       {
         method: "PUT",
         headers: {
@@ -787,8 +790,8 @@ export async function updateDataCustomer(
 export async function softDeleteCustomer(id, token) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/delete-customer/${id}`,
-        `${import.meta.env.VITE_API_URL}/delete-customer/${id}`,
+      //`https://nexttechenterprise.site/api/delete-customer/${id}`,
+      `${import.meta.env.VITE_API_URL}/delete-customer/${id}`,
       {
         method: "DELETE",
         headers: {
@@ -820,7 +823,7 @@ export async function softDeleteCustomer(id, token) {
 export async function createAgent(token, agent_name) {
   try {
     const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/create-agent`,
+      `${import.meta.env.VITE_API_URL}/create-agent`,
       {
         method: "POST",
         headers: {
@@ -846,23 +849,20 @@ export async function createAgent(token, agent_name) {
 
 export async function getAllAgents(token) {
   try {
-    const response = await fetch(
-      `${import.meta.env.VITE_API_URL}/agents`,
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-          "ngrok-skip-browser-warning": "any-value",
-        },
-      }
-    );
+    const response = await fetch(`${import.meta.env.VITE_API_URL}/agents`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+        "ngrok-skip-browser-warning": "any-value",
+      },
+    });
 
     const data = await response.json();
 
     return {
       status: response.status,
-      ...data,            
+      ...data,
     };
   } catch (error) {
     return {
@@ -875,7 +875,7 @@ export async function getAllAgents(token) {
 export async function getAgents(id, token) {
   try {
     const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/agents/${id}`,
+      `${import.meta.env.VITE_API_URL}/agents/${id}`,
       {
         method: "GET",
         headers: {
@@ -903,7 +903,7 @@ export async function getAgents(id, token) {
 export async function updateAgents(token, id, agent_name) {
   try {
     const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/update-agent/${id}`,
+      `${import.meta.env.VITE_API_URL}/update-agent/${id}`,
       {
         method: "PUT",
         headers: {
@@ -930,7 +930,7 @@ export async function updateAgents(token, id, agent_name) {
 export async function softDeleteAgents(id, token) {
   try {
     const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/delete-agent/${id}`,
+      `${import.meta.env.VITE_API_URL}/delete-agent/${id}`,
       {
         method: "DELETE",
         headers: {
@@ -959,10 +959,17 @@ export async function softDeleteAgents(id, token) {
 
 // #startregion BANK ACCOUNT FUNCTION
 
-export async function createBankAccount(token, bank_account_name, bank_account_number, beneficiary_name ,bank_account_address, swift_code) {
+export async function createBankAccount(
+  token,
+  bank_account_name,
+  bank_account_number,
+  beneficiary_name,
+  bank_account_address,
+  swift_code
+) {
   try {
     const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/create-bank-account`,
+      `${import.meta.env.VITE_API_URL}/create-bank-account`,
       {
         method: "POST",
         headers: {
@@ -970,7 +977,7 @@ export async function createBankAccount(token, bank_account_name, bank_account_n
           Authorization: `Bearer ${token}`,
           "ngrok-skip-browser-warning": "any-value",
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           bank_account_name: bank_account_name,
           bank_account_number: bank_account_number,
           beneficiary_name: beneficiary_name,
@@ -1010,7 +1017,7 @@ export async function getAllBankAccounts(token) {
 
     return {
       status: response.status,
-      ...data,            
+      ...data,
     };
   } catch (error) {
     return {
@@ -1023,7 +1030,7 @@ export async function getAllBankAccounts(token) {
 export async function getBankAccounts(id, token) {
   try {
     const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/bank-accounts/${id}`,
+      `${import.meta.env.VITE_API_URL}/bank-accounts/${id}`,
       {
         method: "GET",
         headers: {
@@ -1048,10 +1055,18 @@ export async function getBankAccounts(id, token) {
   }
 }
 
-export async function updateBankAccounts(token, id, bank_account_name, bank_account_number, beneficiary_name, bank_account_address, swift_code) {
+export async function updateBankAccounts(
+  token,
+  id,
+  bank_account_name,
+  bank_account_number,
+  beneficiary_name,
+  bank_account_address,
+  swift_code
+) {
   try {
     const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/update-bank-account/${id}`,
+      `${import.meta.env.VITE_API_URL}/update-bank-account/${id}`,
       {
         method: "PUT",
         headers: {
@@ -1059,7 +1074,7 @@ export async function updateBankAccounts(token, id, bank_account_name, bank_acco
           Authorization: `Bearer ${token}`,
           "ngrok-skip-browser-warning": "any-value",
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           bank_account_name: bank_account_name,
           bank_account_number: bank_account_number,
           beneficiary_name: beneficiary_name,
@@ -1084,7 +1099,7 @@ export async function updateBankAccounts(token, id, bank_account_name, bank_acco
 export async function softDeleteBankAccounts(id, token) {
   try {
     const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/delete-bank-account/${id}`,
+      `${import.meta.env.VITE_API_URL}/delete-bank-account/${id}`,
       {
         method: "DELETE",
         headers: {
@@ -1116,8 +1131,8 @@ export async function softDeleteBankAccounts(id, token) {
 export async function createColor(token, kode, deskripsi) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/create-warna`,
-        `${import.meta.env.VITE_API_URL}/create-warna`,
+      //`https://nexttechenterprise.site/api/create-warna`,
+      `${import.meta.env.VITE_API_URL}/create-warna`,
       {
         method: "POST",
         headers: {
@@ -1144,16 +1159,17 @@ export async function createColor(token, kode, deskripsi) {
 export async function getAllColors(token) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/warna`,
-        `${import.meta.env.VITE_API_URL}/warna`,
+      //`https://nexttechenterprise.site/api/warna`,
+      `${import.meta.env.VITE_API_URL}/warna`,
       {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-        "ngrok-skip-browser-warning": "any-value",
-      },
-    });
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          "ngrok-skip-browser-warning": "any-value",
+        },
+      }
+    );
 
     const data = await response.json();
 
@@ -1170,8 +1186,8 @@ export async function getAllColors(token) {
 export async function getColor(id, token) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/warna/${id}`,
-        `${import.meta.env.VITE_API_URL}/warna/${id}`,
+      //`https://nexttechenterprise.site/api/warna/${id}`,
+      `${import.meta.env.VITE_API_URL}/warna/${id}`,
       {
         method: "GET",
         headers: {
@@ -1197,8 +1213,8 @@ export async function getColor(id, token) {
 export async function updateDataColor(token, id, kode, deskripsi) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/update-warna/${id}`,
-        `${import.meta.env.VITE_API_URL}/update-warna/${id}`,
+      //`https://nexttechenterprise.site/api/update-warna/${id}`,
+      `${import.meta.env.VITE_API_URL}/update-warna/${id}`,
       {
         method: "PUT",
         headers: {
@@ -1225,8 +1241,8 @@ export async function updateDataColor(token, id, kode, deskripsi) {
 export async function softDeleteColor(id, token) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/delete-warna/${id}`,
-        `${import.meta.env.VITE_API_URL}/delete-warna/${id}`,
+      //`https://nexttechenterprise.site/api/delete-warna/${id}`,
+      `${import.meta.env.VITE_API_URL}/delete-warna/${id}`,
       {
         method: "DELETE",
         headers: {
@@ -1258,8 +1274,8 @@ export async function softDeleteColor(id, token) {
 export async function createFabric(token, corak, konstruksi) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/create-kain`,
-        `${import.meta.env.VITE_API_URL}/create-kain`,
+      //`https://nexttechenterprise.site/api/create-kain`,
+      `${import.meta.env.VITE_API_URL}/create-kain`,
       {
         method: "POST",
         headers: {
@@ -1286,16 +1302,17 @@ export async function createFabric(token, corak, konstruksi) {
 export async function getAllFabrics(token) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/kain`,
-        `${import.meta.env.VITE_API_URL}/kain`,
+      //`https://nexttechenterprise.site/api/kain`,
+      `${import.meta.env.VITE_API_URL}/kain`,
       {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-        "ngrok-skip-browser-warning": "any-value",
-      },
-    });
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          "ngrok-skip-browser-warning": "any-value",
+        },
+      }
+    );
 
     const data = await response.json();
 
@@ -1312,8 +1329,8 @@ export async function getAllFabrics(token) {
 export async function getFabric(id, token) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/kain/${id}`,
-        `${import.meta.env.VITE_API_URL}/kain/${id}`,
+      //`https://nexttechenterprise.site/api/kain/${id}`,
+      `${import.meta.env.VITE_API_URL}/kain/${id}`,
       {
         method: "GET",
         headers: {
@@ -1339,8 +1356,8 @@ export async function getFabric(id, token) {
 export async function updateDataFabric(token, id, corak, konstruksi) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/update-kain/${id}`,
-        `${import.meta.env.VITE_API_URL}/update-kain/${id}`,
+      //`https://nexttechenterprise.site/api/update-kain/${id}`,
+      `${import.meta.env.VITE_API_URL}/update-kain/${id}`,
       {
         method: "PUT",
         headers: {
@@ -1367,8 +1384,8 @@ export async function updateDataFabric(token, id, corak, konstruksi) {
 export async function softDeleteFabric(id, token) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/delete-kain/${id}`,
-        `${import.meta.env.VITE_API_URL}/delete-kain/${id}`,
+      //`https://nexttechenterprise.site/api/delete-kain/${id}`,
+      `${import.meta.env.VITE_API_URL}/delete-kain/${id}`,
       {
         method: "DELETE",
         headers: {
@@ -1400,8 +1417,8 @@ export async function softDeleteFabric(id, token) {
 export async function createSOType(token, jenis) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/create-jenis-so`,
-        `${import.meta.env.VITE_API_URL}/create-jenis-so`,
+      //`https://nexttechenterprise.site/api/create-jenis-so`,
+      `${import.meta.env.VITE_API_URL}/create-jenis-so`,
       {
         method: "POST",
         headers: {
@@ -1428,8 +1445,8 @@ export async function createSOType(token, jenis) {
 export async function getAllSOTypes(token) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/jenis-sos`,
-        `${import.meta.env.VITE_API_URL}/jenis-sos`,
+      //`https://nexttechenterprise.site/api/jenis-sos`,
+      `${import.meta.env.VITE_API_URL}/jenis-sos`,
       {
         method: "GET",
         headers: {
@@ -1455,8 +1472,8 @@ export async function getAllSOTypes(token) {
 export async function getSOType(id, token) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/jenis-so/${id}`,
-        `${import.meta.env.VITE_API_URL}/jenis-so/${id}`,
+      //`https://nexttechenterprise.site/api/jenis-so/${id}`,
+      `${import.meta.env.VITE_API_URL}/jenis-so/${id}`,
       {
         method: "GET",
         headers: {
@@ -1484,8 +1501,8 @@ export async function getSOType(id, token) {
 export async function updateDataSOType(token, id, jenis) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/update-jenis-so/${id}`,
-        `${import.meta.env.VITE_API_URL}/update-jenis-so/${id}`,
+      //`https://nexttechenterprise.site/api/update-jenis-so/${id}`,
+      `${import.meta.env.VITE_API_URL}/update-jenis-so/${id}`,
       {
         method: "PUT",
         headers: {
@@ -1512,8 +1529,8 @@ export async function updateDataSOType(token, id, jenis) {
 export async function softDeleteSOType(id, token) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/delete-jenis-so/${id}`,
-        `${import.meta.env.VITE_API_URL}/delete-jenis-so/${id}`,
+      //`https://nexttechenterprise.site/api/delete-jenis-so/${id}`,
+      `${import.meta.env.VITE_API_URL}/delete-jenis-so/${id}`,
       {
         method: "DELETE",
         headers: {
@@ -1545,8 +1562,8 @@ export async function softDeleteSOType(id, token) {
 export async function createCustomerType(token, jenis) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/create-customer-type`,
-        `${import.meta.env.VITE_API_URL}/create-customer-type`,
+      //`https://nexttechenterprise.site/api/create-customer-type`,
+      `${import.meta.env.VITE_API_URL}/create-customer-type`,
       {
         method: "POST",
         headers: {
@@ -1615,7 +1632,7 @@ export async function getAllCustomerTypes(token) {
 
     return {
       status: response.status,
-      ...data,            
+      ...data,
     };
   } catch (error) {
     return {
@@ -1628,8 +1645,8 @@ export async function getAllCustomerTypes(token) {
 export async function getCustomerType(id, token) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/customer-types/${id}`,
-        `${import.meta.env.VITE_API_URL}/customer-types/${id}`,
+      //`https://nexttechenterprise.site/api/customer-types/${id}`,
+      `${import.meta.env.VITE_API_URL}/customer-types/${id}`,
       {
         method: "GET",
         headers: {
@@ -1657,8 +1674,8 @@ export async function getCustomerType(id, token) {
 export async function updateDataCustomerType(token, id, jenis) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/update-customer-type/${id}`,
-        `${import.meta.env.VITE_API_URL}/update-customer-type/${id}`,
+      //`https://nexttechenterprise.site/api/update-customer-type/${id}`,
+      `${import.meta.env.VITE_API_URL}/update-customer-type/${id}`,
       {
         method: "PUT",
         headers: {
@@ -1685,8 +1702,8 @@ export async function updateDataCustomerType(token, id, jenis) {
 export async function softDeleteCustomerType(id, token) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/delete-customer-type/${id}`,
-        `${import.meta.env.VITE_API_URL}/delete-customer-type/${id}`,
+      //`https://nexttechenterprise.site/api/delete-customer-type/${id}`,
+      `${import.meta.env.VITE_API_URL}/delete-customer-type/${id}`,
       {
         method: "DELETE",
         headers: {
@@ -1718,8 +1735,8 @@ export async function softDeleteCustomerType(id, token) {
 export async function createCurrencies(token, name) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/create-currency`,
-        `${import.meta.env.VITE_API_URL}/create-currency`,
+      //`https://nexttechenterprise.site/api/create-currency`,
+      `${import.meta.env.VITE_API_URL}/create-currency`,
       {
         method: "POST",
         headers: {
@@ -1772,23 +1789,20 @@ export async function createCurrencies(token, name) {
 
 export async function getAllCurrenciess(token) {
   try {
-    const response = await fetch(
-      `${import.meta.env.VITE_API_URL}/currencies`,
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-          "ngrok-skip-browser-warning": "any-value",
-        },
-      }
-    );
+    const response = await fetch(`${import.meta.env.VITE_API_URL}/currencies`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+        "ngrok-skip-browser-warning": "any-value",
+      },
+    });
 
     const data = await response.json();
 
     return {
       status: response.status,
-      ...data,            
+      ...data,
     };
   } catch (error) {
     return {
@@ -1801,8 +1815,8 @@ export async function getAllCurrenciess(token) {
 export async function getCurrencies(id, token) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/currencies/${id}`,
-        `${import.meta.env.VITE_API_URL}/currencies/${id}`,
+      //`https://nexttechenterprise.site/api/currencies/${id}`,
+      `${import.meta.env.VITE_API_URL}/currencies/${id}`,
       {
         method: "GET",
         headers: {
@@ -1830,8 +1844,8 @@ export async function getCurrencies(id, token) {
 export async function updateDataCurrencies(token, id, name) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/update-currency/${id}`,
-        `${import.meta.env.VITE_API_URL}/update-currency/${id}`,
+      //`https://nexttechenterprise.site/api/update-currency/${id}`,
+      `${import.meta.env.VITE_API_URL}/update-currency/${id}`,
       {
         method: "PUT",
         headers: {
@@ -1858,8 +1872,8 @@ export async function updateDataCurrencies(token, id, name) {
 export async function softDeleteCurrencies(id, token) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/delete-currency/${id}`,
-        `${import.meta.env.VITE_API_URL}/delete-currency/${id}`,
+      //`https://nexttechenterprise.site/api/delete-currency/${id}`,
+      `${import.meta.env.VITE_API_URL}/delete-currency/${id}`,
       {
         method: "DELETE",
         headers: {
@@ -1891,8 +1905,8 @@ export async function softDeleteCurrencies(id, token) {
 export async function createSalesContract(token, payload) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/create-sales-contract`,
-        `${import.meta.env.VITE_API_URL}/create-sales-contract`,
+      //`https://nexttechenterprise.site/api/create-sales-contract`,
+      `${import.meta.env.VITE_API_URL}/create-sales-contract`,
       {
         method: "POST",
         headers: {
@@ -1922,8 +1936,8 @@ export async function createSalesContract(token, payload) {
 export async function getAllSalesContracts(token) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/sales-contracts`,
-        `${import.meta.env.VITE_API_URL}/sales-contracts`,
+      //`https://nexttechenterprise.site/api/sales-contracts`,
+      `${import.meta.env.VITE_API_URL}/sales-contracts`,
       {
         method: "GET",
         headers: {
@@ -1949,8 +1963,8 @@ export async function getAllSalesContracts(token) {
 export async function getSalesContracts(id, token) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/sales-contracts/${id}`,
-        `${import.meta.env.VITE_API_URL}/sales-contracts/${id}`,
+      //`https://nexttechenterprise.site/api/sales-contracts/${id}`,
+      `${import.meta.env.VITE_API_URL}/sales-contracts/${id}`,
       {
         method: "GET",
         headers: {
@@ -1998,8 +2012,8 @@ export async function updateDataSalesContract(token, id, payload) {
 
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/update-sales-contract/${id}`,
-        `${import.meta.env.VITE_API_URL}/update-sales-contract/${id}`,
+      //`https://nexttechenterprise.site/api/update-sales-contract/${id}`,
+      `${import.meta.env.VITE_API_URL}/update-sales-contract/${id}`,
       {
         method: "PUT",
         headers: {
@@ -2036,8 +2050,8 @@ export async function updateDataSalesContract(token, id, payload) {
 export async function softDeleteSalesContract(id, token) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/delete-sales-contract/${id}`,
-        `${import.meta.env.VITE_API_URL}/delete-sales-contract/${id}`,
+      //`https://nexttechenterprise.site/api/delete-sales-contract/${id}`,
+      `${import.meta.env.VITE_API_URL}/delete-sales-contract/${id}`,
       {
         method: "DELETE",
         headers: {
@@ -2069,8 +2083,8 @@ export async function softDeleteSalesContract(id, token) {
 export async function createSalesOrder(token, payload) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/create-sales-order`,
-        `${import.meta.env.VITE_API_URL}/create-sales-order`,
+      //`https://nexttechenterprise.site/api/create-sales-order`,
+      `${import.meta.env.VITE_API_URL}/create-sales-order`,
       {
         method: "POST",
         headers: {
@@ -2142,7 +2156,7 @@ export async function getAllSalesOrders(token) {
 
     return {
       status: response.status,
-      ...data,            
+      ...data,
     };
   } catch (error) {
     return {
@@ -2155,8 +2169,8 @@ export async function getAllSalesOrders(token) {
 export async function getSalesOrders(id, token) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/sales-orders/${id}`,
-        `${import.meta.env.VITE_API_URL}/sales-orders/${id}`,
+      //`https://nexttechenterprise.site/api/sales-orders/${id}`,
+      `${import.meta.env.VITE_API_URL}/sales-orders/${id}`,
       {
         method: "GET",
         headers: {
@@ -2184,8 +2198,8 @@ export async function getSalesOrders(id, token) {
 export async function updateDataSalesOrder(token, id, payload) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/update-sales-order/${id}`,
-        `${import.meta.env.VITE_API_URL}/update-sales-order/${id}`,
+      //`https://nexttechenterprise.site/api/update-sales-order/${id}`,
+      `${import.meta.env.VITE_API_URL}/update-sales-order/${id}`,
       {
         method: "PUT",
         headers: {
@@ -2212,8 +2226,8 @@ export async function updateDataSalesOrder(token, id, payload) {
 export async function softDeleteSalesOrder(id, token) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/delete-sales-order/${id}`,
-        `${import.meta.env.VITE_API_URL}/delete-sales-order/${id}`,
+      //`https://nexttechenterprise.site/api/delete-sales-order/${id}`,
+      `${import.meta.env.VITE_API_URL}/delete-sales-order/${id}`,
       {
         method: "DELETE",
         headers: {
@@ -2246,8 +2260,8 @@ export async function softDeleteSalesOrder(id, token) {
 export async function createPackingList(token, payload) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/create-packing-list`,
-        `${import.meta.env.VITE_API_URL}/create-packing-list`,
+      //`https://nexttechenterprise.site/api/create-packing-list`,
+      `${import.meta.env.VITE_API_URL}/create-packing-list`,
       {
         method: "POST",
         headers: {
@@ -2319,7 +2333,7 @@ export async function getAllPackingLists(token) {
 
     return {
       status: response.status,
-      ...data,            
+      ...data,
     };
   } catch (error) {
     return {
@@ -2332,8 +2346,8 @@ export async function getAllPackingLists(token) {
 export async function getPackingLists(id, token) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/packing-lists/${id}`,
-        `${import.meta.env.VITE_API_URL}/packing-lists/${id}`,
+      //`https://nexttechenterprise.site/api/packing-lists/${id}`,
+      `${import.meta.env.VITE_API_URL}/packing-lists/${id}`,
       {
         method: "GET",
         headers: {
@@ -2361,8 +2375,8 @@ export async function getPackingLists(id, token) {
 export async function updateDataPackingList(token, id, payload) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/update-packing-list/${id}`,
-        `${import.meta.env.VITE_API_URL}/update-packing-list/${id}`,
+      //`https://nexttechenterprise.site/api/update-packing-list/${id}`,
+      `${import.meta.env.VITE_API_URL}/update-packing-list/${id}`,
       {
         method: "PUT",
         headers: {
@@ -2389,8 +2403,8 @@ export async function updateDataPackingList(token, id, payload) {
 export async function softDeletePackingList(id, token) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/delete-packing-list/${id}`,
-        `${import.meta.env.VITE_API_URL}/delete-packing-list/${id}`,
+      //`https://nexttechenterprise.site/api/delete-packing-list/${id}`,
+      `${import.meta.env.VITE_API_URL}/delete-packing-list/${id}`,
       {
         method: "DELETE",
         headers: {
@@ -2423,8 +2437,8 @@ export async function softDeletePackingList(id, token) {
 export async function createDeliveryNote(token, payload) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/create-surat-jalan`,
-        `${import.meta.env.VITE_API_URL}/create-surat-jalan`,
+      //`https://nexttechenterprise.site/api/create-surat-jalan`,
+      `${import.meta.env.VITE_API_URL}/create-surat-jalan`,
       {
         method: "POST",
         headers: {
@@ -2496,7 +2510,7 @@ export async function getAllDeliveryNotes(token) {
 
     return {
       status: response.status,
-      ...data,            
+      ...data,
     };
   } catch (error) {
     return {
@@ -2509,8 +2523,8 @@ export async function getAllDeliveryNotes(token) {
 export async function getDeliveryNotes(id, token) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/surat-jalan/${id}`,
-        `${import.meta.env.VITE_API_URL}/surat-jalan/${id}`,
+      //`https://nexttechenterprise.site/api/surat-jalan/${id}`,
+      `${import.meta.env.VITE_API_URL}/surat-jalan/${id}`,
       {
         method: "GET",
         headers: {
@@ -2539,8 +2553,8 @@ export async function getDeliveryNotes(id, token) {
 export async function updateDataDeliveryNote(token, id, payload) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/update-surat-jalan/${id}`,
-        `${import.meta.env.VITE_API_URL}/update-surat-jalan/${id}`,
+      //`https://nexttechenterprise.site/api/update-surat-jalan/${id}`,
+      `${import.meta.env.VITE_API_URL}/update-surat-jalan/${id}`,
       {
         method: "PUT",
         headers: {
@@ -2567,8 +2581,8 @@ export async function updateDataDeliveryNote(token, id, payload) {
 export async function softDeleteDeliveryNote(id, token) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/delete-surat-jalan/${id}`,
-        `${import.meta.env.VITE_API_URL}/delete-surat-jalan/${id}`,
+      //`https://nexttechenterprise.site/api/delete-surat-jalan/${id}`,
+      `${import.meta.env.VITE_API_URL}/delete-surat-jalan/${id}`,
       {
         method: "DELETE",
         headers: {
@@ -2601,8 +2615,8 @@ export async function softDeleteDeliveryNote(id, token) {
 export async function createSatuanUnit(token, satuan) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/create-satuan-unit`,
-        `${import.meta.env.VITE_API_URL}/create-satuan-unit`,
+      //`https://nexttechenterprise.site/api/create-satuan-unit`,
+      `${import.meta.env.VITE_API_URL}/create-satuan-unit`,
       {
         method: "POST",
         headers: {
@@ -2630,8 +2644,8 @@ export async function createSatuanUnit(token, satuan) {
 export async function getAllSatuanUnits(token) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/satuan-unit`,
-        `${import.meta.env.VITE_API_URL}/satuan-unit`,
+      //`https://nexttechenterprise.site/api/satuan-unit`,
+      `${import.meta.env.VITE_API_URL}/satuan-unit`,
       {
         method: "GET",
         headers: {
@@ -2657,8 +2671,8 @@ export async function getAllSatuanUnits(token) {
 export async function getSatuanUnits(id, token) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/satuan-unit/${id}`,
-        `${import.meta.env.VITE_API_URL}/satuan-unit/${id}`,
+      //`https://nexttechenterprise.site/api/satuan-unit/${id}`,
+      `${import.meta.env.VITE_API_URL}/satuan-unit/${id}`,
       {
         method: "GET",
         headers: {
@@ -2686,8 +2700,8 @@ export async function getSatuanUnits(id, token) {
 export async function updateDataSatuanUnit(token, id, satuan) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/update-satuan-unit/${id}`,
-        `${import.meta.env.VITE_API_URL}/update-satuan-unit/${id}`,
+      //`https://nexttechenterprise.site/api/update-satuan-unit/${id}`,
+      `${import.meta.env.VITE_API_URL}/update-satuan-unit/${id}`,
       {
         method: "PUT",
         headers: {
@@ -2714,8 +2728,8 @@ export async function updateDataSatuanUnit(token, id, satuan) {
 export async function softDeleteSatuanUnit(id, token) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/delete-satuan-unit/${id}`,
-        `${import.meta.env.VITE_API_URL}/delete-satuan-unit/${id}`,
+      //`https://nexttechenterprise.site/api/delete-satuan-unit/${id}`,
+      `${import.meta.env.VITE_API_URL}/delete-satuan-unit/${id}`,
       {
         method: "DELETE",
         headers: {
@@ -2748,8 +2762,8 @@ export async function softDeleteSatuanUnit(id, token) {
 export async function createGrade(token, grade) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/create-grade`,
-        `${import.meta.env.VITE_API_URL}/create-grade`,
+      //`https://nexttechenterprise.site/api/create-grade`,
+      `${import.meta.env.VITE_API_URL}/create-grade`,
       {
         method: "POST",
         headers: {
@@ -2802,23 +2816,20 @@ export async function createGrade(token, grade) {
 
 export async function getAllGrades(token) {
   try {
-    const response = await fetch(
-      `${import.meta.env.VITE_API_URL}/grades`,
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-          "ngrok-skip-browser-warning": "any-value",
-        },
-      }
-    );
+    const response = await fetch(`${import.meta.env.VITE_API_URL}/grades`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+        "ngrok-skip-browser-warning": "any-value",
+      },
+    });
 
     const data = await response.json();
 
     return {
       status: response.status,
-      ...data,            
+      ...data,
     };
   } catch (error) {
     return {
@@ -2831,8 +2842,8 @@ export async function getAllGrades(token) {
 export async function getGrades(id, token) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/grades/${id}`,
-        `${import.meta.env.VITE_API_URL}/grades/${id}`,
+      //`https://nexttechenterprise.site/api/grades/${id}`,
+      `${import.meta.env.VITE_API_URL}/grades/${id}`,
       {
         method: "GET",
         headers: {
@@ -2860,8 +2871,8 @@ export async function getGrades(id, token) {
 export async function updateDataGrade(token, id, grade) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/update-grade/${id}`,
-        `${import.meta.env.VITE_API_URL}/update-grade/${id}`,
+      //`https://nexttechenterprise.site/api/update-grade/${id}`,
+      `${import.meta.env.VITE_API_URL}/update-grade/${id}`,
       {
         method: "PUT",
         headers: {
@@ -2888,8 +2899,8 @@ export async function updateDataGrade(token, id, grade) {
 export async function softDeleteGrade(id, token) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/delete-grade/${id}`,
-        `${import.meta.env.VITE_API_URL}/delete-grade/${id}`,
+      //`https://nexttechenterprise.site/api/delete-grade/${id}`,
+      `${import.meta.env.VITE_API_URL}/delete-grade/${id}`,
       {
         method: "DELETE",
         headers: {
@@ -2921,8 +2932,10 @@ export async function softDeleteGrade(id, token) {
 export async function getLastSequence(token, doc, type, ppn) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/last-sequence?doc=${doc}&type=${type}&ppn=${ppn}`,
-        `${import.meta.env.VITE_API_URL}/last-sequence?doc=${doc}&type=${type}&ppn=${ppn}`,
+      //`https://nexttechenterprise.site/api/last-sequence?doc=${doc}&type=${type}&ppn=${ppn}`,
+      `${
+        import.meta.env.VITE_API_URL
+      }/last-sequence?doc=${doc}&type=${type}&ppn=${ppn}`,
       {
         method: "GET",
         headers: {
@@ -2953,8 +2966,8 @@ export async function getLastSequence(token, doc, type, ppn) {
 export async function createBeliGreige(token, payload) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/create-purchase-greige-contract`,
-        `${import.meta.env.VITE_API_URL}/create-purchase-greige-contract`,
+      //`https://nexttechenterprise.site/api/create-purchase-greige-contract`,
+      `${import.meta.env.VITE_API_URL}/create-purchase-greige-contract`,
       {
         method: "POST",
         headers: {
@@ -3026,7 +3039,7 @@ export async function getAllBeliGreiges(token) {
 
     return {
       status: response.status,
-      ...data,            
+      ...data,
     };
   } catch (error) {
     return {
@@ -3039,8 +3052,8 @@ export async function getAllBeliGreiges(token) {
 export async function getBeliGreiges(id, token) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/purchase-greige-contracts/${id}`,
-        `${import.meta.env.VITE_API_URL}/purchase-greige-contracts/${id}`,
+      //`https://nexttechenterprise.site/api/purchase-greige-contracts/${id}`,
+      `${import.meta.env.VITE_API_URL}/purchase-greige-contracts/${id}`,
       {
         method: "GET",
         headers: {
@@ -3069,8 +3082,8 @@ export async function getBeliGreiges(id, token) {
 export async function updateDataBeliGreige(token, id, payload) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/update-purchase-greige-contract/${id}`,
-        `${import.meta.env.VITE_API_URL}/update-purchase-greige-contract/${id}`,
+      //`https://nexttechenterprise.site/api/update-purchase-greige-contract/${id}`,
+      `${import.meta.env.VITE_API_URL}/update-purchase-greige-contract/${id}`,
       {
         method: "PUT",
         headers: {
@@ -3101,8 +3114,8 @@ export async function updateDataBeliGreige(token, id, payload) {
 export async function softDeleteBeliGreige(id, token) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/delete-purchase-greige-contract/${id}`,
-        `${import.meta.env.VITE_API_URL}/delete-purchase-greige-contract/${id}`,
+      //`https://nexttechenterprise.site/api/delete-purchase-greige-contract/${id}`,
+      `${import.meta.env.VITE_API_URL}/delete-purchase-greige-contract/${id}`,
       {
         method: "DELETE",
         headers: {
@@ -3133,8 +3146,8 @@ export async function softDeleteBeliGreige(id, token) {
 export async function createBeliGreigeOrder(token, payload) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/create-purchase-greige-order`,
-        `${import.meta.env.VITE_API_URL}/create-purchase-greige-order`,
+      //`https://nexttechenterprise.site/api/create-purchase-greige-order`,
+      `${import.meta.env.VITE_API_URL}/create-purchase-greige-order`,
       {
         method: "POST",
         headers: {
@@ -3206,7 +3219,7 @@ export async function getAllBeliGreigeOrders(token) {
 
     return {
       status: response.status,
-      ...data,            
+      ...data,
     };
   } catch (error) {
     return {
@@ -3219,8 +3232,8 @@ export async function getAllBeliGreigeOrders(token) {
 export async function getBeliGreigeOrders(id, token) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/purchase-greige-orders/${id}`,
-        `${import.meta.env.VITE_API_URL}/purchase-greige-orders/${id}`,
+      //`https://nexttechenterprise.site/api/purchase-greige-orders/${id}`,
+      `${import.meta.env.VITE_API_URL}/purchase-greige-orders/${id}`,
       {
         method: "GET",
         headers: {
@@ -3248,8 +3261,8 @@ export async function getBeliGreigeOrders(id, token) {
 export async function updateDataBeliGreigeOrder(token, id, payload) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/update-purchase-greige-order/${id}`,
-        `${import.meta.env.VITE_API_URL}/update-purchase-greige-order/${id}`,
+      //`https://nexttechenterprise.site/api/update-purchase-greige-order/${id}`,
+      `${import.meta.env.VITE_API_URL}/update-purchase-greige-order/${id}`,
       {
         method: "PUT",
         headers: {
@@ -3278,8 +3291,8 @@ export async function updateDataBeliGreigeOrder(token, id, payload) {
 export async function softDeleteBeliGreigeOrder(id, token) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/delete-purchase-greige-order/${id}`,
-        `${import.meta.env.VITE_API_URL}/delete-purchase-greige-order/${id}`,
+      //`https://nexttechenterprise.site/api/delete-purchase-greige-order/${id}`,
+      `${import.meta.env.VITE_API_URL}/delete-purchase-greige-order/${id}`,
       {
         method: "DELETE",
         headers: {
@@ -3311,8 +3324,8 @@ export async function softDeleteBeliGreigeOrder(id, token) {
 export async function createBGDeliveryNote(token, payload) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/create-purchase-greige-surat-jalan`,
-        `${import.meta.env.VITE_API_URL}/create-purchase-greige-surat-jalan`,
+      //`https://nexttechenterprise.site/api/create-purchase-greige-surat-jalan`,
+      `${import.meta.env.VITE_API_URL}/create-purchase-greige-surat-jalan`,
       {
         method: "POST",
         headers: {
@@ -3384,7 +3397,7 @@ export async function getAllBGDeliveryNotes(token) {
 
     return {
       status: response.status,
-      ...data,            
+      ...data,
     };
   } catch (error) {
     return {
@@ -3397,8 +3410,8 @@ export async function getAllBGDeliveryNotes(token) {
 export async function getBGDeliveryNotes(id, token) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/purchase-greige-surat-jalan/${id}`,
-        `${import.meta.env.VITE_API_URL}/purchase-greige-surat-jalan/${id}`,
+      //`https://nexttechenterprise.site/api/purchase-greige-surat-jalan/${id}`,
+      `${import.meta.env.VITE_API_URL}/purchase-greige-surat-jalan/${id}`,
       {
         method: "GET",
         headers: {
@@ -3427,8 +3440,10 @@ export async function getBGDeliveryNotes(id, token) {
 export async function updateDataBGDeliveryNote(token, id, payload) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/update-purchase-greige-surat-jalan/${id}`,
-        `${import.meta.env.VITE_API_URL}/update-purchase-greige-surat-jalan/${id}`,
+      //`https://nexttechenterprise.site/api/update-purchase-greige-surat-jalan/${id}`,
+      `${
+        import.meta.env.VITE_API_URL
+      }/update-purchase-greige-surat-jalan/${id}`,
       {
         method: "PUT",
         headers: {
@@ -3457,8 +3472,10 @@ export async function updateDataBGDeliveryNote(token, id, payload) {
 export async function softDeleteBGDeliveryNote(id, token) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/delete-purchase-greige-surat-jalan/${id}`,
-        `${import.meta.env.VITE_API_URL}/delete-purchase-greige-surat-jalan/${id}`,
+      //`https://nexttechenterprise.site/api/delete-purchase-greige-surat-jalan/${id}`,
+      `${
+        import.meta.env.VITE_API_URL
+      }/delete-purchase-greige-surat-jalan/${id}`,
       {
         method: "DELETE",
         headers: {
@@ -3490,8 +3507,8 @@ export async function softDeleteBGDeliveryNote(id, token) {
 export async function createOrderCelup(token, payload) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/create-purchase-celup-contract`,
-        `${import.meta.env.VITE_API_URL}/create-purchase-celup-contract`,
+      //`https://nexttechenterprise.site/api/create-purchase-celup-contract`,
+      `${import.meta.env.VITE_API_URL}/create-purchase-celup-contract`,
       {
         method: "POST",
         headers: {
@@ -3547,14 +3564,17 @@ export async function createOrderCelup(token, payload) {
 
 export async function getAllOrderCelups(token) {
   try {
-    const response = await fetch(`${import.meta.env.VITE_API_URL}/purchase-celup-contracts`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-        "ngrok-skip-browser-warning": "any-value",
-      },
-    });
+    const response = await fetch(
+      `${import.meta.env.VITE_API_URL}/purchase-celup-contracts`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          "ngrok-skip-browser-warning": "any-value",
+        },
+      }
+    );
 
     const data = await response.json();
 
@@ -3573,8 +3593,8 @@ export async function getAllOrderCelups(token) {
 export async function getOrderCelups(id, token) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/purchase-celup-contracts/${id}`,
-        `${import.meta.env.VITE_API_URL}/purchase-celup-contracts/${id}`,
+      //`https://nexttechenterprise.site/api/purchase-celup-contracts/${id}`,
+      `${import.meta.env.VITE_API_URL}/purchase-celup-contracts/${id}`,
       {
         method: "GET",
         headers: {
@@ -3603,8 +3623,8 @@ export async function getOrderCelups(id, token) {
 export async function updateDataOrderCelup(token, id, payload) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/update-purchase-celup-contract/${id}`,
-        `${import.meta.env.VITE_API_URL}/update-purchase-celup-contract/${id}`,
+      //`https://nexttechenterprise.site/api/update-purchase-celup-contract/${id}`,
+      `${import.meta.env.VITE_API_URL}/update-purchase-celup-contract/${id}`,
       {
         method: "PUT",
         headers: {
@@ -3635,8 +3655,8 @@ export async function updateDataOrderCelup(token, id, payload) {
 export async function softDeleteOrderCelup(id, token) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/delete-purchase-celup-contract/${id}`,
-        `${import.meta.env.VITE_API_URL}/delete-purchase-celup-contract/${id}`,
+      //`https://nexttechenterprise.site/api/delete-purchase-celup-contract/${id}`,
+      `${import.meta.env.VITE_API_URL}/delete-purchase-celup-contract/${id}`,
       {
         method: "DELETE",
         headers: {
@@ -3667,8 +3687,8 @@ export async function softDeleteOrderCelup(id, token) {
 export async function createOrderCelupOrder(token, payload) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/create-purchase-celup-order`,
-        `${import.meta.env.VITE_API_URL}/create-purchase-celup-order`,
+      //`https://nexttechenterprise.site/api/create-purchase-celup-order`,
+      `${import.meta.env.VITE_API_URL}/create-purchase-celup-order`,
       {
         method: "POST",
         headers: {
@@ -3724,14 +3744,17 @@ export async function createOrderCelupOrder(token, payload) {
 
 export async function getAllOrderCelupOrders(token) {
   try {
-    const response = await fetch(`${import.meta.env.VITE_API_URL}/purchase-celup-orders`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-        "ngrok-skip-browser-warning": "any-value",
-      },
-    });
+    const response = await fetch(
+      `${import.meta.env.VITE_API_URL}/purchase-celup-orders`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          "ngrok-skip-browser-warning": "any-value",
+        },
+      }
+    );
 
     const data = await response.json();
 
@@ -3747,12 +3770,11 @@ export async function getAllOrderCelupOrders(token) {
   }
 }
 
-
 export async function getOrderCelupOrders(id, token) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/purchase-celup-orders/${id}`,
-        `${import.meta.env.VITE_API_URL}/purchase-celup-orders/${id}`,
+      //`https://nexttechenterprise.site/api/purchase-celup-orders/${id}`,
+      `${import.meta.env.VITE_API_URL}/purchase-celup-orders/${id}`,
       {
         method: "GET",
         headers: {
@@ -3781,8 +3803,8 @@ export async function getOrderCelupOrders(id, token) {
 export async function updateDataOrderCelupOrder(token, id, payload) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/update-purchase-celup-order/${id}`,
-        `${import.meta.env.VITE_API_URL}/update-purchase-celup-order/${id}`,
+      //`https://nexttechenterprise.site/api/update-purchase-celup-order/${id}`,
+      `${import.meta.env.VITE_API_URL}/update-purchase-celup-order/${id}`,
       {
         method: "PUT",
         headers: {
@@ -3811,8 +3833,8 @@ export async function updateDataOrderCelupOrder(token, id, payload) {
 export async function softDeleteOrderCelupOrder(id, token) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/delete-purchase-celup-order/${id}`,
-        `${import.meta.env.VITE_API_URL}/delete-purchase-celup-order/${id}`,
+      //`https://nexttechenterprise.site/api/delete-purchase-celup-order/${id}`,
+      `${import.meta.env.VITE_API_URL}/delete-purchase-celup-order/${id}`,
       {
         method: "DELETE",
         headers: {
@@ -3844,8 +3866,8 @@ export async function softDeleteOrderCelupOrder(id, token) {
 export async function createOCDeliveryNote(token, payload) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/create-purchase-celup-surat-jalan`,
-        `${import.meta.env.VITE_API_URL}/create-purchase-celup-surat-jalan`,
+      //`https://nexttechenterprise.site/api/create-purchase-celup-surat-jalan`,
+      `${import.meta.env.VITE_API_URL}/create-purchase-celup-surat-jalan`,
       {
         method: "POST",
         headers: {
@@ -3917,12 +3939,13 @@ export async function getAllOCDeliveryNotes(token) {
 
     return {
       status: response.status,
-      ...data,            
+      ...data,
     };
   } catch (error) {
     return {
       status: 500,
-      message: error.message || "Gagal mengambil data Surat Penerimaan Order Celup",
+      message:
+        error.message || "Gagal mengambil data Surat Penerimaan Order Celup",
     };
   }
 }
@@ -3930,8 +3953,8 @@ export async function getAllOCDeliveryNotes(token) {
 export async function getOCDeliveryNotes(id, token) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/purchase-celup-surat-jalan/${id}`,
-        `${import.meta.env.VITE_API_URL}/purchase-celup-surat-jalan/${id}`,
+      //`https://nexttechenterprise.site/api/purchase-celup-surat-jalan/${id}`,
+      `${import.meta.env.VITE_API_URL}/purchase-celup-surat-jalan/${id}`,
       {
         method: "GET",
         headers: {
@@ -3960,8 +3983,8 @@ export async function getOCDeliveryNotes(id, token) {
 export async function updateDataOCDeliveryNote(token, id, payload) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/update-purchase-celup-surat-jalan/${id}`,
-        `${import.meta.env.VITE_API_URL}/update-purchase-celup-surat-jalan/${id}`,
+      //`https://nexttechenterprise.site/api/update-purchase-celup-surat-jalan/${id}`,
+      `${import.meta.env.VITE_API_URL}/update-purchase-celup-surat-jalan/${id}`,
       {
         method: "PUT",
         headers: {
@@ -3990,8 +4013,8 @@ export async function updateDataOCDeliveryNote(token, id, payload) {
 export async function softDeleteOCDeliveryNote(id, token) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/delete-purchase-celup-surat-jalan/${id}`,
-        `${import.meta.env.VITE_API_URL}/delete-purchase-celup-surat-jalan/${id}`,
+      //`https://nexttechenterprise.site/api/delete-purchase-celup-surat-jalan/${id}`,
+      `${import.meta.env.VITE_API_URL}/delete-purchase-celup-surat-jalan/${id}`,
       {
         method: "DELETE",
         headers: {
@@ -4023,8 +4046,8 @@ export async function softDeleteOCDeliveryNote(id, token) {
 export async function createKainJadi(token, payload) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/create-purchase-finish-contract`,
-        `${import.meta.env.VITE_API_URL}/create-purchase-finish-contract`,
+      //`https://nexttechenterprise.site/api/create-purchase-finish-contract`,
+      `${import.meta.env.VITE_API_URL}/create-purchase-finish-contract`,
       {
         method: "POST",
         headers: {
@@ -4096,7 +4119,7 @@ export async function getAllKainJadis(token) {
 
     return {
       status: response.status, // ← simpan status asli dari server
-      ...data,                 // ← gabung dengan body JSON
+      ...data, // ← gabung dengan body JSON
     };
   } catch (error) {
     return {
@@ -4106,12 +4129,11 @@ export async function getAllKainJadis(token) {
   }
 }
 
-
 export async function getKainJadis(id, token) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/purchase-finish-contracts/${id}`,
-        `${import.meta.env.VITE_API_URL}/purchase-finish-contracts/${id}`,
+      //`https://nexttechenterprise.site/api/purchase-finish-contracts/${id}`,
+      `${import.meta.env.VITE_API_URL}/purchase-finish-contracts/${id}`,
       {
         method: "GET",
         headers: {
@@ -4140,8 +4162,8 @@ export async function getKainJadis(id, token) {
 export async function updateDataKainJadi(token, id, payload) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/update-purchase-finish-contract/${id}`,
-        `${import.meta.env.VITE_API_URL}/update-purchase-finish-contract/${id}`,
+      //`https://nexttechenterprise.site/api/update-purchase-finish-contract/${id}`,
+      `${import.meta.env.VITE_API_URL}/update-purchase-finish-contract/${id}`,
       {
         method: "PUT",
         headers: {
@@ -4172,8 +4194,8 @@ export async function updateDataKainJadi(token, id, payload) {
 export async function softDeleteKainJadi(id, token) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/delete-purchase-finish-contract/${id}`,
-        `${import.meta.env.VITE_API_URL}/delete-purchase-finish-contract/${id}`,
+      //`https://nexttechenterprise.site/api/delete-purchase-finish-contract/${id}`,
+      `${import.meta.env.VITE_API_URL}/delete-purchase-finish-contract/${id}`,
       {
         method: "DELETE",
         headers: {
@@ -4204,8 +4226,8 @@ export async function softDeleteKainJadi(id, token) {
 export async function createKainJadiOrder(token, payload) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/create-purchase-finish-order`,
-        `${import.meta.env.VITE_API_URL}/create-purchase-finish-order`,
+      //`https://nexttechenterprise.site/api/create-purchase-finish-order`,
+      `${import.meta.env.VITE_API_URL}/create-purchase-finish-order`,
       {
         method: "POST",
         headers: {
@@ -4277,7 +4299,7 @@ export async function getAllKainJadiOrders(token) {
 
     return {
       status: response.status,
-      ...data,            
+      ...data,
     };
   } catch (error) {
     return {
@@ -4287,12 +4309,11 @@ export async function getAllKainJadiOrders(token) {
   }
 }
 
-
 export async function getKainJadiOrders(id, token) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/purchase-finish-orders/${id}`,
-        `${import.meta.env.VITE_API_URL}/purchase-finish-orders/${id}`,
+      //`https://nexttechenterprise.site/api/purchase-finish-orders/${id}`,
+      `${import.meta.env.VITE_API_URL}/purchase-finish-orders/${id}`,
       {
         method: "GET",
         headers: {
@@ -4321,8 +4342,8 @@ export async function getKainJadiOrders(id, token) {
 export async function updateDataKainJadiOrder(token, id, payload) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/update-purchase-finish-order/${id}`,
-        `${import.meta.env.VITE_API_URL}/update-purchase-finish-order/${id}`,
+      //`https://nexttechenterprise.site/api/update-purchase-finish-order/${id}`,
+      `${import.meta.env.VITE_API_URL}/update-purchase-finish-order/${id}`,
       {
         method: "PUT",
         headers: {
@@ -4351,8 +4372,8 @@ export async function updateDataKainJadiOrder(token, id, payload) {
 export async function softDeleteKainJadiOrder(id, token) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/delete-purchase-finish-order/${id}`,
-        `${import.meta.env.VITE_API_URL}/delete-purchase-finish-order/${id}`,
+      //`https://nexttechenterprise.site/api/delete-purchase-finish-order/${id}`,
+      `${import.meta.env.VITE_API_URL}/delete-purchase-finish-order/${id}`,
       {
         method: "DELETE",
         headers: {
@@ -4384,8 +4405,8 @@ export async function softDeleteKainJadiOrder(id, token) {
 export async function createKJDeliveryNote(token, payload) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/create-purchase-finish-surat-jalan`,
-        `${import.meta.env.VITE_API_URL}/create-purchase-finish-surat-jalan`,
+      //`https://nexttechenterprise.site/api/create-purchase-finish-surat-jalan`,
+      `${import.meta.env.VITE_API_URL}/create-purchase-finish-surat-jalan`,
       {
         method: "POST",
         headers: {
@@ -4457,12 +4478,13 @@ export async function getAllKJDeliveryNotes(token) {
 
     return {
       status: response.status,
-      ...data,            
+      ...data,
     };
   } catch (error) {
     return {
       status: 500,
-      message: error.message || "Gagal mengambil data Surat Penerimaan Kain Finish",
+      message:
+        error.message || "Gagal mengambil data Surat Penerimaan Kain Finish",
     };
   }
 }
@@ -4470,8 +4492,8 @@ export async function getAllKJDeliveryNotes(token) {
 export async function getKJDeliveryNotes(id, token) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/purchase-finish-surat-jalan/${id}`,
-        `${import.meta.env.VITE_API_URL}/purchase-finish-surat-jalan/${id}`,
+      //`https://nexttechenterprise.site/api/purchase-finish-surat-jalan/${id}`,
+      `${import.meta.env.VITE_API_URL}/purchase-finish-surat-jalan/${id}`,
       {
         method: "GET",
         headers: {
@@ -4500,8 +4522,10 @@ export async function getKJDeliveryNotes(id, token) {
 export async function updateDataKJDeliveryNote(token, id, payload) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/update-purchase-finish-surat-jalan/${id}`,
-        `${import.meta.env.VITE_API_URL}/update-purchase-finish-surat-jalan/${id}`,
+      //`https://nexttechenterprise.site/api/update-purchase-finish-surat-jalan/${id}`,
+      `${
+        import.meta.env.VITE_API_URL
+      }/update-purchase-finish-surat-jalan/${id}`,
       {
         method: "PUT",
         headers: {
@@ -4530,8 +4554,10 @@ export async function updateDataKJDeliveryNote(token, id, payload) {
 export async function softDeleteKJDeliveryNote(id, token) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/delete-purchase-finish-surat-jalan/${id}`,
-        `${import.meta.env.VITE_API_URL}/delete-purchase-finish-surat-jalan/${id}`,
+      //`https://nexttechenterprise.site/api/delete-purchase-finish-surat-jalan/${id}`,
+      `${
+        import.meta.env.VITE_API_URL
+      }/delete-purchase-finish-surat-jalan/${id}`,
       {
         method: "DELETE",
         headers: {
@@ -4563,8 +4589,8 @@ export async function softDeleteKJDeliveryNote(id, token) {
 export async function createJualBeli(token, payload) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/create-jual-beli`,
-        `${import.meta.env.VITE_API_URL}/create-jual-beli`,
+      //`https://nexttechenterprise.site/api/create-jual-beli`,
+      `${import.meta.env.VITE_API_URL}/create-jual-beli`,
       {
         method: "POST",
         headers: {
@@ -4618,23 +4644,20 @@ export async function createJualBeli(token, payload) {
 
 export async function getAllJualBelis(token) {
   try {
-    const response = await fetch(
-      `${import.meta.env.VITE_API_URL}/jual-beli`,
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-          "ngrok-skip-browser-warning": "any-value",
-        },
-      }
-    );
+    const response = await fetch(`${import.meta.env.VITE_API_URL}/jual-beli`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+        "ngrok-skip-browser-warning": "any-value",
+      },
+    });
 
     const data = await response.json();
 
     return {
       status: response.status,
-      ...data,            
+      ...data,
     };
   } catch (error) {
     return {
@@ -4647,8 +4670,8 @@ export async function getAllJualBelis(token) {
 export async function getJualBelis(id, token) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/jual-beli/${id}`,
-        `${import.meta.env.VITE_API_URL}/jual-beli/${id}`,
+      //`https://nexttechenterprise.site/api/jual-beli/${id}`,
+      `${import.meta.env.VITE_API_URL}/jual-beli/${id}`,
       {
         method: "GET",
         headers: {
@@ -4676,8 +4699,8 @@ export async function getJualBelis(id, token) {
 export async function updateDataJualBeli(token, id, payload) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/update-jual-beli/${id}`,
-        `${import.meta.env.VITE_API_URL}/update-jual-beli/${id}`,
+      //`https://nexttechenterprise.site/api/update-jual-beli/${id}`,
+      `${import.meta.env.VITE_API_URL}/update-jual-beli/${id}`,
       {
         method: "PUT",
         headers: {
@@ -4706,8 +4729,8 @@ export async function updateDataJualBeli(token, id, payload) {
 export async function softDeleteJualBeli(id, token) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/delete-jual-beli/${id}`,
-        `${import.meta.env.VITE_API_URL}/delete-jual-beli/${id}`,
+      //`https://nexttechenterprise.site/api/delete-jual-beli/${id}`,
+      `${import.meta.env.VITE_API_URL}/delete-jual-beli/${id}`,
       {
         method: "DELETE",
         headers: {
@@ -4738,8 +4761,8 @@ export async function softDeleteJualBeli(id, token) {
 export async function createJBDeliveryNote(token, payload) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/create-purchase-finish-surat-jalan`,
-        `${import.meta.env.VITE_API_URL}/create-jual-beli-surat-jalan`,
+      //`https://nexttechenterprise.site/api/create-purchase-finish-surat-jalan`,
+      `${import.meta.env.VITE_API_URL}/create-jual-beli-surat-jalan`,
       {
         method: "POST",
         headers: {
@@ -4811,12 +4834,13 @@ export async function getAllJBDeliveryNotes(token) {
 
     return {
       status: response.status,
-      ...data,            
+      ...data,
     };
   } catch (error) {
     return {
       status: 500,
-      message: error.message || "Gagal mengambil data Surat Penerimaan Jual Beli",
+      message:
+        error.message || "Gagal mengambil data Surat Penerimaan Jual Beli",
     };
   }
 }
@@ -4824,8 +4848,8 @@ export async function getAllJBDeliveryNotes(token) {
 export async function getJBDeliveryNotes(id, token) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/purchase-finish-surat-jalan/${id}`,
-        `${import.meta.env.VITE_API_URL}/jual-beli-surat-jalan/${id}`,
+      //`https://nexttechenterprise.site/api/purchase-finish-surat-jalan/${id}`,
+      `${import.meta.env.VITE_API_URL}/jual-beli-surat-jalan/${id}`,
       {
         method: "GET",
         headers: {
@@ -4854,8 +4878,8 @@ export async function getJBDeliveryNotes(id, token) {
 export async function updateDataJBDeliveryNote(token, id, payload) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/update-purchase-finish-surat-jalan/${id}`,
-        `${import.meta.env.VITE_API_URL}/update-jual-beli-surat-jalan/${id}`,
+      //`https://nexttechenterprise.site/api/update-purchase-finish-surat-jalan/${id}`,
+      `${import.meta.env.VITE_API_URL}/update-jual-beli-surat-jalan/${id}`,
       {
         method: "PUT",
         headers: {
@@ -4884,8 +4908,8 @@ export async function updateDataJBDeliveryNote(token, id, payload) {
 export async function softDeleteJBDeliveryNote(id, token) {
   try {
     const response = await fetch(
-        //`https://nexttechenterprise.site/api/delete-purchase-finish-surat-jalan/${id}`,
-        `${import.meta.env.VITE_API_URL}/delete-jual-beli-surat-jalan/${id}`,
+      //`https://nexttechenterprise.site/api/delete-purchase-finish-surat-jalan/${id}`,
+      `${import.meta.env.VITE_API_URL}/delete-jual-beli-surat-jalan/${id}`,
       {
         method: "DELETE",
         headers: {
@@ -4932,7 +4956,9 @@ export async function setInvoiceSales(token, id, payload = {}) {
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.message || "Gagal update status delivered Surat Jalan");
+      throw new Error(
+        data.message || "Gagal update status delivered Surat Jalan"
+      );
     }
 
     return data;
@@ -4959,7 +4985,9 @@ export async function unsetInvoiceSales(token, id, payload = {}) {
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.message || "Gagal update status delivered Surat Jalan");
+      throw new Error(
+        data.message || "Gagal update status delivered Surat Jalan"
+      );
     }
 
     return data;
@@ -4971,7 +4999,9 @@ export async function unsetInvoiceSales(token, id, payload = {}) {
 export async function setInvoiceJB(token, id, payload = {}) {
   try {
     const response = await fetch(
-      `${import.meta.env.VITE_API_URL}/jual-beli-surat-jalan-set-delivered/${id}`,
+      `${
+        import.meta.env.VITE_API_URL
+      }/jual-beli-surat-jalan-set-delivered/${id}`,
       {
         method: "PUT",
         headers: {
@@ -4986,7 +5016,9 @@ export async function setInvoiceJB(token, id, payload = {}) {
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.message || "Gagal update status delivered Surat Jalan");
+      throw new Error(
+        data.message || "Gagal update status delivered Surat Jalan"
+      );
     }
 
     return data;
@@ -4998,7 +5030,9 @@ export async function setInvoiceJB(token, id, payload = {}) {
 export async function unsetInvoiceJB(token, id, payload = {}) {
   try {
     const response = await fetch(
-      `${import.meta.env.VITE_API_URL}/jual-beli-surat-jalan-unset-delivered/${id}`,
+      `${
+        import.meta.env.VITE_API_URL
+      }/jual-beli-surat-jalan-unset-delivered/${id}`,
       {
         method: "PUT",
         headers: {
@@ -5013,7 +5047,9 @@ export async function unsetInvoiceJB(token, id, payload = {}) {
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.message || "Gagal update status delivered Surat Jalan");
+      throw new Error(
+        data.message || "Gagal update status delivered Surat Jalan"
+      );
     }
 
     return data;
@@ -5047,7 +5083,9 @@ export async function setReturGreige(token, sjId, itemIds = []) {
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.message || "Server error when returning Surat Penerimaan Greige.");
+      throw new Error(
+        data.message || "Server error when returning Surat Penerimaan Greige."
+      );
     }
 
     return data;
@@ -5060,7 +5098,9 @@ export async function setReturGreige(token, sjId, itemIds = []) {
 export async function undoReturGreige(token, sjId, itemIds = []) {
   try {
     const response = await fetch(
-      `${import.meta.env.VITE_API_URL}/undo-retur-purchase-greige-items/${sjId}`,
+      `${
+        import.meta.env.VITE_API_URL
+      }/undo-retur-purchase-greige-items/${sjId}`,
       {
         method: "PUT",
         headers: {
@@ -5077,7 +5117,9 @@ export async function undoReturGreige(token, sjId, itemIds = []) {
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.message || "Gagal undo retur Surat Penerimaan Greige");
+      throw new Error(
+        data.message || "Gagal undo retur Surat Penerimaan Greige"
+      );
     }
 
     return data;
@@ -5107,7 +5149,10 @@ export async function setReturOrderCelup(token, sjId, itemIds = []) {
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.message || "Server error when returning Surat Penerimaan Order Celup.");
+      throw new Error(
+        data.message ||
+          "Server error when returning Surat Penerimaan Order Celup."
+      );
     }
 
     return data;
@@ -5137,7 +5182,9 @@ export async function undoReturOrderCelup(token, sjId, itemIds = []) {
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.message || "Gagal undo retur Surat Penerimaan Order Celup");
+      throw new Error(
+        data.message || "Gagal undo retur Surat Penerimaan Order Celup"
+      );
     }
 
     return data;
@@ -5167,7 +5214,10 @@ export async function setReturFinish(token, sjId, itemIds = []) {
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.message || "Server error when returning Surat Penerimaan Kain Jadi.");
+      throw new Error(
+        data.message ||
+          "Server error when returning Surat Penerimaan Kain Jadi."
+      );
     }
 
     return data;
@@ -5180,7 +5230,9 @@ export async function setReturFinish(token, sjId, itemIds = []) {
 export async function undoReturFinish(token, sjId, itemIds = []) {
   try {
     const response = await fetch(
-      `${import.meta.env.VITE_API_URL}/undo-retur-purchase-finish-items/${sjId}`,
+      `${
+        import.meta.env.VITE_API_URL
+      }/undo-retur-purchase-finish-items/${sjId}`,
       {
         method: "PUT",
         headers: {
@@ -5197,7 +5249,9 @@ export async function undoReturFinish(token, sjId, itemIds = []) {
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.message || "Gagal undo retur Surat Penerimaan Kain Jadi");
+      throw new Error(
+        data.message || "Gagal undo retur Surat Penerimaan Kain Jadi"
+      );
     }
 
     return data;
@@ -5227,7 +5281,10 @@ export async function setReturnJB(token, sjId, itemIds = []) {
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.message || "Server error when returning Surat Penerimaan Jual Beli.");
+      throw new Error(
+        data.message ||
+          "Server error when returning Surat Penerimaan Jual Beli."
+      );
     }
 
     return data;
@@ -5285,10 +5342,16 @@ export async function setReturSales(token, sjId, rollIds = []) {
 
   // parse JSON kalau ada; kalau tidak ada body (204) ya biarin null
   let data = null;
-  try { data = await response.json(); } catch { /* ignore no-body */ }
+  try {
+    data = await response.json();
+  } catch {
+    /* ignore no-body */
+  }
 
   if (!response.ok) {
-    throw new Error(data?.message || `Gagal set retur (HTTP ${response.status})`);
+    throw new Error(
+      data?.message || `Gagal set retur (HTTP ${response.status})`
+    );
   }
   return data; // bisa null kalau 204
 }
@@ -5312,10 +5375,16 @@ export async function undoReturSales(token, sjId, rollIds = []) {
   );
 
   let data = null;
-  try { data = await response.json(); } catch { /* ignore no-body */ }
+  try {
+    data = await response.json();
+  } catch {
+    /* ignore no-body */
+  }
 
   if (!response.ok) {
-    throw new Error(data?.message || `Gagal undo retur (HTTP ${response.status})`);
+    throw new Error(
+      data?.message || `Gagal undo retur (HTTP ${response.status})`
+    );
   }
   return data; // bisa null kalau 204
 }
@@ -5914,7 +5983,10 @@ export async function getAllSalesReturs(token) {
     const data = await response.json();
     return { status: response.status, ...data };
   } catch (error) {
-    return { status: 500, message: error.message || "Gagal mengambil data Retur Sales" };
+    return {
+      status: 500,
+      message: error.message || "Gagal mengambil data Retur Sales",
+    };
   }
 }
 
@@ -5934,7 +6006,9 @@ export async function getSalesRetur(id, token) {
     );
     const data = await response.json();
     if (!response.ok) {
-      throw new Error(data?.message || `Gagal mengambil Retur Sales dengan id: ${id}`);
+      throw new Error(
+        data?.message || `Gagal mengambil Retur Sales dengan id: ${id}`
+      );
     }
     return data;
   } catch (error) {
@@ -5983,8 +6057,148 @@ export async function softDeleteSalesRetur(token, id) {
     );
     const data = await response.json();
     if (!response.ok) {
-      throw new Error(data?.message || `Gagal menghapus Retur Sales dengan id: ${id}`);
+      throw new Error(
+        data?.message || `Gagal menghapus Retur Sales dengan id: ${id}`
+      );
     }
+    return data;
+  } catch (error) {
+    throw error;
+  }
+}
+
+// CREATE – POST /create-order-matching
+export async function createOrderMatching(token, payload) {
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_API_URL}/create-order-matching`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          "ngrok-skip-browser-warning": "any-value",
+        },
+        body: JSON.stringify(payload),
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data?.message || "Gagal membuat Memo Order Matching");
+    }
+
+    return data;
+  } catch (error) {
+    throw error;
+  }
+}
+
+// GET ALL – GET /order-matching
+export async function getAllOrderMatching(token) {
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_API_URL}/order-matching`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          "ngrok-skip-browser-warning": "any-value",
+        },
+      }
+    );
+
+    const data = await response.json();
+    return { status: response.status, ...data };
+  } catch (error) {
+    return {
+      status: 500,
+      message: error.message || "Gagal mengambil data Memo Order Matching",
+    };
+  }
+}
+
+// GET BY ID – GET /order-matching/:id
+export async function getOrderMatching(id, token) {
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_API_URL}/order-matching/${id}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          "ngrok-skip-browser-warning": "any-value",
+        },
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data?.message || `Gagal mengambil Memo Order Matching dengan id: ${id}`
+      );
+    }
+
+    return data;
+  } catch (error) {
+    throw error;
+  }
+}
+
+// GET ALL – GET /update-order-matching
+export async function updateOrderMatching(token, payload) {
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_API_URL}/update-order-matching`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          "ngrok-skip-browser-warning": "any-value",
+        },
+        body: JSON.stringify(payload),
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data?.message || "Gagal mengubah Memo Order Matching");
+    }
+
+    return data;
+  } catch (error) {
+    throw error;
+  }
+}
+
+// DELETE – DELETE /delete-order-matching/:id
+export async function softDeleteOrderMatching(token, payload) {
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_API_URL}/delete-order-matching`,
+      {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          "ngrok-skip-browser-warning": "any-value",
+        },
+        body: JSON.stringify(payload), // harus berisi { id: x }
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data?.message || `Gagal menghapus Memo Order Matching`);
+    }
+
     return data;
   } catch (error) {
     throw error;
