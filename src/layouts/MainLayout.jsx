@@ -183,10 +183,11 @@ export default function MainLayout(props) {
         return "invoice";
       }
 
-      if ([
-        "/memo-order-matching",
-        "/memo-order-matching/form",
-      ]){
+      if (
+        ["/memo-order-matching", "/memo-order-matching/form"].some((p) =>
+          pathname.startsWith(p)
+        )
+      ) {
         return "memo";
       }
 
@@ -317,6 +318,7 @@ export default function MainLayout(props) {
           setJualBeliIsOpen(true);
         }
         break;
+
       case "invoice":
         setInvoiceIsOpen(true);
         break;
@@ -329,6 +331,7 @@ export default function MainLayout(props) {
         if (returSalesRoutes.some((p) => location.pathname.startsWith(p)))
           setReturSalesOpen(true);
         break;
+
       case "memo":
         setMemoIsOpen(true);
       break;
