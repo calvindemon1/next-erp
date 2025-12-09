@@ -2,9 +2,9 @@ import { createEffect, createMemo, createSignal } from "solid-js";
 import { useNavigate } from "@solidjs/router";
 import MainLayout from "../../../layouts/MainLayout";
 import {
-  getAllOCDeliveryNotes,
+  getAllSJOCX,
   getUser,
-  softDeleteOCDeliveryNote,
+  softDeleteSJOCX,
   hasPermission,
 } from "../../../utils/auth";
 import Swal from "sweetalert2";
@@ -42,7 +42,7 @@ export default function OCXDeliveryNoteList() {
   const handleDelete = async (id) => {
     const result = await Swal.fire({
       title: "Hapus surat penerimaan order celup?",
-      text: `Apakah kamu yakin ingin menghapus surat penerimaan order celup dengan ID ${id}?`,
+      text: `Apakah kamu yakin ingin menghapus Surat Penerimaan OCX dengan ID ${id}?`,
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#d33",
@@ -53,14 +53,14 @@ export default function OCXDeliveryNoteList() {
 
     if (result.isConfirmed) {
       try {
-        const deleteCustomer = await softDeleteOCDeliveryNote(
+        const deleteCustomer = await softDeleteSJOCX(
           id,
           tokUser?.token
         );
 
         await Swal.fire({
           title: "Terhapus!",
-          text: `Data surat penerimaan order celup dengan ID ${id} berhasil dihapus.`,
+          text: `Data Surat Penerimaan OCX dengan ID ${id} berhasil dihapus.`,
           icon: "success",
           confirmButtonColor: "#6496df",
         });
@@ -73,7 +73,7 @@ export default function OCXDeliveryNoteList() {
           title: "Gagal",
           text:
             error.message ||
-            `Gagal menghapus data surat penerimaan order celup dengan ID ${id}`,
+            `Gagal menghapus data Surat Penerimaan OCX dengan ID ${id}`,
           icon: "error",
 
           showConfirmButton: false,
@@ -102,16 +102,16 @@ export default function OCXDeliveryNoteList() {
 
   const handleGetAllDeliveryNotes = async (tok) => {
     try {
-      const result = await getAllOCDeliveryNotes(tok);
+      const result = await getAllSJOCX(tok);
 
-      if (result && Array.isArray(result.suratJalans)) {
-        const sortedData = result.suratJalans.sort((a, b) => b.id - a.id);
+      if (result && Array.isArray(result.data)) {
+        const sortedData = result.data.sort((a, b) => b.id - a.id);
         setPackingOrders(sortedData);
         applyFilter({});
       } else if (result.status === 403) {
         await Swal.fire({
           title: "Tidak Ada Akses",
-          text: "Anda tidak memiliki izin untuk melihat Surat Penerimaan Order Celup",
+          text: "Anda tidak memiliki izin untuk melihat Surat Penerimaan OCX",
           icon: "warning",
           confirmButtonColor: "#6496df",
         });
@@ -121,7 +121,7 @@ export default function OCXDeliveryNoteList() {
           title: "Gagal",
           text:
             result.message ||
-            "Gagal mengambil data Surat Penerimaan Order Celup",
+            "Gagal mengambil data Surat Penerimaan OCX",
           icon: "error",
           showConfirmButton: false,
           timer: 1000,
@@ -131,7 +131,7 @@ export default function OCXDeliveryNoteList() {
       }
     } catch (error) {
       console.error(
-        "Gagal mengambil data Surat Penerimaan Order Celup:",
+        "Gagal mengambil data Surat Penerimaan OCX",
         error
       );
       setPackingOrders([]);
@@ -213,12 +213,12 @@ export default function OCXDeliveryNoteList() {
   return (
     <MainLayout>
       <div class="flex justify-between items-center mb-4">
-        <h1 class="text-2xl font-bold">Daftar Surat Penerimaan Order Celup</h1>
+        <h1 class="text-2xl font-bold">Daftar Surat Penerimaan OCX</h1>
         <button
           class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-          onClick={() => navigate("/ordercelup-deliverynote/form")}
+          onClick={() => navigate("/sjocx/form")}
         >
-          + Tambah Surat Penerimaan
+          + Tambah Surat Penerimaan OCX
         </button>
       </div>
       <SearchSortFilter
@@ -318,23 +318,23 @@ export default function OCXDeliveryNoteList() {
                     class="text-yellow-600 hover:underline"
                     onClick={() =>
                       navigate(
-                        `/ordercelup-deliverynote/form?id=${sj.id}&view=true`
+                        `/sjocx/form?id=${sj.id}&view=true`
                       )
                     }
                   >
                     <Eye size={25} />
                   </button>
-                  {hasPermission("edit_purchase_celup_surat_jalan") && (
+                  {hasPermission("update_sj_ex") && (
                     <button
                       class="text-blue-600 hover:underline"
                       onClick={() =>
-                        navigate(`/ordercelup-deliverynote/form?id=${sj.id}`)
+                        navigate(`/sjocx/form?id=${sj.id}`)
                       }
                     >
                       <Edit size={25} />
                     </button>
                   )}
-                  {hasPermission("delete_purchase_celup_surat_jalan") && (
+                  {hasPermission("delete_sj_ex") && (
                     <button
                       class="text-red-600 hover:underline"
                       onClick={() => handleDelete(sj.id)}
