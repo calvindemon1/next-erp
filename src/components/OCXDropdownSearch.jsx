@@ -8,6 +8,7 @@ export default function OCXDropdownSearch({
   disabled = false,
   form,
   setForm,
+  filterCompleted = true, // Prop baru untuk filter OCX selesai
 }) {
   const [isOpen, setIsOpen] = createSignal(false);
   const [search, setSearch] = createSignal("");
@@ -27,10 +28,16 @@ export default function OCXDropdownSearch({
 
   const filteredItems = createMemo(() => {
     const q = search().toLowerCase();
+    let filtered = items;
     
-    if (!q) return items;
+    // Filter OCX yang sudah selesai jika filterCompleted true
+    if (filterCompleted) {
+      filtered = filtered.filter(item => item.qty_status !== "SELESAI");
+    }
     
-    return items.filter((item) => {
+    if (!q) return filtered;
+    
+    return filtered.filter((item) => {
       const noPoEx = (item.no_po_ex || "").toLowerCase();
       const supplier = (item.nama_supplier || "").toLowerCase();
       return noPoEx.includes(q) || supplier.includes(q);
@@ -113,7 +120,11 @@ export default function OCXDropdownSearch({
                     selectItem(item);
                   }}
                 >
-                  {item.no_po_ex} - {item.nama_supplier}
+                  <div class="flex justify-between items-center">
+                    <div>
+                      {item.no_po_ex} - {item.nama_supplier}
+                    </div>
+                  </div>
                 </div>
               ))
             ) : (
