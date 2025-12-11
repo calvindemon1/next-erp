@@ -10,7 +10,6 @@ import {
 } from "../../../utils/auth";
 import Swal from "sweetalert2";
 import { Edit, Trash, Eye } from "lucide-solid";
-import { formatCorak } from "../../../components/CorakKainList";
 
 import SearchSortFilter from "../../../components/SearchSortFilter";
 import useSimpleFilter from "../../../utils/useSimpleFilter";
@@ -227,15 +226,24 @@ export default function OCXDeliveryNoteList() {
     return `${tanggalNum} ${bulan} ${tahun}`;
   }
 
-  // Format kode warna ex (kode_warna_ex)
+  // Helper function to get unique values from array
+  const getUniqueValues = (array) => {
+    return [...new Set(array.filter(item => item && item.trim() !== ""))];
+  };
+
+  // Format kode warna ex (kode_warna_ex) - Hanya tampilkan nilai unik
   const formatKodeWarnaEx = (items, options = { maxShow: 3 }) => {
     if (!items || !Array.isArray(items) || items.length === 0) {
       return { display: "-", full: "-" };
     }
 
-    const uniqueWarna = items
+    // Ambil semua kode_warna_ex yang valid, lalu ambil nilai unik
+    const allWarna = items
       .map((item) => item.kode_warna_ex)
       .filter(warna => warna && warna.trim() !== "");
+    
+    // Gunakan Set untuk mendapatkan nilai unik
+    const uniqueWarna = getUniqueValues(allWarna);
     
     if (uniqueWarna.length === 0) {
       return { display: "-", full: "-" };
@@ -250,15 +258,19 @@ export default function OCXDeliveryNoteList() {
     return { display, full };
   };
 
-  // Format kode warna baru (kode_warna_new)
+  // Format kode warna baru (kode_warna_new) - Hanya tampilkan nilai unik
   const formatKodeWarnaNew = (items, options = { maxShow: 3 }) => {
     if (!items || !Array.isArray(items) || items.length === 0) {
       return { display: "-", full: "-" };
     }
 
-    const uniqueWarna = items
+    // Ambil semua kode_warna_new yang valid, lalu ambil nilai unik
+    const allWarna = items
       .map((item) => item.kode_warna_new)
       .filter(warna => warna && warna.trim() !== "");
+    
+    // Gunakan Set untuk mendapatkan nilai unik
+    const uniqueWarna = getUniqueValues(allWarna);
     
     if (uniqueWarna.length === 0) {
       return { display: "-", full: "-" };
@@ -273,15 +285,19 @@ export default function OCXDeliveryNoteList() {
     return { display, full };
   };
 
-  // Format corak kain dari items
+  // Format corak kain dari items - Hanya tampilkan nilai unik
   const formatCorakKain = (items, options = { maxShow: 3 }) => {
     if (!items || !Array.isArray(items) || items.length === 0) {
       return { display: "-", full: "-" };
     }
 
-    const uniqueCorak = items
+    // Ambil semua corak_kain yang valid, lalu ambil nilai unik
+    const allCorak = items
       .map((item) => item.corak_kain)
       .filter(corak => corak && corak.trim() !== "");
+    
+    // Gunakan Set untuk mendapatkan nilai unik
+    const uniqueCorak = getUniqueValues(allCorak);
     
     if (uniqueCorak.length === 0) {
       return { display: "-", full: "-" };
