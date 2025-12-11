@@ -32,6 +32,7 @@ export default function OCXDeliveryNoteForm() {
   const [loading, setLoading] = createSignal(true);
   const [deliveryNoteData, setDeliveryNoteData] = createSignal(null);
   const [deletedItems, setDeletedItems] = createSignal([]);
+  const [formLoaded, setFormLoaded] = createSignal(false);
 
   const [form, setForm] = createSignal({
     sequence_number: "",
@@ -41,74 +42,113 @@ export default function OCXDeliveryNoteForm() {
     purchase_order_items: null,
     no_sj_supplier: "",
     tanggal_kirim: "",
-    alamat_pengiriman: "",
-    unit: "Meter",
+    alamat: "",
+    satuan_unit_id: 1, // Default to Meter (1)
     itemGroups: [],
   });
 
+  // Function to get unit name from satuan_unit_id
+  const getUnitName = (satuanUnitId) => {
+    switch (parseInt(satuanUnitId)) {
+      case 1: return "Meter";
+      case 2: return "Yard";
+      case 3: return "Kilogram";
+      default: return "Meter";
+    }
+  };
+
+  // Computed for unit name based on satuan_unit_id
+  const unitName = createMemo(() => {
+    return getUnitName(form().satuan_unit_id);
+  });
+
+  // Perbaikan total calculations menggunakan satuan_unit_id
   const totalMeter = createMemo(() =>
     form().itemGroups.reduce(
-      (sum, group) => sum + (Number(group.meter_total) || 0),
+      (sum, group) => sum + (parseFloat(group.meter_total) || 0),
       0
     )
   );
 
   const totalYard = createMemo(() =>
     form().itemGroups.reduce(
-      (sum, group) => sum + (Number(group.yard_total) || 0),
+      (sum, group) => sum + (parseFloat(group.yard_total) || 0),
       0
     )
   );
 
-  const totalAll = createMemo(() =>
-    form().itemGroups.reduce((sum, group) => {
-      const quantity =
-        form().unit === "Meter" ? group.meter_total : group.yard_total;
-      const subtotal =
-        (Number(group.item_details?.harga) || 0) * (Number(quantity) || 0);
-      return sum + subtotal;
-    }, 0)
-  );
+  const totalQuantity = createMemo(() => {
+    const satuanUnitId = form().satuan_unit_id;
+    if (satuanUnitId === 1) { // Meter
+      return totalMeter();
+    } else if (satuanUnitId === 2) { // Yard
+      return totalYard();
+    } else { // Kilogram
+      return totalMeter(); // atau sesuaikan dengan kebutuhan
+    }
+  });
 
   onMount(async () => {
-    setLoading(true);
-    
     try {
-      const poListResponse = await getAllOCX(user?.token);
-      setOrderCelupList(poListResponse.data || []);
+      setLoading(true);
+      
+      // Load all OCX data
+      const ocxResponse = await getAllOCX(user?.token);
+      
+      if (ocxResponse?.data) {
+        setOrderCelupList(ocxResponse.data);
+      } else {
+        setOrderCelupList([]);
+      }
 
+      // If edit mode, load existing SJ OCX data
       if (isEdit) {
         const sjResponse = await getSJOCX(params.id, user?.token);
-        const suratJalanData = sjResponse?.data;
         
-        if (!suratJalanData) {
-          setLoading(false);
-          Swal.fire("Error", "Data Surat Penerimaan OCX tidak ditemukan.", "error");
+        if (!sjResponse?.data) {
+          Swal.fire({
+            icon: "error",
+            title: "Error",
+            text: "Data Surat Penerimaan OCX tidak ditemukan.",
+            showConfirmButton: false,
+            timer: 1500,
+            timerProgressBar: true
+          });
           return;
         }
 
+        const suratJalanData = sjResponse.data;
+        
+        // Load OCX details
         const poDetailResponse = await getOCX(suratJalanData.po_ex_id, user?.token);
         const poData = poDetailResponse?.data;
 
-        const fullPrintData = {
+        setDeliveryNoteData({
           ...suratJalanData,
           purchase_order_detail: poData
-        };
-        setDeliveryNoteData(fullPrintData);
+        });
+
+        // Set form data for edit mode
+        const formattedDate = suratJalanData.tanggal_kirim
+          ? new Date(suratJalanData.tanggal_kirim).toISOString().split("T")[0]
+          : "";
+
+        // Determine satuan_unit_id from PO data
+        let satuanUnitId = 1; // Default to Meter
+        if (poData?.satuan_unit_id) {
+          satuanUnitId = poData.satuan_unit_id;
+        }
 
         setForm({
-          ...form(),
+          sequence_number: suratJalanData.sequence_number || "",
           no_sj_ex: suratJalanData.no_sj_ex || "",
-          no_sj_supplier: suratJalanData.no_sj_supplier || "",
-          alamat_pengiriman: suratJalanData.alamat_pengiriman || "",
-          tanggal_kirim: suratJalanData.tanggal_kirim
-            ? new Date(suratJalanData.tanggal_kirim).toISOString().split("T")[0]
-            : "",
+          keterangan: suratJalanData.keterangan || "",
           purchase_order_id: suratJalanData.po_ex_id,
           purchase_order_items: poData,
-          sequence_number: suratJalanData.sequence_number,
-          keterangan: suratJalanData.keterangan || "",
-          unit: poData?.satuan_unit_name || "Meter",
+          no_sj_supplier: suratJalanData.no_sj_supplier || "",
+          tanggal_kirim: formattedDate,
+          alamat: suratJalanData.alamat || "-",
+          satuan_unit_id: satuanUnitId,
           itemGroups: (suratJalanData.items || [])
             .filter((group) => !group.deleted_at)
             .map((group) => {
@@ -122,22 +162,33 @@ export default function OCXDeliveryNoteForm() {
                 item_details: {
                   corak_kain: poItem?.corak_kain || "N/A",
                   konstruksi_kain: poItem?.konstruksi_kain || "",
-                  deskripsi_warna: poItem?.deskripsi_warna || "",
-                  lebar_greige: poItem?.lebar_greige || 0,
+                  kode_warna_ex: poItem?.kode_warna_ex || "",
+                  deskripsi_warna_ex: poItem?.deskripsi_warna_ex || "",
+                  kode_warna_new: poItem?.kode_warna_new || "",
+                  deskripsi_warna_new: poItem?.deskripsi_warna_new || "",
                   lebar_finish: poItem?.lebar_finish || 0,
                   harga: poItem?.harga || 0,
                 },
-                meter_total: group.meter_total || 0,
-                yard_total: group.yard_total || 0,
+                meter_total: parseFloat(group.meter_total) || 0,
+                yard_total: parseFloat(group.yard_total) || 0,
                 gulung: typeof group.gulung === "number" ? group.gulung : 0,
                 lot: typeof group.lot === "number" ? group.lot : 0,
               };
             }),
         });
       }
+      
+      setFormLoaded(true);
     } catch (error) {
       console.error("Error loading data:", error);
-      Swal.fire("Error", "Gagal memuat data.", "error");
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Gagal memuat data.",
+        showConfirmButton: false,
+        timer: 1500,
+        timerProgressBar: true
+      });
     } finally {
       setLoading(false);
     }
@@ -159,11 +210,11 @@ export default function OCXDeliveryNoteForm() {
   const formatNumber = (num, decimals = 2) => {
     if (num === "" || num === null || num === undefined) return "";
 
-    const numValue = Number(num);
+    const numValue = parseFloat(num);
 
     if (isNaN(numValue)) return "";
 
-    if (numValue === 0) return "0";
+    if (numValue === 0) return "0.00";
 
     return new Intl.NumberFormat("id-ID", {
       minimumFractionDigits: decimals,
@@ -172,43 +223,39 @@ export default function OCXDeliveryNoteForm() {
   };
 
   const parseNumber = (str) => {
-    if (typeof str !== "string" || !str) return 0;
-    const cleaned = str.replace(/[^\d,]/g, "").replace(",", ".");
-    return parseFloat(cleaned) || 0;
-  };
-
-  const formatHarga = (val) => {
-    if (val === null || val === "") return "";
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-      maximumFractionDigits: 2,
-    }).format(val);
-  };
-
-  const formatIDR = (val) => {
-    if (val === null || val === "") return "";
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-      maximumFractionDigits: 2,
-    }).format(val);
+    if (typeof str !== "string") str = String(str || "");
+    if (!str) return 0;
+    
+    // Hapus semua karakter kecuali digit, titik, dan koma
+    const cleaned = str.replace(/[^\d,\.]/g, "");
+    
+    // Replace koma dengan titik untuk parseFloat
+    const normalized = cleaned.replace(/,/g, ".");
+    
+    // Parse float
+    const result = parseFloat(normalized);
+    
+    return isNaN(result) ? 0 : result;
   };
 
   const handleQuantityChange = (index, value) => {
-    const unit = form().unit;
+    const satuanUnitId = form().satuan_unit_id;
     const numValue = parseNumber(value);
 
     setForm((prev) => {
       const updatedItemGroups = [...prev.itemGroups];
       const itemToUpdate = { ...updatedItemGroups[index] };
 
-      if (unit === "Meter") {
+      // Gunakan satuan_unit_id untuk menentukan konversi
+      if (satuanUnitId === 1) { // Meter
         itemToUpdate.meter_total = numValue;
         itemToUpdate.yard_total = numValue * 1.093613;
-      } else {
+      } else if (satuanUnitId === 2) { // Yard
         itemToUpdate.yard_total = numValue;
         itemToUpdate.meter_total = numValue / 1.093613;
+      } else { // Kilogram (atau satuan lain)
+        itemToUpdate.meter_total = numValue;
+        itemToUpdate.yard_total = numValue;
       }
 
       updatedItemGroups[index] = itemToUpdate;
@@ -241,85 +288,96 @@ export default function OCXDeliveryNoteForm() {
       const res = await getOCX(selectedPO.id, user?.token);
       const selectedPOData = res?.data;
 
+      if (!selectedPOData) {
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: "Gagal memuat detail OCX.",
+          showConfirmButton: false,
+          timer: 1500,
+          timerProgressBar: true
+        });
+        return;
+      }
+
       // Generate SJ number
-      const poTypeLetter = "OCX";
-      const poPPN = selectedPO.no_po_ex.split("/")[2];
-      const ppnValue = poPPN === "P" ? 1 : 0;
+      const poPPN = selectedPO.no_po_ex.split("/")[2]; // "P" atau "N"
+      const ppnValue = poPPN === "P" ? 11 : 0; // 11 untuk PPN, 0 untuk non-PPN
 
-      const { newSJNumber, newSequenceNumber } = await generateSJNumber(
-        poTypeLetter,
-        ppnValue
-      );
+      const { newSJNumber, newSequenceNumber } = await generateSJNumber(ppnValue);
 
-      const unitName = selectedPOData?.satuan_unit_name || "Meter";
+      // Use satuan_unit_id from OCX data
+      const satuanUnitId = selectedPOData?.satuan_unit_id || 1;
+
       const newItemGroups = (selectedPOData?.items || []).map((item) =>
-        templateFromPOItem(item, unitName)
+        templateFromPOItem(item)
       );
 
-      setForm({
-        ...form(),
+      setForm(prev => ({
+        ...prev,
         purchase_order_id: selectedPO.id,
         purchase_order_items: selectedPOData,
         no_sj_ex: newSJNumber,
         sequence_number: newSequenceNumber,
-        alamat_pengiriman: selectedPOData?.supplier_alamat || "",
-        unit: unitName,
+        alamat: selectedPOData?.alamat || selectedPO.alamat || "-",
+        satuan_unit_id: satuanUnitId, // Set satuan_unit_id bukan unit string
         itemGroups: newItemGroups,
-      });
+      }));
     } catch (error) {
       console.error("Error loading OCX detail:", error);
-      Swal.fire("Error", "Gagal memuat detail OCX.", "error");
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Gagal memuat detail OCX.",
+        showConfirmButton: false,
+        timer: 1500,
+        timerProgressBar: true
+      });
     }
   };
 
-  const generateSJNumber = async (salesType, ppn) => {
-    try {
-      const lastSeq = await getLastSequence(user?.token, "sj_ex", salesType, ppn);
-
-      const nextNum = String((lastSeq?.last_sequence || 0) + 1).padStart(3, "0");
-      const now = new Date();
-      const month = String(now.getMonth() + 1).padStart(2, "0");
-      const year = String(now.getFullYear()).slice(2);
-      const ppnValue = parseFloat(ppn) || 0;
-      const type = ppnValue > 0 ? "P" : "N";
-      const mmyy = `${month}${year}`;
-      const nomor = `SJ/OCX/${type}/${mmyy}-${nextNum}`;
-
-      return {
-        newSJNumber: nomor,
-        newSequenceNumber: (lastSeq?.last_sequence || 0) + 1,
-      };
-    } catch (error) {
-      console.error("Error generating SJ number:", error);
-      return {
-        newSJNumber: "SJ/OCX/N/0000-001",
-        newSequenceNumber: 1
-      };
+  const generateSJNumber = async (ppn) => {
+    // Pastikan ppn adalah angka (0 atau 11)
+    const ppnNumber = Number(ppn);
+    
+    // Jika ppn 11, gunakan type=domestik, jika 0 gunakan string kosong
+    let typeParam = "";
+    if (ppnNumber === 11) {
+      typeParam = "domestik";
     }
-  };
+
+    const lastSeq = await getLastSequence(user?.token, "sj_ex", typeParam, ppnNumber);
+
+    const nextNum = String((lastSeq?.last_sequence || 0) + 1).padStart(3, "0");
+    const now = new Date();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const year = String(now.getFullYear()).slice(2);
+    const type = ppnNumber > 0 ? "P" : "N";
+    const mmyy = `${month}${year}`;
+    const nomor = `SJ/OCX/${type}/${mmyy}-${nextNum}`;
+
+    return {
+      newSJNumber: nomor,
+      newSequenceNumber: (lastSeq?.last_sequence || 0) + 1,
+    };
+  }
 
   const templateFromPOItem = (poItem) => {
-    const m = Number(poItem.meter_total ?? poItem.meter ?? 0) || 0;
-    const y = Number(poItem.yard_total ?? poItem.yard ?? 0) || 0;
-
-    const hasM = m > 0;
-    const hasY = y > 0;
-
-    const meterVal = hasM ? m : hasY ? y * 0.9144 : 0;
-    const yardVal = hasY ? y : hasM ? m * 1.093613 : 0;
-
+    // Untuk SJ baru, quantity di-set 0 (akan diisi user)
     return {
       purchase_order_item_id: poItem.id,
       item_details: {
         corak_kain: poItem.corak_kain,
         konstruksi_kain: poItem.konstruksi_kain,
-        deskripsi_warna: poItem.deskripsi_warna,
-        lebar_greige: poItem.lebar_greige,
-        lebar_finish: poItem.lebar_finish,
-        harga: poItem.harga,
+        kode_warna_ex: poItem.kode_warna_ex || "",
+        deskripsi_warna_ex: poItem.deskripsi_warna_ex || "",
+        kode_warna_new: poItem.kode_warna_new || "",
+        deskripsi_warna_new: poItem.deskripsi_warna_new || "",
+        lebar_finish: poItem.lebar_finish || 0,
+        harga: poItem.harga || 0,
       },
-      meter_total: meterVal,
-      yard_total: yardVal,
+      meter_total: 0, // Set ke 0 untuk SJ baru
+      yard_total: 0,  // Set ke 0 untuk SJ baru
       gulung: 0,
       lot: 0,
     };
@@ -328,11 +386,14 @@ export default function OCXDeliveryNoteForm() {
   const addItemGroup = () => {
     const poDetail = form().purchase_order_items;
     if (!poDetail || !poDetail.items || poDetail.items.length === 0) {
-      Swal.fire(
-        "Peringatan",
-        "Silakan pilih OCX terlebih dahulu.",
-        "warning"
-      );
+      Swal.fire({
+        icon: "warning",
+        title: "Peringatan",
+        text: "Silakan pilih OCX terlebih dahulu.",
+        showConfirmButton: false,
+        timer: 1500,
+        timerProgressBar: true
+      });
       return;
     }
 
@@ -361,36 +422,75 @@ export default function OCXDeliveryNoteForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validasi
+    // LANGKAH 1: Validasi Input
     if (!form().purchase_order_id) {
-      Swal.fire("Gagal", "Harap pilih OCX terlebih dahulu.", "error");
+      Swal.fire({
+        icon: "error",
+        title: "Gagal",
+        text: "Harap pilih OCX terlebih dahulu.",
+        showConfirmButton: false,
+        timer: 1500,
+        timerProgressBar: true
+      });
       return;
     }
     if (!form().no_sj_supplier.trim()) {
-      Swal.fire("Gagal", "Harap isi No Surat Jalan Supplier.", "error");
+      Swal.fire({
+        icon: "error",
+        title: "Gagal",
+        text: "Harap isi No Surat Jalan Supplier.",
+        showConfirmButton: false,
+        timer: 1500,
+        timerProgressBar: true
+      });
       return;
     }
     if (form().itemGroups.length === 0) {
-      Swal.fire("Gagal", "Harap tambahkan minimal satu item group.", "error");
+      Swal.fire({
+        icon: "error",
+        title: "Gagal",
+        text: "Harap tambahkan minimal satu item group.",
+        showConfirmButton: false,
+        timer: 1500,
+        timerProgressBar: true
+      });
+      return;
+    }
+    
+    // Validasi apakah ada quantity yang diisi
+    const hasQuantity = form().itemGroups.some(group => {
+      const quantity = form().satuan_unit_id === 1 ? group.meter_total : group.yard_total;
+      return quantity > 0;
+    });
+    
+    if (!hasQuantity) {
+      Swal.fire({
+        icon: "error",
+        title: "Gagal",
+        text: "Harap isi quantity untuk minimal satu item.",
+        showConfirmButton: false,
+        timer: 1500,
+        timerProgressBar: true
+      });
       return;
     }
 
     try {
       if (isEdit) {
-        // Format payload untuk UPDATE
         const payload = {
           no_sj_ex: form().no_sj_ex,
           no_sj_supplier: form().no_sj_supplier.trim(),
           po_ex_id: form().purchase_order_id,
           tanggal_kirim: form().tanggal_kirim,
           keterangan: form().keterangan,
+          satuan: unitName(), // Kirim unit name untuk backward compatibility
           items: form()
-            .itemGroups.filter(
-              (g) =>
-                (form().unit === "Meter" ? g.meter_total : g.yard_total) > 0
-            )
+            .itemGroups.filter((g) => {
+              const quantity = form().satuan_unit_id === 1 ? g.meter_total : g.yard_total;
+              return quantity > 0;
+            })
             .map((g) => ({
-              id: g.id, // Untuk update
+              id: g.id,
               po_ex_item_id: Number(g.purchase_order_item_id),
               meter_total: Number(g.meter_total) || 0,
               yard_total: Number(g.yard_total) || 0,
@@ -403,18 +503,18 @@ export default function OCXDeliveryNoteForm() {
 
         await updateSJOCX(user?.token, params.id, payload);
       } else {
-        // Format payload untuk CREATE
         const payload = {
           no_sj_ex: form().no_sj_ex,
           no_sj_supplier: form().no_sj_supplier.trim(),
           po_ex_id: form().purchase_order_id,
           tanggal_kirim: form().tanggal_kirim,
           keterangan: form().keterangan,
+          satuan: unitName(), // Kirim unit name untuk backward compatibility
           items: form()
-            .itemGroups.filter(
-              (g) =>
-                (form().unit === "Meter" ? g.meter_total : g.yard_total) > 0
-            )
+            .itemGroups.filter((g) => {
+              const quantity = form().satuan_unit_id === 1 ? g.meter_total : g.yard_total;
+              return quantity > 0;
+            })
             .map((g) => ({
               po_ex_item_id: Number(g.purchase_order_item_id),
               meter_total: Number(g.meter_total) || 0,
@@ -424,7 +524,7 @@ export default function OCXDeliveryNoteForm() {
               sj_item_selected_status: 0,
             })),
         };
-
+        
         await createSJOCX(user?.token, payload);
       }
 
@@ -444,26 +544,29 @@ export default function OCXDeliveryNoteForm() {
         title: "Gagal",
         text: error?.message || "Terjadi kesalahan saat menyimpan.",
         showConfirmButton: false,
-        timer: 1000,
-        timerProgressBar: true,
+        timer: 1500,
+        timerProgressBar: true
       });
     }
   };
 
-  function handlePrint() {
+  const handlePrint = () => {
     if (!deliveryNoteData()) {
-      Swal.fire(
-        "Gagal",
-        "Data untuk mencetak tidak tersedia. Pastikan Anda dalam mode Edit/View.",
-        "error"
-      );
+      Swal.fire({
+        icon: "error",
+        title: "Gagal",
+        text: "Data untuk mencetak tidak tersedia. Pastikan Anda dalam mode Edit/View.",
+        showConfirmButton: false,
+        timer: 1500,
+        timerProgressBar: true
+      });
       return;
     }
 
     const dataToPrint = { ...deliveryNoteData() };
     const encodedData = encodeURIComponent(JSON.stringify(dataToPrint));
     window.open(`/print/sjocx#${encodedData}`, "_blank");
-  }
+  };
 
   return (
     <MainLayout>
@@ -473,18 +576,21 @@ export default function OCXDeliveryNoteForm() {
           <span class="animate-pulse text-[40px] text-white">Loading...</span>
         </div>
       )}
+      
       <h1 class="text-2xl font-bold mb-4">
         {isView ? "Detail" : isEdit ? "Edit" : "Tambah"} Surat Penerimaan OCX
       </h1>
-      <button
-        type="button"
-        class="flex gap-2 bg-blue-600 text-white px-3 py-2 mb-4 rounded hover:bg-green-700"
-        onClick={handlePrint}
-        hidden={!isEdit}
-      >
-        <Printer size={20} />
-        Print
-      </button>
+      
+      {isEdit && (
+        <button
+          type="button"
+          class="flex gap-2 bg-blue-600 text-white px-3 py-2 mb-4 rounded hover:bg-green-700"
+          onClick={handlePrint}
+        >
+          <Printer size={20} />
+          Print
+        </button>
+      )}
 
       <form class="space-y-4" onSubmit={handleSubmit} onkeydown={handleKeyDown}>
         <div class="grid grid-cols-3 gap-4">
@@ -498,6 +604,7 @@ export default function OCXDeliveryNoteForm() {
               />
             </div>
           </div>
+          
           <div>
             <label class="block text-sm mb-1">No Surat Jalan Supplier</label>
             <input
@@ -511,16 +618,18 @@ export default function OCXDeliveryNoteForm() {
               classList={{ "bg-gray-200": isView }}
             />
           </div>
+          
           <div>
             <label class="block text-sm mb-1">Alamat Pengiriman</label>
             <div class="flex gap-2">
               <input
                 class="w-full border bg-gray-200 p-2 rounded"
-                value={form().alamat_pengiriman}
+                value={form().alamat}
                 readOnly
               />
             </div>
           </div>
+          
           <div>
             <label class="block text-sm mb-1">Tanggal Pengiriman</label>
             <div class="flex gap-2">
@@ -536,16 +645,23 @@ export default function OCXDeliveryNoteForm() {
               />
             </div>
           </div>
+          
           <div>
             <label class="block text-sm mb-1">OCX</label>
-            <OCXDropdownSearch
-              items={orderCelupList()}
-              value={form().purchase_order_id}
-              form={form}
-              setForm={setForm}
-              onChange={handleSuratJalanChange}
-              disabled={isView || isEdit}
-            />
+            <Show when={formLoaded()} fallback={
+              <div class="w-full border p-2 rounded bg-gray-100">
+                <span class="text-gray-500">Memuat data OCX...</span>
+              </div>
+            }>
+              <OCXDropdownSearch
+                items={orderCelupList()}
+                value={form().purchase_order_id}
+                form={form}
+                setForm={setForm}
+                onChange={handleSuratJalanChange}
+                disabled={isView || isEdit}
+              />
+            </Show>
           </div>
         </div>
 
@@ -560,37 +676,36 @@ export default function OCXDeliveryNoteForm() {
               }
               disabled={isView}
               classList={{ "bg-gray-200": isView }}
+              rows="3"
             ></textarea>
           </div>
         </div>
 
-        <Show
-          when={form().purchase_order_items && form().itemGroups.length > 0}
-        >
+        <Show when={form().purchase_order_items && form().itemGroups.length > 0}>
           <div class="border p-3 rounded my-4 bg-gray-50">
             <h3 class="text-md font-bold mb-2 text-gray-700">
-              Quantity Kain PO:
+              Quantity Kain OCX:
             </h3>
             <ul class="space-y-1 pl-5">
               <For each={form().purchase_order_items.items}>
                 {(item) => {
-                  const sisa =
-                    form().unit === "Meter"
-                      ? Number(item.meter_total) -
-                        Number(item.meter_dalam_proses || 0)
-                      : Number(item.yard_total) -
-                        Number(item.yard_dalam_proses || 0);
+                  // Gunakan satuan_unit_id untuk menentukan field mana yang digunakan
+                  const satuanUnitId = form().satuan_unit_id;
+                  
+                  const sisa = satuanUnitId === 1 // Meter
+                    ? parseFloat(item.meter_total) - parseFloat(item.delivered_meter_total || 0)
+                    : parseFloat(item.yard_total) - parseFloat(item.delivered_yard_total || 0);
 
                   return (
                     <li class="text-sm list-disc">
                       <span class="font-semibold">
                         {item.corak_kain} | {item.konstruksi_kain}
                       </span>{" "}
-                      - Quantity:
+                      - Quantity: 
                       {sisa > 0 ? (
                         <span class="font-bold text-blue-600">
                           {formatNumber(sisa)}{" "}
-                          {form().unit === "Meter" ? "m" : "yd"}
+                          {unitName() === "Meter" ? "m" : "yd"}
                         </span>
                       ) : (
                         <span class="font-bold text-red-600">HABIS</span>
@@ -618,18 +733,12 @@ export default function OCXDeliveryNoteForm() {
               <tr>
                 <th class="border p-2 w-10">#</th>
                 <th class="border p-2">Jenis Kain</th>
-                <th class="border p-2">Warna</th>
-                <th class="border p-2">Lebar Greige</th>
+                <th class="border p-2">Warna Ex</th>
+                <th class="border p-2">Warna Baru</th>
                 <th class="border p-2">Lebar Finish</th>
-                <th class="border p-2 w-40">{form().unit}</th>
+                <th class="border p-2 w-40">{unitName()}</th>
                 <th class="border p-2 w-32">Gulung</th>
                 <th class="border p-2 w-32">Lot</th>
-                <th hidden class="border p-2 w-48">
-                  Harga
-                </th>
-                <th hidden class="border p-2 w-48">
-                  Subtotal
-                </th>
                 <th class="border p-2 w-48">Aksi</th>
               </tr>
             </thead>
@@ -637,12 +746,11 @@ export default function OCXDeliveryNoteForm() {
               <Show when={form().itemGroups.length > 0}>
                 <For each={form().itemGroups}>
                   {(group, i) => {
-                    const quantity =
-                      form().unit === "Meter"
-                        ? group.meter_total
-                        : group.yard_total;
-                    const subtotal =
-                      (group.item_details?.harga || 0) * quantity;
+                    // Tentukan quantity berdasarkan satuan_unit_id
+                    const satuanUnitId = form().satuan_unit_id;
+                    const quantity = satuanUnitId === 1 
+                      ? group.meter_total 
+                      : group.yard_total;
 
                     return (
                       <tr>
@@ -659,23 +767,26 @@ export default function OCXDeliveryNoteForm() {
                         <td class="border p-2">
                           <input
                             class="border p-1 rounded w-full bg-gray-200"
-                            value={group.item_details?.deskripsi_warna}
+                            value={`${group.item_details?.kode_warna_ex || ""} | ${
+                              group.item_details?.deskripsi_warna_ex || ""
+                            }`}
                             disabled={true}
                           />
                         </td>
                         <td class="border p-2">
                           <input
-                            type="number"
                             class="border p-1 rounded w-full bg-gray-200"
-                            value={group.item_details?.lebar_greige}
+                            value={`${group.item_details?.kode_warna_new || ""} | ${
+                              group.item_details?.deskripsi_warna_new || ""
+                            }`}
                             disabled={true}
                           />
                         </td>
                         <td class="border p-2">
                           <input
-                            type="number"
+                            type="text"
                             class="border p-1 rounded w-full bg-gray-200"
-                            value={group.item_details?.lebar_finish}
+                            value={formatNumber(group.item_details?.lebar_finish)}
                             disabled={true}
                           />
                         </td>
@@ -715,22 +826,6 @@ export default function OCXDeliveryNoteForm() {
                             classList={{ "bg-gray-200": isView }}
                           />
                         </td>
-                        <td hidden class="border p-2 text-right">
-                          <input
-                            class="w-full border p-2 rounded text-right"
-                            value={formatHarga(group.item_details?.harga)}
-                            disabled={true}
-                            classList={{ "bg-gray-200": true }}
-                          />
-                        </td>
-                        <td hidden class="border p-2 text-right font-semibold">
-                          <input
-                            class="w-full border p-2 rounded text-right"
-                            value={formatHarga(subtotal)}
-                            disabled={true}
-                            classList={{ "bg-gray-200": true }}
-                          />
-                        </td>
                         <td class="border p-2 text-center">
                           <button
                             type="button"
@@ -753,20 +848,15 @@ export default function OCXDeliveryNoteForm() {
                   TOTAL
                 </td>
                 <td class="border p-2 text-right">
-                  {form().unit === "Meter"
-                    ? formatNumber(totalMeter(), 2)
-                    : formatNumber(totalYard(), 2)}
+                  {formatNumber(totalQuantity(), 2)}
                 </td>
-                <td hidden class="border p-2 text-right">
-                  {formatIDR(totalAll())}
-                </td>
-                <td hidden class="border-t border-gray-300"></td>
+                <td colspan="3" class="border-t border-gray-300"></td>
               </tr>
             </tfoot>
           </table>
         </div>
 
-        <div class="mt-6">
+        <div class="mt-6 flex gap-3">
           <button
             type="submit"
             class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"

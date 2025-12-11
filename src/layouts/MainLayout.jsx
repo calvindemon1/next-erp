@@ -1337,9 +1337,9 @@ export default function MainLayout(props) {
                       </ul>
                     </li>
                   </ul>
-                  {/* <ul> */}
+                  <ul>
                     {/* Submenu Level 2: SJ OCX */}
-                    {/* {hasAllPermission([
+                    {hasAllPermission([
                       "view_sj_ex",
                       "create_sj_ex",
                     ]) && (
@@ -1356,10 +1356,10 @@ export default function MainLayout(props) {
                           </span>
                         </button>
                       </li>
-                    )} */}
+                    )}
 
                     {/* Submenu Items inside Order Celup */}
-                    {/* <li
+                    <li
                       class={`transition-all duration-300 ease-in-out overflow-hidden ${
                         isWarehouseOCXOpen()
                           ? "max-h-fit opacity-100"
@@ -1384,7 +1384,7 @@ export default function MainLayout(props) {
                         </li>
                       </ul>
                     </li>
-                  </ul> */}
+                  </ul>
                   <ul>
                     {/* Submenu Level 2: Kain Jadi */}
                     {hasAllPermission([
