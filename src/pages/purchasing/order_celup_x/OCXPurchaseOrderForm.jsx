@@ -1055,6 +1055,7 @@ export default function OCXPurchaseOrderForm() {
                         class="border p-1 rounded w-30"
                         value={item.lebar_finish}
                         disabled={isView}
+                        classList={{ "bg-gray-200" : isView }}
                         onBlur={(e) => handleItemChange(i(), "lebar_finish", e.target.value)}
                       />
                     </td>
