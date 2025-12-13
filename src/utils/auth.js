@@ -6443,7 +6443,7 @@ export async function getOrderMatching(id, token) {
 export async function updateOrderMatching(token, payload) {
   try {
     const response = await fetch(
-      `${import.meta.env.VITE_API_URL}/update-order-matching`,
+      `${import.meta.env.VITE_API_URL}/update-order-matching/${payload.id}`,
       {
         method: "PUT",
         headers: {

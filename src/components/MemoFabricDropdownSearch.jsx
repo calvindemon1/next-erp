@@ -1,75 +1,76 @@
 import { createSignal, createMemo, createEffect, onCleanup } from "solid-js";
 import { onClickOutside } from "./OnClickOutside";
 
-export default function FabricDropdownSearch({
-  fabrics,
-  item,
-  onChange,
-  disabled = false,
-}) {
+export default function MemoFabricDropdownSearch(props) {
   const [isOpen, setIsOpen] = createSignal(false);
   const [search, setSearch] = createSignal("");
   let dropdownRef;
 
+  // close on outside click
   createEffect(() => {
     if (!dropdownRef) return;
     const cleanup = onClickOutside(dropdownRef, () => setIsOpen(false));
     onCleanup(cleanup);
   });
 
+  // filter fabrics
   const filteredFabrics = createMemo(() => {
     const q = search().toLowerCase();
-    return fabrics().filter((f) => {
-      const corak = (f.corak || "").toLowerCase();
-      const konstruksi = (f.konstruksi || "").toLowerCase();
-      return corak.includes(q) || konstruksi.includes(q);
+    return props.fabrics().filter((f) => {
+      return (
+        (f.corak ?? "").toLowerCase().includes(q) ||
+        (f.konstruksi ?? "").toLowerCase().includes(q)
+      );
     });
   });
 
-  const selectedFabric = createMemo(() =>
-    fabrics().find((f) => f.id == item.fabric_id)
-  );
+  // selected fabric (SOURCE OF TRUTH: props.value)
+  const selectedFabric = createMemo(() => {
+    const id = props.value();
+    if (!id) return null;
+    return props.fabrics().find((f) => f.id === id) ?? null;
+  });
 
-  const selectFabric = (fabric) => {
-    onChange(fabric.id);
+  const handleSelect = (fabric) => {
+    props.onChange(fabric.id); // update parent
     setIsOpen(false);
     setSearch("");
-    console.log("selected fabric:", selectedFabric());
   };
 
   return (
     <div class="relative" ref={dropdownRef}>
-      <input type="hidden" name="fabric_id" value={item.fabric_id} />
+      {/* hidden input for form submit */}
+      <input type="hidden" name="kain_id" value={props.value() ?? ""} />
 
       <button
         type="button"
         class={`w-full border p-2 rounded text-left ${
-          disabled ? "bg-gray-200" : "bg-transparent"
-        } cursor-default`}
-        disabled={disabled}
-        onClick={() => !disabled && setIsOpen(!isOpen())}
+          props.disabled ? "bg-gray-200" : "bg-transparent"
+        }`}
+        disabled={props.disabled}
+        onClick={() => !props.disabled && setIsOpen((v) => !v)}
       >
         {selectedFabric()
           ? `${selectedFabric().corak} | ${selectedFabric().konstruksi}`
           : "Pilih Jenis Kain"}
       </button>
 
-      {isOpen() && !disabled && (
+      {isOpen() && !props.disabled && (
         <div class="absolute z-10 w-full bg-white border mt-1 rounded shadow max-h-64 overflow-y-auto">
           <input
             type="text"
-            placeholder="Cari jenis/kode kain..."
-            class="w-full p-2 border-b focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Cari jenis / konstruksi kain..."
+            class="w-full p-2 border-b focus:outline-none"
             value={search()}
             onInput={(e) => setSearch(e.target.value)}
             autofocus
           />
+
           {filteredFabrics().length > 0 ? (
             filteredFabrics().map((f) => (
               <div
-                key={f.id}
-                class="p-2 hover:bg-blue-100 cursor-pointer"
-                onClick={() => selectFabric(f)}
+                class="p-2 cursor-pointer hover:bg-blue-100"
+                onClick={() => handleSelect(f)}
               >
                 {f.corak} | {f.konstruksi}
               </div>

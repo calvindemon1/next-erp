@@ -1,4 +1,11 @@
-import { createSignal, createEffect, onMount, For, Show } from "solid-js";
+import {
+  createSignal,
+  createEffect,
+  onMount,
+  For,
+  Show,
+  createMemo,
+} from "solid-js";
 import { useNavigate, useSearchParams } from "@solidjs/router";
 import MainLayout from "../../layouts/MainLayout";
 import Swal from "sweetalert2";
@@ -15,8 +22,8 @@ import {
 } from "../../utils/auth";
 import { Printer } from "lucide-solid";
 import SupplierDropdownSearch from "../../components/SupplierDropdownSearch";
-import FabricDropdownSearch from "../../components/FabricDropdownSearch";
-import ColorDropdownSearch from "../../components/ColorDropdownSearch";
+import MemoFabricDropdownSearch from "../../components/MemoFabricDropdownSearch";
+import MemoColorDropdownSearch from "../../components/MemoColorDropdownSearch";
 
 export default function MemoOrderMatchingForm() {
   const navigate = useNavigate();
@@ -81,14 +88,23 @@ export default function MemoOrderMatchingForm() {
       setLastList(orders);
 
       setSuppliers(supRes?.suppliers || []);
-      setFabrics(kainRes?.kain || kainRes?.data || []);
-      setWarnas(warnaRes?.data || warnaRes?.warna || []);
+      const kainList = kainRes?.kain || kainRes?.data || [];
+      const warnaList = warnaRes?.data || warnaRes?.warna || [];
+
+      setFabrics(kainList);
+      setWarnas(warnaList);
+
       setMarketings(marketingRes?.data || marketingRes?.users || []);
 
       if (isEdit) {
         // fetch single
         const res = await getOrderMatching(params.id, user?.token);
-        const data = res?.order_matching || res?.data || res?.order || null;
+        // const data = res?.order_matching || res?.data || res?.order || null;
+        let data =
+          res?.order_matching ||
+          res?.order ||
+          (Array.isArray(res?.data) ? res.data[0] : res?.data) ||
+          null;
         if (!data) {
           Swal.fire({
             icon: "error",
@@ -99,6 +115,8 @@ export default function MemoOrderMatchingForm() {
           return;
         }
 
+        console.log("Fetched MOM data:", data);
+
         setForm({
           no_om: data.no_om || "",
           supplier_id: data.supplier_id ?? "",
@@ -107,9 +125,35 @@ export default function MemoOrderMatchingForm() {
           marketing_id: data.marketing_id ?? "",
           tanggal: data.tanggal
             ? new Date(data.tanggal).toISOString().split("T")[0]
+            : data.created_at
+            ? new Date(data.created_at).toISOString().split("T")[0]
             : todayISO(),
           keterangan: data.keterangan ?? "",
         });
+
+        // pastikan kain ada di options
+        if (data.warna_id && !warnaList.some((w) => w.id === data.warna_id)) {
+          setWarnas((prev) => [
+            ...prev,
+            {
+              id: data.warna_id,
+              kode: data.kode_warna_ex,
+              deskripsi: data.deskripsi_warna_ex,
+            },
+          ]);
+        }
+
+        // pastikan warna ada di options
+        if (data.warna_id && !warnas().some((w) => w.id === data.warna_id)) {
+          setWarnas((prev) => [
+            ...prev,
+            {
+              id: data.warna_id,
+              kode: data.kode_warna_ex,
+              deskripsi: data.deskripsi_warna_ex,
+            },
+          ]);
+        }
       } else {
         // create mode: auto generate no_om from list
         const next = generateNextFromList(orders);
@@ -239,6 +283,24 @@ export default function MemoOrderMatchingForm() {
     window.open(`/print/ordermatching#${encoded}`, "_blank");
   }
 
+  const editReady = createMemo(() => {
+    if (!isEdit) return true;
+    return (
+      form().kain_id &&
+      form().warna_id &&
+      fabrics().length > 0 &&
+      warnas().length > 0
+    );
+  });
+
+  const fabricItem = createMemo(() => ({
+    fabric_id: Number(form().kain_id),
+  }));
+
+  const colorItem = createMemo(() => ({
+    warna_id: Number(form().warna_id),
+  }));
+
   return (
     <MainLayout>
       {loading() && (
@@ -355,10 +417,10 @@ export default function MemoOrderMatchingForm() {
                 )}
               </For>
             </select> */}
-            <FabricDropdownSearch
+            <MemoFabricDropdownSearch
               fabrics={fabrics}
-              item={{ fabric_id: form().kain_id }}
-              onChange={(val) => setForm({ ...form(), kain_id: val })}
+              value={() => Number(form().kain_id)}
+              onChange={(id) => setForm({ ...form(), kain_id: id })}
               disabled={isView}
             />
           </div>
@@ -379,10 +441,11 @@ export default function MemoOrderMatchingForm() {
                 )}
               </For>
             </select> */}
-            <ColorDropdownSearch
+
+            <MemoColorDropdownSearch
               colors={warnas}
-              item={{ warna_id: form().warna_id }}
-              onChange={(val) => handleItemChange(i(), "warna_id", val)}
+              value={() => Number(form().warna_id)}
+              onChange={(id) => setForm({ ...form(), warna_id: id })}
               disabled={isView}
             />
           </div>

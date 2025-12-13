@@ -202,7 +202,7 @@ export default function MemoOrderMatchingList() {
                     <Eye size={25} />
                   </button>
 
-                  {hasPermission("edit_order_matching") && (
+                  {hasPermission("update_order_matching") && (
                     <button
                       class="text-blue-600 hover:underline"
                       onClick={() => navigate(`/memo-order-matching/form?id=${mom.id}`)}
