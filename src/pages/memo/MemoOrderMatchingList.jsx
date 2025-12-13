@@ -46,8 +46,6 @@ export default function MemoOrderMatchingList() {
   const handleGetAllOrders = async (tok) => {
     const res = await getAllOrderMatching(tok);
 
-    console.log(res);
-
     if (res.status === 200) {
       const sorted = res.data.sort((a, b) => b.id - a.id);
       setOrders(sorted);
@@ -244,7 +242,6 @@ export default function MemoOrderMatchingList() {
               <th class="py-2 px-4">Tanggal</th>
               <th class="py-2 px-4">Supplier</th>
               <th class="py-2 px-4">Kain</th>
-              <th class="py-2 px-4">Warna</th>
               <th class="py-2 px-4">Marketing</th>
               <th class="py-2 px-4 text-center">Status</th>
               <th class="py-2 px-4">Aksi</th>
@@ -268,10 +265,6 @@ export default function MemoOrderMatchingList() {
 
                 <td class="py-2 px-4">
                   {mom.corak_kain} / {mom.konstruksi_kain}
-                </td>
-
-                <td class="py-2 px-4">
-                  {mom.kode_warna_ex} - {mom.deskripsi_warna_ex}
                 </td>
 
                 <td class="py-2 px-4">{mom.name}</td>
@@ -322,7 +315,7 @@ export default function MemoOrderMatchingList() {
                     </button>
                   )}
 
-                  {mom.status === 0 && (
+                  {hasPermission("update_status_mom") && mom.status === 0 && (
                     <button
                       class="text-green-600 hover:text-green-800"
                       title="Tandai DONE"

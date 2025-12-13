@@ -20,7 +20,7 @@ import {
   getAllUsers,
   getUser,
 } from "../../utils/auth";
-import { Printer } from "lucide-solid";
+import { Plus, Printer, Trash2 } from "lucide-solid";
 import SupplierDropdownSearch from "../../components/SupplierDropdownSearch";
 import MemoFabricDropdownSearch from "../../components/MemoFabricDropdownSearch";
 import MemoColorDropdownSearch from "../../components/MemoColorDropdownSearch";
@@ -40,11 +40,13 @@ export default function MemoOrderMatchingForm() {
   const [lastList, setLastList] = createSignal([]);
   const [momStatus, setMomStatus] = createSignal(null);
 
+  const [printData, setPrintData] = createSignal([]);
+
   const [form, setForm] = createSignal({
     no_om: "",
     supplier_id: "",
     kain_id: "",
-    warna_id: "",
+    warna_items: [], // ✅ SATU-SATUNYA
     marketing_id: "",
     tanggal: "",
     keterangan_order_matching: "",
@@ -100,7 +102,8 @@ export default function MemoOrderMatchingForm() {
       if (isEdit) {
         // fetch single
         const res = await getOrderMatching(params.id, user?.token);
-        console.log(res)
+
+        setPrintData(res);
         // const data = res?.order_matching || res?.data || res?.order || null;
         let data =
           res?.order_matching ||
@@ -119,17 +122,26 @@ export default function MemoOrderMatchingForm() {
 
         setMomStatus(data.status ?? 0);
 
+        // parse warna_ids string -> array
+        let parsedWarnaIds = [];
+
+        try {
+          parsedWarnaIds = Array.isArray(data.warna_ids)
+            ? data.warna_ids
+            : JSON.parse(data.warna_ids || "[]");
+        } catch (e) {
+          parsedWarnaIds = [];
+        }
+
         setForm({
           no_om: data.no_om || "",
           supplier_id: data.supplier_id ?? "",
           kain_id: data.kain_id ?? "",
-          warna_id: data.warna_id ?? "",
+          warna_items: parsedWarnaIds.map((id) => ({ warna_id: id })),
           marketing_id: data.marketing_id ?? "",
           tanggal: data.tanggal
             ? new Date(data.tanggal).toISOString().split("T")[0]
-            : data.created_at
-            ? new Date(data.created_at).toISOString().split("T")[0]
-            : todayISO(),
+            : new Date(data.created_at).toISOString().split("T")[0],
           keterangan_order_matching: data.keterangan_order_matching ?? "",
         });
 
@@ -211,22 +223,39 @@ export default function MemoOrderMatchingForm() {
       Swal.fire({ icon: "warning", title: "No OM kosong" });
       return false;
     }
+
     if (!form().supplier_id) {
       Swal.fire({ icon: "warning", title: "Pilih supplier" });
       return false;
     }
+
     if (!form().kain_id) {
       Swal.fire({ icon: "warning", title: "Pilih kain" });
       return false;
     }
-    if (!form().warna_id) {
-      Swal.fire({ icon: "warning", title: "Pilih warna" });
-      return false;
-    }
+
     if (!form().marketing_id) {
       Swal.fire({ icon: "warning", title: "Pilih marketing" });
       return false;
     }
+
+    // ✅ VALIDASI WARNA YANG BENAR
+    if (!form().warna_items.length) {
+      Swal.fire({
+        icon: "warning",
+        title: "Tambah minimal 1 warna",
+      });
+      return false;
+    }
+
+    if (form().warna_items.some((w) => !w.warna_id)) {
+      Swal.fire({
+        icon: "warning",
+        title: "Ada warna yang belum dipilih",
+      });
+      return false;
+    }
+
     return true;
   };
 
@@ -239,10 +268,10 @@ export default function MemoOrderMatchingForm() {
     try {
       const payload = {
         no_om: form().no_om,
-        supplier_id: parseInt(form().supplier_id),
-        kain_id: parseInt(form().kain_id),
-        warna_id: parseInt(form().warna_id),
-        marketing_id: parseInt(form().marketing_id),
+        supplier_id: Number(form().supplier_id),
+        kain_id: Number(form().kain_id),
+        warna_ids: form().warna_items.map((w) => w.warna_id),
+        marketing_id: Number(form().marketing_id),
         tanggal: form().tanggal,
         keterangan_order_matching: form().keterangan_order_matching || "",
       };
@@ -275,33 +304,39 @@ export default function MemoOrderMatchingForm() {
     }
   };
 
-  // function handlePrint() {
-  //   // Use existing data (if edit/view) or current form as fallback
-  //   const dataToPrint = {
-  //     ...form(),
-  //     id: params.id || null,
-  //   };
-  //   const encoded = encodeURIComponent(JSON.stringify(dataToPrint));
-  //   window.open(`/print/order-matching#${encoded}`, "_blank");
-  // }
+  const addWarnaItem = () => {
+    setForm((prev) => ({
+      ...prev,
+      warna_items: [...prev.warna_items, { warna_id: null }],
+    }));
+  };
 
-  const editReady = createMemo(() => {
-    if (!isEdit) return true;
-    return (
-      form().kain_id &&
-      form().warna_id &&
-      fabrics().length > 0 &&
-      warnas().length > 0
-    );
-  });
+  const removeWarnaItem = (index) => {
+    setForm((prev) => ({
+      ...prev,
+      warna_items: prev.warna_items.filter((_, i) => i !== index),
+    }));
+  };
 
-  const fabricItem = createMemo(() => ({
-    fabric_id: Number(form().kain_id),
-  }));
+  const updateWarnaItem = (index, warnaId) => {
+    setForm((prev) => {
+      const items = [...prev.warna_items];
+      items[index] = { warna_id: warnaId };
+      return { ...prev, warna_items: items };
+    });
+  };
 
-  const colorItem = createMemo(() => ({
-    warna_id: Number(form().warna_id),
-  }));
+  function handlePrint(list) {
+    // Use existing data (if edit/view) or current form as fallback
+    const dataToPrint = {
+      printed_at: new Date().toISOString(),
+      total: list.length,
+      data: list,
+    };
+
+    const encoded = encodeURIComponent(JSON.stringify(dataToPrint));
+    window.open(`/print/detail-order-matching#${encoded}`, "_blank");
+  }
 
   return (
     <MainLayout>
@@ -336,15 +371,15 @@ export default function MemoOrderMatchingForm() {
           Kembali
         </button>
 
-        {/* <button
+        <button
           type="button"
-          class="flex gap-2 items-center bg-blue-600 text-white px-3 py-2 rounded hover:bg-green-700"
-          onClick={handlePrint}
+          class="flex gap-2 items-center bg-blue-600 text-white px-3 py-2 rounded hover:bg-blue-700"
+          onClick={() => handlePrint(printData())}
           hidden={!isEdit && !isView}
         >
           <Printer size={16} />
           Print
-        </button> */}
+        </button>
       </div>
 
       <form
@@ -438,9 +473,9 @@ export default function MemoOrderMatchingForm() {
             />
           </div>
 
-          <div>
+          {/* <div>
             <label class="block mb-1 font-medium">Warna</label>
-            {/* <select
+            <select
               class="w-full border p-2 rounded"
               value={form().warna_id || ""}
               onChange={(e) => setForm({ ...form(), warna_id: e.target.value })}
@@ -453,15 +488,40 @@ export default function MemoOrderMatchingForm() {
                   <option value={w.id}>{w.kode + " - " + w.deskripsi}</option>
                 )}
               </For>
-            </select> */}
+            </select>
 
             <MemoColorDropdownSearch
               colors={warnas}
-              value={() => Number(form().warna_id)}
-              onChange={(id) => setForm({ ...form(), warna_id: id })}
+              value={() => ""}
+              onChange={(id) => addWarna(id)}
               disabled={isView}
             />
-          </div>
+            <Show when={form().warna_ids.length > 0}>
+              <div class="mt-2 space-y-1">
+                <For each={form().warna_ids}>
+                  {(warnaId) => {
+                    const warna = warnas().find((w) => w.id === warnaId);
+                    return (
+                      <div class="flex items-center justify-between bg-gray-100 px-3 py-1 rounded">
+                        <span class="text-sm">
+                          {warna?.kode} - {warna?.deskripsi}
+                        </span>
+
+                        <button
+                          type="button"
+                          class="text-red-600 text-xs hover:underline"
+                          onClick={() => removeWarna(warnaId)}
+                          disabled={isView}
+                        >
+                          Hapus
+                        </button>
+                      </div>
+                    );
+                  }}
+                </For>
+              </div>
+            </Show>
+          </div> */}
 
           <div>
             <label class="block mb-1 font-medium">Marketing</label>
@@ -492,6 +552,43 @@ export default function MemoOrderMatchingForm() {
             }
             readOnly={isView}
           />
+        </div>
+
+        <div>
+          <label class="block mb-1 font-medium">Warna</label>
+
+          <button
+            type="button"
+            class="flex items-center gap-3 mb-2 bg-blue-500 text-white px-3 py-1 rounded text-sm"
+            onClick={addWarnaItem}
+            disabled={isView}
+          >
+            <Plus size={15} /> Tambah Warna
+          </button>
+
+          <div class="space-y-2">
+            <For each={form().warna_items}>
+              {(item, index) => (
+                <div class="flex gap-2 items-center">
+                  <MemoColorDropdownSearch
+                    colors={warnas}
+                    value={() => item.warna_id}
+                    onChange={(id) => updateWarnaItem(index(), id)}
+                    disabled={isView}
+                  />
+
+                  <button
+                    type="button"
+                    class="text-red-600 text-sm hover:underline"
+                    onClick={() => removeWarnaItem(index())}
+                    disabled={isView}
+                  >
+                    <Trash2 size={25} />
+                  </button>
+                </div>
+              )}
+            </For>
+          </div>
         </div>
 
         <div class="flex items-center gap-3">

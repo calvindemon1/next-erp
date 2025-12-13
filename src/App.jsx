@@ -105,6 +105,7 @@ import PackingListPrint from "./utils/sell/PackingListDummyPrint";
 import SuratJalanPrint from "./utils/sell/SuratJalanDummyPrint";
 // MEMO
 import MemoOrderMatchingPrint from "./utils/memo/MemoOrderMatchingDummyPrint";
+import DetailMemoOrderMatchingPrint from "./utils/memo/DetailMemoOrderMatchingDummyPrint";
 // PRINT
 // BUY
 // BELI GREIGE
@@ -408,6 +409,10 @@ function App() {
       {/* BUY */}
       {/* MEMO */}
       <Route path="/print/order-matching" component={MemoOrderMatchingPrint} />
+      <Route
+        path="/print/detail-order-matching"
+        component={DetailMemoOrderMatchingPrint}
+      />
       {/* MEMO */}
       {/* PRINT */}
 
