@@ -562,6 +562,7 @@ export default function MemoOrderMatchingForm() {
             class="flex items-center gap-3 mb-2 bg-blue-500 text-white px-3 py-1 rounded text-sm"
             onClick={addWarnaItem}
             disabled={isView}
+            hidden={isView}
           >
             <Plus size={15} /> Tambah Warna
           </button>
