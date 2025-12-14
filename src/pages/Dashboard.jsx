@@ -872,21 +872,31 @@ export default function Dashboard() {
             key,
             label: b.label,
             mode: sec.key,
+
             chart: {
-              series: [salesTotal, jbTotal],
-              categories: ["Penjualan", "Jual Beli"],
+              items: ["Penjualan", "Jual Beli"],
+              in: [salesTotal, jbTotal],
+              out: [salesInv, jbInv],
+              remaining: [salesTotal - salesInv, jbTotal - jbInv],
             },
+
             summaryCounts: {
-              sales: {
-                total: salesTotal,
-                invoiced: salesInv,
-                pending: salesTotal - salesInv,
+              in: {
+                total: salesTotal + jbTotal,
+                approved: salesInv + jbInv,
+                pending: salesTotal - salesInv + (jbTotal - jbInv),
               },
-              jb: { total: jbTotal, invoiced: jbInv, pending: jbTotal - jbInv },
+              out: {
+                total: salesInv + jbInv,
+                approved: salesInv + jbInv,
+                pending: 0,
+              },
             },
-            rowsSales: salesRows,
-            rowsJB: jbRows,
+
+            rowsIn: [...salesRows, ...jbRows],
+            rowsOut: [...salesRows, ...jbRows],
           });
+
           continue;
         }
 
