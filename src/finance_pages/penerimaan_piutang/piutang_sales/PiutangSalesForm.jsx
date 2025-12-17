@@ -116,7 +116,7 @@ export default function PiutangSalesForm() {
       const spWithCalculations = await processSisaUtangBatch(filteredSP, penerimaanList);
       setSpOptions(spWithCalculations);
 
-      // Pre-calculate customer data
+      // Pre-calculate customer data DENGAN RUMUS BARU
       await preCalculateCustomerData(spWithCalculations, penerimaanList);
 
     } catch (error) {
@@ -128,7 +128,7 @@ export default function PiutangSalesForm() {
   };
 
   const processSisaUtangBatch = async (suratJalanList, penerimaanList) => {
-    // Group payments by SJ
+    // Group payments by SJ - INCLUDE POTONGAN
     const penerimaanPerSJ = {};
     penerimaanList.forEach(p => {
       const sjId = p.sj_id;
@@ -151,14 +151,21 @@ export default function PiutangSalesForm() {
           // Check cache first
           if (deliveryNotesCache()[sp.id]) {
             const detail = deliveryNotesCache()[sp.id];
-            const nominalInvoice = detail?.order?.summary?.subtotal || 0;
+            const summary = detail?.order?.summary;
+            const subtotalAwal = summary?.subtotal_all || 0;
+            const subtotalSetelahRetur = summary?.subtotal || 0;
+            const selisihRetur = subtotalAwal - subtotalSetelahRetur;
+            
             const totalPembayaranSJ = penerimaanPerSJ[sp.id] || 0;
-            const sisaUtangPerSJ = Math.max(0, nominalInvoice - totalPembayaranSJ);
+            const sisaUtangPerSJ = Math.max(0, subtotalSetelahRetur - totalPembayaranSJ);
 
             return {
               ...sp,
-              nominal_invoice: nominalInvoice,
-              sisa_utang_per_sj: sisaUtangPerSJ
+              nominal_invoice: subtotalAwal, // INVOICE = subtotal_awal (TANPA RETUR)
+              sisa_utang_per_sj: sisaUtangPerSJ,
+              subtotal_awal: subtotalAwal,
+              subtotal_setelah_retur: subtotalSetelahRetur,
+              selisih_retur: selisihRetur
             };
           }
 
@@ -166,21 +173,31 @@ export default function PiutangSalesForm() {
           const detail = await getDeliveryNotes(sp.id, user?.token);
           setDeliveryNotesCache(prev => ({ ...prev, [sp.id]: detail }));
           
-          const nominalInvoice = detail?.order?.summary?.subtotal || 0;
+          const summary = detail?.order?.summary;
+          const subtotalAwal = summary?.subtotal_all || 0;
+          const subtotalSetelahRetur = summary?.subtotal || 0;
+          const selisihRetur = subtotalAwal - subtotalSetelahRetur;
+          
           const totalPembayaranSJ = penerimaanPerSJ[sp.id] || 0;
-          const sisaUtangPerSJ = Math.max(0, nominalInvoice - totalPembayaranSJ);
+          const sisaUtangPerSJ = Math.max(0, subtotalSetelahRetur - totalPembayaranSJ);
 
           return {
             ...sp,
-            nominal_invoice: nominalInvoice,
-            sisa_utang_per_sj: sisaUtangPerSJ
+            nominal_invoice: subtotalAwal, // INVOICE = subtotal_awal (TANPA RETUR)
+            sisa_utang_per_sj: sisaUtangPerSJ,
+            subtotal_awal: subtotalAwal,
+            subtotal_setelah_retur: subtotalSetelahRetur,
+            selisih_retur: selisihRetur
           };
         } catch (error) {
           console.error(`Gagal memproses SJ ${sp.id}:`, error);
           return {
             ...sp,
             nominal_invoice: 0,
-            sisa_utang_per_sj: 0
+            sisa_utang_per_sj: 0,
+            subtotal_awal: 0,
+            subtotal_setelah_retur: 0,
+            selisih_retur: 0
           };
         }
       });
@@ -202,24 +219,48 @@ export default function PiutangSalesForm() {
       
       if (!customerData[customerName]) {
         customerData[customerName] = {
-          totalUtang: 0,
+          totalSubtotalAwal: 0,      // Σ(subtotal_awal)
+          totalSelisihRetur: 0,      // Σ(subtotal_awal - subtotal)
           sjIds: []
         };
       }
       
-      customerData[customerName].totalUtang += sp.nominal_invoice;
+      customerData[customerName].totalSubtotalAwal += sp.subtotal_awal;
+      customerData[customerName].totalSelisihRetur += sp.selisih_retur;
       customerData[customerName].sjIds.push(sp.id);
     });
 
-    // Calculate payments per customer
+    // Calculate payments per customer - RUMUS BARU
     Object.keys(customerData).forEach(customerName => {
       const customerSjIds = customerData[customerName].sjIds;
-      const totalPembayaran = penerimaanList.reduce((sum, p) => 
-        customerSjIds.includes(p.sj_id) ? sum + (parseFloat(p.pembayaran) || 0) : sum
-      , 0);
+      
+      // Hitung total pembayaran untuk customer ini (TANPA potongan)
+      const totalPembayaran = penerimaanList.reduce((sum, p) => {
+        if (customerSjIds.includes(p.sj_id)) {
+          return sum + (parseFloat(p.pembayaran) || 0);
+        }
+        return sum;
+      }, 0);
+      
+      // Hitung total potongan untuk customer ini
+      const totalPotongan = penerimaanList.reduce((sum, p) => {
+        if (customerSjIds.includes(p.sj_id)) {
+          return sum + (parseFloat(p.potongan) || 0);
+        }
+        return sum;
+      }, 0);
       
       customerData[customerName].totalPembayaran = totalPembayaran;
-      customerData[customerName].sisaUtang = Math.max(0, customerData[customerName].totalUtang - totalPembayaran);
+      customerData[customerName].totalPotongan = totalPotongan;
+      
+      // RUMUS: Total subtotal (invoice) - total pembayaran - (subtotal_awal - subtotal) - total potongan
+      customerData[customerName].sisaUtang = Math.max(
+        0, 
+        customerData[customerName].totalSubtotalAwal - 
+        totalPembayaran - 
+        customerData[customerName].totalSelisihRetur - 
+        totalPotongan
+      );
     });
 
     setCustomerCalculationsCache(customerData);
@@ -231,6 +272,7 @@ export default function PiutangSalesForm() {
     if (!selectedSP) return;
 
     // Use cached data - no API calls
+    // INVOICE = subtotal_awal (TANPA RETUR)
     setNominalInvoice(formatIDR(selectedSP.nominal_invoice));
     setSisaUtangPerSJ(formatIDR(selectedSP.sisa_utang_per_sj));
     
