@@ -1,16 +1,16 @@
 import { createSignal, onMount } from "solid-js";
 import { useNavigate, useSearchParams } from "@solidjs/router";
-import { 
+import {
   PenerimaanPiutangJualBeli,
   JenisPotongan,
   PaymentMethods,
   Banks,
-  getLastSequence,   
+  getLastSequence,
 } from "../../../utils/financeAuth";
-import { 
+import {
   getAllJBDeliveryNotes,
   getJBDeliveryNotes,
-  getUser, 
+  getUser,
 } from "../../../utils/auth";
 import Swal from "sweetalert2";
 import FinanceMainLayout from "../../../layouts/FinanceMainLayout";
@@ -40,7 +40,8 @@ export default function PiutangJualBeliForm() {
   // Cache states
   const [deliveryNotesCache, setDeliveryNotesCache] = createSignal({});
   const [penerimaanCache, setPenerimaanCache] = createSignal([]);
-  const [supplierCalculationsCache, setSupplierCalculationsCache] = createSignal({});
+  const [supplierCalculationsCache, setSupplierCalculationsCache] =
+    createSignal({});
 
   const [form, setForm] = createSignal({
     sequence_number: "",
@@ -66,8 +67,10 @@ export default function PiutangJualBeliForm() {
   };
 
   const formatIDR = (val, showCurrency = true, showZero = true) => {
-    const num = typeof val === "string" ? parseNumber(val) : (val === 0 ? 0 : (val || 0));
-    if ((val === null || val === undefined || val === "") && !showZero) return "";
+    const num =
+      typeof val === "string" ? parseNumber(val) : val === 0 ? 0 : val || 0;
+    if ((val === null || val === undefined || val === "") && !showZero)
+      return "";
     if (showCurrency) {
       return new Intl.NumberFormat("id-ID", {
         style: "currency",
@@ -92,7 +95,7 @@ export default function PiutangJualBeliForm() {
     }
     const n = Number(v);
     return isNaN(n) ? null : n;
-  };  
+  };
 
   // ========= CACHED DATA LOADING =========
   const loadAllData = async () => {
@@ -101,24 +104,29 @@ export default function PiutangJualBeliForm() {
       // Load data in parallel
       const [allSP, allPenerimaan] = await Promise.all([
         getAllJBDeliveryNotes(user?.token),
-        PenerimaanPiutangJualBeli.getAll()
+        PenerimaanPiutangJualBeli.getAll(),
       ]);
 
-      const rawList = allSP?.suratJalans ?? allSP?.surat_jalan_list ?? allSP?.data ?? [];
-      const filteredSP = Array.isArray(rawList) 
-        ? rawList.filter(sp => sp.delivered_status === 1 || sp.delivered_status === true)
+      const rawList =
+        allSP?.suratJalans ?? allSP?.surat_jalan_list ?? allSP?.data ?? [];
+      const filteredSP = Array.isArray(rawList)
+        ? rawList.filter(
+            (sp) => sp.delivered_status === 1 || sp.delivered_status === true
+          )
         : [];
 
       const penerimaanList = allPenerimaan?.data || [];
       setPenerimaanCache(penerimaanList);
 
       // Process with caching
-      const spWithCalculations = await processSisaUtangBatch(filteredSP, penerimaanList);
+      const spWithCalculations = await processSisaUtangBatch(
+        filteredSP,
+        penerimaanList
+      );
       setSpOptions(spWithCalculations);
 
       // Pre-calculate supplier data
       await preCalculateSupplierData(spWithCalculations, penerimaanList);
-
     } catch (error) {
       console.error("Gagal memuat data:", error);
       Swal.fire("Error", "Gagal memuat data", "error");
@@ -130,7 +138,7 @@ export default function PiutangJualBeliForm() {
   const processSisaUtangBatch = async (suratJalanList, penerimaanList) => {
     // Group payments by SJ
     const penerimaanPerSJ = {};
-    penerimaanList.forEach(p => {
+    penerimaanList.forEach((p) => {
       const sjId = p.sj_id;
       const amount = parseFloat(p.pembayaran) || 0;
       if (sjId) {
@@ -141,45 +149,57 @@ export default function PiutangJualBeliForm() {
 
     const results = [];
     const batchSize = 3;
-    
+
     for (let i = 0; i < suratJalanList.length; i += batchSize) {
       const batch = suratJalanList.slice(i, i + batchSize);
-      
+
       const batchPromises = batch.map(async (sp) => {
         try {
           // Check cache first
           if (deliveryNotesCache()[sp.id]) {
             const detail = deliveryNotesCache()[sp.id];
-            const nominalInvoice = detail?.suratJalan?.summary?.subtotal || detail?.summary?.subtotal || 0;
+            const nominalInvoice =
+              detail?.suratJalan?.summary?.subtotal ||
+              detail?.summary?.subtotal ||
+              0;
             const totalPembayaranSJ = penerimaanPerSJ[sp.id] || 0;
-            const sisaUtangPerSJ = Math.max(0, nominalInvoice - totalPembayaranSJ);
+            const sisaUtangPerSJ = Math.max(
+              0,
+              nominalInvoice - totalPembayaranSJ
+            );
 
             return {
               ...sp,
               nominal_invoice: nominalInvoice,
-              sisa_utang_per_sj: sisaUtangPerSJ
+              sisa_utang_per_sj: sisaUtangPerSJ,
             };
           }
 
           // Fetch if not in cache
           const detail = await getJBDeliveryNotes(sp.id, user?.token);
-          setDeliveryNotesCache(prev => ({ ...prev, [sp.id]: detail }));
-          
-          const nominalInvoice = detail?.suratJalan?.summary?.subtotal || detail?.summary?.subtotal || 0;
+          setDeliveryNotesCache((prev) => ({ ...prev, [sp.id]: detail }));
+
+          const nominalInvoice =
+            detail?.suratJalan?.summary?.subtotal ||
+            detail?.summary?.subtotal ||
+            0;
           const totalPembayaranSJ = penerimaanPerSJ[sp.id] || 0;
-          const sisaUtangPerSJ = Math.max(0, nominalInvoice - totalPembayaranSJ);
+          const sisaUtangPerSJ = Math.max(
+            0,
+            nominalInvoice - totalPembayaranSJ
+          );
 
           return {
             ...sp,
             nominal_invoice: nominalInvoice,
-            sisa_utang_per_sj: sisaUtangPerSJ
+            sisa_utang_per_sj: sisaUtangPerSJ,
           };
         } catch (error) {
           console.error(`Gagal memproses SJ ${sp.id}:`, error);
           return {
             ...sp,
             nominal_invoice: 0,
-            sisa_utang_per_sj: 0
+            sisa_utang_per_sj: 0,
           };
         }
       });
@@ -193,32 +213,39 @@ export default function PiutangJualBeliForm() {
 
   const preCalculateSupplierData = async (suratJalanList, penerimaanList) => {
     const supplierData = {};
-    
+
     // Group by supplier
-    suratJalanList.forEach(sp => {
+    suratJalanList.forEach((sp) => {
       const supplierName = sp.supplier_name || sp.supplier;
       if (!supplierName) return;
-      
+
       if (!supplierData[supplierName]) {
         supplierData[supplierName] = {
           totalUtang: 0,
-          sjIds: []
+          sjIds: [],
         };
       }
-      
+
       supplierData[supplierName].totalUtang += sp.nominal_invoice;
       supplierData[supplierName].sjIds.push(sp.id);
     });
 
     // Calculate payments per supplier
-    Object.keys(supplierData).forEach(supplierName => {
+    Object.keys(supplierData).forEach((supplierName) => {
       const supplierSjIds = supplierData[supplierName].sjIds;
-      const totalPembayaran = penerimaanList.reduce((sum, p) => 
-        supplierSjIds.includes(p.sj_id) ? sum + (parseFloat(p.pembayaran) || 0) : sum
-      , 0);
-      
+      const totalPembayaran = penerimaanList.reduce(
+        (sum, p) =>
+          supplierSjIds.includes(p.sj_id)
+            ? sum + (parseFloat(p.pembayaran) || 0)
+            : sum,
+        0
+      );
+
       supplierData[supplierName].totalPembayaran = totalPembayaran;
-      supplierData[supplierName].sisaUtang = Math.max(0, supplierData[supplierName].totalUtang - totalPembayaran);
+      supplierData[supplierName].sisaUtang = Math.max(
+        0,
+        supplierData[supplierName].totalUtang - totalPembayaran
+      );
     });
 
     setSupplierCalculationsCache(supplierData);
@@ -226,13 +253,13 @@ export default function PiutangJualBeliForm() {
 
   // ========= OPTIMIZED UTILITY FUNCTIONS =========
   const updateSisaUtangDisplay = (sjId) => {
-    const selectedSP = spOptions().find(sp => sp.id === sjId);
+    const selectedSP = spOptions().find((sp) => sp.id === sjId);
     if (!selectedSP) return;
 
     // Use cached data - no API calls
     setNominalInvoice(formatIDR(selectedSP.nominal_invoice));
     setSisaUtangPerSJ(formatIDR(selectedSP.sisa_utang_per_sj));
-    
+
     // Use pre-calculated supplier data
     const supplierName = selectedSP.supplier_name || selectedSP.supplier;
     if (supplierName && supplierCalculationsCache()[supplierName]) {
@@ -252,13 +279,13 @@ export default function PiutangJualBeliForm() {
   const handleSuratPenerimaanChange = async (val) => {
     const newSjId = normalizeId(val);
     const currentSjId = form().sj_id;
-    
+
     if (newSjId !== currentSjId && manualGenerateDone()) {
-      setForm({ 
-        ...form(), 
-        sj_id: newSjId, 
+      setForm({
+        ...form(),
+        sj_id: newSjId,
         sequence_number: "",
-        no_seq: 0
+        no_seq: 0,
       });
       setManualGenerateDone(false);
     } else {
@@ -275,10 +302,7 @@ export default function PiutangJualBeliForm() {
   // ========= COMPONENT LIFECYCLE =========
   onMount(async () => {
     // Load dropdown options in parallel with main data
-    await Promise.all([
-      loadAllData(),
-      loadDropdownOptions()
-    ]);
+    await Promise.all([loadAllData(), loadDropdownOptions()]);
 
     if (isEdit) {
       await loadEditData();
@@ -287,14 +311,14 @@ export default function PiutangJualBeliForm() {
 
   const loadDropdownOptions = async () => {
     try {
-      const [resJenisPotongan, resPaymentMethods, resBanks] = await Promise.all([
-        JenisPotongan.getAll(),
-        PaymentMethods.getAll(),
-        Banks.getAll()
-      ]);
+      const [resJenisPotongan, resPaymentMethods, resBanks] = await Promise.all(
+        [JenisPotongan.getAll(), PaymentMethods.getAll(), Banks.getAll()]
+      );
 
       setJenisPotonganOptions(resJenisPotongan?.data ?? resJenisPotongan ?? []);
-      setPaymentMethodsOptions(resPaymentMethods?.data ?? resPaymentMethods ?? []);
+      setPaymentMethodsOptions(
+        resPaymentMethods?.data ?? resPaymentMethods ?? []
+      );
       setBanksOptions(resBanks?.data ?? resBanks ?? []);
     } catch (err) {
       console.error("Gagal memuat opsi dropdown:", err);
@@ -304,9 +328,8 @@ export default function PiutangJualBeliForm() {
   const loadEditData = async () => {
     try {
       const res = await PenerimaanPiutangJualBeli.getById(params.id);
-      const data = (Array.isArray(res.data) && res.data.length > 0)
-        ? res.data[0]
-        : res.data;
+      const data =
+        Array.isArray(res.data) && res.data.length > 0 ? res.data[0] : res.data;
 
       if (!data) throw new Error("Data penerimaan tidak ditemukan.");
 
@@ -335,54 +358,62 @@ export default function PiutangJualBeliForm() {
   // ========= REMAINING FUNCTIONS =========
   const generateNomor = async () => {
     try {
-        const selectedSJId = form().sj_id;
-        if (!selectedSJId) {
-            Swal.fire("Gagal", "Pilih Surat Penerimaan terlebih dahulu.", "warning");
-            return;
-        }
+      const selectedSJId = form().sj_id;
+      if (!selectedSJId) {
+        Swal.fire(
+          "Gagal",
+          "Pilih Surat Penerimaan terlebih dahulu.",
+          "warning"
+        );
+        return;
+      }
 
-        const selectedSP = spOptions().find(sp => sp.id === selectedSJId);
-        if (!selectedSP) {
-            Swal.fire("Gagal", "Detail Surat Penerimaan tidak ditemukan.", "error");
-            return;
-        }
+      const selectedSP = spOptions().find((sp) => sp.id === selectedSJId);
+      if (!selectedSP) {
+        Swal.fire("Gagal", "Detail Surat Penerimaan tidak ditemukan.", "error");
+        return;
+      }
 
-        const no_sj = selectedSP.no_sj || "";
-        const parts = no_sj.split('/');
-        let taxFlag = "N";
+      const no_sj = selectedSP.no_sj || "";
+      const parts = no_sj.split("/");
+      let taxFlag = "N";
 
-        if (parts.length > 2 && (parts[2] === "P" || parts[2] === "N")) {
-            taxFlag = parts[2];
-        } else {
-            console.warn("Format No SJ tidak terduga, default ke 'N'.", no_sj);
-        }
+      if (parts.length > 2 && (parts[2] === "P" || parts[2] === "N")) {
+        taxFlag = parts[2];
+      } else {
+        console.warn("Format No SJ tidak terduga, default ke 'N'.", no_sj);
+      }
 
-        let ppnValue = taxFlag === "P" ? 11 : 0;
+      let ppnValue = taxFlag === "P" ? 11 : 0;
 
-        const lastSeq = await getLastSequence("penerimaan_jb", "", ppnValue);
-        
-        if (!lastSeq || lastSeq.last_sequence === undefined) {
+      const lastSeq = await getLastSequence("penerimaan_jb", "", ppnValue);
+
+      if (!lastSeq || lastSeq.last_sequence === undefined) {
         throw new Error("Gagal mendapatkan sequence dari server");
-        }
+      }
 
-        const nextNum = String(lastSeq.last_sequence + 1).padStart(5, "0");
+      const nextNum = String(lastSeq.last_sequence + 1).padStart(5, "0");
 
-        const now = new Date();
-        const month = String(now.getMonth() + 1).padStart(2, "0");
-        const year = String(now.getFullYear()).slice(2);
-        const mmyy = `${month}${year}`;
+      const now = new Date();
+      const month = String(now.getMonth() + 1).padStart(2, "0");
+      const year = String(now.getFullYear()).slice(2);
+      const mmyy = `${month}${year}`;
 
-        const nomor = `PP/JB/${taxFlag}/${mmyy}-${nextNum}`;
+      const nomor = `PP/JB/${taxFlag}/${mmyy}-${nextNum}`;
 
-        setForm((prev) => ({
-            ...prev,
-            sequence_number: nomor,
-            no_seq: lastSeq.last_sequence + 1,
-        }));
-        setManualGenerateDone(true);
+      setForm((prev) => ({
+        ...prev,
+        sequence_number: nomor,
+        no_seq: lastSeq.last_sequence + 1,
+      }));
+      setManualGenerateDone(true);
     } catch (err) {
-        console.error("Generate nomor error:", err);
-        Swal.fire("Gagal", err?.message || "Gagal mendapatkan nomor terakhir", "error");
+      console.error("Generate nomor error:", err);
+      Swal.fire(
+        "Gagal",
+        err?.message || "Gagal mendapatkan nomor terakhir",
+        "error"
+      );
     }
   };
 
@@ -434,7 +465,10 @@ export default function PiutangJualBeliForm() {
       }).then(() => navigate("/piutang-jual-beli"));
     } catch (error) {
       console.error(error);
-      const errorMsg = error?.response?.data?.message || error?.message || "Terjadi kesalahan saat menyimpan data";
+      const errorMsg =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Terjadi kesalahan saat menyimpan data";
       Swal.fire({
         icon: "error",
         title: "Gagal",
@@ -456,7 +490,8 @@ export default function PiutangJualBeliForm() {
         </div>
       )}
       <h1 class="text-2xl font-bold mb-6">
-        {isView ? "Detail" : isEdit ? "Edit" : "Tambah"} Penerimaan Piutang Jual Beli
+        {isView ? "Detail" : isEdit ? "Edit" : "Tambah"} Penerimaan Piutang Jual
+        Beli
       </h1>
 
       <form class="space-y-6" onSubmit={handleSubmit}>
@@ -502,7 +537,7 @@ export default function PiutangJualBeliForm() {
           </div>
 
           <div>
-            <label class="block mb-1 font-medium">Sisa Utang</label>
+            <label class="block mb-1 font-medium">Sisa Hutang</label>
             <input
               type="text"
               class="w-full border bg-gray-200 p-2 rounded"
@@ -520,7 +555,8 @@ export default function PiutangJualBeliForm() {
               readOnly
             />
             <div class="text-xs text-gray-500 mt-1">
-              * Total sisa utang untuk semua invoice atau surat penerimaan jual beli
+              * Total sisa utang untuk semua invoice atau surat penerimaan jual
+              beli
             </div>
           </div>
 
@@ -558,7 +594,9 @@ export default function PiutangJualBeliForm() {
               type="text"
               class="w-full border p-2 rounded"
               value={form().pembulatan}
-              onInput={(e) => setForm({ ...form(), pembulatan: e.target.value })}
+              onInput={(e) =>
+                setForm({ ...form(), pembulatan: e.target.value })
+              }
               onBlur={(e) => {
                 const num = parseNumber(e.target.value);
                 setForm({ ...form(), pembulatan: formatIDR(num, 2) });
@@ -574,7 +612,9 @@ export default function PiutangJualBeliForm() {
               type="text"
               class="w-full border p-2 rounded"
               value={form().pembayaran}
-              onInput={(e) => setForm({ ...form(), pembayaran: e.target.value })}
+              onInput={(e) =>
+                setForm({ ...form(), pembayaran: e.target.value })
+              }
               onBlur={(e) => {
                 const num = parseNumber(e.target.value);
                 setForm({ ...form(), pembayaran: formatIDR(num) });
@@ -614,7 +654,9 @@ export default function PiutangJualBeliForm() {
               type="date"
               class="w-full border p-2 rounded"
               value={form().tanggal_pembayaran}
-              onInput={(e) => setForm({ ...form(), tanggal_pembayaran: e.target.value })}
+              onInput={(e) =>
+                setForm({ ...form(), tanggal_pembayaran: e.target.value })
+              }
               disabled={isView}
               classList={{ "bg-gray-200": isView }}
             />
@@ -626,7 +668,9 @@ export default function PiutangJualBeliForm() {
               type="date"
               class="w-full border p-2 rounded"
               value={form().tanggal_jatuh_tempo}
-              onInput={(e) => setForm({ ...form(), tanggal_jatuh_tempo: e.target.value })}
+              onInput={(e) =>
+                setForm({ ...form(), tanggal_jatuh_tempo: e.target.value })
+              }
               disabled={isView}
               classList={{ "bg-gray-200": isView }}
               required
@@ -651,7 +695,9 @@ export default function PiutangJualBeliForm() {
               class="w-full border p-2 rounded"
               rows="3"
               value={form().keterangan}
-              onInput={(e) => setForm({ ...form(), keterangan: e.target.value })}
+              onInput={(e) =>
+                setForm({ ...form(), keterangan: e.target.value })
+              }
               disabled={isView}
               classList={{ "bg-gray-200": isView }}
             />

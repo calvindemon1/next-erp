@@ -1,6 +1,6 @@
 import { createSignal, onMount } from "solid-js";
 import { useNavigate, useSearchParams } from "@solidjs/router";
-import { 
+import {
   PembayaranHutangPurchaseAksesorisEkspedisi,
   PurchaseAksesorisEkspedisi,
   JenisPotongan,
@@ -8,7 +8,7 @@ import {
   Banks,
   getLastSequence,
 } from "../../../utils/financeAuth";
-// import { 
+// import {
 //   getAllOCDeliveryNotes,
 //   getUser,
 // } from "../../../utils/auth";
@@ -25,7 +25,7 @@ export default function HutangPurchaseAksesorisEkspedisiForm() {
   const isEdit = !!params.id;
   const isView = params.view === "true";
   const navigate = useNavigate();
-//   const user = getUser();
+  //   const user = getUser();
 
   const [loading, setLoading] = createSignal(true);
   const [manualGenerateDone, setManualGenerateDone] = createSignal(false);
@@ -33,6 +33,10 @@ export default function HutangPurchaseAksesorisEkspedisiForm() {
   const [paymentMethodsOptions, setPaymentMethodsOptions] = createSignal([]);
   const [banksOptions, setBanksOptions] = createSignal([]);
   const [paeOptions, setPaeOptions] = createSignal([]);
+
+  const [nominalInvoice, setNominalInvoice] = createSignal("");
+  const [sisaUtang, setSisaUtang] = createSignal("");
+  const [sisaUtangPerSJ, setSisaUtangPerSJ] = createSignal("");
 
   const [form, setForm] = createSignal({
     // no_pembayaran: "",
@@ -63,8 +67,10 @@ export default function HutangPurchaseAksesorisEkspedisiForm() {
 
   // Format angka untuk mata uang rupiah
   const formatIDR = (val, showCurrency = true, showZero = true) => {
-    const num = typeof val === "string" ? parseNumber(val) : (val === 0 ? 0 : (val || 0));
-    if ((val === null || val === undefined || val === "") && !showZero) return "";
+    const num =
+      typeof val === "string" ? parseNumber(val) : val === 0 ? 0 : val || 0;
+    if ((val === null || val === undefined || val === "") && !showZero)
+      return "";
     if (showCurrency) {
       return new Intl.NumberFormat("id-ID", {
         style: "currency",
@@ -82,8 +88,10 @@ export default function HutangPurchaseAksesorisEkspedisiForm() {
 
   // Format angka 2 desimal
   const formatNumber = (val, decimals = 2, showZero = true) => {
-    const num = typeof val === "string" ? parseNumber(val) : (val === 0 ? 0 : (val || 0));
-    if ((val === null || val === undefined || val === "") && !showZero) return "";
+    const num =
+      typeof val === "string" ? parseNumber(val) : val === 0 ? 0 : val || 0;
+    if ((val === null || val === undefined || val === "") && !showZero)
+      return "";
     return new Intl.NumberFormat("id-ID", {
       minimumFractionDigits: decimals,
       maximumFractionDigits: decimals,
@@ -99,7 +107,55 @@ export default function HutangPurchaseAksesorisEkspedisiForm() {
     }
     const n = Number(v);
     return isNaN(n) ? null : n;
-  };  
+  };
+
+  // ========= OPTIMIZED UTILITY FUNCTIONS =========
+  const updateSisaUtangDisplay = (sjId) => {
+    const selectedSP = spOptions().find((sp) => sp.id === sjId);
+    if (!selectedSP) return;
+
+    // Use cached data - no API calls
+    setNominalInvoice(formatIDR(selectedSP.nominal_invoice));
+    setSisaUtangPerSJ(formatIDR(selectedSP.sisa_utang_per_sj));
+
+    // Use pre-calculated supplier data
+    const supplierName = selectedSP.supplier_name || selectedSP.supplier;
+    if (supplierName && supplierCalculationsCache()[supplierName]) {
+      const supplierData = supplierCalculationsCache()[supplierName];
+      setSisaUtang(formatIDR(supplierData.sisaUtang));
+    } else {
+      setSisaUtang(formatIDR(0));
+    }
+  };
+
+  const resetSisaUtangDisplay = () => {
+    setNominalInvoice("");
+    setSisaUtang("");
+    setSisaUtangPerSJ("");
+  };
+
+  const handleSuratPenerimaanChange = async (val) => {
+    const newSjId = normalizeId(val);
+    const currentSjId = form().sj_id;
+
+    if (newSjId !== currentSjId && manualGenerateDone()) {
+      setForm({
+        ...form(),
+        sj_id: newSjId,
+        sequence_number: "",
+        no_seq: 0,
+      });
+      setManualGenerateDone(false);
+    } else {
+      setForm({ ...form(), sj_id: newSjId });
+    }
+
+    if (newSjId) {
+      updateSisaUtangDisplay(newSjId);
+    } else {
+      resetSisaUtangDisplay();
+    }
+  };
 
   // Load data saat edit
   onMount(async () => {
@@ -108,24 +164,23 @@ export default function HutangPurchaseAksesorisEkspedisiForm() {
     try {
       // Muat semua data dropdown
       await Promise.all([
-         (async () => {
-             const res = await JenisPotongan.getAll();
-             setJenisPotonganOptions(res?.data ?? res ?? []);
-         })(),
-         (async () => {
-             const res = await PaymentMethods.getAll();
-             setPaymentMethodsOptions(res?.data ?? res ?? []);
-         })(),
-         (async () => {
-             const res = await Banks.getAll();
-             setBanksOptions(res?.data ?? res ?? []);
-         })(),
-         (async () => {
-             const res = await PurchaseAksesorisEkspedisi.getAll();
-             setPaeOptions(res?.data ?? []);
-         })(),
+        (async () => {
+          const res = await JenisPotongan.getAll();
+          setJenisPotonganOptions(res?.data ?? res ?? []);
+        })(),
+        (async () => {
+          const res = await PaymentMethods.getAll();
+          setPaymentMethodsOptions(res?.data ?? res ?? []);
+        })(),
+        (async () => {
+          const res = await Banks.getAll();
+          setBanksOptions(res?.data ?? res ?? []);
+        })(),
+        (async () => {
+          const res = await PurchaseAksesorisEkspedisi.getAll();
+          setPaeOptions(res?.data ?? []);
+        })(),
       ]);
-
     } catch (err) {
       console.error("Gagal memuat opsi dropdown:", err);
       Swal.fire("Error", "Gagal memuat data dropdown", "error");
@@ -134,11 +189,14 @@ export default function HutangPurchaseAksesorisEkspedisiForm() {
     }
     if (isEdit) {
       try {
-        const res = await PembayaranHutangPurchaseAksesorisEkspedisi.getById(params.id);
+        const res = await PembayaranHutangPurchaseAksesorisEkspedisi.getById(
+          params.id
+        );
 
-        const data = (Array.isArray(res.data) && res.data.length > 0)
-          ? res.data[0]
-          : res.data;
+        const data =
+          Array.isArray(res.data) && res.data.length > 0
+            ? res.data[0]
+            : res.data;
 
         if (!data) {
           throw new Error("Data pembayaran tidak ditemukan.");
@@ -159,7 +217,6 @@ export default function HutangPurchaseAksesorisEkspedisiForm() {
           status: data.status || "",
           keterangan: data.keterangan || "",
         });
-        
       } catch (err) {
         console.error("Gagal memuat data edit:", err);
         Swal.fire("Error", err.message || "Gagal memuat data", "error");
@@ -171,7 +228,10 @@ export default function HutangPurchaseAksesorisEkspedisiForm() {
   const generateNomor = async () => {
     try {
       const lastSeq = await getLastSequence("pembayaran_ae");
-      const nextNum = String((lastSeq?.last_sequence || 0) + 1).padStart(5, "0");
+      const nextNum = String((lastSeq?.last_sequence || 0) + 1).padStart(
+        5,
+        "0"
+      );
 
       const now = new Date();
       const month = String(now.getMonth() + 1).padStart(2, "0");
@@ -194,7 +254,7 @@ export default function HutangPurchaseAksesorisEkspedisiForm() {
         "error"
       );
     }
-  };  
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -205,7 +265,7 @@ export default function HutangPurchaseAksesorisEkspedisiForm() {
     // Payload untuk passing data ke backend
     const payload = {
       no_pembayaran: rawForm.sequence_number,
-      
+
       // Passing data input manipulasi "string" untuk di konversi menjadi number
       sj_id: normalizeId(rawForm.sj_id),
       jenis_potongan_id: normalizeId(rawForm.jenis_potongan_id),
@@ -222,11 +282,14 @@ export default function HutangPurchaseAksesorisEkspedisiForm() {
       tanggal_jatuh_tempo: rawForm.tanggal_jatuh_tempo || null,
       status: rawForm.status || null,
       keterangan: rawForm.keterangan || null,
-    };    
+    };
 
     try {
       if (isEdit) {
-        await PembayaranHutangPurchaseAksesorisEkspedisi.update(params.id, payload);
+        await PembayaranHutangPurchaseAksesorisEkspedisi.update(
+          params.id,
+          payload
+        );
       } else {
         await PembayaranHutangPurchaseAksesorisEkspedisi.create(payload);
       }
@@ -262,7 +325,8 @@ export default function HutangPurchaseAksesorisEkspedisiForm() {
       )}
 
       <h1 class="text-2xl font-bold mb-6">
-        {isView ? "Detail" : isEdit ? "Edit" : "Tambah"} Pembayaran Hutang Pembelian Aksesoris Ekspedisi
+        {isView ? "Detail" : isEdit ? "Edit" : "Tambah"} Pembayaran Hutang
+        Pembelian Aksesoris Ekspedisi
       </h1>
 
       <form class="space-y-6" onSubmit={handleSubmit}>
@@ -292,12 +356,46 @@ export default function HutangPurchaseAksesorisEkspedisiForm() {
             <PurchaseAksesorisEkspedisiDropdownSearch
               options={paeOptions()}
               value={form().sj_id}
-              onChange={(val) => setForm({ ...form(), sj_id: val ? val.id : null })}
+              onChange={(val) =>
+                setForm({ ...form(), sj_id: val ? val.id : null })
+              }
               disabled={isView || isEdit}
               required
             />
           </div>
+          <div>
+            <label class="block mb-1 font-medium">Nominal Invoice</label>
+            <input
+              type="text"
+              class="w-full border bg-gray-200 p-2 rounded"
+              value={nominalInvoice()}
+              readOnly
+            />
+          </div>
 
+          <div>
+            <label class="block mb-1 font-medium">Sisa Hutang</label>
+            <input
+              type="text"
+              class="w-full border bg-gray-200 p-2 rounded"
+              value={sisaUtangPerSJ()}
+              readOnly
+            />
+          </div>
+
+          <div>
+            <label class="block mb-1 font-medium">Total Utang</label>
+            <input
+              type="text"
+              class="w-full border bg-gray-200 p-2 rounded"
+              value={sisaUtang()}
+              readOnly
+            />
+            <div class="text-xs text-gray-500 mt-1">
+              * Total sisa utang untuk semua invoice atau surat penerimaan jual
+              beli
+            </div>
+          </div>
           <div>
             <label class="block mb-1 font-medium">Jenis Potongan</label>
             <JenisPotonganDropdownSearch
@@ -316,15 +414,13 @@ export default function HutangPurchaseAksesorisEkspedisiForm() {
               type="text"
               class="w-full border p-2 rounded"
               value={form().potongan}
-              onInput={(e) =>
-                setForm({ ...form(), potongan: e.target.value })
-              }
+              onInput={(e) => setForm({ ...form(), potongan: e.target.value })}
               onBlur={(e) => {
                 const num = parseNumber(e.target.value);
                 setForm({ ...form(), potongan: formatIDR(num) });
               }}
               disabled={isView}
-              classList={{ "bg-gray-200" : isView}}
+              classList={{ "bg-gray-200": isView }}
             />
           </div>
 
@@ -342,7 +438,7 @@ export default function HutangPurchaseAksesorisEkspedisiForm() {
                 setForm({ ...form(), pembulatan: formatIDR(num, 2) });
               }}
               disabled={isView}
-              classList={{ "bg-gray-200" : isView}}
+              classList={{ "bg-gray-200": isView }}
             />
           </div>
 
@@ -360,7 +456,7 @@ export default function HutangPurchaseAksesorisEkspedisiForm() {
                 setForm({ ...form(), pembayaran: formatIDR(num) });
               }}
               disabled={isView}
-              classList={{ "bg-gray-200" : isView}}
+              classList={{ "bg-gray-200": isView }}
               required
             />
           </div>
@@ -396,7 +492,7 @@ export default function HutangPurchaseAksesorisEkspedisiForm() {
               value={form().no_giro}
               onInput={(e) => setForm({ ...form(), no_giro: e.target.value })}
               disabled={isView}
-              classList={{ "bg-gray-200" : isView}}
+              classList={{ "bg-gray-200": isView }}
             />
           </div>
 
@@ -413,7 +509,9 @@ export default function HutangPurchaseAksesorisEkspedisiForm() {
           </div>
 
           <div>
-            <label class="block mb-1 font-medium">Tanggal Pengambilan Giro</label>
+            <label class="block mb-1 font-medium">
+              Tanggal Pengambilan Giro
+            </label>
             <input
               type="date"
               class="w-full border p-2 rounded"
@@ -425,7 +523,7 @@ export default function HutangPurchaseAksesorisEkspedisiForm() {
                 })
               }
               disabled={isView}
-              classList={{ "bg-gray-200" : isView}}
+              classList={{ "bg-gray-200": isView }}
             />
           </div>
 
@@ -442,7 +540,7 @@ export default function HutangPurchaseAksesorisEkspedisiForm() {
                 })
               }
               disabled={isView}
-              classList={{ "bg-gray-200" : isView}}
+              classList={{ "bg-gray-200": isView }}
               required
             />
           </div>
@@ -455,7 +553,7 @@ export default function HutangPurchaseAksesorisEkspedisiForm() {
               value={form().status}
               onInput={(e) => setForm({ ...form(), status: e.target.value })}
               disabled={isView}
-              classList={{ "bg-gray-200" : isView}}
+              classList={{ "bg-gray-200": isView }}
             />
           </div>
 
@@ -469,7 +567,7 @@ export default function HutangPurchaseAksesorisEkspedisiForm() {
                 setForm({ ...form(), keterangan: e.target.value })
               }
               disabled={isView}
-              classList={{ "bg-gray-200" : isView}}
+              classList={{ "bg-gray-200": isView }}
             />
           </div>
         </div>

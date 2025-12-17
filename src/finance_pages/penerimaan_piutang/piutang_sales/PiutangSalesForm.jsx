@@ -523,7 +523,7 @@ export default function PiutangSalesForm() {
           </div>
 
           <div>
-            <label class="block mb-1 font-medium">Sisa Utang</label>
+            <label class="block mb-1 font-medium">Sisa Hutang</label>
             <input
               type="text"
               class="w-full border bg-gray-200 p-2 rounded"
