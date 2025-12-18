@@ -257,9 +257,9 @@ export default function PiutangSalesForm() {
       customerData[customerName].sisaUtang = Math.max(
         0, 
         customerData[customerName].totalSubtotalAwal - 
-        totalPembayaran - 
-        customerData[customerName].totalSelisihRetur - 
-        totalPotongan
+        totalPembayaran 
+        - customerData[customerName].totalSelisihRetur
+        //  - totalPotongan
       );
     });
 
