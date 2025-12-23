@@ -1459,7 +1459,7 @@ export default function SalesOrderForm() {
         <div>
           <button
             type="submit"
-            class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            class="bg-[#CB9A6B] text-white px-4 py-2 rounded hover:bg-[#B68051]"
             hidden={isView}
             disabled={isView}
           >

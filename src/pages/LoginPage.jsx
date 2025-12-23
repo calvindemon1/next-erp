@@ -2,7 +2,9 @@ import { createSignal } from "solid-js";
 import { useNavigate } from "@solidjs/router";
 import { login, saveUser } from "../utils/auth";
 import Swal from "sweetalert2";
-import logoNavel from "../assets/img/navelLogo.png";
+//import logoNavel from "../assets/img/navelLogo.png";
+import iconOpus from "../assets/img/OpusIcon.svg";
+import logoOpus from "../assets/img/OpusLogo.svg";
 
 export default function LoginPage() {
   const [username, setUsername] = createSignal("");
@@ -40,8 +42,9 @@ export default function LoginPage() {
 
   return (
     <div class="flex justify-center items-center h-screen bg-gray-100 font-mono">
-      <div class="bg-white p-8 rounded shadow-md w-full max-w-md">
-        <img class="h-52 mx-auto" src={logoNavel} alt="" />
+      <div class="bg-white p-8 rounded shadow-md w-full max-w-md" style={{"font-family": "OpusKernellFont"}}>
+        <img class="h-24 mx-auto" src={iconOpus} alt="" />
+        <img class="h-32 mx-auto" src={logoOpus} alt="" />
         <h1 class="text-2xl font-bold mb-6 text-center uppercase">Login</h1>
         {error() && <p class="text-red-500 mb-4">{error()}</p>}
         <form onsubmit={handleLogin}>
@@ -59,7 +62,7 @@ export default function LoginPage() {
             value={password()}
             onInput={(e) => setPassword(e.target.value)}
           />
-          <button class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700">
+          <button class="w-full bg-[#CB9A6B] text-white py-2 rounded hover:bg-[#B68051]">
             Login
           </button>
         </form>

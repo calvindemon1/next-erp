@@ -953,7 +953,7 @@ export default function ReturOrderCelupForm() {
         </div>
 
         <div class="mt-6">
-          <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700" hidden={isView}>
+          <button type="submit" class="bg-[#CB9A6B] text-white px-4 py-2 rounded hover:bg-[#B68051]" hidden={isView}>
             {returId ? "Update" : "Simpan"}
           </button>
         </div>

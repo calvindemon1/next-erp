@@ -11,6 +11,7 @@ import { A, useLocation, useNavigate } from "@solidjs/router";
 import { ChevronLeft, ChevronRight, LogOut } from "lucide-solid";
 import Swal from "sweetalert2";
 import logoNavel from "../assets/img/navelLogo.png";
+import logoOpus from "../assets/img/OpusLogo.svg";
 
 export default function MainLayout(props) {
   const user = getUser();
@@ -112,10 +113,7 @@ export default function MainLayout(props) {
   const returSalesRoutes = ["/retur-sales", "/retur-sales/form"];
   const returRoutes = { retur: [...returPurchaseRoutes, ...returSalesRoutes] };
 
-  const memoRoutes = [
-    "/memo-order-matching",
-    "/memo-order-matching/form"
-  ];
+  const memoRoutes = ["/memo-order-matching", "/memo-order-matching/form"];
 
   createEffect(() => {
     const interval = setInterval(async () => {
@@ -248,8 +246,10 @@ export default function MainLayout(props) {
       }
 
       if (
-        Object.values(memoRoutes).flat().some((p) => pathname.startsWith(p))
-      ){
+        Object.values(memoRoutes)
+          .flat()
+          .some((p) => pathname.startsWith(p))
+      ) {
         return "memo";
       }
 
@@ -286,9 +286,7 @@ export default function MainLayout(props) {
           setWarehouseCelupIsOpen(true);
         }
 
-        if (
-          warehouseRoutes.ocx.some((p) => location.pathname.startsWith(p))
-        ) {
+        if (warehouseRoutes.ocx.some((p) => location.pathname.startsWith(p))) {
           setWarehouseOCXIsOpen(true);
         }
 
@@ -351,7 +349,7 @@ export default function MainLayout(props) {
 
       case "memo":
         setMemoIsOpen(true);
-      break;
+        break;
     }
 
     // idle detection
@@ -400,11 +398,11 @@ export default function MainLayout(props) {
   };
 
   return (
-    <div class="flex h-screen font-mono">
+    <div class="flex h-screen" style={{ "font-family": "OpusKernellFont" }}>
       {/* Sidebar */}
 
       <aside
-        class={`bg-gray-800 text-white flex flex-col flex-shrink-0 transition-all duration-300 ${
+        class={`bg-[#3f250f] text-white flex flex-col flex-shrink-0 transition-all duration-300 ${
           sidebarOpen() ? "w-64" : "w-16"
         }`}
       >
@@ -421,7 +419,7 @@ export default function MainLayout(props) {
           </button>
           {sidebarOpen() && (
             <div class="flex items-center mx-auto">
-              <img src={logoNavel} alt="" class="invert-1000 h-8 w-auto" />
+              <img src={logoOpus} alt="" class="invert-1 h-8 w-auto" />
               {/* <span class="ml-2 text-lg font-bold">NAVEL ERP</span> */}
             </div>
           )}
@@ -533,7 +531,7 @@ export default function MainLayout(props) {
                       </li>
                     )}
                     {hasPermission("view_agent") && (
-                      <li>
+                      <li hidden>
                         <A
                           href="/agent"
                           class={`block pl-8 pr-4 py-2 hover:bg-gray-700 ${
@@ -824,10 +822,8 @@ export default function MainLayout(props) {
                   </ul>
                   <ul>
                     {/* Submenu Level 2: Order Celup */}
-                    {hasPermission(
-                      "view_oc_ex",
-                    ) && (
-                      <li>
+                    {hasPermission("view_oc_ex") && (
+                      <li hidden>
                         <button
                           class="w-full text-left pl-8 pr-4 py-2 font-semibold text-gray-400 hover:bg-gray-700 flex justify-between items-center"
                           onClick={() => setCelupXIsOpen(!isCelupXOpen())}
@@ -1040,11 +1036,14 @@ export default function MainLayout(props) {
                                 : ""
                             }`}
                           >
-                            Sales Contract (Lokal)
+                            Sales Contract
                           </A>
                         </li>
-                        {hasAllPermission(["edit_sales_contracts", "delete_sales_contracts"]) && (
-                          <li>
+                        {hasAllPermission([
+                          "edit_sales_contracts",
+                          "delete_sales_contracts",
+                        ]) && (
+                          <li hidden>
                             <A
                               href="/expor/salescontract"
                               class={`block pl-8 pr-4 py-2 hover:bg-gray-700 ${
@@ -1066,7 +1065,7 @@ export default function MainLayout(props) {
                           "view_jenis_potongan",
                           "view_jenis_hutang",
                         ]) && (
-                          <li>
+                          <li hidden>
                             <A
                               href="/salescontractvia"
                               class={`block pl-8 pr-4 py-2 hover:bg-gray-700 ${
@@ -1099,7 +1098,7 @@ export default function MainLayout(props) {
                           "view_jenis_potongan",
                           "view_jenis_hutang",
                         ]) && (
-                          <li>
+                          <li hidden>
                             <A
                               href="/salesordervia"
                               class={`block pl-8 pr-4 py-2 hover:bg-gray-700 ${
@@ -1119,7 +1118,7 @@ export default function MainLayout(props) {
                 </li>
 
                 {/* GUDANG */}
-                <li>
+                <li hidden>
                   <button
                     class="w-full text-left p-4 font-semibold text-gray-400 uppercase hover:bg-gray-700 flex justify-between items-center"
                     onClick={() => setWarehouseIsOpen(!isWarehouseIsOpen())}
@@ -1339,10 +1338,7 @@ export default function MainLayout(props) {
                   </ul>
                   <ul>
                     {/* Submenu Level 2: SJ OCX */}
-                    {hasAllPermission([
-                      "view_sj_ex",
-                      "create_sj_ex",
-                    ]) && (
+                    {hasAllPermission(["view_sj_ex", "create_sj_ex"]) && (
                       <li>
                         <button
                           class="w-full text-left pl-8 pr-4 py-2 font-semibold text-gray-400 hover:bg-gray-700 flex justify-between items-center"
@@ -1371,10 +1367,8 @@ export default function MainLayout(props) {
                           <A
                             href="/sjocx"
                             class={`block pl-12 pr-4 py-2 hover:bg-gray-700 ${
-                              location.pathname ===
-                                "/sjocx" ||
-                              location.pathname ===
-                                "/sjocx/form"
+                              location.pathname === "/sjocx" ||
+                              location.pathname === "/sjocx/form"
                                 ? "bg-gray-700 text-white"
                                 : ""
                             }`}
@@ -1522,7 +1516,7 @@ export default function MainLayout(props) {
                         Invoice Penjualan
                       </A>
                     </li>
-                    <li>
+                    <li hidden>
                       <A
                         href="/invoice-via"
                         class={`block pl-8 pr-4 py-2 hover:bg-gray-700 ${
@@ -1728,8 +1722,6 @@ export default function MainLayout(props) {
                           </>
                         )}
                       </li>
-
-                      
                     </>
                   );
                 })()}
@@ -1739,7 +1731,7 @@ export default function MainLayout(props) {
                   "view_order_matching",
                   "create_order_matching",
                 ]) && (
-                  <li>
+                  <li hidden>
                     <button
                       class="w-full text-left p-4 font-semibold text-gray-400 uppercase hover:bg-gray-700 flex justify-between items-center"
                       onClick={() => setMemoIsOpen(!isMemoIsOpen())}
@@ -1804,6 +1796,7 @@ export default function MainLayout(props) {
                 href="/dashboard-finance" // <-- sesuai route FinanceMainLayout di App.jsx kamu
                 class="inline-flex items-center gap-2 rounded px-3 py-2 border border-blue-600 text-blue-700 hover:bg-blue-50"
                 title="Masuk ke modul Finance"
+                hidden
               >
                 Go to Finance
               </A>
