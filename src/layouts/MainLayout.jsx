@@ -22,11 +22,17 @@ export default function MainLayout(props) {
   const [isTransactionOpen, setTransactionIsOpen] = createSignal(false);
   const [isWarehouseIsOpen, setWarehouseIsOpen] = createSignal(false);
   const [isPurchasingIsOpen, setPurchasingIsOpen] = createSignal(false);
+  const [isMovingOpen, setMovingIsOpen] = createSignal(false);
+  const [isBenangOpen, setBenangIsOpen] = createSignal(false);
   const [isGreigeOpen, setGreigeIsOpen] = createSignal(false);
   const [isCelupOpen, setCelupIsOpen] = createSignal(false);
   const [isCelupXOpen, setCelupXIsOpen] = createSignal(false);
   const [isFinishOpen, setFinishIsOpen] = createSignal(false);
   const [isJualBeliOpen, setJualBeliIsOpen] = createSignal(false);
+
+  const [isMovingBenangOpen, setIsMovingBenangOpen] = createSignal(false);
+  const [isMovingGreigeOpen, setIsMovingGreigeOpen] = createSignal(false);
+
   const [isWarehouseTransactionOpen, setWarehouseTransactionIsOpen] =
     createSignal(false);
   const [isWarehouseGreigeOpen, setWarehouseGreigeIsOpen] = createSignal(false);
@@ -55,6 +61,12 @@ export default function MainLayout(props) {
   ]);
 
   const purchasingRoutes = {
+    benang: [
+      "/belibenang-purchasecontract",
+      "/belibenang-purchasecontract/form",
+      "/belibenang-purchaseorder",
+      "/belibenang-purchaseorder/form",
+    ],
     greige: [
       "/beligreige-purchasecontract",
       "/beligreige-purchasecontract/form",
@@ -75,6 +87,12 @@ export default function MainLayout(props) {
       "/kainjadi-purchaseorder/form",
     ],
     jualbeli: ["/jualbeli-purchasecontract", "/jualbeli-purchasecontract/form"],
+  };
+
+  const movingRoutes = {
+    jualbeli: ["/jualbeli-purchasecontract", "/jualbeli-purchasecontract/form"],
+    movingbenang: ["/movingbenang-contract", "/movingbenang-contract/form"],
+    movinggreige: ["/movinggreige-contract", "/movinggreige-contract/form"],
   };
 
   const warehouseRoutes = {
@@ -306,6 +324,12 @@ export default function MainLayout(props) {
         setPurchasingIsOpen(true);
 
         if (
+          purchasingRoutes.benang.some((p) => location.pathname.startsWith(p))
+        ) {
+          setBenangIsOpen(true);
+        }
+
+        if (
           purchasingRoutes.greige.some((p) => location.pathname.startsWith(p))
         ) {
           setGreigeIsOpen(true);
@@ -331,6 +355,22 @@ export default function MainLayout(props) {
           purchasingRoutes.jualbeli.some((p) => location.pathname.startsWith(p))
         ) {
           setJualBeliIsOpen(true);
+        }
+        break;
+
+      case "moving":
+        setMovingIsOpen(true);
+
+        if (
+          movingRoutes.movingbenang.some((p) => location.pathname.startsWith(p))
+        ) {
+          setIsMovingBenangOpen(true);
+        }
+
+        if (
+          movingRoutes.movinggreige.some((p) => location.pathname.startsWith(p))
+        ) {
+          setIsMovingGreigeOpen(true);
         }
         break;
 
@@ -697,6 +737,69 @@ export default function MainLayout(props) {
                       : "max-h-0 opacity-0"
                   }`}
                 >
+                  {" "}
+                  <ul>
+                    {/* Submenu Level 2: Pembelian Greige */}
+                    {hasAllPermission([
+                      // "view_purchase_greige_contract",
+                      // "view_purchase_greige_order",
+                    ]) && (
+                      <li>
+                        <button
+                          class="w-full text-left pl-8 pr-4 py-2 font-semibold text-gray-400 hover:bg-gray-700 flex justify-between items-center"
+                          onClick={() => setBenangIsOpen(!isBenangOpen())}
+                        >
+                          Pembelian Benang
+                          <span class="text-xs">
+                            {isBenangOpen() ? "▲" : "▼"}
+                          </span>
+                        </button>
+                      </li>
+                    )}
+
+                    {/* Submenu Items inside Pembelian Greige */}
+
+                    <li
+                      class={`transition-all duration-300 ease-in-out overflow-hidden ${
+                        isBenangOpen()
+                          ? "max-h-fit opacity-100"
+                          : "max-h-0 opacity-0"
+                      }`}
+                    >
+                      <ul>
+                        <li>
+                          <A
+                            href="/belibenang-purchasecontract"
+                            class={`block pl-12 pr-4 py-2 hover:bg-gray-700 ${
+                              location.pathname ===
+                                "/belibenang-purchasecontract" ||
+                              location.pathname ===
+                                "/belibenang-purchasecontract/form"
+                                ? "bg-gray-700 text-white"
+                                : ""
+                            }`}
+                          >
+                            Purchase Contract
+                          </A>
+                        </li>
+                        <li>
+                          <A
+                            href="/belibenang-purchaseorder"
+                            class={`block pl-12 pr-4 py-2 hover:bg-gray-700 ${
+                              location.pathname ===
+                                "/belibenang-purchaseorder" ||
+                              location.pathname ===
+                                "/belibenang-purchaseorder/form"
+                                ? "bg-gray-700 text-white"
+                                : ""
+                            }`}
+                          >
+                            Purchase Order
+                          </A>
+                        </li>
+                      </ul>
+                    </li>
+                  </ul>
                   <ul>
                     {/* Submenu Level 2: Pembelian Greige */}
                     {hasAllPermission([
@@ -978,6 +1081,149 @@ export default function MainLayout(props) {
                             }`}
                           >
                             Purchase Order
+                          </A>
+                        </li>
+                      </ul>
+                    </li>
+                  </ul>
+                </li>
+                {/* MOVING */}
+                <li>
+                  <button
+                    class="w-full text-left p-4 font-semibold text-gray-400 uppercase hover:bg-gray-700 flex justify-between items-center"
+                    onClick={() => setMovingIsOpen(!isMovingOpen())}
+                  >
+                    Moving
+                    <span class="text-xs">{isMovingOpen() ? "▲" : "▼"}</span>
+                  </button>
+                </li>
+
+                {/* SUB MENU MOVING */}
+                <li
+                  class={`transition-all duration-300 ease-in-out overflow-hidden ${
+                    isMovingOpen()
+                      ? "max-h-fit opacity-100"
+                      : "max-h-0 opacity-0"
+                  }`}
+                >
+                  {" "}
+                  <ul>
+                    {/* Submenu Level 2: Pembelian Greige */}
+                    {hasAllPermission([
+                      // "view_purchase_greige_contract",
+                      // "view_purchase_greige_order",
+                    ]) && (
+                      <li>
+                        <button
+                          class="w-full text-left pl-8 pr-4 py-2 font-semibold text-gray-400 hover:bg-gray-700 flex justify-between items-center"
+                          onClick={() =>
+                            setIsMovingBenangOpen(!isMovingBenangOpen())
+                          }
+                        >
+                          Moving Benang
+                          <span class="text-xs">
+                            {isMovingBenangOpen() ? "▲" : "▼"}
+                          </span>
+                        </button>
+                      </li>
+                    )}
+
+                    {/* Submenu Items inside Pembelian Greige */}
+
+                    <li
+                      class={`transition-all duration-300 ease-in-out overflow-hidden ${
+                        isMovingBenangOpen()
+                          ? "max-h-fit opacity-100"
+                          : "max-h-0 opacity-0"
+                      }`}
+                    >
+                      <ul>
+                        <li>
+                          <A
+                            href="/movingbenang-contract"
+                            class={`block pl-12 pr-4 py-2 hover:bg-gray-700 ${
+                              location.pathname === "/movingbenang-contract" ||
+                              location.pathname ===
+                                "/movingbenang-contract/form"
+                                ? "bg-gray-700 text-white"
+                                : ""
+                            }`}
+                          >
+                            Moving Contract
+                          </A>
+                        </li>
+                        <li>
+                          <A
+                            href="/movingbenang-order"
+                            class={`block pl-12 pr-4 py-2 hover:bg-gray-700 ${
+                              location.pathname === "/movingbenang-order" ||
+                              location.pathname === "/movingbenang-order/form"
+                                ? "bg-gray-700 text-white"
+                                : ""
+                            }`}
+                          >
+                            Moving Order
+                          </A>
+                        </li>
+                      </ul>
+                    </li>
+                  </ul>
+                  <ul>
+                    {/* Submenu Level 2: Pembelian Greige */}
+                    {hasAllPermission([
+                      // "view_purchase_greige_contract",
+                      // "view_purchase_greige_order",
+                    ]) && (
+                      <li>
+                        <button
+                          class="w-full text-left pl-8 pr-4 py-2 font-semibold text-gray-400 hover:bg-gray-700 flex justify-between items-center"
+                          onClick={() =>
+                            setIsMovingGreigeOpen(!isMovingGreigeOpen())
+                          }
+                        >
+                          Moving Greige
+                          <span class="text-xs">
+                            {isMovingGreigeOpen() ? "▲" : "▼"}
+                          </span>
+                        </button>
+                      </li>
+                    )}
+
+                    {/* Submenu Items inside Pembelian Greige */}
+
+                    <li
+                      class={`transition-all duration-300 ease-in-out overflow-hidden ${
+                        isMovingGreigeOpen()
+                          ? "max-h-fit opacity-100"
+                          : "max-h-0 opacity-0"
+                      }`}
+                    >
+                      <ul>
+                        <li>
+                          <A
+                            href="/movinggreige-contract"
+                            class={`block pl-12 pr-4 py-2 hover:bg-gray-700 ${
+                              location.pathname === "/movinggreige-contract" ||
+                              location.pathname ===
+                                "/movinggreige-contract/form"
+                                ? "bg-gray-700 text-white"
+                                : ""
+                            }`}
+                          >
+                            Moving Contract
+                          </A>
+                        </li>
+                        <li>
+                          <A
+                            href="/movinggreige-order"
+                            class={`block pl-12 pr-4 py-2 hover:bg-gray-700 ${
+                              location.pathname === "/movinggreige-order" ||
+                              location.pathname === "/movinggreige-order/form"
+                                ? "bg-gray-700 text-white"
+                                : ""
+                            }`}
+                          >
+                            Moving Order
                           </A>
                         </li>
                       </ul>

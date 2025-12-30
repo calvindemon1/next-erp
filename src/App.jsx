@@ -10,6 +10,14 @@ import ManagePermissionsForm from "./pages/ManagePermissionsForm";
 import TransactionsList from "./pages/TransactionsList";
 import TransactionForm from "./pages/TransactionForm";
 // PURCHASING
+// // BELI BENANG
+import BeliBenangPurchaseContractList from "./pages/purchasing/beli_benang/BBPurchaseContractList";
+import BeliBenangPurchaseContractForm from "./pages/purchasing/beli_benang/BBPurchaseContractForm";
+import BeliBenangPurchaseOrderList from "./pages/purchasing/beli_benang/BBPurchaseOrderList";
+import BeliBenangPurchaseOrderForm from "./pages/purchasing/beli_benang/BBPurchaseOrderForm";
+import BeliBenangDeliveryNoteList from "./pages/purchasing/beli_benang/BBDeliveryNoteList";
+import BeliBenangDeliveryNoteForm from "./pages/purchasing/beli_benang/BBDeliveryNoteForm";
+import BeliBenangDeliveryNoteFormV2 from "./pages/purchasing/beli_benang/BBDeliveryNoteFormV2";
 // // BELI GREIGE
 import BeliGreigePurchaseContractList from "./pages/purchasing/beli_greige/BGPurchaseContractList";
 import BeliGreigePurchaseContractForm from "./pages/purchasing/beli_greige/BGPurchaseContractForm";
@@ -38,8 +46,8 @@ import InventoryAksesorisList from "./pages/purchasing/inventory/InventoryAkseso
 import InventoryAksesorisForm from "./pages/purchasing/inventory/InventoryAksesorisForm";
 import InventoryKainForm from "./pages/purchasing/inventory/InventoryKainForm";
 
-import InventoryKainPrint from "./utils/inventory/InventoryKainDummyPrint"
-import InventoryAksesorisPrint from "./utils/inventory/InventoryAksesorisDummyPrint"
+import InventoryKainPrint from "./utils/inventory/InventoryKainDummyPrint";
+import InventoryAksesorisPrint from "./utils/inventory/InventoryAksesorisDummyPrint";
 
 // // PRINT OCX
 // import OCXDataDummyPrint from "./utils/buy/order_celup_x/OCXDummyPrint";
@@ -253,11 +261,43 @@ function App() {
         component={InventoryAksesorisForm}
       />
 
-      <Route path="/print/inventory-kain" component={InventoryKainPrint}/>
-      <Route path="/print/inventory-aksesoris" component={InventoryAksesorisPrint}/>
+      <Route path="/print/inventory-kain" component={InventoryKainPrint} />
+      <Route
+        path="/print/inventory-aksesoris"
+        component={InventoryAksesorisPrint}
+      />
       {/* WAREHOUSE */}
 
       {/* PURCHASING */}
+
+      {/* BELI BENANG */}
+      <Route
+        path="/belibenang-purchasecontract"
+        component={BeliBenangPurchaseContractList}
+      />
+      <Route
+        path="/belibenang-purchasecontract/form"
+        component={BeliBenangPurchaseContractForm}
+      />
+
+      <Route
+        path="/belibenang-purchaseorder"
+        component={BeliBenangPurchaseOrderList}
+      />
+      <Route
+        path="/belibenang-purchaseorder/form"
+        component={BeliBenangPurchaseOrderForm}
+      />
+
+      {/* <Route
+        path="/belibenang-deliverynote"
+        component={BeliBenangDeliveryNoteList}
+      />
+      <Route
+        path="/belibenang-deliverynote/form"
+        component={BeliBenangDeliveryNoteFormV2}
+      /> */}
+      {/* BELI BENANG */}
 
       {/* BELI GREIGE */}
       <Route
